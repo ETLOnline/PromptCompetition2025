@@ -4,21 +4,23 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="border-t py-12 md:py-16">
-      <div className="container px-4 md:px-6">
+    <footer className="border-t-0 py-12 md:py-16 bg-gradient-to-br from-[#07073a] via-[#10104a] to-[#1a1a5a] relative text-white shadow-[0_-4px_32px_0_rgba(86,255,188,0.08)]">
+      {/* Top Glow Accent */}
+      <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#56ffbc]/40 via-transparent to-[#56ffbc]/40 blur-md opacity-70 pointer-events-none" />
+      <div className="container px-4 md:px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <h3 className="text-lg font-bold">AI Enterprise</h3>
-            <p className="text-sm text-muted-foreground">
-              Enterprise-grade AI solutions for organizations that demand security, customization, and control.
+            <h3 className="text-lg font-bold text-[#56ffbc]">ETL Online</h3>
+            <p className="text-sm text-gray-300">
+              Official website for the All Pakistan Prompt Engineering Competition, hosted by ETL Online.
             </p>
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-bold">Product</h3>
+            <h3 className="text-sm font-bold text-[#56ffbc]">Product</h3>
             <nav aria-label="Product Navigation">
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="#features" className="text-muted-foreground hover:text-foreground">
+                  <Link href="#features" className="text-gray-300 hover:text-[#56ffbc] transition-colors">
                     Features
                   </Link>
                 </li>
@@ -41,11 +43,11 @@ export default function Footer() {
             </nav>
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-bold">Resources</h3>
+            <h3 className="text-sm font-bold text-[#56ffbc]">Resources</h3>
             <nav aria-label="Resources Navigation">
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/documentation" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/documentation" className="text-gray-300 hover:text-[#56ffbc] transition-colors">
                     Documentation
                   </Link>
                 </li>
@@ -68,11 +70,11 @@ export default function Footer() {
             </nav>
           </div>
           <div className="space-y-4">
-            <h3 className="text-sm font-bold">Company</h3>
+            <h3 className="text-sm font-bold text-[#56ffbc]">Company</h3>
             <nav aria-label="Company Navigation">
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="/about" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/about" className="text-gray-300 hover:text-[#56ffbc] transition-colors">
                     About
                   </Link>
                 </li>
@@ -95,12 +97,12 @@ export default function Footer() {
             </nav>
           </div>
         </div>
-        <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">© {currentYear} AI Enterprise. All rights reserved.</p>
+        <div className="mt-12 pt-8 border-t-0 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-gray-400">© {currentYear} ETL Online. All rights reserved. Prompt Engineering Competition.</p>
           <div className="flex gap-4">
             <Link
               href="https://linkedin.com"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-gray-300 hover:text-[#56ffbc] transition-colors"
               aria-label="LinkedIn"
             >
               <svg
@@ -122,7 +124,7 @@ export default function Footer() {
             </Link>
             <Link
               href="https://twitter.com"
-              className="text-muted-foreground hover:text-foreground"
+              className="text-gray-300 hover:text-[#56ffbc] transition-colors"
               aria-label="Twitter"
             >
               <svg
@@ -140,7 +142,7 @@ export default function Footer() {
                 <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
               </svg>
             </Link>
-            <Link href="https://github.com" className="text-muted-foreground hover:text-foreground" aria-label="GitHub">
+            <Link href="https://github.com" className="text-gray-300 hover:text-[#56ffbc] transition-colors" aria-label="GitHub">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"

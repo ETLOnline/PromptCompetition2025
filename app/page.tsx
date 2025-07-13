@@ -443,7 +443,7 @@ export default function HomePage() {
         </section>
 
         {/* --- CONTACT US SECTION --- */}
-        <section className="relative py-8 px-4 bg-gradient-to-br from-[#07073a] to-[#0a0a4a] overflow-hidden">
+        <section id="contact" className="relative py-8 px-4 bg-gradient-to-br from-[#07073a] to-[#0a0a4a] overflow-hidden">
           {/* Animated Gradient Background */}
           <motion.div
             className="absolute inset-0 z-0 pointer-events-none"
@@ -479,7 +479,7 @@ export default function HomePage() {
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.7, delay: 0.2 }}
               >
-                <Card className="bg-white/10 backdrop-blur-sm border-[#56ffbc]/20 shadow-lg hover:shadow-[0_0_32px_4px_rgba(86,255,188,0.15)] transition-shadow duration-500">
+                <Card className="bg-[rgba(7,7,58,0.95)] bg-gradient-to-br from-[#07073a] via-[#10104a] to-[#1a1a5a] border-2 border-[#56ffbc] shadow-2xl hover:shadow-[0_0_32px_8px_rgba(86,255,188,0.18)] transition-shadow duration-500 backdrop-blur-xl">
                   <CardHeader>
                     <CardTitle className="text-2xl text-white">Get in Touch</CardTitle>
                     <CardDescription className="text-gray-300">
