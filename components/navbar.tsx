@@ -13,7 +13,7 @@ export default function Navbar() {
   const { user } = useAuth()
 
   const navItems = [
-    { label: "Events", href: "/events" },
+    { label: "Events", href: "/#events" },
     { label: "Rules", href: "/rules" },
     { label: "Contact Us", href: "/contact" },
     { label: "About", href: "/about" },

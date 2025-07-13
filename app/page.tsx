@@ -17,6 +17,8 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
+  Mail,
+  Phone,
 } from "lucide-react"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
@@ -27,6 +29,7 @@ import FramerSpotlight from "@/components/framer-spotlight"
 import TypingPromptInput from "@/components/typing-prompt-input"
 import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
+import ContactForm from "@/components/contact-form"
 
 // Dummy event data – replace with API data when available
 const events = [
@@ -124,9 +127,9 @@ function CompetitionEventsSection() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Active":
-        return "bg-[#56ffbc] text-[#11113D] hover:bg-[#56ffbc]/90 font-bold"
+        return "bg-[#56ffbc] text-[#07073a] font-bold border border-[#56ffbc] shadow-[0_0_8px_2px_rgba(86,255,188,0.25)]"
       case "Upcoming":
-        return "bg-[#56ffbc]/20 text-[#56ffbc] border border-[#56ffbc]/50"
+        return "bg-[#56ffbc]/10 text-[#56ffbc] border border-[#56ffbc]/40"
       case "Finished":
         return "bg-white/10 text-gray-400 border border-white/20"
       default:
@@ -136,25 +139,23 @@ function CompetitionEventsSection() {
 
   return (
     <section
-      className="py-24 bg-gradient-to-b from-[#11113D] to-[#07073a] relative overflow-hidden"
-      // This style adds a subtle grid pattern for a techy feel
+      className="py-16 relative overflow-hidden"
       style={{
+        backgroundColor: "#07073a",
         backgroundImage:
-          "linear-gradient(#11113D, #0c0c4a), linear-gradient(rgba(86, 255, 188, 0.05) 1px, transparent 1px), linear-gradient(to right, rgba(86, 255, 188, 0.05) 1px, transparent 1px)",
-        backgroundSize: "100% 100%, 40px 40px, 40px 40px",
+          "radial-gradient(circle at 80% 10%, rgba(86,255,188,0.12) 0%, transparent 60%), " +
+          "linear-gradient(#11113D, #07073a), " +
+          "linear-gradient(rgba(86,255,188,0.05) 1px, transparent 1px), " +
+          "linear-gradient(to right, rgba(86,255,188,0.05) 1px, transparent 1px)",
+        backgroundSize: "100% 100%, 100% 100%, 40px 40px, 40px 40px",
       }}
     >
-      <div
-        className="absolute inset-0 z-0 opacity-20"
-        style={{
-          background: `radial-gradient(circle at 90% 10%, rgba(86, 255, 188, 0.2) 0%, transparent 40%)`,
-        }}
-      ></div>
+      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none" style={{background: `radial-gradient(circle at 80% 10%, rgba(86,255,188,0.18) 0%, transparent 60%)`}}></div>
       <div className="container mx-auto max-w-7xl px-4 relative z-10">
         <div className="flex flex-col md:flex-row justify-between md:items-center mb-12 gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Competition Events</h2>
-            <p className="text-lg text-gray-300 max-w-2xl">
+            <h2 className="text-4xl md:text-5xl font-bold text-[#56ffbc] mb-4 drop-shadow-[0_2px_8px_rgba(86,255,188,0.15)]">Competition Events</h2>
+            <p className="text-lg text-gray-200 max-w-2xl">
               Join our exciting events to showcase your prompt engineering skills.
             </p>
           </div>
@@ -165,8 +166,8 @@ function CompetitionEventsSection() {
               <motion.button
                 onClick={() => handleScroll("left")}
                 disabled={isAtStart}
-                className="w-12 h-12 rounded-full bg-white/10 border border-[#56ffbc]/30 text-[#56ffbc] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.1, backgroundColor: "rgba(255, 255, 255, 0.2)" }}
+                className="w-12 h-12 rounded-full bg-[#56ffbc] border border-[#56ffbc] text-[#07073a] flex items-center justify-center shadow-[0_0_12px_2px_rgba(86,255,188,0.25)] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#56ffbc]/90 hover:scale-110 transition"
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <ChevronLeft size={24} />
@@ -174,8 +175,8 @@ function CompetitionEventsSection() {
               <motion.button
                 onClick={() => handleScroll("right")}
                 disabled={isAtEnd}
-                className="w-12 h-12 rounded-full bg-white/10 border border-[#56ffbc]/30 text-[#56ffbc] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.1, backgroundColor: "rgba(255, 255, 255, 0.2)" }}
+                className="w-12 h-12 rounded-full bg-[#56ffbc] border border-[#56ffbc] text-[#07073a] flex items-center justify-center shadow-[0_0_12px_2px_rgba(86,255,188,0.25)] disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#56ffbc]/90 hover:scale-110 transition"
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
                 <ChevronRight size={24} />
@@ -194,18 +195,18 @@ function CompetitionEventsSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="bg-white/5 backdrop-blur-lg border border-white/20 rounded-xl h-full flex flex-col group transition-all duration-300 hover:border-[#56ffbc]/80 hover:shadow-[0_0_20px_rgba(86,255,188,0.25)]">
+              <Card className="bg-white/10 backdrop-blur-lg border border-[#56ffbc]/40 rounded-2xl h-full flex flex-col group transition-all duration-300 hover:border-[#56ffbc] hover:shadow-[0_0_32px_4px_rgba(86,255,188,0.25)] hover:scale-[1.03] shadow-[0_2px_16px_0_rgba(86,255,188,0.08)]">
                 <CardHeader>
                   <div className="flex justify-between items-start mb-4">
-                    <CardTitle className="text-2xl text-white group-hover:text-[#56ffbc] transition-colors">
+                    <CardTitle className="text-2xl text-[#56ffbc] group-hover:text-white transition-colors drop-shadow-[0_2px_8px_rgba(86,255,188,0.15)]">
                       {event.title}
                     </CardTitle>
                     <Badge className={getStatusBadge(event.status)}>{event.status}</Badge>
                   </div>
-                  <CardDescription className="text-gray-300 text-base">{event.description}</CardDescription>
+                  <CardDescription className="text-gray-200 text-base">{event.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="mt-auto">
-                  <div className="grid grid-cols-2 gap-4 mb-6 text-gray-300">
+                  <div className="grid grid-cols-2 gap-4 mb-6 text-gray-200">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-[#56ffbc]" />
                       <span>{event.date}</span>
@@ -226,7 +227,7 @@ function CompetitionEventsSection() {
                   <div className="flex justify-between items-center pt-4 border-t border-white/10">
                     <span className="text-sm text-gray-400">{event.participants.toLocaleString()} participants</span>
                     {event.status === "Active" && (
-                      <Badge className="bg-[#56ffbc] text-[#11113D] hover:bg-white cursor-pointer px-4 py-2 font-bold">
+                      <Badge className="bg-[#56ffbc] text-[#07073a] hover:bg-white cursor-pointer px-4 py-2 font-bold border border-[#56ffbc] shadow-[0_0_8px_2px_rgba(86,255,188,0.25)]">
                         Join Now
                       </Badge>
                     )}
@@ -437,7 +438,85 @@ export default function HomePage() {
         </section>
 
         {/* --- EVENTS SECTION --- */}
-        <CompetitionEventsSection />
+        <section id="events">
+          <CompetitionEventsSection />
+        </section>
+
+        {/* --- CONTACT US SECTION --- */}
+        <section className="py-8 px-4 bg-gradient-to-br from-[#07073a] to-[#0a0a4a]">
+          <div className="container mx-auto max-w-6xl">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Contact Us</h1>
+              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                Have questions about the competition? We're here to help!
+              </p>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-12">
+              {/* Contact Information */}
+              <div className="space-y-8">
+                <Card className="bg-white/10 backdrop-blur-sm border-[#56ffbc]/20">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-white">Get in Touch</CardTitle>
+                    <CardDescription className="text-gray-300">
+                      Reach out to us through any of the following channels
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <Mail className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="text-white font-semibold mb-1">Email</h3>
+                        <p className="text-gray-300">info@promptcompetition.pk</p>
+                        <p className="text-gray-300">support@promptcompetition.pk</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <Phone className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="text-white font-semibold mb-1">Phone</h3>
+                        <p className="text-gray-300">+92 21 1234 5678</p>
+                        <p className="text-gray-300">+92 42 8765 4321</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <MapPin className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="text-white font-semibold mb-1">Address</h3>
+                        <p className="text-gray-300">
+                          National Incubation Center
+                          <br />
+                          Lahore University of Management Sciences
+                          <br />
+                          Lahore, Punjab, Pakistan
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <Clock className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                      <div>
+                        <h3 className="text-white font-semibold mb-1">Support Hours</h3>
+                        <p className="text-gray-300">Monday - Friday: 9:00 AM - 6:00 PM PKT</p>
+                        <p className="text-gray-300">Saturday: 10:00 AM - 4:00 PM PKT</p>
+                        <p className="text-gray-300">Sunday: Closed</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Contact Form */}
+              <div>
+                <div className="bg-white/5 backdrop-blur-sm border border-[#56ffbc]/20 rounded-lg p-1">
+                  <ContactForm />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <Footer />
       </div>
