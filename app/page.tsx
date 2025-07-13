@@ -443,19 +443,43 @@ export default function HomePage() {
         </section>
 
         {/* --- CONTACT US SECTION --- */}
-        <section className="py-8 px-4 bg-gradient-to-br from-[#07073a] to-[#0a0a4a]">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-12">
+        <section className="relative py-8 px-4 bg-gradient-to-br from-[#07073a] to-[#0a0a4a] overflow-hidden">
+          {/* Animated Gradient Background */}
+          <motion.div
+            className="absolute inset-0 z-0 pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            style={{
+              background:
+                "radial-gradient(circle at 80% 10%, rgba(86,255,188,0.18) 0%, transparent 60%), " +
+                "radial-gradient(circle at 20% 80%, rgba(86,255,188,0.10) 0%, transparent 60%)",
+            }}
+            transition={{ duration: 2 }}
+          />
+          <div className="container mx-auto max-w-6xl relative z-10">
+            <motion.div
+              className="text-center mb-12"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.7 }}
+            >
               <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Contact Us</h1>
               <p className="text-xl text-gray-300 max-w-3xl mx-auto">
                 Have questions about the competition? We're here to help!
               </p>
-            </div>
+            </motion.div>
 
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Contact Information */}
-              <div className="space-y-8">
-                <Card className="bg-white/10 backdrop-blur-sm border-[#56ffbc]/20">
+              <motion.div
+                className="space-y-8"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+              >
+                <Card className="bg-white/10 backdrop-blur-sm border-[#56ffbc]/20 shadow-lg hover:shadow-[0_0_32px_4px_rgba(86,255,188,0.15)] transition-shadow duration-500">
                   <CardHeader>
                     <CardTitle className="text-2xl text-white">Get in Touch</CardTitle>
                     <CardDescription className="text-gray-300">
@@ -463,26 +487,26 @@ export default function HomePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-start gap-4">
-                      <Mail className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                    <motion.div className="flex items-start gap-4" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }}>
+                      <Mail className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0 animate-pulse" />
                       <div>
                         <h3 className="text-white font-semibold mb-1">Email</h3>
                         <p className="text-gray-300">info@promptcompetition.pk</p>
                         <p className="text-gray-300">support@promptcompetition.pk</p>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="flex items-start gap-4">
-                      <Phone className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                    <motion.div className="flex items-start gap-4" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.4 }}>
+                      <Phone className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0 animate-pulse" />
                       <div>
                         <h3 className="text-white font-semibold mb-1">Phone</h3>
                         <p className="text-gray-300">+92 21 1234 5678</p>
                         <p className="text-gray-300">+92 42 8765 4321</p>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="flex items-start gap-4">
-                      <MapPin className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                    <motion.div className="flex items-start gap-4" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }}>
+                      <MapPin className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0 animate-pulse" />
                       <div>
                         <h3 className="text-white font-semibold mb-1">Address</h3>
                         <p className="text-gray-300">
@@ -493,27 +517,32 @@ export default function HomePage() {
                           Lahore, Punjab, Pakistan
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="flex items-start gap-4">
-                      <Clock className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0" />
+                    <motion.div className="flex items-start gap-4" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.6 }}>
+                      <Clock className="h-6 w-6 text-[#56ffbc] mt-1 flex-shrink-0 animate-pulse" />
                       <div>
                         <h3 className="text-white font-semibold mb-1">Support Hours</h3>
                         <p className="text-gray-300">Monday - Friday: 9:00 AM - 6:00 PM PKT</p>
                         <p className="text-gray-300">Saturday: 10:00 AM - 4:00 PM PKT</p>
                         <p className="text-gray-300">Sunday: Closed</p>
                       </div>
-                    </div>
+                    </motion.div>
                   </CardContent>
                 </Card>
-              </div>
+              </motion.div>
 
               {/* Contact Form */}
-              <div>
-                <div className="bg-white/5 backdrop-blur-sm border border-[#56ffbc]/20 rounded-lg p-1">
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+              >
+                <div className="bg-white/5 backdrop-blur-sm border border-[#56ffbc]/20 rounded-lg p-1 shadow-lg hover:shadow-[0_0_32px_4px_rgba(86,255,188,0.15)] transition-shadow duration-500">
                   <ContactForm />
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
