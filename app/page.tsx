@@ -312,7 +312,7 @@ export default function HomePage() {
                       className="px-5 py-6 h-[60px] rounded-xl border-2 border-[#56ffbc]/50 bg-transparent hover:bg-[#56ffbc]/10 text-[15px] font-medium text-[#56ffbc]"
                       asChild
                     >
-                      <Link href="/auth/login">
+                      <Link href="/auth/admin">
                         <Shield className="h-5 w-5 text-[#56ffbc] mr-2" />
                         <span>Admin Login</span>
                       </Link>
@@ -321,7 +321,7 @@ export default function HomePage() {
                       className="px-5 py-6 h-[60px] rounded-xl border-2 border-[#56ffbc]/50 dark:border-[#56ffbc]/50 bg-transparent hover:bg-[#56ffbc]/10 text-[15px] font-medium text-[#56ffbc]"
                       asChild
                     >
-                      <Link href="/auth/login">
+                      <Link href="/auth/participant">
                         <User className="h-5 w-5 mr-2" />
                         Participant Login
                       </Link>

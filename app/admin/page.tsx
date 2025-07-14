@@ -1,429 +1,393 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import type { Competition, Submission } from "@/types/auth"
-import { Plus, Users, Trophy, FileText, Settings, Eye, Download, Lock, Unlock, Play } from "lucide-react"
+import { useState } from "react";
+import {
+  Users, FileText, Award, Settings,
+  Lock, Unlock, Play, Plus, Upload, LogOut
+} from "lucide-react";
+import {
+  Button,
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
+  Badge,
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/ui";   // adjust import paths if you tree-shake primitives
 
+/* extra UI primitives */
+import { Input }             from "@/components/ui/input";
+import { Select,
+         SelectTrigger,
+         SelectContent,
+         SelectItem,
+         SelectValue }       from "@/components/ui/select";
+
+/* ---------- AdminDashboard ---------- */
 export default function AdminDashboard() {
-  const { user, logout } = useAuth()
-  const router = useRouter()
-  const [competitions, setCompetitions] = useState<Competition[]>([])
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [stats, setStats] = useState({
-    totalParticipants: 0,
-    totalSubmissions: 0,
-    pendingReviews: 0,
-  })
-  const [loading, setLoading] = useState(true)
+  /** 1 ▼  dummy data ----------------------------------------------------- */
+  const [participants, setParticipants] = useState(
+    Array.from({ length: 10 }, (_, i) => ({
+      id: i + 1,
+      name: `Participant ${i + 1}`,
+      email: `user${i + 1}@example.com`,
+      score: +(Math.random() * 100).toFixed(1),
+      status: Math.random() > 0.4 ? "Active" : "Inactive",
+    }))
+  );
+  
+  const [searchTerm, setSearchTerm]     = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "submitted" | "review">("all");
+  const [topCount, setTopCount]         = useState(10);
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/auth/login")
-      return
-    }
-
-    if (user.role !== "admin") {
-      router.push("/dashboard")
-      return
-    }
-
-    fetchData()
-  }, [user, router])
-
-  const fetchData = async () => {
-    try {
-      const [competitionsRes, submissionsRes, statsRes] = await Promise.all([
-        fetch("/api/admin/competitions"),
-        fetch("/api/admin/submissions"),
-        fetch("/api/admin/stats"),
-      ])
-
-      if (competitionsRes.ok) {
-        const competitionsData = await competitionsRes.json()
-        setCompetitions(competitionsData)
-      }
-
-      if (submissionsRes.ok) {
-        const submissionsData = await submissionsRes.json()
-        setSubmissions(submissionsData)
-      }
-
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
-        setStats(statsData)
-      }
-    } catch (error) {
-      console.error("Error fetching admin data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const toggleCompetitionLock = async (competitionId: string, isLocked: boolean) => {
-    try {
-      const response = await fetch(`/api/admin/competitions/${competitionId}/lock`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isLocked: !isLocked }),
+  const [problems, setProblems] = useState(
+    ["Classify Customer Feedback", "Generate Code Docs", "Summarise Meetings"].map(
+      (title, i) => ({
+        id: i + 1,
+        title,
+        description: `Draft description for “${title}”`,
       })
-
-      if (response.ok) {
-        fetchData() // Refresh data
-      }
-    } catch (error) {
-      console.error("Error toggling competition lock:", error)
-    }
-  }
-
-  const triggerEvaluation = async (competitionId: string) => {
-    try {
-      const response = await fetch(`/api/admin/competitions/${competitionId}/evaluate`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        fetchData() // Refresh data
-      }
-    } catch (error) {
-      console.error("Error triggering evaluation:", error)
-    }
-  }
-
-  const exportParticipantData = async () => {
-    try {
-      const response = await fetch("/api/admin/export/participants")
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = "participants.csv"
-        a.click()
-        window.URL.revokeObjectURL(url)
-      }
-    } catch (error) {
-      console.error("Error exporting participant data:", error)
-    }
-  }
-
-  const exportSubmissionData = async (competitionId?: string) => {
-    try {
-      const url = competitionId
-        ? `/api/admin/export/submissions?competitionId=${competitionId}`
-        : "/api/admin/export/submissions"
-      const response = await fetch(url)
-      if (response.ok) {
-        const blob = await response.blob()
-        const downloadUrl = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = downloadUrl
-        a.download = competitionId ? `submissions-${competitionId}.csv` : "all-submissions.csv"
-        a.click()
-        window.URL.revokeObjectURL(downloadUrl)
-      }
-    } catch (error) {
-      console.error("Error exporting submission data:", error)
-    }
-  }
-
-  if (!user || user.role !== "admin") return null
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
     )
-  }
+  );
 
+  const [rubrics, setRubrics] = useState(
+    ["Accuracy / 40", "Clarity / 20", "Robustness / 40"].map((title, i) => ({
+      id: i + 1,
+      title: `Rubric ${i + 1}`,
+      criteria: title,
+    }))
+  );
+
+  const [results, setResults] = useState(
+    Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1,
+      participant: `Participant ${i + 1}`,
+      problem: problems[i % problems.length].title,
+      score: +(Math.random() * 100).toFixed(1),
+    }))
+  );
+
+  /** 2 ▼  global controls ------------------------------------------------ */
+  const [submissionsLocked, setSubmissionsLocked] = useState(false);
+  const toggleLock = () => setSubmissionsLocked((s) => !s);
+  const triggerEvaluation = () =>
+    console.log("🔗  LLM evaluation trigger fired (stub)");
+
+  /** 3 ▼  tab-specific helpers ------------------------------------------ */
+  const addProblem = () =>
+    setProblems((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        title: `Problem ${prev.length + 1}`,
+        description: "New problem description",
+      },
+    ]);
+
+  const uploadRubric = () =>
+    setRubrics((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        title: `Rubric ${prev.length + 1}`,
+        criteria: "Uploaded rubric criteria",
+      },
+    ]);
+
+  /** 4 ▼  derived stats -------------------------------------------------- */
+  const stats = {
+    totalParticipants: participants.length,
+    submissions: results.length,
+    evaluated: results.filter((r) => r.score > 0).length,
+    pending: 658, // placeholder
+  };
+
+  /* ----------  UI  ---------- */
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600">Manage competitions and monitor submissions</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button onClick={() => router.push("/admin/competitions/new")}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Competition
-              </Button>
-              <Button variant="outline" onClick={logout}>
-                Logout
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50">
+      {/* header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <Badge variant="outline" className="border-red-300 text-red-700 px-3 py-1">
+              ADMIN
+            </Badge>
+            <button className="flex items-center text-sm text-gray-600 hover:text-gray-900">
+              <LogOut className="h-4 w-4 mr-2" /> Logout
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Participants</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* stats */}
+        <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+          {[
+            ["Total Participants", stats.totalParticipants, Users],
+            ["Submissions", stats.submissions, FileText],
+            ["Evaluated", stats.evaluated, Award],
+            ["Pending", stats.pending, Settings],
+          ].map(([label, value, Icon]) => (
+            <Card key={label as string} className="shadow-md">
+              <CardHeader className="bg-gradient-to-r from-[#d3fff1] to-[#b0ffe6] rounded-t-lg flex justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-800">{label}</CardTitle>
+                <Icon className="h-4 w-4 text-gray-700" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalParticipants}</div>
-                <p className="text-xs text-muted-foreground">Registered users</p>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold text-gray-900">{value}</div>
               </CardContent>
             </Card>
+          ))}
+        </section>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalSubmissions}</div>
-                <p className="text-xs text-muted-foreground">Across all competitions</p>
-              </CardContent>
-            </Card>
+        {/* controls */}
+        <Card className="shadow-md mb-10">
+          <CardHeader>
+            <CardTitle>Competition Controls</CardTitle>
+            <CardDescription>Lock submissions or launch batch evaluation</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={toggleLock}
+                className={
+                  submissionsLocked
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-[#56ffbc] text-gray-900 hover:bg-[#45e0a6]"
+                }
+              >
+                {submissionsLocked ? (
+                  <>
+                    <Unlock className="h-4 w-4 mr-2" />
+                    Unlock Submissions
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Lock Submissions
+                  </>
+                )}
+              </Button>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingReviews}</div>
-                <p className="text-xs text-muted-foreground">Flagged for manual review</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Competitions</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{competitions.filter((c) => c.isActive).length}</div>
-                <p className="text-xs text-muted-foreground">Currently running</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Export</CardTitle>
-                <CardDescription>Export participant and submission data</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-transparent"
-                  onClick={exportParticipantData}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export All Participants
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-transparent"
-                  onClick={() => exportSubmissionData()}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export All Submissions
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Common administrative tasks</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-transparent"
-                  onClick={() => router.push("/admin/reviews")}
-                >
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Manual Review Panel
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-transparent"
-                  onClick={() => router.push("/admin/participants")}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Participants
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Competitions Management */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Competitions</h2>
-              <Button onClick={() => router.push("/admin/competitions/new")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create New
+              <Button
+                variant="outline"
+                onClick={triggerEvaluation}
+                className="border-[#56ffbc] hover:bg-[#e6fff6]"
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Trigger LLM Evaluation
               </Button>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="grid gap-6">
-              {competitions.map((competition) => {
-                const competitionSubmissions = submissions.filter((s) => s.competitionId === competition.id)
-                const deadline = new Date(competition.deadline)
-                const isExpired = deadline < new Date()
+        {/* tabs */}
+        <Tabs defaultValue="participants" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 rounded-lg overflow-hidden">
+            <TabsTrigger value="participants">Participants</TabsTrigger>
+            <TabsTrigger value="problems">Problems</TabsTrigger>
+            <TabsTrigger value="rubrics">Rubrics</TabsTrigger>
+            <TabsTrigger value="results">Results</TabsTrigger>
+          </TabsList>
 
-                return (
-                  <Card key={competition.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl">{competition.title}</CardTitle>
-                          <CardDescription className="mt-2">{competition.description}</CardDescription>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="flex gap-2">
-                            <Badge variant={competition.isActive ? "default" : "secondary"}>
-                              {competition.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                            <Badge variant={competition.isLocked ? "destructive" : "outline"}>
-                              {competition.isLocked ? "Locked" : "Open"}
-                            </Badge>
-                            {isExpired && <Badge variant="destructive">Expired</Badge>}
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center mb-4">
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-600">Submissions:</span>
-                            <span className="font-medium ml-2">{competitionSubmissions.length}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Deadline:</span>
-                            <span className="font-medium ml-2">{deadline.toLocaleDateString()}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Avg Score:</span>
-                            <span className="font-medium ml-2">
-                              {competitionSubmissions.length > 0
-                                ? (
-                                    competitionSubmissions.reduce((acc, sub) => acc + sub.averageScore, 0) /
-                                    competitionSubmissions.length
-                                  ).toFixed(1)
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+          {/* Participants */}
+          <TabsContent value="participants">
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle>Participants</CardTitle>
+                <CardDescription>All registered users.</CardDescription>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-[#d3fff1]">
+                    <tr>
+                      {["ID", "Name", "Email", "Score", "Status"].map((h) => (
+                        <th key={h} className="px-4 py-2 text-left">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {participants.map((p) => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2">{p.id}</td>
+                        <td className="px-4 py-2">{p.name}</td>
+                        <td className="px-4 py-2">{p.email}</td>
+                        <td className="px-4 py-2 text-center">{p.score}</td>
+                        <td className="px-4 py-2">
+                          <Badge
+                            variant="outline"
+                            className={
+                              p.status === "Active"
+                                ? "border-green-300 text-green-700"
+                                : "border-yellow-300 text-yellow-700"
+                            }
+                          >
+                            {p.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/admin/competitions/${competition.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/admin/competitions/${competition.id}/edit`)}
-                        >
-                          <Settings className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={competition.isLocked ? "default" : "destructive"}
-                          onClick={() => toggleCompetitionLock(competition.id, competition.isLocked)}
-                        >
-                          {competition.isLocked ? (
-                            <Unlock className="h-4 w-4 mr-2" />
-                          ) : (
-                            <Lock className="h-4 w-4 mr-2" />
-                          )}
-                          {competition.isLocked ? "Unlock" : "Lock"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => triggerEvaluation(competition.id)}
-                          disabled={competitionSubmissions.length === 0}
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          Evaluate All
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => exportSubmissionData(competition.id)}
-                          disabled={competitionSubmissions.length === 0}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Export Data
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
+          {/* Problems */}
+          <TabsContent value="problems">
+            <Card className="shadow-md">
+              <CardHeader className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Problems</CardTitle>
+                  <CardDescription>Create or modify challenges.</CardDescription>
+                </div>
+                <Button onClick={addProblem} className="bg-[#56ffbc] text-gray-900 hover:bg-[#45e0a6]">
+                  <Plus className="h-4 w-4 mr-2" /> Add Problem
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {problems.map((prob) => (
+                  <div key={prob.id} className="p-4 border rounded-md bg-white hover:shadow">
+                    <h4 className="font-semibold">{prob.title}</h4>
+                    <p className="text-sm text-gray-600">{prob.description}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Recent Activity */}
-          <Card>
+          {/* Rubrics */}
+          <TabsContent value="rubrics">
+            <Card className="shadow-md">
+              <CardHeader className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Rubrics</CardTitle>
+                  <CardDescription>Upload or edit evaluation rubrics.</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={uploadRubric}
+                  className="border-[#56ffbc] hover:bg-[#e6fff6]"
+                >
+                  <Upload className="h-4 w-4 mr-2" /> Upload Rubric
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {rubrics.map((r) => (
+                  <div key={r.id} className="p-4 border rounded-md bg-white hover:shadow">
+                    <h4 className="font-semibold">{r.title}</h4>
+                    <p className="text-sm text-gray-600">{r.criteria}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Results */}
+        <TabsContent value="results">
+          <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>Recent Submissions</CardTitle>
-              <CardDescription>Latest participant submissions across all competitions</CardDescription>
+              <CardTitle>Top Submissions</CardTitle>
+              <CardDescription>
+                View and manually review the highest-scoring submissions
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {submissions.slice(0, 10).map((submission) => {
-                  const competition = competitions.find((c) => c.id === submission.competitionId)
-                  return (
-                    <div
-                      key={submission.id}
-                      className="flex justify-between items-center py-3 border-b last:border-b-0"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{competition?.title || "Unknown Competition"}</h4>
-                        <p className="text-sm text-gray-600">
-                          Submitted: {new Date(submission.submittedAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-primary">{submission.averageScore.toFixed(1)}</div>
-                          <div className="text-xs text-gray-600">Score</div>
-                        </div>
-                        {submission.flaggedForReview && <Badge variant="outline">Under Review</Badge>}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/admin/submissions/${submission.id}`)}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
+
+            {/* --- controls ------------------------------------------------------- */}
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-4 items-center">
+                {/* search */}
+                <Input
+                  placeholder="Search submissions…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-60"
+                />
+
+                {/* status filter */}
+                <Select
+                  value={statusFilter}
+                  onValueChange={(v) => setStatusFilter(v)}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="submitted">Submitted</SelectItem>
+                    <SelectItem value="review">Under Review</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* top-N selector */}
+                <Select value={topCount.toString()} onValueChange={(v) => setTopCount(+v)}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue placeholder="Top 10" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 25, 50].map((n) => (
+                      <SelectItem key={n} value={n.toString()}>
+                        Top {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* --- table -------------------------------------------------------- */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-[#d3fff1]">
+                    <tr>
+                      {["#", "Participant", "Problem", "Score", "Status"].map((h) => (
+                        <th key={h} className="px-4 py-2 text-left">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {results
+                      /* apply filters */
+                      .filter((r) =>
+                        statusFilter === "all" ? true : r.status === statusFilter
+                      )
+                      .filter((r) =>
+                        [r.participant, r.problem, r.score.toString()]
+                          .join(" ")
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase())
+                      )
+                      /* sort and slice */
+                      .sort((a, b) => b.score - a.score)
+                      .slice(0, topCount)
+                      .map((res, idx) => (
+                        <tr key={res.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2">{idx + 1}</td>
+                          <td className="px-4 py-2">{res.participant}</td>
+                          <td className="px-4 py-2">{res.problem}</td>
+                          <td className="px-4 py-2">{res.score}</td>
+                          <td className="px-4 py-2">
+                            <Badge
+                              variant="outline"
+                              className={
+                                res.status === "submitted"
+                                  ? "border-green-300 text-green-700"
+                                  : "border-yellow-300 text-yellow-700"
+                              }
+                            >
+                              {res.status === "submitted" ? "Submitted" : "Under Review"}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
+
+        </Tabs>
       </main>
     </div>
-  )
+  );
 }

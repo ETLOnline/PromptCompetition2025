@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
+import type { NextApiRequest } from "next"
 import type { Competition } from "@/types/auth"
+import type { NextRequestContext } from "next/server"
 
-// Mock database - in production, use a real database
+// Mock database
 const competitions: Competition[] = [
   {
     id: "comp-1",
@@ -20,16 +22,17 @@ const competitions: Competition[] = [
   },
 ]
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const competition = competitions.find((c) => c.id === params.id)
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<Record<string, string>> }
+) {
+  const { id } = await context.params
 
-    if (!competition) {
-      return NextResponse.json({ error: "Competition not found" }, { status: 404 })
-    }
+  const competition = competitions.find((c) => c.id === id)
 
-    return NextResponse.json(competition)
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch competition" }, { status: 500 })
+  if (!competition) {
+    return NextResponse.json({ error: "Competition not found" }, { status: 404 })
   }
+
+  return NextResponse.json(competition)
 }
