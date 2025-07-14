@@ -5,12 +5,15 @@ import type React from "react"
 import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
+
+// HomeIcon for the "Back to Home" link
+const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -59,81 +62,71 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Register</CardTitle>
-          <CardDescription>Create your account to participate in the competition</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#07073a] via-[#121244] to-black p-4 font-sans">
+      {/* Back to Home Link */}
+      <Link 
+        href="/" 
+        className="absolute top-6 left-6 flex items-center gap-2 text-white/70 hover:text-[#56ffbc] transition-colors duration-300"
+      >
+        <HomeIcon className="h-5 w-5" />
+        <span>Back to Home</span>
+      </Link>
+      {/* Glassmorphism Card with new color tint */}
+      <div className="w-full max-w-md rounded-2xl bg-[rgba(38,38,92,0.25)] backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-300">
+        <div className="p-8 text-white">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#56ffbc]">Register</h1>
+            <p className="text-white/70 mt-2">Create your account to participate in the competition</p>
+          </div>
+          {/* Registration Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message Display */}
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <div className="bg-red-500/40 border border-red-500/60 text-red-100 px-4 py-3 rounded-lg text-center text-sm">
+                <p>{error}</p>
+              </div>
             )}
-
+            {/* Name Input */}
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
+              <label htmlFor="name" className="text-sm font-medium text-white/80">Full Name</label>
+              <input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
             </div>
-
+            {/* Email Input */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+              <label htmlFor="email" className="text-sm font-medium text-white/80">Email</label>
+              <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
             </div>
-
+            {/* Institution Input */}
             <div className="space-y-2">
-              <Label htmlFor="institution">Institution/Organization</Label>
-              <Input
-                id="institution"
-                name="institution"
-                type="text"
-                value={formData.institution}
-                onChange={handleChange}
-                required
-              />
+              <label htmlFor="institution" className="text-sm font-medium text-white/80">Institution/Organization</label>
+              <input id="institution" name="institution" type="text" value={formData.institution} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
             </div>
-
+            {/* Password Input */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
+              <label htmlFor="password" className="text-sm font-medium text-white/80">Password</label>
+              <input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
             </div>
-
+            {/* Confirm Password Input */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-              />
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-white/80">Confirm Password</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
             </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
+            {/* Submit Button with new Aquamarine color */}
+            <button type="submit" className="w-full py-3 bg-[#11998e] text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] focus:ring-offset-2 focus:ring-offset-[#07073a] disabled:bg-[#56ffbc]/50 disabled:cursor-not-allowed transition-all duration-300" disabled={loading}>
               {loading ? "Creating Account..." : "Register"}
-            </Button>
+            </button>
           </form>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="text-primary hover:underline">
+          <div className="mt-6 text-center">
+            <p className="text-sm text-white/70">
+              Already have an account?{' '}
+              <Link href="/auth/login" className="text-[#56ffbc] hover:underline">
                 Sign in here
               </Link>
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

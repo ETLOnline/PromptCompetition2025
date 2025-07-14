@@ -1,7 +1,4 @@
 "use client"
-
-import type React from "react"
-
 import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
@@ -15,30 +12,47 @@ const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-export default function ParticipantLoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  const router = useRouter()
+
+// --- Main Login Component ---
+
+export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const success = await login(email, password)
-    if (success) {
-      router.push("/dashboard")
-    } else {
-      setError("Invalid email or password")
+    // Client-side check for admin email
+    if (email !== "admin@test.com") {
+      setError("Only admin@test.com is allowed for admin login.");
+      setLoading(false);
+      return;
     }
-    setLoading(false)
-  }
+
+    try {
+        const success = await login(email, password);
+        if (success) {
+          router.push("/admin");
+        } else {
+          setError("Invalid credentials. Hint: The password is 'password'.");
+        }
+    } catch (err) {
+        setError("An unexpected error occurred. Please try again.");
+    }
+
+    setLoading(false);
+  };
 
   return (
+    // Main container with new navy blue gradient background
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#07073a] via-[#121244] to-black p-4 font-sans">
+      
       {/* Back to Home Link */}
       <Link 
         href="/" 
@@ -47,16 +61,19 @@ export default function ParticipantLoginPage() {
         <HomeIcon className="h-5 w-5" />
         <span>Back to Home</span>
       </Link>
+
       {/* Glassmorphism Card with new color tint */}
       <div className="w-full max-w-md rounded-2xl bg-[rgba(38,38,92,0.25)] backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-300">
         <div className="p-8 text-white">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#56ffbc]">Sign In</h1>
-            <p className="text-white/70 mt-2">Enter your credentials to access the competition platform</p>
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#56ffbc]">Admin Sign In</h1>
+            <p className="text-white/70 mt-2">Admin access only. Please enter your credentials.</p>
           </div>
+
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            
             {/* Email Input */}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-white/80">Email</label>
@@ -66,9 +83,11 @@ export default function ParticipantLoginPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
+                placeholder="admin@test.com"
                 className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
               />
             </div>
+
             {/* Password Input */}
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium text-white/80">Password</label>
@@ -78,15 +97,18 @@ export default function ParticipantLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                placeholder="••••••••••"
                 className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
               />
             </div>
+
             {/* Error Message Display */}
             {error && (
               <div className="bg-red-500/40 border border-red-500/60 text-red-100 px-4 py-3 rounded-lg text-center text-sm">
                 <p>{error}</p>
               </div>
             )}
+
             {/* Submit Button with new Aquamarine color */}
             <button 
               type="submit" 
@@ -96,16 +118,8 @@ export default function ParticipantLoginPage() {
               {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
-          <div className="mt-6 text-center">
-            <p className="text-sm text-white/70">
-              Don't have an account?{' '}
-              <Link href="/auth/register" className="text-[#56ffbc] hover:underline">
-                Register here
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
