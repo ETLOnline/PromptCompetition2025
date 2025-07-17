@@ -1,14 +1,14 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
 import type { User } from "@/types/auth"
+import { createBrowserClient } from "@supabase/ssr"
 
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<boolean>
-  register: (email: string, password: string, name: string, institution: string) => Promise<boolean>
+  register: (email: string, password: string, full_name: string, institution: string) => Promise<boolean>
   logout: () => void
   loading: boolean
 }
@@ -19,8 +19,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   useEffect(() => {
-    // Check for existing session
     const storedUser = localStorage.getItem("user")
     if (storedUser) {
       setUser(JSON.parse(storedUser))
@@ -29,16 +33,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate successful login without backend
     const mockUser: User = {
       id: "mock-user-" + Date.now(),
       email: email,
       name: "Test User",
       institution: "Mock University",
-      role: "participant", // Default to participant role for testing
+      role: "participant",
       createdAt: new Date().toISOString(),
     }
-    // For admin testing, you can use a specific email, e.g., "admin@test.com"
+
     if (email === "admin@test.com") {
       mockUser.role = "admin"
       mockUser.name = "Test Admin"
@@ -50,18 +53,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true
   }
 
-  const register = async (email: string, password: string, name: string, institution: string): Promise<boolean> => {
-    // Simulate successful registration without backend
-    const mockUser: User = {
-      id: "mock-user-" + Date.now(),
-      email: email,
-      name: name,
-      institution: institution,
-      role: "participant", // Default to participant role for testing
-      createdAt: new Date().toISOString(),
+  const register = async (
+    email: string,
+    password: string,
+    full_name: string,
+    institution: string
+  ): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${location.origin}/auth/callback`,
+        data: {
+          full_name,
+          institution,
+        },
+      },
+    })
+
+    if (error) {
+      console.error("SignUp error:", error.message)
+      return false
     }
-    setUser(mockUser)
-    localStorage.setItem("user", JSON.stringify(mockUser))
+
+    const sessionRes = await supabase.auth.getSession()
+    const userId = sessionRes.data.session?.user.id
+
+    if (userId) {
+      const { error: insertError } = await supabase.from("profiles").insert({
+        user_id: userId,
+        email,
+        full_name,
+        institution,
+      })
+
+      if (insertError) {
+        console.error("Insert to profiles error:", insertError.message)
+        return false
+      }
+    }
+
     return true
   }
 
@@ -70,7 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("user")
   }
 
-  return <AuthContext.Provider value={{ user, login, register, logout, loading }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {
