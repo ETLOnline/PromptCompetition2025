@@ -24,7 +24,7 @@ export default function NewCompetitionPage() {
     description: "",
     problemStatement: "",
     rubric: "",
-    evaluationCriteria: "",
+    guidelines: "",
     deadline: "",
     isActive: true,
   })
@@ -117,19 +117,6 @@ export default function NewCompetitionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Brief description of the competition"
-                    rows={3}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="problemStatement">Problem Statement</Label>
                   <Textarea
                     id="problemStatement"
@@ -143,19 +130,6 @@ export default function NewCompetitionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="evaluationCriteria">Evaluation Criteria</Label>
-                  <Textarea
-                    id="evaluationCriteria"
-                    name="evaluationCriteria"
-                    value={formData.evaluationCriteria}
-                    onChange={handleChange}
-                    placeholder="Criteria that will be used to evaluate submissions"
-                    rows={4}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="rubric">Detailed Rubric</Label>
                   <Textarea
                     id="rubric"
@@ -164,6 +138,19 @@ export default function NewCompetitionPage() {
                     onChange={handleChange}
                     placeholder="Detailed rubric for LLM-based evaluation"
                     rows={6}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Submission Guidelines</Label>
+                  <Textarea
+                    id="guidelines"
+                    name="guidelines"
+                    value={formData.guidelines}
+                    onChange={handleChange}
+                    placeholder="Submission guideline highlights for this challenge"
+                    rows={4}
                     required
                   />
                 </div>
