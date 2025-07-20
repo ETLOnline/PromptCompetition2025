@@ -9,6 +9,8 @@ import { signOut } from "firebase/auth";
 // Define the shape of the auth context
 interface AuthContextType {
   user: User | null;
+  role: string | null; // Add role to context
+
   signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>; // Added logout
@@ -22,12 +24,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Auth provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null); // Add role state
   const [loading, setLoading] = useState(true);
 
   // Listen to auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        // Get custom claims (role) from ID token
+        const tokenResult = await currentUser.getIdTokenResult(true); // force refresh
+        setRole(typeof tokenResult.claims.role === 'string' ? tokenResult.claims.role : null);
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -133,7 +143,7 @@ addDocumentWithSpecificId();
   };
 
   return (
-    <AuthContext.Provider value={{ user, signUp, signIn, logout, signInWithGoogle, loading }}>
+    <AuthContext.Provider value={{ user, role, signUp, signIn, logout, signInWithGoogle, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

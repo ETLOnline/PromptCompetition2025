@@ -10,7 +10,7 @@ import type { Competition, Submission } from "@/types/auth"
 import { Plus, Users, Trophy, FileText, Settings, Eye, Download, Lock, Unlock, Play } from "lucide-react"
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth()
+  const { user, role, logout } = useAuth()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -26,14 +26,13 @@ export default function AdminDashboard() {
       router.push("/auth/login")
       return
     }
-
-    if (user.role !== "admin") {
+    if (role !== "admin") {
       router.push("/dashboard")
       return
     }
 
     fetchData()
-  }, [user, router])
+  }, [user, role, router])
 
   const fetchData = async () => {
     try {
@@ -131,7 +130,7 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!user || user.role !== "admin") return null
+  if (!user || role !== "admin") return null
 
   if (loading) {
     return (

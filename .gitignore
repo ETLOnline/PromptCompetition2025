@@ -3,12 +3,15 @@
 # dependencies
 /node_modules
 
+serviceAccountKey.json
+
 # next.js
 /.next/
 /out/
 
 # production
 /build
+
 
 # debug
 npm-debug.log*
