@@ -14,6 +14,10 @@ import { Switch } from "@/components/ui/switch"
 import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
+// -------------------------------- firebase --------------------------------
+import { db } from "@/lib/firebase"
+import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
+
 export default function NewCompetitionPage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -26,8 +30,40 @@ export default function NewCompetitionPage() {
     rubric: "",
     guidelines: "",
     deadline: "",
-    isActive: true,
   })
+
+const getLatestCustomID = async () => {
+  const querySnapshot = await getDocs(collection(db, "testing"))
+
+  const ids: number[] = []
+
+  querySnapshot.forEach((doc) => {
+    const id = doc.id
+    const numericID = parseInt(id, 10)
+    if (!isNaN(numericID)) {
+      ids.push(numericID)
+    }
+  })
+
+    if (ids.length === 0) return "01"
+
+    const maxID = Math.max(...ids)
+    const nextID = (maxID + 1).toString()
+
+    return nextID // e.g., "04" if "03" was the latest
+  }
+
+  const uploadToFirestore = async () => {
+    let ID = await getLatestCustomID();
+
+    await setDoc(doc(db, "testing", ID), {
+        title: formData.title,
+        problemStatement: formData.problemStatement,
+        rubric: formData.rubric,
+        guidelines: formData.guidelines,
+        deadline: Timestamp.fromDate(new Date(formData.deadline)),
+      })
+  }
 
   useEffect(() => {
     if (!user) {
@@ -143,7 +179,7 @@ export default function NewCompetitionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Submission Guidelines</Label>
+                  <Label htmlFor="guidelines">Submission Guidelines</Label>
                   <Textarea
                     id="guidelines"
                     name="guidelines"
@@ -166,18 +202,8 @@ export default function NewCompetitionPage() {
                     required
                   />
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: checked }))}
-                  />
-                  <Label htmlFor="isActive">Make competition active immediately</Label>
-                </div>
-
                 <div className="flex gap-4">
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading} onClick={uploadToFirestore}>
                     {loading ? "Creating..." : "Create Competition"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => router.push("/admin")}>
