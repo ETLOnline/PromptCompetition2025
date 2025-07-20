@@ -1,11 +1,9 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import React, { useState } from "react";
+import { useAuth } from "@/components/auth-provider";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // HomeIcon for the "Back to Home" link
 const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -16,50 +14,30 @@ const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    institution: "",
-    password: "",
-    confirmPassword: "",
-  })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
-  const router = useRouter()
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      setLoading(false)
-      return
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await signUp(email, password, fullName, institution);
+      // Next.js router does not support passing state like react-router, so use query param
+      router.push("/auth/login");
+    } catch (err: any) {
+      setError(err.message || "Failed to sign up. Please check your details.");
+    } finally {
+      setLoading(false);
     }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long")
-      setLoading(false)
-      return
-    }
-
-    const success = await register(formData.email, formData.password, formData.name, formData.institution)
-    if (success) {
-      router.push("/dashboard")
-    } else {
-      setError("Registration failed. Email may already be in use.")
-    }
-    setLoading(false)
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }))
-  }
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#07073a] via-[#121244] to-black p-4 font-sans">
@@ -89,29 +67,88 @@ export default function RegisterPage() {
             )}
             {/* Name Input */}
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium text-white/80">Full Name</label>
-              <input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
+              <label htmlFor="fullName" className="text-sm font-medium text-white/80">Full Name</label>
+              <input id="fullName" name="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" disabled={loading} />
             </div>
             {/* Email Input */}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-white/80">Email</label>
-              <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
+              <input id="email" name="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" disabled={loading} />
             </div>
             {/* Institution Input */}
             <div className="space-y-2">
               <label htmlFor="institution" className="text-sm font-medium text-white/80">Institution/Organization</label>
-              <input id="institution" name="institution" type="text" value={formData.institution} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
+              <input id="institution" name="institution" type="text" value={institution} onChange={e => setInstitution(e.target.value)} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" disabled={loading} />
             </div>
             {/* Password Input */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2 relative">
               <label htmlFor="password" className="text-sm font-medium text-white/80">Password</label>
-              <input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
-            </div>
-            {/* Confirm Password Input */}
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300 pr-12"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-[#56ffbc] focus:outline-none"
+                tabIndex={0}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  // Eye Off Icon
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575m2.1-2.1A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 2.21-.715 4.25-1.925 5.925M15 12a3 3 0 11-6 0 3 3 0 016 0zM3 3l18 18" /></svg>
+                ) : (
+                  // Eye Icon
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1.5 12S5.25 5.25 12 5.25 22.5 12 22.5 12 18.75 18.75 12 18.75 1.5 12 1.5 12z" /><circle cx="12" cy="12" r="3" /></svg>
+                )}
+              </button>
+            </div> */}
+
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-white/80">Confirm Password</label>
-              <input id="confirmPassword" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300" />
+              <label htmlFor="password" className="text-sm font-medium text-white/80">
+                Password
+              </label>
+
+              <div className="relative flex items-center">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300 pr-12"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 text-white/60 hover:text-[#56ffbc] focus:outline-none"
+                  tabIndex={0}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    // Eye Off Icon
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575m2.1-2.1A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 2.21-.715 4.25-1.925 5.925M15 12a3 3 0 11-6 0 3 3 0 016 0zM3 3l18 18" />
+                    </svg>
+                  ) : (
+                    // Eye Icon
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1.5 12S5.25 5.25 12 5.25 22.5 12 22.5 12 18.75 18.75 12 18.75 1.5 12 1.5 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
+
             {/* Submit Button with new Aquamarine color */}
             <button type="submit" className="w-full py-3 bg-[#11998e] text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] focus:ring-offset-2 focus:ring-offset-[#07073a] disabled:bg-[#56ffbc]/50 disabled:cursor-not-allowed transition-all duration-300" disabled={loading}>
               {loading ? "Creating Account..." : "Register"}
@@ -128,5 +165,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

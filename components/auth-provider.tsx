@@ -1,117 +1,125 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
-import type { User } from "@/types/auth"
-import { createBrowserClient } from "@supabase/ssr"
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, db } from '../firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, setDoc, collection } from 'firebase/firestore';
+import { signOut } from "firebase/auth";
 
+// Define the shape of the auth context
 interface AuthContextType {
-  user: User | null
-  login: (email: string, password: string) => Promise<boolean>
-  register: (email: string, password: string, full_name: string, institution: string) => Promise<boolean>
-  logout: () => void
-  loading: boolean
+  user: User | null;
+  signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>; // Added logout
+  loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+// Create the auth context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+// Auth provider component
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
+  // Listen to auth state changes
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-    setLoading(false)
-  }, [])
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const mockUser: User = {
-      id: "mock-user-" + Date.now(),
-      email: email,
-      name: "Test User",
-      institution: "Mock University",
-      role: "participant",
-      createdAt: new Date().toISOString(),
-    }
+  // Sign-up function
+  const signUp = async (email: string, password: string, fullName: string, institution: string) => {
+    try {
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    if (email === "admin@test.com") {
-      mockUser.role = "admin"
-      mockUser.name = "Test Admin"
-      mockUser.institution = "Competition Admin"
-    }
+      // console.log('hello');
+      // console.log(db);
 
-    setUser(mockUser)
-    localStorage.setItem("user", JSON.stringify(mockUser))
-    return true
-  }
+// Now your addDocumentWithSpecificId function will work!
+async function addDocumentWithSpecificId() {
+try {
+// 'db' is now correctly the FirebaseFirestore instance
+const usersCollectionRef = collection(db, "users");
 
-  const register = async (
-    email: string,
-    password: string,
-    full_name: string,
-    institution: string
-  ): Promise<boolean> => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
-        data: {
-          full_name,
-          institution,
-        },
-      },
-    })
+// Create a document reference with a specific ID, then set the data
+await setDoc(doc(usersCollectionRef, user.uid), {
+  fullName,
+  email,
+  institution,
+  createdAt: new Date().toISOString(),
+});
 
-    if (error) {
-      console.error("SignUp error:", error.message)
-      return false
-    }
+// console.log("Document successfully written with ID: ", user.uid);
+} catch (e) {
+console.error("Error writing document: ", e);
+}
+}
 
-    const sessionRes = await supabase.auth.getSession()
-    const userId = sessionRes.data.session?.user.id
+// Call the function to test
+addDocumentWithSpecificId();        
 
-    if (userId) {
-      const { error: insertError } = await supabase.from("profiles").insert({
-        user_id: userId,
-        email,
-        full_name,
-        institution,
-      })
+      // console.log('hello2');
 
-      if (insertError) {
-        console.error("Insert to profiles error:", insertError.message)
-        return false
+    } catch (error: any) {
+      // Map Firebase error codes to user-friendly messages
+      let errorMessage = 'Failed to sign up. Please try again.';
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already registered.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email format.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Use at least 6 characters.';
+      } else if (error.code === 'permission-denied') {
+        errorMessage = 'Database access denied. Please check Firestore rules.';
       }
+      throw new Error(errorMessage);
     }
+  };
 
-    return true
-  }
+  // Sign-in function
+  const signIn = async (email: string, password: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      let errorMessage = 'Failed to sign in. Please check your credentials.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = 'Invalid email or password.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email format.';
+      }
+      throw new Error(errorMessage);
+    }
+  };
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("user")
-  }
+  // Logout function
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-      {children}
+    <AuthContext.Provider value={{ user, signUp, signIn, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+// Custom hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-}
+  return context;
+};
