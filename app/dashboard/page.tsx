@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import type { Competition, Submission } from "@/types/auth"
 import { Clock, FileText, Trophy, User } from "lucide-react"
+import { signOut } from "firebase/auth";
+
 
 /**
  * DashboardPage – themed with calming gradient background, white cards, soft shadows,
@@ -22,7 +24,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth/login")
+      router.push("/")
       return
     }
 
@@ -88,7 +90,14 @@ export default function DashboardPage() {
               <User className="h-4 w-4" />
               {user.institution}
             </div>
-            <Button variant="outline" onClick={logout} className="hover:bg-gray-100">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await logout();
+                router.push("/"); // or "/app" if that's your home
+              }}
+              className="hover:bg-gray-100"
+            >
               Logout
             </Button>
           </div>
