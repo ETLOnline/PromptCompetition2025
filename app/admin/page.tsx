@@ -18,6 +18,7 @@ export default function AdminDashboard() {
   })
   const [loading, setLoading] = useState(true)
 
+
   useEffect(() => {
     if (!user) {
       router.push("/auth/login")
@@ -28,7 +29,8 @@ export default function AdminDashboard() {
       return
     }
     fetchData()
-  }, [user, router])
+  }, [user, role, router])
+
 
   const fetchData = async () => {
     try {
@@ -69,7 +71,7 @@ export default function AdminDashboard() {
   const exportSubmissionData = async (competitionId?: string) => {
     try {
       const url = competitionId
-        ? `/api/admin/export/submissions?competitionId=${competitionId}`
+        ? /api/admin/export/submissions?competitionId=${competitionId}
         : "/api/admin/export/submissions"
       const response = await fetch(url)
       if (response.ok) {
@@ -77,7 +79,7 @@ export default function AdminDashboard() {
         const downloadUrl = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = downloadUrl
-        a.download = competitionId ? `submissions-${competitionId}.csv` : "all-submissions.csv"
+        a.download = competitionId ? submissions-${competitionId}.csv : "all-submissions.csv"
         a.click()
         window.URL.revokeObjectURL(downloadUrl)
       }
