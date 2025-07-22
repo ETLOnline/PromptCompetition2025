@@ -29,12 +29,21 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { use } from "react"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
+
+// Extended interface to include Firebase data
+interface ExtendedCompetition extends Competition {
+  guidelines?: string
+  rubric?: string
+  // Add any other Firebase fields you might have
+}
 
 export default function CompetitionPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
-  const [competition, setCompetition] = useState<Competition | null>(null)
+  const [competition, setCompetition] = useState<ExtendedCompetition | null>(null)
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [prompt, setPrompt] = useState("")
   const [llmOutput, setLlmOutput] = useState("")
@@ -59,25 +68,66 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
 
   const fetchCompetitionData = async () => {
     try {
-      const [competitionRes, submissionRes] = await Promise.all([
-        fetch(`/api/competitions/${resolvedParams.id}`),
-        fetch(`/api/submissions/competition/${resolvedParams.id}`),
-      ])
-
-      if (competitionRes.ok) {
-        const competitionData = await competitionRes.json()
+      // Fetch from Firebase first
+      const challengeRef = doc(db, "testing", resolvedParams.id)
+      const challengeSnap = await getDoc(challengeRef)
+      
+      let competitionData = null
+      
+      if (challengeSnap.exists()) {
+        const firebaseData = challengeSnap.data()
+        // Convert Firebase data to match your Competition interface
+        competitionData = {
+          id: resolvedParams.id,
+          title: firebaseData.title,
+          description: firebaseData.description,
+          problemStatement: firebaseData.description, // Using description as problemStatement
+          deadline: firebaseData.deadline?.toDate?.() || firebaseData.deadline,
+          isLocked: false, // Add your logic here
+          guidelines: firebaseData.guidelines,
+          rubric: firebaseData.rubric,
+          // Add other fields as needed
+        }
         setCompetition(competitionData)
-      }
+      } else {
+        // Fallback to API if Firebase doesn't have the data
+        const [competitionRes, submissionRes] = await Promise.all([
+          fetch(`/api/competitions/${resolvedParams.id}`),
+          fetch(`/api/submissions/competition/${resolvedParams.id}`),
+        ])
 
-      if (submissionRes.ok) {
-        const submissionData = await submissionRes.json()
-        setSubmission(submissionData)
-        if (submissionData) {
-          setPrompt(submissionData.prompt)
-          setLlmOutput(submissionData.llmOutput)
-          setHasTestedPrompt(true)
+        if (competitionRes.ok) {
+          competitionData = await competitionRes.json()
+          setCompetition(competitionData)
+        }
+
+        if (submissionRes.ok) {
+          const submissionData = await submissionRes.json()
+          setSubmission(submissionData)
+          if (submissionData) {
+            setPrompt(submissionData.prompt)
+            setLlmOutput(submissionData.llmOutput)
+            setHasTestedPrompt(true)
+          }
         }
       }
+
+      // Always try to fetch submission data from API
+      try {
+        const submissionRes = await fetch(`/api/submissions/competition/${resolvedParams.id}`)
+        if (submissionRes.ok) {
+          const submissionData = await submissionRes.json()
+          setSubmission(submissionData)
+          if (submissionData) {
+            setPrompt(submissionData.prompt)
+            setLlmOutput(submissionData.llmOutput)
+            setHasTestedPrompt(true)
+          }
+        }
+      } catch (submissionError) {
+        console.log("No submission data found, continuing...")
+      }
+
     } catch (error) {
       console.error("Error fetching competition data:", error)
     } finally {
@@ -240,28 +290,34 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <ul className="space-y-4 text-gray-700">
-                  <li className="flex items-start gap-3">
-                    <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                    <span className="leading-relaxed">Prompt must be clear and specific</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                    <span className="leading-relaxed">Include example inputs/outputs</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                    <span className="leading-relaxed">Test your prompt thoroughly</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                    <span className="leading-relaxed">Submit before the deadline</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                    <span className="leading-relaxed">One submission per participant</span>
-                  </li>
-                </ul>
+                {competition.guidelines ? (
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {competition.guidelines}
+                  </div>
+                ) : (
+                  <ul className="space-y-4 text-gray-700">
+                    <li className="flex items-start gap-3">
+                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
+                      <span className="leading-relaxed">Prompt must be clear and specific</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
+                      <span className="leading-relaxed">Include example inputs/outputs</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
+                      <span className="leading-relaxed">Test your prompt thoroughly</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
+                      <span className="leading-relaxed">Submit before the deadline</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
+                      <span className="leading-relaxed">One submission per participant</span>
+                    </li>
+                  </ul>
+                )}
               </CardContent>
             </Card>
 
@@ -279,14 +335,27 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                   <p className="text-gray-700 leading-relaxed">{competition.description}</p>
                 </div>
                 
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">Problem Statement</h3>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
-                      {competition.problemStatement}
-                    </pre>
+                {competition.problemStatement && competition.problemStatement !== competition.description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-3">Problem Statement</h3>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
+                        {competition.problemStatement}
+                      </pre>
+                    </div>
                   </div>
-                </div>
+                )}
+                
+                {competition.rubric && (
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-3">Evaluation Rubric</h3>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
+                        {competition.rubric}
+                      </pre>
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -471,50 +540,42 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 )}
               </CardContent>
             </Card>
-
-            {/* Test History Card */}
-            {testHistory.length > 0 && (
-              <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-                <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-100">
-                  <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                    <History className="h-5 w-5 text-indigo-600" />
-                    Test History
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-3 max-h-48 overflow-y-auto">
-                    {testHistory.map((test) => (
-                      <div 
-                        key={test.id} 
-                        className="border border-gray-200 rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs text-gray-500">{test.timestamp}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => {
-                              setPrompt(test.prompt)
-                              setTestOutput(test.output)
-                            }}
-                            className="text-[#56ffbc] hover:text-[#45e6a8] hover:bg-[#56ffbc]/10"
-                          >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            Restore
-                          </Button>
-                        </div>
-                        <p className="text-sm text-gray-700 truncate">
-                          {test.prompt.slice(0, 100)}...
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </main>
     </div>
   )
 }
+
+
+// import { db } from "@/lib/firebase"
+// import { doc, getDoc } from "firebase/firestore"
+
+// interface ChallengePageProps {
+//   params: {
+//     id: string
+//   }
+// }
+
+// export default async function ChallengePage({ params }: ChallengePageProps) {
+//   const { id } = params
+  
+//   const challengeRef = doc(db, "testing", id)
+//   const challengeSnap = await getDoc(challengeRef)
+
+//   if (!challengeSnap.exists()) {
+//     return <div>Challenge not found</div>
+//   }
+
+//   const challenge = challengeSnap.data()
+
+//   return (
+//     <div className="p-8">
+//       <h1 className="text-3xl font-bold mb-4">{challenge.title}</h1>
+//       <p className="text-gray-700 mb-2"><strong>Deadline:</strong> {new Date(challenge.deadline.toDate()).toLocaleString()}</p>
+//       <p className="text-gray-700 mb-2"><strong>Description:</strong> {challenge.description}</p>
+//       <p className="text-gray-700 mb-2"><strong>Guidelines:</strong> {challenge.guidelines}</p>
+//       <p className="text-gray-700 mb-2"><strong>Rubric:</strong> {challenge.rubric}</p>
+//     </div>
+//   )
+// }

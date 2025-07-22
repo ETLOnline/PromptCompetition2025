@@ -8,11 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import type { Competition, Submission } from "@/types/auth"
 import { Clock, FileText, Trophy, User } from "lucide-react"
+import ChallengeList from "@/components/ChallengeList"
 
-/**
- * DashboardPage – themed with calming gradient background, white cards, soft shadows,
- * and aquamarine (#56ffbc) as the primary accent color.
- */
 export default function DashboardPage() {
   const { user, logout } = useAuth()
   const router = useRouter()
@@ -142,77 +139,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Active Competitions */}
-        <section className="mb-10">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Active Competitions</h2>
-
-          {activeCompetitions.length === 0 ? (
-            <Card className="shadow-md">
-              <CardContent className="text-center py-8">
-                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No active competitions at the moment.</p>
-                <p className="text-sm text-gray-500 mt-2">Check back later for new challenges!</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-6">
-              {activeCompetitions.map((competition) => {
-                const userSubmission = submissions.find((s) => s.competitionId === competition.id)
-                const deadline = new Date(competition.deadline)
-                const isExpired = deadline < new Date()
-
-                return (
-                  <Card key={competition.id} className="shadow-md">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-xl text-gray-900">{competition.title}</CardTitle>
-                          <CardDescription className="mt-2 text-gray-700">
-                            {competition.description}
-                          </CardDescription>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge variant={isExpired ? "destructive" : "default"} className={isExpired ? "bg-red-100 text-red-800" : "bg-[#56ffbc]/20 text-[#046f4e]"}>
-                            {isExpired ? "Expired" : "Active"}
-                          </Badge>
-                          {userSubmission && (
-                            <Badge variant="outline" className="border-[#56ffbc] text-[#046f4e]">
-                              Submitted
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="text-sm text-gray-600 flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            Deadline: {deadline.toLocaleDateString()} at {deadline.toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <Button
-                          onClick={() => router.push(`/competition/${competition.id}`)}
-                          disabled={isExpired}
-                          className={`transition-colors ${
-                            isExpired
-                              ? "cursor-not-allowed opacity-50"
-                              : userSubmission
-                              ? "bg-white border border-[#56ffbc] text-[#046f4e] hover:bg-[#e6fff6]"
-                              : "bg-[#56ffbc] text-gray-900 hover:bg-[#45e0a6]"
-                          }`}
-                        >
-                          {userSubmission ? "View Submission" : "Participate"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </section>
+        
+        <div className="container py-10">
+          <ChallengeList />
+        </div>
 
         {/* Recent Submissions */}
         {hasSubmissions && (
