@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth"; 
 import { auth } from "../../firebase";
 
 // HomeIcon for the "Back to Home" link

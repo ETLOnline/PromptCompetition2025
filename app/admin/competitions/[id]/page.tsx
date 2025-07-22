@@ -11,20 +11,10 @@ import type { Competition, Submission } from "@/types/auth"
 import { ArrowLeft, Download, Eye, Lock, Unlock, Play, Trophy } from "lucide-react"
 
 export default function AdminCompetitionDetailPage({ params }: { params: { id: string } }) {
-  const { user } = useAuth()
   const router = useRouter()
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!user || user.role !== "admin") {
-      router.push("/auth/login")
-      return
-    }
-
-    fetchData()
-  }, [user, params.id, router])
 
   const fetchData = async () => {
     try {
@@ -81,7 +71,6 @@ export default function AdminCompetitionDetailPage({ params }: { params: { id: s
     }
   }
 
-  if (!user || user.role !== "admin") return null
 
   if (loading) {
     return (

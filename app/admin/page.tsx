@@ -24,11 +24,7 @@ export default function AdminDashboard() {
       router.push("/auth/login")
       return
     }
-    if (role !== "admin") {
-      router.push("/dashboard")
-      return
-    }
-
+    
     fetchData()
   }, [user, role, router])
   
@@ -65,26 +61,6 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error exporting participant data:", error)
-    }
-  }
-
-  const exportSubmissionData = async (competitionId?: string) => {
-    try {
-      const url = competitionId
-        ? /api/admin/export/submissions?competitionId=${competitionId}
-        : "/api/admin/export/submissions"
-      const response = await fetch(url)
-      if (response.ok) {
-        const blob = await response.blob()
-        const downloadUrl = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = downloadUrl
-        a.download = competitionId ? submissions-${competitionId}.csv : "all-submissions.csv"
-        a.click()
-        window.URL.revokeObjectURL(downloadUrl)
-      }
-    } catch (error) {
-      console.error("Error exporting submission data:", error)
     }
   }
 
@@ -217,7 +193,6 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start border-[#56ffbc]/30 text-[#07073a] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300"
-                onClick={() => exportSubmissionData()}
               >
                 <Download className="h-4 w-4 mr-3" />
                 Export All Submissions
@@ -285,30 +260,6 @@ export default function AdminDashboard() {
 
         {/* Enhanced Challenges Section */}
         <div className="space-y-6">
-          {/* <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-[#56ffbc]">Active Challenges</h2>
-              <p className="text-gray-400">Monitor and manage ongoing competitions</p>
-            </div> */}
-            {/* <div className="flex gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-[#56ffbc]/30 text-[#56ffbc] hover:bg-[#56ffbc]/10"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-[#56ffbc]/30 text-[#56ffbc] hover:bg-[#56ffbc]/10"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-            </div> 
-          </div>*/}
           <div className="bg-gradient-to-br from-[#0c0c4f]/50 to-[#07073a]/50 rounded-xl border border-[#56ffbc]/10 p-6">
             <GetChallenges />
           </div>

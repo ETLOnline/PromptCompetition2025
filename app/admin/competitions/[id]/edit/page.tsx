@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { getDoc, doc, updateDoc, Timestamp } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { db } from "@/firebase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,6 @@ export default function EditCompetitionPage() {
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         title: "",
-        description: "",
         problemStatement: "",
         rubric: "",
         guidelines: "",
@@ -35,7 +34,6 @@ export default function EditCompetitionPage() {
             const data = docSnap.data()
             setFormData({
             title: data.title || "",
-            description: data.description || "",
             problemStatement: data.problemStatement || "",
             rubric: data.rubric || "",
             guidelines: data.guidelines || "",

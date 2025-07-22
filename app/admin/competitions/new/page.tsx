@@ -15,11 +15,11 @@ import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 // -------------------------------- firebase --------------------------------
-import { db } from "@/lib/firebase"
+import { db } from "@/firebase"
 import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
 
 export default function NewCompetitionPage() {
-  const { user } = useAuth()
+  // const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -65,17 +65,12 @@ const getLatestCustomID = async () => {
       })
   }
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/auth/login")
-      return
-    }
-
-    if (user.role !== "admin") {
-      router.push("/dashboard")
-      return
-    }
-  }, [user, router])
+  // useEffect(() => {
+  //   if (!user) {
+  //     router.push("/auth/login")
+  //     return
+  //   }
+  // }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,7 +110,7 @@ const getLatestCustomID = async () => {
     }))
   }
 
-  if (!user || user.role !== "admin") return null
+  // if (!user || user.role !== "admin") return null
 
   return (
     <div className="min-h-screen bg-gray-50">

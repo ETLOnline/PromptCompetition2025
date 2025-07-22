@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { db } from "@/lib/firebase" // make sure this is your Firebase init
-import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/firebase" // make sure this is your Firebase init
+import { collection, getDocs, Timestamp } from "firebase/firestore"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Clock } from "lucide-react"
@@ -40,7 +40,7 @@ export default function ChallengeList() {
                 <CardHeader>
                 <CardTitle className="text-xl text-gray-900">{challenge.title}</CardTitle>
                 <CardDescription className="mt-1 text-gray-700">
-                    Deadline: {new Date(challenge.deadline).toLocaleString()}
+                    Deadline: {new Date((challenge.deadline as any).seconds * 1000).toLocaleString()}
                 </CardDescription>
                 </CardHeader>
                 <CardContent>

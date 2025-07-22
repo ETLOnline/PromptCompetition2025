@@ -10,7 +10,7 @@ import { Plus, Eye, Settings } from "lucide-react"
 
 
 // -------------------------------- firebase --------------------------------
-import { db } from "@/lib/firebase"
+import { db } from "@/firebase"
 import { doc, getDocs, Timestamp, collection } from "firebase/firestore"
 
 type Challenge = {

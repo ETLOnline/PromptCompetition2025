@@ -80,12 +80,10 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
         competitionData = {
           id: resolvedParams.id,
           title: firebaseData.title,
-          description: firebaseData.description,
-          problemStatement: firebaseData.description, // Using description as problemStatement
+          problemStatement: firebaseData.problemStatement, 
           deadline: firebaseData.deadline?.toDate?.() || firebaseData.deadline,
           isLocked: false, // Add your logic here
           guidelines: firebaseData.guidelines,
-          rubric: firebaseData.rubric,
           // Add other fields as needed
         }
         setCompetition(competitionData)
@@ -332,30 +330,8 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
               <CardContent className="pt-6 space-y-6">
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-3">Description</h3>
-                  <p className="text-gray-700 leading-relaxed">{competition.description}</p>
+                  <p className="text-gray-700 leading-relaxed">{competition.problemStatement}</p>
                 </div>
-                
-                {competition.problemStatement && competition.problemStatement !== competition.description && (
-                  <div>
-                    <h3 className="font-semibold text-gray-800 mb-3">Problem Statement</h3>
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
-                        {competition.problemStatement}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-                
-                {competition.rubric && (
-                  <div>
-                    <h3 className="font-semibold text-gray-800 mb-3">Evaluation Rubric</h3>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <pre className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">
-                        {competition.rubric}
-                      </pre>
-                    </div>
-                  </div>
-                )}
                 
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
