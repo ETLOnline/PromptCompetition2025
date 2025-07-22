@@ -9,7 +9,7 @@ import { Plus, Users, Trophy, FileText, Download, Settings, BarChart3, Filter, S
 import GetChallenges from "@/components/GetChallenges"
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth()
+  const { user, role, logout } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState({
     totalParticipants: 0,
@@ -19,19 +19,19 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
 
-  // useEffect(() => {
-  //   if (!user) {
-  //     router.push("/auth/login")
-  //     return
-  //   }
-  //   if (user.role !== "admin") {
-  //     router.push("/dashboard")
-  //     return
-  //   }
-  //   fetchData()
-  // }, [user, role, router])
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/login")
+      return
+    }
+    if (role !== "admin") {
+      router.push("/dashboard")
+      return
+    }
 
-
+    fetchData()
+  }, [user, role, router])
+  
   const fetchData = async () => {
     try {
       const [competitionsRes, submissionsRes, statsRes] = await Promise.all([
@@ -68,38 +68,38 @@ export default function AdminDashboard() {
     }
   }
 
-  // const exportSubmissionData = async (competitionId?: string) => {
-  //   try {
-  //     const url = competitionId
-  //       ? /api/admin/export/submissions?competitionId=${competitionId}
-  //       : "/api/admin/export/submissions"
-  //     const response = await fetch(url)
-  //     if (response.ok) {
-  //       const blob = await response.blob()
-  //       const downloadUrl = window.URL.createObjectURL(blob)
-  //       const a = document.createElement("a")
-  //       a.href = downloadUrl
-  //       a.download = competitionId ? submissions-${competitionId}.csv : "all-submissions.csv"
-  //       a.click()
-  //       window.URL.revokeObjectURL(downloadUrl)
-  //     }
-  //   } catch (error) {
-  //     console.error("Error exporting submission data:", error)
-  //   }
-  // }
+  const exportSubmissionData = async (competitionId?: string) => {
+    try {
+      const url = competitionId
+        ? /api/admin/export/submissions?competitionId=${competitionId}
+        : "/api/admin/export/submissions"
+      const response = await fetch(url)
+      if (response.ok) {
+        const blob = await response.blob()
+        const downloadUrl = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = downloadUrl
+        a.download = competitionId ? submissions-${competitionId}.csv : "all-submissions.csv"
+        a.click()
+        window.URL.revokeObjectURL(downloadUrl)
+      }
+    } catch (error) {
+      console.error("Error exporting submission data:", error)
+    }
+  }
 
-  // if (!user || user.role !== "admin") return null
+  if (!user || role !== "admin") return null
 
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-[#07073a]">
-  //       <div className="flex flex-col items-center gap-4">
-  //         <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#56ffbc]/20 border-t-[#56ffbc]"></div>
-  //         <p className="text-[#56ffbc] font-medium">Loading dashboard...</p>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#07073a]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#56ffbc]/20 border-t-[#56ffbc]"></div>
+          <p className="text-[#56ffbc] font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#07073a] text-white">
