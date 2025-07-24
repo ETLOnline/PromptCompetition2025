@@ -14,7 +14,7 @@ const firebaseConfig = {
   appId: "1:940035486063:web:e6164eb1b7ae6992c4f89a",
   
 // FIREBASE_ADMIN_UID="6yFsKc8SzrZqepMDsySPenL3bK83"
-};
+}; 
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
