@@ -121,7 +121,7 @@ const getLatestCustomID = async () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Admin
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900">Create New Competition</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Create New Challenge</h1>
           </div>
         </div>
       </header>
@@ -130,19 +130,19 @@ const getLatestCustomID = async () => {
         <div className="px-4 py-6 sm:px-0">
           <Card>
             <CardHeader>
-              <CardTitle>Competition Details</CardTitle>
-              <CardDescription>Fill in the details for the new competition. All fields are required.</CardDescription>
+              <CardTitle>Challenge Details</CardTitle>
+              <CardDescription>Fill in the details for the new Challenge. All fields are required.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Competition Title</Label>
+                  <Label htmlFor="title">Challenge Title</Label>
                   <Input
                     id="title"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
-                    placeholder="Enter competition title"
+                    placeholder="Enter Challenge title"
                     required
                   />
                 </div>
@@ -199,7 +199,7 @@ const getLatestCustomID = async () => {
                 </div>
                 <div className="flex gap-4">
                   <Button type="submit" disabled={loading} onClick={uploadToFirestore}>
-                    {loading ? "Creating..." : "Create Competition"}
+                    {loading ? "Creating..." : "Create Challenge"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => router.push("/admin")}>
                     Cancel
