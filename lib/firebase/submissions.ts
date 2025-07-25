@@ -1,13 +1,13 @@
 import { db } from "../../firebase"
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
-  doc,
+    collection,
+    query,
+    where,
+    getDocs,
+    addDoc,
+    updateDoc,
+    serverTimestamp,
+    doc,
 } from "firebase/firestore"
 
 const submissionsRef = collection(db, "submissions")

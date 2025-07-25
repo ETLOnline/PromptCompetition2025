@@ -33,7 +33,7 @@ export default function NewCompetitionPage() {
   })
 
 const getLatestCustomID = async () => {
-  const querySnapshot = await getDocs(collection(db, "testing"))
+  const querySnapshot = await getDocs(collection(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE))
 
   const ids: number[] = []
 
@@ -56,7 +56,7 @@ const getLatestCustomID = async () => {
   const uploadToFirestore = async () => {
     let ID = await getLatestCustomID();
 
-    await setDoc(doc(db, "testing", ID), {
+    await setDoc(doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, ID), {
         title: formData.title,
         problemStatement: formData.problemStatement,
         rubric: formData.rubric,
