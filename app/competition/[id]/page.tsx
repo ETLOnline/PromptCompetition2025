@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { submitPrompt } from "@/lib/firebase/submissions"
 import { Badge } from "@/components/ui/badge"
 import type { Competition, Submission } from "@/types/auth"
 import { 
@@ -26,6 +26,7 @@ import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 
+
 // Extended interface to include Firebase data
 export default function CompetitionPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth()
@@ -38,11 +39,21 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
   const [submitting, setSubmitting] = useState(false)
   const resolvedParams = use(params)
 
+  // fetch("/api/debugger", {
+  //   method: "POST",
+  //   body: JSON.stringify({ message: `user object: ${JSON.stringify(user.uid)}` }),
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  // })
+
+
   useEffect(() => {
     if (!user) {
       router.push("/auth/login")
       return
     }
+
     fetchCompetitionData()
   }, [user, resolvedParams.id, router])
 
@@ -300,7 +311,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                   </div>
                   <div className="flex gap-2">
                     <Button 
-                      onClick={handleSubmit}
+                      onClick={async () => {await submitPrompt(user.uid, resolvedParams.id, prompt)}}
                       disabled={!prompt.trim() || submitting || isCompetitionLocked}
                       size="sm"
                       className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold shadow-md"
