@@ -1,0 +1,7 @@
+{
+  "watch": ["."],
+  "ext": "ts,json",
+  "ignore": ["node_modules"],
+  "exec": "node --loader ts-node/esm"
+
+}
