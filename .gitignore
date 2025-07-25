@@ -29,3 +29,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Node.js projects (backend/server)
+server/node_modules
+server/.env
+server/.env.local
+server/.env.production
+server/dist
+server/build
+
+# Firebase service keys (just in case)
+server/serviceAccountKey.json
