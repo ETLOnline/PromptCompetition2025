@@ -20,7 +20,7 @@ export default function StartEvaluationButton() {
       
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Evaluation failed")
-      alert("✅ Judge llm evaluation completed and uploaded to Firestore.")
+      //alert("✅ Judge llm evaluation completed and uploaded to Firestore.")
     } catch (err: any) {
       alert(`❌ Error: ${err.message}`)
     } finally {
