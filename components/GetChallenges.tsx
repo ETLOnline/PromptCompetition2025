@@ -30,7 +30,7 @@ export default function GetChallenges() {
     useEffect(() => {
         const fetchChallenges = async () => {
         try {
-            const querySnapshot = await getDocs(collection(db, "testing"))
+            const querySnapshot = await getDocs(collection(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE))
             const fetched: Challenge[] = querySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),

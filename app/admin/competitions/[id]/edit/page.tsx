@@ -27,7 +27,7 @@ export default function EditCompetitionPage() {
 
     useEffect(() => {
         const fetchCompetition = async () => {
-        const docRef = doc(db, "testing", competitionId)
+        const docRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, competitionId)
         const docSnap = await getDoc(docRef)
 
         if (docSnap.exists()) {
@@ -53,7 +53,7 @@ export default function EditCompetitionPage() {
         e.preventDefault()
         setLoading(true)
         try {
-        await updateDoc(doc(db, "testing", competitionId), {
+        await updateDoc(doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, competitionId), {
             ...formData,
             deadline: Timestamp.fromDate(new Date(formData.deadline)),
         })
