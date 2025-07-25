@@ -8,25 +8,55 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Users, Trophy, FileText, Download, Settings, BarChart3, Filter, Search } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 
+import { collection, onSnapshot } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+
+
 export default function AdminDashboard() {
   const { user, role, logout } = useAuth()
   const router = useRouter()
+  const [totalSubmissions, setSubmissionCount] = useState<number>(0)
   const [stats, setStats] = useState({
     totalParticipants: 0,
-    totalSubmissions: 0,
     pendingReviews: 0,
   })
   const [loading, setLoading] = useState(true)
 
 
   useEffect(() => {
-    if (!user) {
-      router.push("/auth/login")
-      return
-    }
-    
-    fetchData()
-  }, [user, role, router])
+      if (!user) {
+        router.push("/auth/login")
+        return
+      }
+
+      fetchData()
+
+      // Real-time listener for submissions
+      const unsubscribeSubmissions = onSnapshot(
+        collection(db, process.env.NEXT_PUBLIC_SUBMISSION_DATABASE!),
+        (snapshot) => {
+          setSubmissionCount(snapshot.size)
+        }
+      )
+
+      // Real-time listener for users (total participants)
+      const unsubscribeUsers = onSnapshot(
+        collection(db, process.env.NEXT_PUBLIC_USER_DATABASE!),
+        (snapshot) => {
+          setStats((prev) => ({
+            ...prev,
+            totalParticipants: snapshot.size,
+          }))
+        }
+      )
+
+      // Cleanup both listeners on unmount
+      return () => {
+        unsubscribeSubmissions()
+        unsubscribeUsers()
+      }
+    }, [user, role, router])
+
   
   const fetchData = async () => {
     try {
@@ -108,8 +138,7 @@ export default function AdminDashboard() {
                 variant="outline" 
                 size="lg"
                 className="border-2 border-[#56ffbc]/50 text-[#56ffbc] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300" 
-                onClick={logout}
-              >
+                onClick={logout}>
                 Logout
               </Button>
             </div>
@@ -145,7 +174,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-white mb-2">{stats.totalSubmissions.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-white mb-2">{totalSubmissions}</div>
               <p className="text-sm text-gray-400">Across all competitions</p>
             </CardContent>
           </Card>

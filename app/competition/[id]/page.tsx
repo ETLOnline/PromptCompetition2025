@@ -60,7 +60,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
   const fetchCompetitionData = async () => {
     try {
       // Fetch from Firebase first
-      const challengeRef = doc(db, "testing", resolvedParams.id)
+      const challengeRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, resolvedParams.id) 
       const challengeSnap = await getDoc(challengeRef)
       
       let competitionData = null
