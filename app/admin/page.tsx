@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Users, Trophy, FileText, Download, Settings, BarChart3, Filter, Search } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluationButton"
+import GenerateLeaderboardButton from "@/components/GenerateLeaderboardButton"
 
 import { collection, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -285,6 +286,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <StartEvaluationButton />
+              <GenerateLeaderboardButton />
             </CardContent>
           </Card>
         </div>
