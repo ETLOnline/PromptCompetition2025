@@ -7,7 +7,6 @@ import express from "express";
 import cors from "cors";
 
 // Routers
-import judgeRouter from "./routes/judge.js";
 import evaluateRouter from "./routes/evaluate.js";
 import evaluateAllRouter from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
@@ -31,7 +30,6 @@ app.get("/test", (req, res) => {
 });
 
 // Routes
-app.use("/judge", judgeRouter);
 app.use("/evaluate", evaluateRouter);
 app.use("/bulk-evaluate", evaluateAllRouter); 
 app.use("/leaderboard", leaderboardRouter);
