@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Users, Trophy, FileText, Download, Settings, BarChart3, Filter, Search } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
+import StartEvaluationButton from "@/components/StartEvaluationButton"
 
 import { collection, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -31,7 +32,14 @@ export default function AdminDashboard() {
 
       fetchData()
 
-      // Real-time listener for submissions
+      
+      fetch("/api/debugger", {
+        method: "POST",
+        body: JSON.stringify({ message: `user object: ${JSON.stringify(process.env.NEXT_PUBLIC_SUBMISSION_DATABASE)}` }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
       const unsubscribeSubmissions = onSnapshot(
         collection(db, process.env.NEXT_PUBLIC_SUBMISSION_DATABASE!),
         (snapshot) => {
@@ -276,13 +284,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <Button 
-                size="lg"
-                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Start Evaluation
-              </Button>
+              <StartEvaluationButton />
             </CardContent>
           </Card>
         </div>
