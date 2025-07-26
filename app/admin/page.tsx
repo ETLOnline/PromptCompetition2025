@@ -106,7 +106,7 @@ export default function AdminDashboard() {
     }
   }
 
-  if (!user || role !== "admin") return null
+  if (!user || (role !== "admin" && role !== "superadmin")) return null
 
   if (loading) {
     return (
@@ -237,39 +237,57 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-
-          {/* Quick Actions Card */}
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20">
+          {/* Super Admin Panel Card */}
+          {(role === "admin" || role === "superadmin") && (
+          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20 hover:border-[#56ffbc]/40 transition-all duration-300 group">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10">
-                  <BarChart3 className="h-5 w-5 text-[#56ffbc]" />
+                <div className="p-2 rounded-lg bg-[#56ffbc]/10 group-hover:bg-[#56ffbc]/20 transition-colors">
+                  <Settings className="h-5 w-5 text-[#56ffbc]" />
                 </div>
                 <div>
-                  <CardTitle className="text-[#56ffbc] text-lg">Quick Actions</CardTitle>
-                  <CardDescription className="text-gray-400">Management tools</CardDescription>
+                  <CardTitle className="text-[#56ffbc] text-lg">Admin Controls</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Manage roles, judges, or platform access
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Manage Roles button */}
               <Button
-                variant="outline"
-                className="w-full justify-start border-[#56ffbc]/30 text-[#07073a] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300"
-                onClick={() => router.push("/admin/reviews")}
+                size="lg"
+                className={`w-full font-semibold transition-all duration-300 ${
+                  role === "superadmin"
+                    ? "bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25"
+                    : "bg-[#1f1f3b] text-gray-400 cursor-not-allowed border border-gray-600"
+                }`}
+                disabled={role !== "superadmin"}
+                onClick={() => {
+                  if (role === "superadmin") {
+                    router.push("/admin/superadmin");
+                  } else {
+                    alert("You don't have permission to manage roles.");
+                  }
+                }}
               >
-                <Trophy className="h-4 w-4 mr-3" />
-                Manual Review Panel
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Roles
               </Button>
+
+              {/* Second button: e.g. Judge Management */}
               <Button
-                variant="outline"
-                className="w-full justify-start border-[#56ffbc]/30 text-[#07073a] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300"
-                onClick={() => router.push("/admin/participants")}
+                size="lg"
+                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
+                onClick={() => router.push("/admin/judges")}
               >
-                <Users className="h-4 w-4 mr-3" />
-                Manage Participants
+                <Users className="h-4 w-4 mr-2" />
+                Manage Judges
               </Button>
             </CardContent>
           </Card>
+        )}
+
 
           {/* Evaluation Card */}
           <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20">
