@@ -24,7 +24,7 @@ export default function AdminDashboard() {
     totalParticipants: 0,
     pendingReviews: 0,
   })
-
+  //const [loading, setLoading] = useState(true)
   useEffect(() => {
       if (!user) {
         router.push("/auth/login")
@@ -56,55 +56,8 @@ export default function AdminDashboard() {
       }
     }, [user, role, router])
 
-  
-  const fetchData = async () => {
-    try {
-      const [competitionsRes, submissionsRes, statsRes] = await Promise.all([
-        fetch("/api/admin/competitions"),
-        fetch("/api/admin/submissions"),
-        fetch("/api/admin/stats"),
-      ])
-
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
-        setStats(statsData)
-      }
-    } catch (error) {
-      console.error("Error fetching admin data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const exportParticipantData = async () => {
-    try {
-      const response = await fetch("/api/admin/export/participants")
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = "participants.csv"
-        a.click()
-        window.URL.revokeObjectURL(url)
-      }
-    } catch (error) {
-      console.error("Error exporting participant data:", error)
-    }
-  }
 
   if (!user || (role !== "admin" && role !== "superadmin")) return null
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07073a]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#56ffbc]/20 border-t-[#56ffbc]"></div>
-          <p className="text-[#56ffbc] font-medium">Loading dashboard...</p>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-[#07073a] text-white">
