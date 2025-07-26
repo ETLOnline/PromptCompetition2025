@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  User,
+  User,sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
@@ -22,7 +22,6 @@ type Role = "user" | "admin" | "superadmin" | "judge" | null
 interface AuthContextType {
   user: User | null;
   role: string | null; // Add role to context
-
   signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>; // Added logout
@@ -61,20 +60,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, institution: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    const user = userCredential.user
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
 
-    await setDoc(doc(collection(db, "users"), user.uid), {
-      fullName,
-      email,
-      institution,
-      createdAt: new Date().toISOString(),
-    })
-  }
+  // Send verification email
+  await sendEmailVerification(user);
+
+  // Create user document with isVerified flag
+  await setDoc(doc(collection(db, "users"), user.uid), {
+    fullName,
+    email,
+    institution,
+    createdAt: new Date().toISOString(),
+    isVerified: false, // Track verification status
+  });
+};
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password)
-  }
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    if (!user.emailVerified) {
+      await auth.signOut();
+      throw new Error("Please verify your email before signing in.");
+    }
+  };
 
   const logout = async () => {
     await signOut(auth)
