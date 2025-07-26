@@ -5,7 +5,7 @@ import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { sendPasswordResetEmail } from "firebase/auth"; 
-import { auth } from "../../firebase";
+import { auth } from "@/lib/firebase";
 
 // HomeIcon for the "Back to Home" link
 const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (

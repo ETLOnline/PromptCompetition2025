@@ -1,9 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from 'firebase/auth'; // Import for Firebase Authentication
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-// Your web app's Firebase configuration
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyA-MrBeWy7ZCora3S-PZtrHfKrn2hcJ-Xc",
   authDomain: "enlightentech-a2046.firebaseapp.com",
@@ -11,14 +11,14 @@ const firebaseConfig = {
   storageBucket: "enlightentech-a2046.firebasestorage.app",
   messagingSenderId: "940035486063",
   appId: "1:940035486063:web:e6164eb1b7ae6992c4f89a",
-}; 
+};
 
-// Initialize Firebase - prevent duplicate initialization on refresh
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Initialize Firebase - only if it hasn't been initialized already
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Export authenticated services
-export const auth = getAuth(app); // This gives us the Auth instance
-export const db = getFirestore(app); // This gives us the Firestore instance
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
-// You can export the app instance itself if needed elsewhere
 export default app;
+
