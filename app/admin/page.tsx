@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Users, Trophy, FileText, Download, Settings, BarChart3, Filter, Search } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
+import StartEvaluationButton from "@/components/StartEvaluation"
+import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
+import ViewLeaderboard from "@/components/ViewLeaderboard"
+import DownloadLeaderboardButton from "@/components/DownloadLeaderboard"
+
 
 import { collection, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -31,7 +36,14 @@ export default function AdminDashboard() {
 
       fetchData()
 
-      // Real-time listener for submissions
+      
+      fetch("/api/debugger", {
+        method: "POST",
+        body: JSON.stringify({ message: `user object: ${JSON.stringify(process.env.NEXT_PUBLIC_SUBMISSION_DATABASE)}` }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
       const unsubscribeSubmissions = onSnapshot(
         collection(db, process.env.NEXT_PUBLIC_SUBMISSION_DATABASE!),
         (snapshot) => {
@@ -197,37 +209,34 @@ export default function AdminDashboard() {
 
         {/* Enhanced Action Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Data Export Card */}
+          
+          {/* Leaderboard Management Card */}
           <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-[#56ffbc]/10">
-                  <Download className="h-5 w-5 text-[#56ffbc]" />
+                  <Trophy className="h-5 w-5 text-[#56ffbc]" />
                 </div>
                 <div>
-                  <CardTitle className="text-[#56ffbc] text-lg">Data Export</CardTitle>
-                  <CardDescription className="text-gray-400">Download CSV reports</CardDescription>
+                  <CardTitle className="text-[#56ffbc] text-lg">Leaderboard Management</CardTitle>
+                  <CardDescription className="text-gray-400">View and export final rankings</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                variant="outline"
-                className="w-full justify-start border-[#56ffbc]/30 text-[#07073a] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300"
-                onClick={exportParticipantData}
+                size="lg"
+                onClick={() => router.push("/admin/leaderboard")}
+                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
               >
-                <Download className="h-4 w-4 mr-3" />
-                Export All Participants
+                <Trophy className="h-4 w-4 mr-2" />
+                View Leaderboard
               </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start border-[#56ffbc]/30 text-[#07073a] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300"
-              >
-                <Download className="h-4 w-4 mr-3" />
-                Export All Submissions
-              </Button>
+
+              <DownloadLeaderboardButton />
             </CardContent>
           </Card>
+
 
           {/* Quick Actions Card */}
           <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20">
@@ -276,13 +285,8 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <Button 
-                size="lg"
-                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Start Evaluation
-              </Button>
+              <StartEvaluationButton />
+              <GenerateLeaderboardButton />
             </CardContent>
           </Card>
         </div>

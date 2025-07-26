@@ -48,10 +48,13 @@
     "react-day-picker": "latest",
     "react-dom": "^19",
     "react-hook-form": "latest",
+    "react-hot-toast": "^2.5.2",
     "react-resizable-panels": "latest",
     "recharts": "latest",
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "vaul": "latest"
   },
   "devDependencies": {
