@@ -1,25 +1,21 @@
 "use client"
 
 import type React from "react"
-
-import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-// -------------------------------- firebase --------------------------------
 import { db } from "@/lib/firebase"
 import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
 
 export default function NewCompetitionPage() {
-  // const { user } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -32,72 +28,58 @@ export default function NewCompetitionPage() {
     deadline: "",
   })
 
-const getLatestCustomID = async () => {
-  const querySnapshot = await getDocs(collection(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE))
+  const getLatestCustomID = async (): Promise<string> => {
+    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
+    if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-  const ids: number[] = []
+    const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
 
-  querySnapshot.forEach((doc) => {
-    const id = doc.id
-    const numericID = parseInt(id, 10)
-    if (!isNaN(numericID)) {
-      ids.push(numericID)
-    }
-  })
+    const ids: number[] = []
+    querySnapshot.forEach((doc) => {
+      const numericID = parseInt(doc.id, 10)
+      if (!isNaN(numericID)) ids.push(numericID)
+    })
 
-    if (ids.length === 0) return "01"
-
-    const maxID = Math.max(...ids)
-    const nextID = (maxID + 1).toString()
-
-    return nextID // e.g., "04" if "03" was the latest
+    const nextID = ids.length === 0 ? 1 : Math.max(...ids) + 1
+    return nextID.toString().padStart(2, "0") // e.g. "01", "02", ...
   }
 
   const uploadToFirestore = async () => {
-    let ID = await getLatestCustomID();
+    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
+    if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-    await setDoc(doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, ID), {
-        title: formData.title,
-        problemStatement: formData.problemStatement,
-        rubric: formData.rubric,
-        guidelines: formData.guidelines,
-        deadline: Timestamp.fromDate(new Date(formData.deadline)),
-      })
+    const ID = await getLatestCustomID()
+
+    await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
+      title: formData.title,
+      description: formData.description,
+      problemStatement: formData.problemStatement,
+      rubric: formData.rubric,
+      guidelines: formData.guidelines,
+      deadline: Timestamp.fromDate(new Date(formData.deadline)),
+    })
   }
-
-  // useEffect(() => {
-  //   if (!user) {
-  //     router.push("/auth/login")
-  //     return
-  //   }
-  // }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const response = await fetch("/api/admin/competitions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      await uploadToFirestore()
+
+      toast({
+        title: "Success",
+        description: "Competition created successfully!",
       })
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Competition created successfully!",
-        })
-        router.push("/admin")
-      } else {
-        throw new Error("Failed to create competition")
-      }
+      router.push("/admin")
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create competition. Please try again.",
         variant: "destructive",
       })
+      console.error("Create error:", error)
     } finally {
       setLoading(false)
     }
@@ -109,8 +91,6 @@ const getLatestCustomID = async () => {
       [e.target.name]: e.target.value,
     }))
   }
-
-  // if (!user || user.role !== "admin") return null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -197,8 +177,9 @@ const getLatestCustomID = async () => {
                     required
                   />
                 </div>
+
                 <div className="flex gap-4">
-                  <Button type="submit" disabled={loading} onClick={uploadToFirestore}>
+                  <Button type="submit" disabled={loading}>
                     {loading ? "Creating..." : "Create Challenge"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => router.push("/admin")}>
