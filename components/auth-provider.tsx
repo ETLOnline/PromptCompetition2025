@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from '../firebase';
+import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { signOut } from "firebase/auth";

@@ -1,6 +1,3 @@
-// app/admin/leaderboard/page.tsx
-"use client"
-
 import ViewLeaderboardTable from "@/components/ViewLeaderboard"
 
 export default function AdminLeaderboardPage() {

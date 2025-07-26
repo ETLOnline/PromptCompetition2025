@@ -1,4 +1,4 @@
-// lib/firestore/countDocuments.ts
+// lib/firebase/countDocuments.ts
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 

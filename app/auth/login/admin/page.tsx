@@ -7,7 +7,7 @@ import Link from "next/link"
 import admin from "firebase-admin";
 import { LogOut } from "lucide-react"
 import { signInWithEmailAndPassword, getIdTokenResult } from "firebase/auth";
-import { auth } from "../../../../app/firebase"; // adjust the path to your actual Firebase client setup
+import { auth } from "@/lib/firebase"; // adjust the path to your actual Firebase client setup
 
 
 // HomeIcon for the "Back to Home" link

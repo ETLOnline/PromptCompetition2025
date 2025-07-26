@@ -6,14 +6,14 @@ import { getLeaderboardEntries } from "@/lib/firebase/leaderboard"
 
 export default function DownloadLeaderboardButton() {
   const handleDownload = async () => {
-    const entries = await getLeaderboardEntries()
+    const { entries } = await getLeaderboardEntries()  
 
     const csvContent = [
       ["Rank", "Full Name", "Email", "Score"],
       ...entries.map(e => [e.rank, e.fullName, e.email, e.totalScore])
     ]
-    .map(row => row.join(","))
-    .join("\n")
+      .map(row => row.join(","))
+      .join("\n")
 
     const blob = new Blob([csvContent], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
