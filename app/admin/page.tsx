@@ -9,7 +9,6 @@ import { Plus, Users, Trophy, FileText, Download, Settings, BarChart3, Filter, S
 import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
-import ViewLeaderboard from "@/components/ViewLeaderboard"
 import DownloadLeaderboardButton from "@/components/DownloadLeaderboard"
 
 
@@ -25,8 +24,6 @@ export default function AdminDashboard() {
     totalParticipants: 0,
     pendingReviews: 0,
   })
-  const [loading, setLoading] = useState(true)
-
 
   useEffect(() => {
       if (!user) {
@@ -34,16 +31,6 @@ export default function AdminDashboard() {
         return
       }
 
-      fetchData()
-
-      
-      fetch("/api/debugger", {
-        method: "POST",
-        body: JSON.stringify({ message: `user object: ${JSON.stringify(process.env.NEXT_PUBLIC_SUBMISSION_DATABASE)}` }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
       const unsubscribeSubmissions = onSnapshot(
         collection(db, process.env.NEXT_PUBLIC_SUBMISSION_DATABASE!),
         (snapshot) => {

@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -15,13 +15,10 @@ import {
   Clock, 
   FileText, 
   Send, 
-  CheckCircle, 
-  RefreshCw, 
   AlertCircle,
   Trophy,
   Target
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
 import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
@@ -31,13 +28,22 @@ import { doc, getDoc } from "firebase/firestore"
 export default function CompetitionPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth()
   const router = useRouter()
-  const { toast } = useToast()
   const [competition, setCompetition] = useState<Competition | null>(null)
-  const [submission, setSubmission] = useState<Submission | null>(null)
   const [prompt, setPrompt] = useState("")
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
   const resolvedParams = use(params)
+  
+
+  // used for submission Acknoledgement
+  const [showToast, setShowToast] = useState(false)
+
+  // used for Resubmission confirmation
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const confirmActionRef = useRef<() => void>(null);
+  const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
+
+
+
 
   useEffect(() => {
     if (!user) {
@@ -77,7 +83,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  if (!user || loading) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
@@ -111,7 +117,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
 
   // Derived values
   const isCompetitionLocked = competition.isLocked || new Date() > new Date(competition.deadline)
-  const hasSubmission = submission !== null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -133,6 +138,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                   <Trophy className="h-8 w-8 text-[#56ffbc]" />
                   <h1 className="text-3xl font-bold text-gray-800">{competition.title}</h1>
                 </div>
+                
                 <div className="flex items-center gap-3">
                   <Badge 
                     variant="secondary" 
@@ -144,12 +150,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                   >
                     {isCompetitionLocked ? "Locked" : "Active"}
                   </Badge>
-                  {hasSubmission && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200 font-medium">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Submitted
-                    </Badge>
-                  )}
                 </div>
               </div>
             </div>
@@ -189,6 +189,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
               </CardContent>
             </Card>
 
+
             {/* Guidelines Card */}
             <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
               <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
@@ -211,9 +212,10 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
                   <Send className="h-5 w-5 text-[#07073a]" />
                   Your Solution
-                </CardTitle>
+                </CardTitle> 
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
+                
                 <div>
                   <Label htmlFor="prompt" className="text-gray-800 font-medium mb-2 block">
                     Prompt Text
@@ -232,29 +234,71 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 
                 {/* Stats and Actions */}
                 <div className="flex items-center justify-between pt-2">
+                  
                   <div className="text-xs text-gray-500">
                     Characters: {prompt.length} | Words: {prompt.split(/\s+/).filter(Boolean).length}
                   </div>
+
                   <div className="flex gap-2">
                     <Button 
-                      onClick={async () => {await submitPrompt(user.uid, resolvedParams.id, prompt)}}
-                      disabled={!prompt.trim() || submitting || isCompetitionLocked}
+                      onClick={async () => {
+                        if (hasSubmittedOnce) 
+                        {
+                          confirmActionRef.current = async () => {
+                            setLoading(true);
+                            await submitPrompt(user.uid, resolvedParams.id, prompt);
+                            setLoading(false);  
+                          };
+                          setIsConfirmModalOpen(true);
+                        } 
+                        else 
+                        {
+                          setLoading(true);
+                          await submitPrompt(user.uid, resolvedParams.id, prompt);
+                          setLoading(false);
+
+                          setHasSubmittedOnce(true); // track first submission
+                        }
+                      }}
+
+                      disabled={!prompt.trim() || isCompetitionLocked || loading}
                       size="sm"
                       className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold shadow-md"
                     >
-                      {submitting ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Submit Prompt
-                        </>
-                      )}
+                    <Send className="h-4 w-4 mr-2" />
+                      {loading ? "Submitting..." : "Submit Prompt"}
                     </Button>
                   </div>
+                  
+                  {/* Asks user before Resubmitting */}
+                  {isConfirmModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                      <div className="bg-white rounded-lg shadow-lg p-6 w-[300px] text-center">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Update submission?</h2>
+                        <div className="flex justify-center gap-4">
+                          <Button
+                            className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800"
+                            onClick={async () => {
+                              setIsConfirmModalOpen(false);
+                              if (confirmActionRef.current) {
+                                await confirmActionRef.current();
+                                setHasSubmittedOnce(true);
+                              }
+                            }}
+                          >
+                            Yes
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => setIsConfirmModalOpen(false)}
+                          >
+                            No
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </CardContent>
             </Card>
