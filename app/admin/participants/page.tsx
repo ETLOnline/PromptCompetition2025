@@ -19,7 +19,7 @@ export default function AdminParticipantsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    if (!user) {
       router.push("/auth/login")
       return
     }
@@ -67,7 +67,7 @@ export default function AdminParticipantsPage() {
     }
   }
 
-  if (!user || user.role !== "admin") return null
+  if (!user) return null
 
   if (loading) {
     return (
