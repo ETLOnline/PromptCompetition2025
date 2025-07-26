@@ -39,15 +39,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
   const [submitting, setSubmitting] = useState(false)
   const resolvedParams = use(params)
 
-  // fetch("/api/debugger", {
-  //   method: "POST",
-  //   body: JSON.stringify({ message: `user object: ${JSON.stringify(user.uid)}` }),
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  // })
-
-
   useEffect(() => {
     if (!user) {
       router.push("/auth/login")
@@ -60,7 +51,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
   const fetchCompetitionData = async () => {
     try {
       // Fetch from Firebase first
-      const challengeRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, resolvedParams.id) 
+      const challengeRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, resolvedParams.id)
       const challengeSnap = await getDoc(challengeRef)
       
       let competitionData = null
@@ -83,44 +74,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
       console.error("Error fetching competition data:", error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleSubmit = async () => {
-    if (!prompt.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a prompt before submitting.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      const response = await fetch("/api/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          competitionId: resolvedParams.id,
-          prompt,
-        }),
-      })
-
-      if (response.ok) {
-        toast({ title: "Success", description: "Submission saved successfully!" })
-        fetchCompetitionData()
-      } else {
-        throw new Error("Submission failed")
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -170,7 +123,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
               <Button 
                 variant="ghost" 
                 onClick={() => router.push("/dashboard")} 
-                className="mr-4 text-gray-700 hover:text-[#56ffbc] hover:bg-[#56ffbc]/10 transition-colors"
+                className="mr-4 text-gray-700 hover:text-[#56ffbc] hover:bg-[#56ffbc] transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
@@ -205,59 +158,33 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left Column - Competition Info */}
-          <div className="space-y-6">
+      <main className="mx-[175px] py-8 px-6 sm:px-16 lg:px-8">
+    
+          <div className="space-y-8">
             {/* Guidelines Card */}
             <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#56ffbc]/10 to-blue-50 border-b border-gray-100">
+              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
                 <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                  <Target className="h-5 w-5 text-[#56ffbc]" />
+                  <Target className="h-5 w-5 text-[#07073a]" />
                   Submission Guidelines
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                {competition.guidelines ? (
                   <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {competition.guidelines}
                   </div>
-                ) : (
-                  <ul className="space-y-4 text-gray-700">
-                    <li className="flex items-start gap-3">
-                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="leading-relaxed">Prompt must be clear and specific</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="leading-relaxed">Include example inputs/outputs</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="leading-relaxed">Test your prompt thoroughly</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="leading-relaxed">Submit before the deadline</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="h-2 w-2 bg-[#56ffbc] rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="leading-relaxed">One submission per participant</span>
-                    </li>
-                  </ul>
-                )}
               </CardContent>
             </Card>
 
             {/* Competition Details Card */}
             <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
-                <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
+              <CardHeader className="bg-gradient-to-r from-[#07073a] to-blue-200">
+                <CardTitle className="text-white text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#56ffbc]" />
                   Competition Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+              <CardContent className="pt-6">
                 <div>
                   <h3 className="font-semibold text-gray-800 mb-3">Description</h3>
                   <p className="text-gray-700 leading-relaxed">{competition.problemStatement}</p>
@@ -275,15 +202,12 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right Column - Solution Workspace */}
-          <div className="space-y-6">
+            
             {/* Prompt Input Card */}
             <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#56ffbc]/10 to-green-50 border-b border-gray-100">
+              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-green-50 border-b border-gray-100">
                 <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                  <Send className="h-5 w-5 text-[#56ffbc]" />
+                  <Send className="h-5 w-5 text-[#07073a]" />
                   Your Solution
                 </CardTitle>
               </CardHeader>
@@ -332,7 +256,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 </div>
               </CardContent>
             </Card>
-          </div>
         </div>
       </main>
     </div>

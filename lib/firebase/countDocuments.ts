@@ -1,12 +1,12 @@
 // lib/firestore/countDocuments.ts
-import { collection, getCountFromServer } from "firebase/firestore"
-import { db } from "../../firebase"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export async function countDocuments(path: string): Promise<number> {
     try {
         const collRef = collection(db, path)
-        const snapshot = await getCountFromServer(collRef)
-        return snapshot.data().count
+        const snapshot = await getDocs(collRef)
+        return snapshot.size
     } 
     catch (error)
     {
@@ -14,3 +14,4 @@ export async function countDocuments(path: string): Promise<number> {
         return 0
     }
 }
+ 
