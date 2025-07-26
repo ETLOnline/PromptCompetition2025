@@ -1,6 +1,6 @@
 // lib/firestore/countDocuments.ts
 import { collection, getCountFromServer } from "firebase/firestore"
-import { db } from "../../firebase"
+import { db } from "@/lib/firebase"
 
 export async function countDocuments(path: string): Promise<number> {
     try {

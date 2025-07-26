@@ -40,3 +40,5 @@ server/build
 
 # Firebase service keys (just in case)
 server/serviceAccountKey.json
+
+.txt*

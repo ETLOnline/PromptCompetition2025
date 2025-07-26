@@ -15,7 +15,7 @@ import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 // -------------------------------- firebase --------------------------------
-import { db } from "@/firebase"
+import { db } from "@/lib/firebase"
 import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
 
 export default function NewCompetitionPage() {
