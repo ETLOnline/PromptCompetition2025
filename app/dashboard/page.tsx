@@ -39,7 +39,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user.displayName}</p>
+            <p className="text-gray-600">Welcome, {user.displayName}</p>
           </div>
           <div className="flex items-center gap-4">
             <Button
@@ -88,12 +88,12 @@ export default function DashboardPage() {
           {/* Average Score */}
           <Card className="shadow-md">
             <CardHeader className="bg-gradient-to-r from-[#d3fff1] to-[#56ffbc] rounded-t-lg flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-800">Average Score</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-800">Total Score</CardTitle>
               <Trophy className="h-4 w-4 text-gray-700" />
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold text-gray-900">
-                { "N/A" }
+                { "Pending" }
               </div>
               <p className="text-xs text-gray-600">Across all submissions</p>
             </CardContent>

@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs } from "firebase/firestore"
-import { db } from "../../firebase"
+import { db } from "@/lib/firebase"
 
 
 export async function getSubmissionCountByParticipant(participantId: string): Promise<number> {
