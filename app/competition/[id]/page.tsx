@@ -161,27 +161,13 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
       <main className="mx-[175px] py-8 px-6 sm:px-16 lg:px-8">
     
           <div className="space-y-8">
-            {/* Guidelines Card */}
-            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
-                <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                  <Target className="h-5 w-5 text-[#07073a]" />
-                  Submission Guidelines
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {competition.guidelines}
-                  </div>
-              </CardContent>
-            </Card>
 
             {/* Competition Details Card */}
             <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#07073a] to-blue-200">
-                <CardTitle className="text-white text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#56ffbc]" />
-                  Competition Details
+              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
+                <CardTitle className="text-[#07073a] text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#07073a]" />
+                  Challenge Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
@@ -202,6 +188,22 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                 </div>
               </CardContent>
             </Card>
+
+            {/* Guidelines Card */}
+            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
+              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
+                <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
+                  <Target className="h-5 w-5 text-[#07073a]" />
+                  How to Craft Your Prompt
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {competition.guidelines}
+                  </div>
+              </CardContent>
+            </Card>
+            
             
             {/* Prompt Input Card */}
             <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
