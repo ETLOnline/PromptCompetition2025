@@ -43,3 +43,4 @@ server/serviceAccountKey.json
 *.txt
 
 server/enlightentech-a2046-firebase-adminsdk-fbsvc-8b4473f821.json
+server/enlightentech-*.json
