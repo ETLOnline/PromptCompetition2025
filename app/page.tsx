@@ -137,6 +137,7 @@ function CompetitionEventsSection() {
     }
   }
 
+
   return (
     <section
       className="py-16 relative overflow-hidden"

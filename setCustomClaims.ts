@@ -11,10 +11,11 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 
-  const UID = process.env.FIREBASE_ADMIN_UID;
+  const UID = process.env.NEXT_PUBLIC_FIREBASE_ADMIN_UID;
+  console.log("Setting custom claims for UID:", process.env.NEXT_PUBLIC_FIREBASE_ADMIN_UID);
   admin
     .auth()
-    .setCustomUserClaims(UID, { role: "admin" })
+    .setCustomUserClaims("sBdfcgzV0KdXGGzC60SzZl75xKJ2", { role: "admin" })
     .then(() => {
       console.log("✅ Admin role set successfully for UID:", UID);
       process.exit(0);
