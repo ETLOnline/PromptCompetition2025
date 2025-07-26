@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
   
       console.log("User role after login:", role);
   
-      if (role !== "admin") {
+      if (role !== "admin" && role !== "superadmin" && role !== "judge") {
         setError("Access denied: You are not an admin.");
         await auth.signOut(); // optional: log them out
         return;
