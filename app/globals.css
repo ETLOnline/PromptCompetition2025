@@ -64,9 +64,7 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 210 40% 98%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -110,9 +108,7 @@
 /* Frosted glass effect */
 .frost-glass {
   @apply backdrop-blur-md border shadow-sm;
-  /* Light mode specific */
   @apply bg-white/80 border-primary/10 text-gray-800 shadow-[0_4px_20px_rgba(36,101,237,0.2)];
-  /* Dark mode specific */
   @apply dark:bg-black/20 dark:border-white/10 dark:text-white dark:shadow-[0_4px_20px_rgba(36,101,237,0.3)];
 }
 
@@ -128,5 +124,60 @@
 
 /* For Firefox */
 .scrollbar-hide {
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
+}
+
+/* New styles from CompetitionPage */
+@layer components {
+  .competition-header {
+    @apply bg-white shadow-md border-b border-gray-200;
+  }
+
+  .competition-content {
+    @apply mx-[175px] py-8 px-6 sm:px-16 lg:px-8 space-y-8;
+  }
+
+  .competition-card {
+    @apply bg-white shadow-lg border-0 hover:shadow-xl transition-shadow;
+  }
+
+  .competition-card-header {
+    @apply bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100;
+  }
+
+  .competition-card-title {
+    @apply text-[#07073a] text-lg font-semibold flex items-center gap-2;
+  }
+
+  .competition-deadline {
+    @apply text-gray-700 bg-orange-50 p-3 rounded-lg border border-orange-200;
+  }
+
+  .competition-textarea {
+    @apply min-h-[250px] font-mono text-sm bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-500 focus:border-[#56ffbc] focus:ring-[#56ffbc] focus:bg-white transition-colors;
+  }
+
+  .competition-button {
+    @apply bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold shadow-md;
+  }
+
+  .competition-loading {
+    @apply min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100;
+  }
+
+  .competition-not-found {
+    @apply bg-white shadow-xl border-0 max-w-md;
+  }
+
+  .competition-badge-locked {
+    @apply bg-red-100 text-red-700 border-red-200;
+  }
+
+  .competition-badge-active {
+    @apply bg-green-100 text-green-700 border-green-200;
+  }
+
+  .competition-badge-submitted {
+    @apply bg-blue-100 text-blue-700 border-blue-200;
+  }
 }
