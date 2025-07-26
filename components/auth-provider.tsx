@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, collection } from 'firebase/firestore';
-import { signOut } from "firebase/auth";
+import { signOut,UserCredential } from "firebase/auth";
 
 // Define the shape of the auth context
 interface AuthContextType {
@@ -14,7 +14,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>; // Added logout
-  signInWithGoogle: () => Promise<void>; // Added Google sign-in
+  signInWithGoogle: () => Promise<UserCredential>; // Added Google sign-in
   loading: boolean;
 }
 
@@ -120,27 +120,49 @@ addDocumentWithSpecificId();
   };
 
   // Google sign-in function
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      // Optionally, create user doc in Firestore if new
-      const usersCollectionRef = collection(db, "users");
-      await setDoc(doc(usersCollectionRef, user.uid), {
-        fullName: user.displayName || '',
-        email: user.email || '',
-        institution: '', // Google doesn't provide institution by default
-        createdAt: new Date().toISOString(),
-      }, { merge: true });
-    } catch (error: any) {
-      let errorMessage = 'Failed to sign in with Google.';
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Google sign-in popup was closed.';
-      }
-      throw new Error(errorMessage);
+  const signInWithGoogle = async (): Promise<UserCredential> => {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    // Optionally, create user doc in Firestore if new
+    const usersCollectionRef = collection(db, "users");
+    await setDoc(doc(usersCollectionRef, user.uid), {
+      fullName: user.displayName || '',
+      email: user.email || '',
+      institution: '', // Google doesn't provide institution by default
+      createdAt: new Date().toISOString(),
+    }, { merge: true });
+    return result; // Explicitly return UserCredential
+  } catch (error: any) {
+    let errorMessage = 'Failed to sign in with Google.';
+    if (error.code === 'auth/popup-closed-by-user') {
+      errorMessage = 'Google sign-in popup was closed.';
     }
-  };
+    throw new Error(errorMessage);
+  }
+};
+  // const signInWithGoogle = async () => {
+  //   const provider = new GoogleAuthProvider();
+  //   try {
+  //     const result = await signInWithPopup(auth, provider);
+  //     const user = result.user;
+  //     // Optionally, create user doc in Firestore if new
+  //     const usersCollectionRef = collection(db, "users");
+  //     await setDoc(doc(usersCollectionRef, user.uid), {
+  //       fullName: user.displayName || '',
+  //       email: user.email || '',
+  //       institution: '', // Google doesn't provide institution by default
+  //       createdAt: new Date().toISOString(),
+  //     }, { merge: true });
+  //   } catch (error: any) {
+  //     let errorMessage = 'Failed to sign in with Google.';
+  //     if (error.code === 'auth/popup-closed-by-user') {
+  //       errorMessage = 'Google sign-in popup was closed.';
+  //     }
+  //     throw new Error(errorMessage);
+  //   }
+  // };
 
   return (
     <AuthContext.Provider value={{ user, role, signUp, signIn, logout, signInWithGoogle, loading }}>
