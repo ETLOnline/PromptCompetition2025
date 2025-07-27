@@ -30,9 +30,11 @@ export default function AdminDashboard() {
     title: "",
     description: "",
     prizeMoney: "",
-    time: "",
+    startTime: "",
+    endTime: "",
     location: "online",
   })
+
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -81,35 +83,41 @@ export default function AdminDashboard() {
     e.preventDefault()
     setFormError(null)
 
-    const { title, description, prizeMoney, time, location } = formData
-    if (!title || !description || !prizeMoney || !time || !location) {
+    const { title, description, prizeMoney, startTime, endTime, location } = formData
+    if (!title || !description || !prizeMoney || !startTime || !endTime || !location) {
       setFormError("All fields are required.")
       return
     }
 
-    const timeDate = new Date(time)
-    if (isNaN(timeDate.getTime())) {
-      setFormError("Invalid date and time.")
+    const startDateTime = new Date(startTime)
+    const endDateTime = new Date(endTime)
+
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      setFormError("Invalid start or end date/time.")
       return
     }
-
+    if (endDateTime <= startDateTime) {
+      setFormError("End time must be after start time.")
+      return
+    }
     try {
       const response = await fetch("/api/admin/competitions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${await user?.getIdToken()}`,
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          prizeMoney,
-          deadline: timeDate.toISOString(),
-          location,
-          isActive: true,
-          isLocked: false,
-        }),
-      })
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await user?.getIdToken()}`,
+      },
+      body: JSON.stringify({
+        title,
+        description,
+        prizeMoney,
+        startDeadline: startDateTime.toISOString(),
+        endDeadline: endDateTime.toISOString(),
+        location,
+        isActive: true,
+        isLocked: false,
+      }),
+    })
 
       if (!response.ok) {
         throw new Error("Failed to create competition")
@@ -120,9 +128,11 @@ export default function AdminDashboard() {
         title: "",
         description: "",
         prizeMoney: "",
-        time: "",
+        startTime: "",
+        endTime: "",
         location: "online",
       })
+
     } catch (error) {
       console.error("Error creating competition:", error)
       setFormError("Failed to create competition. Please try again.")
@@ -355,15 +365,26 @@ export default function AdminDashboard() {
                 />
               </div>
               <div>
-                <Label htmlFor="time" className="text-[#56ffbc]/80">Deadline (Date and Time)</Label>
+                <Label htmlFor="startTime" className="text-[#56ffbc]/80">Start Date & Time</Label>
                 <Input
-                  id="time"
+                  id="startTime"
                   type="datetime-local"
-                  value={formData.time}
-                  onChange={(e) => handleFormChange("time", e.target.value)}
+                  value={formData.startTime}
+                  onChange={(e) => handleFormChange("startTime", e.target.value)}
                   className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
                 />
               </div>
+              <div>
+                <Label htmlFor="endTime" className="text-[#56ffbc]/80">End Deadline</Label>
+                <Input
+                  id="endTime"
+                  type="datetime-local"
+                  value={formData.endTime}
+                  onChange={(e) => handleFormChange("endTime", e.target.value)}
+                  className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
+                />
+              </div>
+
               <div>
                 <Label htmlFor="location" className="text-[#56ffbc]/80">Location</Label>
                 <Select

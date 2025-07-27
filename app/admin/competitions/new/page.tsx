@@ -40,7 +40,8 @@ export default function NewCompetitionPage() {
   const { toast } = useToast()
 
   const [maincompetition, setMainCompetition] = useState<string | null>(null)
-  const [mainDeadline, setMainDeadline] = useState<string | null>(null)
+  const [startDeadline, setStartDeadline] = useState<string | null>(null)
+  const [endDeadline, setEndDeadline] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -50,7 +51,6 @@ export default function NewCompetitionPage() {
     problemStatement: "",
     rubric: "",
     guidelines: "",
-    deadline: "", // will be auto-populated in useEffect
   })
 
   useEffect(() => {
@@ -58,10 +58,12 @@ export default function NewCompetitionPage() {
       const latest = await getLatestCompetition()
       if (latest) {
         setMainCompetition(latest.id)
-        const deadlineValue = latest.deadline?.toDate?.() ?? new Date(latest.deadline)
-        const formattedDeadline = deadlineValue.toISOString().slice(0, 16)
-        setMainDeadline(formattedDeadline)
-        setFormData((prev) => ({ ...prev, deadline: formattedDeadline })) // ✅ set default deadline
+
+        const start = latest.startDeadline?.toDate?.() ?? new Date(latest.startDeadline)
+        const end = latest.endDeadline?.toDate?.() ?? new Date(latest.endDeadline)
+
+        setStartDeadline(start.toISOString().slice(0, 16))
+        setEndDeadline(end.toISOString().slice(0, 16))
       }
 
       const user = await getAuth().currentUser?.getIdTokenResult()
@@ -99,7 +101,8 @@ export default function NewCompetitionPage() {
       problemStatement: formData.problemStatement,
       rubric: formData.rubric,
       guidelines: formData.guidelines,
-      deadline: Timestamp.fromDate(new Date(formData.deadline)),
+      startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+      endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
       competitionid: maincompetition ?? "",
     })
   }
@@ -113,14 +116,14 @@ export default function NewCompetitionPage() {
 
       toast({
         title: "Success",
-        description: "Competition created successfully!",
+        description: "Challenge created successfully!",
       })
 
       router.push("/admin")
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create competition. Please try again.",
+        description: "Failed to create challenge. Please try again.",
         variant: "destructive",
       })
       console.error("Create error:", error)
@@ -134,6 +137,11 @@ export default function NewCompetitionPage() {
       ...prev,
       [e.target.name]: e.target.value,
     }))
+  }
+
+  const handleDeadlineChange = (key: "start" | "end", value: string) => {
+    if (key === "start") setStartDeadline(value)
+    else setEndDeadline(value)
   }
 
   return (
@@ -178,7 +186,7 @@ export default function NewCompetitionPage() {
                     name="problemStatement"
                     value={formData.problemStatement}
                     onChange={handleChange}
-                    placeholder="Detailed problem statement that participants will work on"
+                    placeholder="Detailed problem statement"
                     rows={6}
                     required
                   />
@@ -191,7 +199,7 @@ export default function NewCompetitionPage() {
                     name="rubric"
                     value={formData.rubric}
                     onChange={handleChange}
-                    placeholder="Detailed rubric for LLM-based evaluation"
+                    placeholder="Rubric for evaluation"
                     rows={6}
                     required
                   />
@@ -204,21 +212,32 @@ export default function NewCompetitionPage() {
                     name="guidelines"
                     value={formData.guidelines}
                     onChange={handleChange}
-                    placeholder="Submission guideline highlights for this challenge"
+                    placeholder="Submission guidelines"
                     rows={4}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="deadline">Submission Deadline</Label>
+                  <Label htmlFor="startDeadline">Start Deadline</Label>
                   <Input
-                    id="deadline"
-                    name="deadline"
+                    id="startDeadline"
                     type="datetime-local"
-                    value={formData.deadline}
-                    onChange={handleChange}
-                    disabled={userRole !== "superadmin"} // ✅ disable for non-superadmin
+                    value={startDeadline ?? ""}
+                    onChange={(e) => handleDeadlineChange("start", e.target.value)}
+                    disabled={userRole !== "superadmin"}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endDeadline">End Deadline</Label>
+                  <Input
+                    id="endDeadline"
+                    type="datetime-local"
+                    value={endDeadline ?? ""}
+                    onChange={(e) => handleDeadlineChange("end", e.target.value)}
+                    disabled={userRole !== "superadmin"}
                     required
                   />
                 </div>

@@ -63,17 +63,18 @@ export async function POST(request: NextRequest) {
     }
 
     const competitionData = await request.json();
-    const { title, description, prizeMoney, deadline, location, isActive, isLocked } = competitionData;
+    const { title, description, prizeMoney, startDeadline, endDeadline, location, isActive, isLocked } = competitionData;
 
-    if (!title || !description || !prizeMoney || !deadline || !location) {
-      console.error("Missing required fields:", { title, description, prizeMoney, deadline, location });
+    if (!title || !description || !prizeMoney || !startDeadline || !endDeadline || !location) {
+      console.error("Missing required fields:", { title, description, prizeMoney, startDeadline, endDeadline, location });
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const deadlineDate = new Date(deadline);
-    if (isNaN(deadlineDate.getTime())) {
-      console.error("Invalid deadline format:", deadline);
-      return NextResponse.json({ error: "Invalid deadline format" }, { status: 400 });
+    const startDate = new Date(startDeadline);
+    const endDate = new Date(endDeadline);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      console.error("Invalid datetime format:", { startDeadline, endDeadline });
+      return NextResponse.json({ error: "Invalid start or end datetime format" }, { status: 400 });
     }
 
     if (location !== "online" && location !== "offsite") {
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
       title,
       description,
       prizeMoney,
-      deadline,
+      startDeadline,
+      endDeadline,
       location,
       isActive: isActive ?? true,
       isLocked: isLocked ?? false,
@@ -96,7 +98,8 @@ export async function POST(request: NextRequest) {
       title,
       description,
       prizeMoney,
-      deadline,
+      startDeadline,
+      endDeadline,
       location,
       isActive: isActive ?? true,
       isLocked: isLocked ?? false,
@@ -107,35 +110,22 @@ export async function POST(request: NextRequest) {
     const maincompetition = competitionRef.id;
 
     try {
-    // Add a new document to the "competitionlist" collection
-    // const competitionRef = await addDoc(collection(db, "competitionlist"), {
-    //   createdAt: serverTimestamp(), // Firestore server timestamp
-    // });
-
-    await adminDb.collection("competitionlist").add({
-      competitionId: maincompetition,
-      createdAt: new Date().toISOString(),
-    });
-
-
-    // Update the document with its own ID
-    // await addDoc(collection(db, "competitionlist"), {
-    //   competitionId: maincompetition,
-    //   createdAt: serverTimestamp()
-    // });
-
-    console.log("Competition added with ID:", competitionRef.id);
-  } catch (error) {
-    console.error("Error adding competition:", error);
-  }
-
+      await adminDb.collection("competitionlist").add({
+        competitionId: maincompetition,
+        createdAt: new Date().toISOString(),
+      });
+      console.log("Competition added with ID:", competitionRef.id);
+    } catch (error) {
+      console.error("Error adding competition:", error);
+    }
 
     const newCompetition: Competition = {
       id: competitionRef.id,
       title,
       description,
       prizeMoney,
-      deadline,
+      startDeadline,
+      endDeadline,
       location,
       isActive: isActive ?? true,
       isLocked: isLocked ?? false,
@@ -145,7 +135,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: "Competition created successfully",
       competition: newCompetition,
-      redirectUrl: `/admin/competition/${maincompetition}`, // Include the redirect URL
+      redirectUrl: `/admin/competition/${maincompetition}`,
     }, { status: 201 });
   } catch (error: any) {
     console.error("Error creating competition:", error);
