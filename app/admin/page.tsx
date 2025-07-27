@@ -67,9 +67,6 @@ export default function AdminDashboard() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#56ffbc] to-[#56ffbc]/80 flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-[#07073a]" />
-                </div>
                 <div>
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/80 bg-clip-text text-transparent">
                     Admin Dashboard

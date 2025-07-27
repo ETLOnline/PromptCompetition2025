@@ -113,13 +113,9 @@ export default function GetChallenges() {
                 <div className="flex gap-2 flex-wrap">
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="border border-[#56ffbc] text-[#07073a] hover:bg-[#56ffbc33]"
-                    onClick={() =>
-                      router.push(`/admin/competitions/${challenge.id}/edit`)
-                    }
+                    className="bg-[#56ffbc] text-black font-semibold hover:bg-[#42e0a8] transition-colors"
+                    onClick={() => router.push(`/admin/competitions/${challenge.id}/edit`)}
                   >
-                    <Settings className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
                 </div>
