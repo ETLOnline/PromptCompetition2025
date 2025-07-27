@@ -24,7 +24,7 @@ export default function AdminDashboard() {
     totalParticipants: 0,
     pendingReviews: 0,
   })
-  //const [loading, setLoading] = useState(true)
+
   useEffect(() => {
       if (!user) {
         router.push("/auth/login")
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-2 border-[#56ffbc]/50 text-[#56ffbc] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300" 
+                className="bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
                 onClick={logout}>
                 Logout
               </Button>
@@ -203,7 +203,8 @@ export default function AdminDashboard() {
                 onClick={() => {
                   if (role === "superadmin") {
                     router.push("/admin/superadmin");
-                  } else {
+                  } 
+                  else {
                     alert("You don't have permission to manage roles.");
                   }
                 }}
@@ -215,8 +216,20 @@ export default function AdminDashboard() {
               {/* Second button: e.g. Judge Management */}
               <Button
                 size="lg"
-                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-                onClick={() => router.push("/admin/judges")}
+                className={`w-full font-semibold transition-all duration-300 ${
+                  role === "superadmin"
+                    ? "bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25"
+                    : "bg-[#1f1f3b] text-gray-400 cursor-not-allowed border border-gray-600"
+                }`}
+                disabled={role !== "superadmin"}
+                onClick={() => {
+                  if (role === "superadmin") {
+                    router.push("/admin/participant-distribution");
+                  } 
+                  else {
+                    alert("You don't have permission to manage roles.");
+                  }
+                }}
               >
                 <Users className="h-4 w-4 mr-2" />
                 Manage Judges
