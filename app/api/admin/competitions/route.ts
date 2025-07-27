@@ -6,22 +6,15 @@ import { initializeApp, getApps, cert } from "firebase-admin/app";
 import type { Competition } from "@/types/auth";
 import { auth } from "@/lib/firebase"
 
-
-// Load Firebase Admin credentials
 const admin = require("firebase-admin");
-
-const serviceAccount = require("@/serviceAccountKey.json"); // path to your downloaded JSON
-// admin.initializeApp({
-//     credential: admin.credential.cert(serviceAccount),
-//   });
-
+const serviceAccount = require("@/serviceAccountKey.json");
 
 if (!getApps().length) {
   console.log("Initializing Firebase Admin SDK...");
   try {
     admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+      credential: admin.credential.cert(serviceAccount),
+    });
     console.log("Firebase Admin SDK initialized successfully");
   } catch (error) {
     console.error("Failed to initialize Firebase Admin SDK:", error);
@@ -30,7 +23,6 @@ if (!getApps().length) {
 }
 
 const adminDb = admin.firestore();
-
 
 export async function GET() {
   try {
@@ -52,7 +44,6 @@ export async function POST(request: NextRequest) {
   try {
     console.log("POST request received at", new Date().toISOString());
 
-    // Authenticate user and check role
     const token = request.headers.get("authorization")?.split("Bearer ")[1];
     if (!token) {
       console.warn("No authentication token provided");
@@ -61,28 +52,18 @@ export async function POST(request: NextRequest) {
 
     const auth = getAuth();
     const user = await auth.verifyIdToken(token);
-    // console.log("Authenticated user ID:", user.uid);
     const userRecord = await auth.getUser(user.uid);
     const role = userRecord.customClaims?.role;
 
-    // const tokenResult = await user.getIdTokenResult(true);
-    // const tokenRole = tokenResult.claims.role;
-
-    
     console.log("User role:", role);
     if (role !== "superadmin") {
       console.warn("User", user.uid, "lacks superadmin role. Current role:", role);
       return NextResponse.json({ error: "Unauthorized: Superadmin access required" }, { status: 403 });
     }
 
-    else if (role == "superadmin") {
-      console.log("User has superadmin role, proceeding with competition creation");
-    }
-
     const competitionData = await request.json();
-    const { title, description, prizeMoney, deadline, location, isActive, isLocked, problemStatement, rubric, evaluationCriteria } = competitionData;
+    const { title, description, prizeMoney, deadline, location, isActive, isLocked } = competitionData;
 
-    // Validate required fields
     if (!title || !description || !prizeMoney || !deadline || !location) {
       console.error("Missing required fields:", { title, description, prizeMoney, deadline, location });
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -99,7 +80,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid location: must be 'online' or 'offsite'" }, { status: 400 });
     }
 
-    // Log Firestore write attempt
     console.log("Attempting to create competition in Firestore with data:", {
       title,
       description,
@@ -111,7 +91,6 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     });
 
-    // Create Firestore document
     const competitionRef = await adminDb.collection("competitions").add({
       title,
       description,
@@ -121,9 +100,6 @@ export async function POST(request: NextRequest) {
       isActive: isActive ?? true,
       isLocked: isLocked ?? false,
       createdAt: new Date().toISOString(),
-      problemStatement: problemStatement || "",
-      rubric: rubric || "",
-      evaluationCriteria: evaluationCriteria || "",
     });
 
     console.log("Competition created with ID:", competitionRef.id);
@@ -138,9 +114,6 @@ export async function POST(request: NextRequest) {
       isActive: isActive ?? true,
       isLocked: isLocked ?? false,
       createdAt: new Date().toISOString(),
-      problemStatement: problemStatement || "",
-      rubric: rubric || "",
-      evaluationCriteria: evaluationCriteria || "",
     };
 
     return NextResponse.json({
