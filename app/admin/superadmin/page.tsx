@@ -83,50 +83,7 @@ export default function SuperAdminPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#121244] rounded-lg p-6 border border-white/10 hover:border-white/20 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <Users className="w-6 h-6 text-blue-400" />
-              <h3 className="text-lg font-semibold text-white">User Management</h3>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">
-              Search, promote, demote, and manage all platform users
-            </p>
-            <div className="flex items-center text-blue-400 text-sm">
-              <Activity className="w-4 h-4 mr-1" />
-              Real-time updates
-            </div>
-          </div>
 
-          <div className="bg-[#121244] rounded-lg p-6 border border-white/10 hover:border-white/20 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <Shield className="w-6 h-6 text-green-400" />
-              <h3 className="text-lg font-semibold text-white">Role Assignment</h3>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">
-              Assign and revoke admin, judge, and superadmin privileges
-            </p>
-            <div className="flex items-center text-green-400 text-sm">
-              <Settings className="w-4 h-4 mr-1" />
-              Advanced controls
-            </div>
-          </div>
-
-          <div className="bg-[#121244] rounded-lg p-6 border border-white/10 hover:border-white/20 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <Crown className="w-6 h-6 text-purple-400" />
-              <h3 className="text-lg font-semibold text-white">Judge Creation</h3>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">
-              Create new judge accounts with automatic role assignment
-            </p>
-            <div className="flex items-center text-purple-400 text-sm">
-              <Users className="w-4 h-4 mr-1" />
-              Instant setup
-            </div>
-          </div>
-        </div>
 
         {/* Main Content */}
         <section className="bg-[#121244] rounded-lg border border-white/10">
