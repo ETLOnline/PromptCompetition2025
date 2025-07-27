@@ -4,7 +4,7 @@ import { collection, addDoc, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import type { Competition } from "@/types/auth";
-import { auth, app } from "@/lib/firebase"
+import { auth } from "@/lib/firebase"
 
 
 // Load Firebase Admin credentials
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const auth = getAuth();
     const user = await auth.verifyIdToken(token);
-    console.log("Authenticated user ID:", user.uid);
+    // console.log("Authenticated user ID:", user.uid);
     const userRecord = await auth.getUser(user.uid);
     const role = userRecord.customClaims?.role;
 
@@ -109,9 +109,6 @@ export async function POST(request: NextRequest) {
       isActive: isActive ?? true,
       isLocked: isLocked ?? false,
       createdAt: new Date().toISOString(),
-      problemStatement,
-      rubric,
-      evaluationCriteria,
     });
 
     // Create Firestore document
