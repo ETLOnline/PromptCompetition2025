@@ -5,7 +5,7 @@ import { getAuth } from "firebase-admin/auth";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 
 // Log entry to confirm API route is called
-console.log("API route /api/admin/competitions invoked at", new Date().toISOString());
+// console.log("API route /api/admin/competitions invoked at", new Date().toISOString());
 
 // Initialize Firebase Admin SDK
 // if (!getApps().length) {
@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(401).json({ error: "Unauthorized: No token provided" });
       }
 
-      console.log("Authenticated user ID:", user.uid);
+      // console.log("Authenticated user ID:", user.uid);
       const userRecord = await auth.getUser(user.uid); // Fixed typo (user.uid instead of user)
       const role = userRecord.customClaims?.role;
       if (role !== "superadmin") {
@@ -65,16 +65,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Log Firestore write attempt
-      console.log("Attempting to create competition in Firestore with data:", {
-        title,
-        description,
-        prizeMoney,
-        deadline,
-        location,
-        isActive: isActive ?? true,
-        isLocked: isLocked ?? false,
-        createdAt: new Date().toISOString(),
-      });
+      // console.log("Attempting to create competition in Firestore with data:", {
+      //   title,
+      //   description,
+      //   prizeMoney,
+      //   deadline,
+      //   location,
+      //   isActive: isActive ?? true,
+      //   isLocked: isLocked ?? false,
+      //   createdAt: new Date().toISOString(),
+      // });
 
       // Create Firestore document
       const competitionRef = await addDoc(collection(db, "competitions"), {
@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         createdAt: new Date().toISOString(),
       });
 
-      console.log("Competition created with ID:", competitionRef.id);
+      // console.log("Competition created with ID:", competitionRef.id);
 
       return res.status(201).json({ success: true, id: competitionRef.id, message: "Competition created successfully" });
     } catch (error) {
