@@ -28,6 +28,7 @@ export default function EditCompetitionPage() {
 
     useEffect(() => {
         const fetchCompetition = async () => {
+        // console.log("Fetching competition data for ID:", process.env.NEXT_PUBLIC_CHALLENGE_DATABASE)
         const docRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, competitionId)
         const docSnap = await getDoc(docRef)
 
