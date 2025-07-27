@@ -34,9 +34,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
   const resolvedParams = use(params)
   
 
-  // used for submission Acknoledgement
-  const [showToast, setShowToast] = useState(false)
-
   // used for Resubmission confirmation
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const confirmActionRef = useRef<() => void>(null);

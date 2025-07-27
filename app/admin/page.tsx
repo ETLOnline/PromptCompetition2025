@@ -24,7 +24,7 @@ export default function AdminDashboard() {
     totalParticipants: 0,
     pendingReviews: 0,
   })
-  //const [loading, setLoading] = useState(true)
+
   useEffect(() => {
       if (!user) {
         router.push("/auth/login")
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-2 border-[#56ffbc]/50 text-[#56ffbc] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300" 
+                className="bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
                 onClick={logout}>
                 Logout
               </Button>
