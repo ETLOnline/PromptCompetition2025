@@ -43,8 +43,6 @@ export default function AdminLoginPage() {
       const idTokenResult = await getIdTokenResult(user, true);
       const role = idTokenResult.claims.role;
   
-      console.log("User role after login:", role);
-  
       if (role !== "admin" && role !== "superadmin" && role !== "judge") {
         setError("Access denied: You are not an admin.");
         await auth.signOut(); // Log them out
@@ -77,16 +75,23 @@ export default function AdminLoginPage() {
       const idTokenResult = await getIdTokenResult(user, true);
       const role = idTokenResult.claims.role;
   
-      console.log("User role after Google login:", role);
-  
-      if (role !== "admin" && role !== "superadmin" && role !== "judge") {
+      if (role !== "admin" && role !== "superadmin" && role !== "judge") 
+      {
         setError("Access denied: You are not an admin.");
         await auth.signOut(); // Log them out
         return;
       }
-  
-      // Redirect only if admin
-      router.push("/admin");
+      
+      if (role == "admin" || role == "superadmin" )
+      {
+        router.push("/admin");      // Redirect only if admin
+      }
+      else if (role == "judge" )
+      {
+        router.push("/judge");
+      }
+
+
     } catch (err: any) {
       console.error("Google login error:", err);
       setError(err.message || "Failed to sign in with Google.");

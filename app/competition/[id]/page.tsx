@@ -44,7 +44,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     if (!user) {
-      router.push("/auth/login")
+      router.push("/")
       return
     }
 

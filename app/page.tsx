@@ -256,8 +256,7 @@ export default function HomePage() {
     )
   }
 
-  console.log("HomePage: User is", user ? "logged in" : "not logged in", ". Rendering landing page content.")
-
+  
   return (
     <>
       <StructuredData />
