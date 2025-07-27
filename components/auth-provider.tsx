@@ -6,24 +6,27 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  User,
+  User,sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
 } from "firebase/auth"
+
 import { doc, setDoc, collection } from "firebase/firestore"
 import { useRouter } from "next/navigation"
 // Define allowed roles
+import { UserCredential } from "firebase/auth";
 type Role = "user" | "admin" | "superadmin" | "judge" | null
 
+
 interface AuthContextType {
-  user: User | null
-  role: Role
-  signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>
-  signIn: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  signInWithGoogle: () => Promise<void>
-  loading: boolean
+  user: User | null;
+  role: string | null; // Add role to context
+  signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>; // Added logout
+  signInWithGoogle: () => Promise<UserCredential>; // Added Google sign-in
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -57,20 +60,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, institution: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    const user = userCredential.user
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
 
-    await setDoc(doc(collection(db, "users"), user.uid), {
-      fullName,
-      email,
-      institution,
-      createdAt: new Date().toISOString(),
-    })
-  }
+  // Send verification email
+  await sendEmailVerification(user);
+
+  // Create user document with isVerified flag
+  await setDoc(doc(collection(db, "users"), user.uid), {
+    fullName,
+    email,
+    institution,
+    createdAt: new Date().toISOString(),
+    isVerified: false, // Track verification status
+  });
+};
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password)
-  }
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    if (!user.emailVerified) {
+      await auth.signOut();
+      throw new Error("Please verify your email before signing in.");
+    }
+  };
 
   const logout = async () => {
     await signOut(auth)
@@ -79,22 +93,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     router.push("/")
   }
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider()
-    const result = await signInWithPopup(auth, provider)
-    const user = result.user
-
-    await setDoc(
-      doc(collection(db, "users"), user.uid),
-      {
-        fullName: user.displayName || "",
-        email: user.email || "",
-        institution: "",
-        createdAt: new Date().toISOString(),
-      },
-      { merge: true }
-    )
+  // Google sign-in function
+  const signInWithGoogle = async (): Promise<UserCredential> => {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    // Optionally, create user doc in Firestore if new
+    const usersCollectionRef = collection(db, "users");
+    await setDoc(doc(usersCollectionRef, user.uid), {
+      fullName: user.displayName || '',
+      email: user.email || '',
+      institution: '', // Google doesn't provide institution by default
+      createdAt: new Date().toISOString(),
+    }, { merge: true });
+    return result; // Explicitly return UserCredential
+  } catch (error: any) {
+    let errorMessage = 'Failed to sign in with Google.';
+    if (error.code === 'auth/popup-closed-by-user') {
+      errorMessage = 'Google sign-in popup was closed.';
+    }
+    throw new Error(errorMessage);
   }
+};
+  // const signInWithGoogle = async () => {
+  //   const provider = new GoogleAuthProvider();
+  //   try {
+  //     const result = await signInWithPopup(auth, provider);
+  //     const user = result.user;
+  //     // Optionally, create user doc in Firestore if new
+  //     const usersCollectionRef = collection(db, "users");
+  //     await setDoc(doc(usersCollectionRef, user.uid), {
+  //       fullName: user.displayName || '',
+  //       email: user.email || '',
+  //       institution: '', // Google doesn't provide institution by default
+  //       createdAt: new Date().toISOString(),
+  //     }, { merge: true });
+  //   } catch (error: any) {
+  //     let errorMessage = 'Failed to sign in with Google.';
+  //     if (error.code === 'auth/popup-closed-by-user') {
+  //       errorMessage = 'Google sign-in popup was closed.';
+  //     }
+  //     throw new Error(errorMessage);
+  //   }
+  // };
 
   return (
     <AuthContext.Provider

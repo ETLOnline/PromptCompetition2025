@@ -4,11 +4,8 @@ import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import admin from "firebase-admin";
-import { LogOut } from "lucide-react"
 import { signInWithEmailAndPassword, getIdTokenResult } from "firebase/auth";
 import { auth } from "@/lib/firebase"; // adjust the path to your actual Firebase client setup
-
 
 // HomeIcon for the "Back to Home" link
 const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -18,14 +15,14 @@ const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, user, role, logout } = useAuth(); // <- use signIn from auth-provider
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth(); // Added signInWithGoogle
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +47,7 @@ export default function AdminLoginPage() {
   
       if (role !== "admin" && role !== "superadmin" && role !== "judge") {
         setError("Access denied: You are not an admin.");
-        await auth.signOut(); // optional: log them out
+        await auth.signOut(); // Log them out
         return;
       }
   
@@ -61,6 +58,40 @@ export default function AdminLoginPage() {
       setError(err.message || "Failed to login. Please check your credentials.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      // Sign in with Google
+      const userCredential = await signInWithGoogle();
+      const user = userCredential.user;
+  
+      if (!user) {
+        throw new Error("Google login failed: No user found.");
+      }
+  
+      // Force refresh the ID token to get latest custom claims
+      const idTokenResult = await getIdTokenResult(user, true);
+      const role = idTokenResult.claims.role;
+  
+      console.log("User role after Google login:", role);
+  
+      if (role !== "admin") {
+        setError("Access denied: You are not an admin.");
+        await auth.signOut(); // Log them out
+        return;
+      }
+  
+      // Redirect only if admin
+      router.push("/admin");
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      setError(err.message || "Failed to sign in with Google.");
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -92,7 +123,7 @@ export default function AdminLoginPage() {
                 required 
                 placeholder="admin@test.com"
                 className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
-                disabled={loading}
+                disabled={loading || googleLoading}
               />
             </div>
 
@@ -106,7 +137,7 @@ export default function AdminLoginPage() {
                 required
                 placeholder="••••••••••"
                 className="w-full px-4 py-3 pr-12 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
-                disabled={loading}
+                disabled={loading || googleLoading}
               />
               <button
                 type="button"
@@ -138,11 +169,30 @@ export default function AdminLoginPage() {
             <button 
               type="submit" 
               className="w-full py-3 bg-[#11998e] text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] focus:ring-offset-2 focus:ring-offset-[#07073a] disabled:bg-[#56ffbc]/50 disabled:cursor-not-allowed transition-all duration-300"
-              disabled={loading}
+              disabled={loading || googleLoading}
             >
               {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
+
+          {/* Google Sign-In Button */}
+          <div className="mt-4 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-white text-black font-bold rounded-lg shadow-lg hover:bg-[#56ffbc]/10 border border-white/30 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] focus:ring-offset-2 focus:ring-offset-[#07073a] disabled:bg-[#56ffbc]/30 disabled:cursor-not-allowed transition-all duration-300"
+              disabled={googleLoading || loading}
+            >
+              {googleLoading ? (
+                <span>Signing in with Google...</span>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_17_40)"><path d="M47.532 24.552c0-1.636-.146-3.2-.418-4.704H24.48v9.02h13.02c-.56 3.02-2.24 5.58-4.76 7.3v6.06h7.7c4.5-4.14 7.09-10.24 7.09-17.68z" fill="#4285F4"/><path d="M24.48 48c6.48 0 11.92-2.14 15.89-5.82l-7.7-6.06c-2.14 1.44-4.88 2.3-8.19 2.3-6.3 0-11.64-4.26-13.56-9.98H2.6v6.26C6.56 43.98 14.7 48 24.48 48z" fill="#34A853"/><path d="M10.92 28.44c-.5-1.44-.8-2.98-.8-4.44s.3-3 .8-4.44v-6.26H2.6A23.98 23.98 0 000 24c0 3.98.96 7.76 2.6 11.18l8.32-6.74z" fill="#FBBC05"/><path d="M24.48 9.52c3.54 0 6.68 1.22 9.17 3.62l6.86-6.86C36.4 2.14 30.96 0 24.48 0 14.7 0 6.56 4.02 2.6 10.08l8.32 6.26c1.92-5.72 7.26-9.98 13.56-9.98z" fill="#EA4335"/></g><defs><clipPath id="clip0_17_40"><rect width="48" height="48" fill="white"/></clipPath></defs></svg>
+                  <span>Sign in with Google</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
