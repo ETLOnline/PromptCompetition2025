@@ -79,7 +79,7 @@ export default function AdminLoginPage() {
   
       console.log("User role after Google login:", role);
   
-      if (role !== "admin") {
+      if (role !== "admin" && role !== "superadmin" && role !== "judge") {
         setError("Access denied: You are not an admin.");
         await auth.signOut(); // Log them out
         return;
