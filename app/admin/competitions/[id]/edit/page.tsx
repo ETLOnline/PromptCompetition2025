@@ -11,10 +11,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft } from "lucide-react"
 
+
+
 export default function EditCompetitionPage() {
     const router = useRouter()
     const params = useParams()
     const competitionId = params?.id as string
+    const { maincompetition } = useParams(); // ✅ This is correct now
+
 
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({

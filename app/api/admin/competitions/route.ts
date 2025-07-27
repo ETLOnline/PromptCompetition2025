@@ -1,10 +1,11 @@
+// app/api/admin/competitions/route.ts
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import type { Competition } from "@/types/auth";
-import { auth } from "@/lib/firebase"
 
 const admin = require("firebase-admin");
 const serviceAccount = require("@/serviceAccountKey.json");
@@ -103,6 +104,31 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("Competition created with ID:", competitionRef.id);
+    const maincompetition = competitionRef.id;
+
+    try {
+    // Add a new document to the "competitionlist" collection
+    // const competitionRef = await addDoc(collection(db, "competitionlist"), {
+    //   createdAt: serverTimestamp(), // Firestore server timestamp
+    // });
+
+    await adminDb.collection("competitionlist").add({
+      competitionId: maincompetition,
+      createdAt: new Date().toISOString(),
+    });
+
+
+    // Update the document with its own ID
+    // await addDoc(collection(db, "competitionlist"), {
+    //   competitionId: maincompetition,
+    //   createdAt: serverTimestamp()
+    // });
+
+    console.log("Competition added with ID:", competitionRef.id);
+  } catch (error) {
+    console.error("Error adding competition:", error);
+  }
+
 
     const newCompetition: Competition = {
       id: competitionRef.id,
@@ -119,6 +145,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: "Competition created successfully",
       competition: newCompetition,
+      redirectUrl: `/admin/competition/${maincompetition}`, // Include the redirect URL
     }, { status: 201 });
   } catch (error: any) {
     console.error("Error creating competition:", error);
