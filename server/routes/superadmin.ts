@@ -42,7 +42,6 @@ async function verifySuperAdmin(req: RequestWithUser, res: Response, next: NextF
 // ✅ POST /superadmin/assign-role
 router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   const { uid, role } = req.body;
-
   if (!uid || !role) {
     return res.status(400).json({ error: "uid and role are required" });
   }
@@ -54,100 +53,135 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
   }
 
   try {
-    // Check if user exists
+    // Fetch target user
     const userRecord = await auth.getUser(uid);
-    
-    // Prevent superadmin from demoting themselves
-    if (req.user?.uid === uid && role !== "superadmin") {
-      return res.status(403).json({ error: "Cannot change your own superadmin role" });
+    const targetRole = userRecord.customClaims?.role;
+
+    // Prevent *any* superadmin from modifying *another* superadmin
+    if (targetRole === "superadmin" && req.user?.uid !== uid) {
+      return res.status(403).json({
+        error: "Forbidden: Cannot change role of another superadmin."
+      });
     }
 
+    // Prevent self‑demotion (superadmin→non‑superadmin)
+    if (req.user?.uid === uid && role !== "superadmin") {
+      return res.status(403).json({
+        error: "Forbidden: Cannot change your own superadmin role."
+      });
+    }
+
+    // Finally, apply the new role
     await auth.setCustomUserClaims(uid, { role });
-    
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: `✅ Role '${role}' assigned to user ${userRecord.email || uid}`,
       user: {
         uid: userRecord.uid,
         email: userRecord.email || "",
         displayName: userRecord.displayName || "",
-        role: role
+        role
       }
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ error: "❌ Failed to assign role", detail: message });
+    const detail = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({
+      error: "❌ Failed to assign role",
+      detail
+    });
   }
 });
 
-// ✅ POST /superadmin/revoke-role
-router.post("/revoke-role", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
-  const { uid } = req.body;
 
-  if (!uid) {
-    return res.status(400).json({ error: "uid is required" });
-  }
-
-  try {
-    const user = await auth.getUser(uid);
-    const currentRole = user.customClaims?.role;
-
-    // Prevent superadmin from revoking their own role
-    if (req.user?.uid === uid) {
-      return res.status(403).json({ error: "❌ Cannot revoke your own role" });
+// 🚫 POST /superadmin/revoke-role
+router.post(
+  "/revoke-role",
+  verifySuperAdmin,
+  async (req: RequestWithUser, res: Response) => {
+    const { uid } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: "uid is required" });
     }
 
-    // Prevent revoking other superadmin roles
-    if (currentRole === "superadmin") {
-      return res.status(403).json({ error: "❌ Cannot revoke role of another superadmin" });
-    }
+    try {
+      // Fetch target user
+      const userRecord = await auth.getUser(uid);
+      const targetRole = userRecord.customClaims?.role;
 
-    await auth.setCustomUserClaims(uid, { role: "user" }); // Set to user instead of clearing
-    return res.status(200).json({ 
-      message: `✅ Role revoked for user ${user.email || uid}`,
-      user: {
-        uid: user.uid,
-        email: user.email || "",
-        displayName: user.displayName || "",
-        role: "user"
+      // 1) No superadmin may touch another superadmin
+      if (targetRole === "superadmin" && req.user?.uid !== uid) {
+        return res
+          .status(403)
+          .json({ error: "Forbidden: Cannot revoke role of another superadmin." });
       }
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ error: "❌ Failed to revoke role", detail: message });
+
+      // 2) Cannot revoke your own superadmin role
+      if (req.user?.uid === uid) {
+        return res
+          .status(403)
+          .json({ error: "Forbidden: Cannot revoke your own superadmin role." });
+      }
+
+      // Demote to "user"
+      await auth.setCustomUserClaims(uid, { role: "user" });
+      return res.status(200).json({
+        message: `✅ Role revoked for user ${userRecord.email || uid}`,
+        user: {
+          uid: userRecord.uid,
+          email: userRecord.email || "",
+          displayName: userRecord.displayName || "",
+          role: "user",
+        },
+      });
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return res
+        .status(500)
+        .json({ error: "❌ Failed to revoke role", detail });
+    }
   }
-});
+);
 
-// ✅ DELETE /superadmin/delete-user
-router.delete("/delete-user", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
-  const { uid } = req.body;
-
-  if (!uid) {
-    return res.status(400).json({ error: "uid is required" });
-  }
-
-  try {
-    const user = await auth.getUser(uid);
-    const currentRole = user.customClaims?.role;
-
-    // Prevent superadmin from deleting themselves
-    if (req.user?.uid === uid) {
-      return res.status(403).json({ error: "❌ Cannot delete your own account" });
+// 🚫 DELETE /superadmin/delete-user
+router.delete(
+  "/delete-user",
+  verifySuperAdmin,
+  async (req: RequestWithUser, res: Response) => {
+    const { uid } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: "uid is required" });
     }
 
-    // Prevent deleting other superadmins
-    if (currentRole === "superadmin") {
-      return res.status(403).json({ error: "❌ Cannot delete another superadmin" });
-    }
+    try {
+      // Fetch target user
+      const userRecord = await auth.getUser(uid);
+      const targetRole = userRecord.customClaims?.role;
 
-    await auth.deleteUser(uid);
-    return res.status(200).json({ 
-      message: `✅ User ${user.email || uid} has been deleted successfully`
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ error: "❌ Failed to delete user", detail: message });
+      // 1) No superadmin may delete another superadmin
+      if (targetRole === "superadmin" && req.user?.uid !== uid) {
+        return res
+          .status(403)
+          .json({ error: "Forbidden: Cannot delete another superadmin." });
+      }
+
+      // 2) Cannot delete your own account
+      if (req.user?.uid === uid) {
+        return res
+          .status(403)
+          .json({ error: "Forbidden: Cannot delete your own superadmin account." });
+      }
+
+      await auth.deleteUser(uid);
+      return res.status(200).json({
+        message: `✅ User ${userRecord.email || uid} has been deleted successfully`,
+      });
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return res
+        .status(500)
+        .json({ error: "❌ Failed to delete user", detail });
+    }
   }
-});
+);
 
 // ✅ POST /superadmin/create-judge
 router.post("/create-judge", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
