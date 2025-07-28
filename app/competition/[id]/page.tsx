@@ -23,8 +23,6 @@ import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 
-
-// Extended interface to include Firebase data
 export default function CompetitionPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth()
   const router = useRouter()
@@ -32,15 +30,10 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
   const [prompt, setPrompt] = useState("")
   const [loading, setLoading] = useState(true)
   const resolvedParams = use(params)
-  
 
-  // used for Resubmission confirmation
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const confirmActionRef = useRef<() => void>(null);
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
-
-
-
 
   useEffect(() => {
     if (!user) {
@@ -53,24 +46,22 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
 
   const fetchCompetitionData = async () => {
     try {
-      // Fetch from Firebase first
       const challengeRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, resolvedParams.id)
       const challengeSnap = await getDoc(challengeRef)
-      
-      let competitionData = null
-      
+
       if (challengeSnap.exists()) {
         const firebaseData = challengeSnap.data()
-        // Convert Firebase data to match your Competition interface
-        competitionData = {
+
+        const competitionData: Competition = {
           id: resolvedParams.id,
           title: firebaseData.title,
-          problemStatement: firebaseData.problemStatement, 
-          deadline: firebaseData.deadline?.toDate?.() || firebaseData.deadline,
-          isLocked: false, // Add your logic here
+          problemStatement: firebaseData.problemStatement,
+          startDeadline: firebaseData.startDeadline?.toDate?.() || firebaseData.startDeadline,
+          endDeadline: firebaseData.endDeadline?.toDate?.() || firebaseData.endDeadline,
+          isLocked: false,
           guidelines: firebaseData.guidelines,
-          // Add other fields as needed
         }
+
         setCompetition(competitionData)
       }
     } catch (error) {
@@ -112,12 +103,10 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  // Derived values
-  const isCompetitionLocked = competition.isLocked || new Date() > new Date(competition.deadline)
+  const isCompetitionLocked = competition.endDeadline && new Date() > new Date(competition.endDeadline)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Header */}
       <header className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
@@ -135,7 +124,6 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                   <Trophy className="h-8 w-8 text-[#56ffbc]" />
                   <h1 className="text-3xl font-bold text-gray-800">{competition.title}</h1>
                 </div>
-                
                 <div className="flex items-center gap-3">
                   <Badge 
                     variant="secondary" 
@@ -154,151 +142,143 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="mx-[175px] py-8 px-6 sm:px-16 lg:px-8">
-    
-          <div className="space-y-8">
-
-            {/* Competition Details Card */}
-            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
-                <CardTitle className="text-[#07073a] text-lg font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#07073a]" />
-                  Challenge Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">Description</h3>
-                  <p className="text-gray-700 leading-relaxed">{competition.problemStatement}</p>
-                </div>
-                
-                <div>
+        <div className="space-y-8">
+          <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
+              <CardTitle className="text-[#07073a] text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#07073a]" />
+                Challenge Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div>
+                <h3 className="font-semibold text-gray-800 mb-3">Problem Statement</h3>
+                <p className="text-gray-700 leading-relaxed">{competition.problemStatement}</p>
+              </div>
+              <Card className="mb-6">
+                <CardContent className="p-6">
                   <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                     <Clock className="h-4 w-4 text-orange-500" />
-                    Deadline
+                    Competition Timeline
                   </h3>
-                  <p className="text-gray-700 bg-orange-50 p-3 rounded-lg border border-orange-200">
-                    {new Date(competition.deadline).toLocaleDateString()} at{" "}
-                    {new Date(competition.deadline).toLocaleTimeString()}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-
-            {/* Guidelines Card */}
-            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
-                <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                  <Target className="h-5 w-5 text-[#07073a]" />
-                  How to Craft Your Prompt
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {competition.guidelines}
+                  <div className="text-gray-700 bg-orange-50 p-3 rounded-lg border border-orange-200 space-y-2">
+                    <div>
+                      <strong>Starts:</strong>{" "}
+                      {new Date(competition.startDeadline).toLocaleDateString()} at{" "}
+                      {new Date(competition.startDeadline).toLocaleTimeString()}
+                    </div>
+                    <div>
+                      <strong>Ends:</strong>{" "}
+                      {new Date(competition.endDeadline).toLocaleDateString()} at{" "}
+                      {new Date(competition.endDeadline).toLocaleTimeString()}
+                    </div>
                   </div>
-              </CardContent>
-            </Card>
-            
-            
-            {/* Prompt Input Card */}
-            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-green-50 border-b border-gray-100">
-                <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
-                  <Send className="h-5 w-5 text-[#07073a]" />
-                  Your Solution
-                </CardTitle> 
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                
-                <div>
-                  <Label htmlFor="prompt" className="text-gray-800 font-medium mb-2 block">
-                    Prompt Text
-                  </Label>
-                  <Textarea
-                    id="prompt"
-                    placeholder="Enter your carefully crafted prompt here..."
-                    value={prompt}
-                    onChange={(e) => {
-                      setPrompt(e.target.value)
-                    }}
-                    className="min-h-[250px] font-mono text-sm bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-500 focus:border-[#56ffbc] focus:ring-[#56ffbc] focus:bg-white transition-colors"
-                    disabled={isCompetitionLocked}
-                  />
-                </div>
-                
-                {/* Stats and Actions */}
-                <div className="flex items-center justify-between pt-2">
-                  
-                  <div className="text-xs text-gray-500">
-                    Characters: {prompt.length} | Words: {prompt.split(/\s+/).filter(Boolean).length}
-                  </div>
+                </CardContent>
+              </Card>
 
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={async () => {
-                        if (hasSubmittedOnce) 
-                        {
-                          confirmActionRef.current = async () => {
-                            setLoading(true);
-                            await submitPrompt(user.uid, resolvedParams.id, prompt);
-                            setLoading(false);  
-                          };
-                          setIsConfirmModalOpen(true);
-                        } 
-                        else 
-                        {
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-blue-50 border-b border-gray-100">
+              <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
+                <Target className="h-5 w-5 text-[#07073a]" />
+                How to Craft Your Prompt
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {competition.guidelines}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-[#56ffbc] to-green-50 border-b border-gray-100">
+              <CardTitle className="text-gray-800 text-lg font-semibold flex items-center gap-2">
+                <Send className="h-5 w-5 text-[#07073a]" />
+                Your Solution
+              </CardTitle> 
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div>
+                <Label htmlFor="prompt" className="text-gray-800 font-medium mb-2 block">
+                  Prompt Text
+                </Label>
+                <Textarea
+                  id="prompt"
+                  placeholder="Enter your carefully crafted prompt here..."
+                  value={prompt}
+                  onChange={(e) => {
+                    setPrompt(e.target.value)
+                  }}
+                  className="min-h-[250px] font-mono text-sm bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-500 focus:border-[#56ffbc] focus:ring-[#56ffbc] focus:bg-white transition-colors"
+                  disabled={isCompetitionLocked}
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <div className="text-xs text-gray-500">
+                  Characters: {prompt.length} | Words: {prompt.split(/\s+/).filter(Boolean).length}
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={async () => {
+                      if (hasSubmittedOnce) 
+                      {
+                        confirmActionRef.current = async () => {
                           setLoading(true);
                           await submitPrompt(user.uid, resolvedParams.id, prompt);
-                          setLoading(false);
-
-                          setHasSubmittedOnce(true); // track first submission
-                        }
-                      }}
-
-                      disabled={!prompt.trim() || isCompetitionLocked || loading}
-                      size="sm"
-                      className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold shadow-md"
-                    >
-                    <Send className="h-4 w-4 mr-2" />
-                      {loading ? "Submitting..." : "Submit Prompt"}
-                    </Button>
-                  </div>
-                  
-                  {/* Asks user before Resubmitting */}
-                  {isConfirmModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                      <div className="bg-white rounded-lg shadow-lg p-6 w-[300px] text-center">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Update submission?</h2>
-                        <div className="flex justify-center gap-4">
-                          <Button
-                            className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800"
-                            onClick={async () => {
-                              setIsConfirmModalOpen(false);
-                              if (confirmActionRef.current) {
-                                await confirmActionRef.current();
-                                setHasSubmittedOnce(true);
-                              }
-                            }}
-                          >
-                            Yes
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => setIsConfirmModalOpen(false)}
-                          >
-                            No
-                          </Button>
-                        </div>
+                          setLoading(false);  
+                        };
+                        setIsConfirmModalOpen(true);
+                      } 
+                      else 
+                      {
+                        setLoading(true);
+                        await submitPrompt(user.uid, resolvedParams.id, prompt);
+                        setLoading(false);
+                        setHasSubmittedOnce(true);
+                      }
+                    }}
+                    disabled={!prompt.trim() || isCompetitionLocked || loading}
+                    size="sm"
+                    className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold shadow-md"
+                  >
+                  <Send className="h-4 w-4 mr-2" />
+                    {loading ? "Submitting..." : "Submit Prompt"}
+                  </Button>
+                </div>
+                {isConfirmModalOpen && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-[300px] text-center">
+                      <h2 className="text-lg font-semibold text-gray-800 mb-4">Update submission?</h2>
+                      <div className="flex justify-center gap-4">
+                        <Button
+                          className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800"
+                          onClick={async () => {
+                            setIsConfirmModalOpen(false);
+                            if (confirmActionRef.current) {
+                              await confirmActionRef.current();
+                              setHasSubmittedOnce(true);
+                            }
+                          }}
+                        >
+                          Yes
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() => setIsConfirmModalOpen(false)}
+                        >
+                          No
+                        </Button>
                       </div>
                     </div>
-                  )}
-
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
