@@ -31,6 +31,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { validateEmail, validatePassword } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -80,6 +81,7 @@ export interface Stats {
 export interface CreateUserForm {
   email: string
   password: string
+  confirmPassword: string
   displayName: string
   role: string
 }
@@ -372,9 +374,11 @@ export default function UserRoleManager() {
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     email: "",
     password: "",
+    confirmPassword: "",
     displayName: "",
-    role: "user",
+    role: "",
   })
+  const [formError, setFormError] = useState<string | null>(null)
   const [selectedExistingUsers, setSelectedExistingUsers] = useState<Set<string>>(new Set())
   const [roleToAssign, setRoleToAssign] = useState("")
   const [promoteSearchQuery, setPromoteSearchQuery] = useState("")
@@ -593,31 +597,54 @@ export default function UserRoleManager() {
   }
 
   async function createUser() {
-    if (!createUserForm.email || !createUserForm.password || !createUserForm.displayName) {
-      showNotification("warning", "Validation Error", "Please fill in all required fields")
-      return
+    const allowedRoles = ["judge", "admin", "superadmin"]
+    if (
+      !createUserForm.displayName ||
+      !createUserForm.role ||
+      !allowedRoles.includes(createUserForm.role)
+    ) {
+      setFormError("Please fill in all required fields and select a valid role");
+      return;
     }
+    // Email & password validation
+    const emailError = validateEmail(createUserForm.email);
+    if (emailError) {
+      setFormError(emailError);
+      return;
+    }
+
+    const passwordError = validatePassword(createUserForm.password);
+    if (passwordError) {
+      setFormError(passwordError);
+      return;
+    }
+    if (createUserForm.password !== createUserForm.confirmPassword) {
+      setFormError("Passwords do not match");
+      return;
+    }
+
 
     try {
       setLoading((p) => ({ ...p, action: true }))
       const token = await getIdToken()
-      const res = await fetch("http://localhost:8080/superadmin/create-judge", {
+      const res = await fetch("http://localhost:8080/superadmin/create-user", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(createUserForm),
       })
       const data = await res.json()
       if (res.ok) {
+        setFormError(null);
         showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
-        setCreateUserForm({ email: "", password: "", displayName: "", role: "user" })
+        setCreateUserForm({ email: "", password: "",confirmPassword: "", displayName: "", role: "" })
         setShowCreateUser(false)
         fetchAllUsers()
         fetchStats()
       } else {
-        showNotification("error", "Creation Failed", data.error || "Failed to create user")
+        setFormError(data.error || "Failed to create user");
       }
     } catch (error) {
-      showNotification("error", "Creation Failed", "Failed to create user")
+      setFormError("Failed to create user");
     } finally {
       setLoading((p) => ({ ...p, action: false }))
     }
@@ -937,13 +964,13 @@ export default function UserRoleManager() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">Role *</Label>
               <Select
                 value={createUserForm.role}
                 onValueChange={(value) => setCreateUserForm((f) => ({ ...f, role: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="judge">Judge</SelectItem>
@@ -979,21 +1006,58 @@ export default function UserRoleManager() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Minimum 6 characters"
+                placeholder="Minimum 10 characters"
                 value={createUserForm.password}
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, password: e.target.value }))}
               />
             </div>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password *</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="Re-enter password"
+              value={createUserForm.confirmPassword}
+              onChange={(e) => setCreateUserForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+            />
+          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateUser(false)} disabled={loading.action}>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCreateUserForm({
+                  email: "",
+                  password: "",
+                  confirmPassword: "",
+                  displayName: "",
+                  role: ""
+                });
+                setFormError(null);
+                setShowCreateUser(false);
+              }}
+              disabled={loading.action}
+            >
               Cancel
             </Button>
-            <Button onClick={createUser} disabled={loading.action}>
+
+            <div className="flex items-center justify-end gap-2 sm:ml-auto sm:flex-row">
+            <Button
+              onClick={createUser}
+              disabled={loading.action}
+              className="whitespace-nowrap"
+            >
               {loading.action ? "Creating..." : "Create User"}
             </Button>
+            {formError && (
+              <p className="text-sm text-red-600 max-w-[200px] whitespace-normal">
+                {formError}
+              </p>
+            )}
+          </div>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
