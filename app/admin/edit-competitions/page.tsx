@@ -3,17 +3,43 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Edit, Trophy, Calendar, Users, ArrowLeft, RefreshCw } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Edit,
+  Trophy,
+  Calendar,
+  ArrowLeft,
+  RefreshCw,
+  MapPin,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  Lock,
+  Trash2,
+} from "lucide-react"
 
 export default function EditCompetitions() {
   const { role, user } = useAuth()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [competitionToDelete, setCompetitionToDelete] = useState<any>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!user || role !== "superadmin") {
@@ -40,6 +66,79 @@ export default function EditCompetitions() {
     fetchCompetitions()
   }, [user, role])
 
+  const handleDeleteClick = (competition: any) => {
+    setCompetitionToDelete(competition)
+    setDeleteDialogOpen(true)
+  }
+
+  // const handleDelete = async () => {
+  //   if (!competitionToDelete) return
+
+  //   try {
+  //     setDeleting(true)
+  //     await deleteDoc(doc(db, "competitions", competitionToDelete.id))
+  //     setCompetitions((prev) => prev.filter((c) => c.id !== competitionToDelete.id))
+  //     setDeleteDialogOpen(false)
+  //     setCompetitionToDelete(null)
+  //   } catch (err) {
+  //     console.error("Error deleting competition:", err)
+  //   } finally {
+  //     setDeleting(false)
+  //   }
+  // }
+
+  const handleDelete = async () => {
+  if (!competitionToDelete) return
+
+  try {
+    setDeleting(true)
+
+    const res = await fetch("/api/delete-competition", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: competitionToDelete.id }),
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json()
+      console.error("Admin deletion failed:", errorData)
+      return
+    }
+
+    setCompetitions((prev) => prev.filter((c) => c.id !== competitionToDelete.id))
+    setDeleteDialogOpen(false)
+    setCompetitionToDelete(null)
+  } catch (err) {
+    console.error("Unexpected error during deletion:", err)
+  } finally {
+    setDeleting(false)
+  }
+}
+
+
+  // Helper function to format dates
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Not set"
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  // Helper function to format date and time
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return "Not set"
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
   // Loading skeleton component
   const CompetitionSkeleton = () => (
     <Card className="animate-pulse">
@@ -53,11 +152,16 @@ export default function EditCompetitions() {
           <div className="p-2 rounded-lg bg-muted w-9 h-9"></div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 space-y-4">
+        <div className="space-y-2">
+          <div className="h-4 bg-muted rounded w-20"></div>
+          <div className="h-4 bg-muted rounded w-24"></div>
+          <div className="h-4 bg-muted rounded w-28"></div>
+        </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="h-4 bg-muted rounded w-20"></div>
-            <div className="h-4 bg-muted rounded w-16"></div>
+          <div className="flex gap-2">
+            <div className="h-6 bg-muted rounded w-16"></div>
+            <div className="h-6 bg-muted rounded w-14"></div>
           </div>
           <div className="h-8 bg-muted rounded w-16"></div>
         </div>
@@ -131,30 +235,84 @@ export default function EditCompetitions() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                          {comp.startDate && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>{new Date(comp.startDate).toLocaleDateString()}</span>
-                            </div>
+                    <CardContent className="pt-0 space-y-4">
+                      {/* Competition Details */}
+                      <div className="space-y-3">
+                        {comp.location && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            <span>{comp.location}</span>
+                          </div>
+                        )}
+                        {comp.prizeMoney && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <DollarSign className="w-4 h-4" />
+                            <span>{comp.prizeMoney}</span>
+                          </div>
+                        )}
+                        {comp.startDeadline && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            <span>Starts: {formatDateTime(comp.startDeadline)}</span>
+                          </div>
+                        )}
+                        {comp.endDeadline && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            <span>Ends: {formatDateTime(comp.endDeadline)}</span>
+                          </div>
+                        )}
+                        {comp.createdAt && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            <span>Created: {formatDate(comp.createdAt)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status and Actions */}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <div className="flex items-center gap-2">
+                          {comp.isActive ? (
+                            <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200">
+                              <CheckCircle className="w-3 h-3" />
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1 text-slate-600 border-slate-200">
+                              <Clock className="w-3 h-3" />
+                              Inactive
+                            </Badge>
                           )}
-                          {comp.participantCount && (
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>{comp.participantCount}</span>
-                            </div>
+                          {comp.isLocked && (
+                            <Badge variant="outline" className="gap-1 text-amber-600 border-amber-200">
+                              <Lock className="w-3 h-3" />
+                              Locked
+                            </Badge>
                           )}
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => router.push(`/admin/edit-competitions/${comp.id}`)}
-                          className="gap-2"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => router.push(`/admin/edit-competitions/${comp.id}`)}
+                            className="gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteClick(comp)
+                            }}
+                            className="gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -164,6 +322,42 @@ export default function EditCompetitions() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-600" />
+              Delete Competition
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>"{competitionToDelete?.title}"</strong>? This action cannot be
+              undone and will permanently remove the competition and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Competition
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
