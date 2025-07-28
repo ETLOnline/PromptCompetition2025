@@ -751,17 +751,7 @@ export default function UserRoleManager() {
           </div>
         ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatsCard
-              title="All Users"
-              count={stats.total}
-              icon={Users}
-              color="text-slate-700"
-              bgColor="bg-slate-50"
-              borderColor="border-slate-200"
-              role="all"
-              selectedRole={selectedRole}
-              onSelectRole={setSelectedRole}
-            />
+            
             {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => (
               <StatsCard
                 key={roleKey}
