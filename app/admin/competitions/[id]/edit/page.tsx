@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { getDoc, doc, updateDoc } from "firebase/firestore"
+import { getDoc, doc, updateDoc, Timestamp } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
 import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,7 +28,7 @@ export default function EditCompetitionPage() {
 
   useEffect(() => {
     const fetchCompetition = async () => {
-      const docRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, competitionId)
+      const docRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE!, competitionId)
       const docSnap = await getDoc(docRef)
 
       if (docSnap.exists()) {
@@ -53,8 +54,30 @@ export default function EditCompetitionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+
     try {
-      await updateDoc(doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, competitionId), formData)
+      const auth = getAuth()
+      const user = auth.currentUser
+
+      if (!user) throw new Error("User not authenticated")
+
+      const userUID = user.uid
+      const userDocRef = doc(db, "users", userUID)
+      const userDocSnap = await getDoc(userDocRef)
+
+      if (!userDocSnap.exists()) throw new Error("User document not found")
+
+      const userData = userDocSnap.data()
+      const email = userData.email ?? ""
+      const fullName = userData.fullName ?? ""
+
+      await updateDoc(doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE!, competitionId), {
+        ...formData,
+        emailoflatestupdate: email,
+        nameoflatestupdate: fullName,
+        lastupdatetime: Timestamp.now(),
+      })
+
       router.push("/admin")
     } catch (error) {
       console.error("Error updating competition:", error)

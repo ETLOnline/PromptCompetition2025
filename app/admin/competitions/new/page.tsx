@@ -24,6 +24,8 @@ import {
   Timestamp,
   collection
 } from "firebase/firestore"
+import { getDoc } from "firebase/firestore" // add this at the top
+
 import { getFirestore, orderBy, limit, query } from "firebase/firestore"
 
 async function getLatestCompetition() {
@@ -89,23 +91,41 @@ export default function NewCompetitionPage() {
     return nextID.toString().padStart(2, "0")
   }
 
-  const uploadToFirestore = async () => {
-    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
-    if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-    const ID = await getLatestCustomID()
+const uploadToFirestore = async () => {
+  const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
+  if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-    await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
-      title: formData.title,
-      description: formData.description,
-      problemStatement: formData.problemStatement,
-      rubric: formData.rubric,
-      guidelines: formData.guidelines,
-      startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-      endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
-      competitionid: maincompetition ?? "",
-    })
-  }
+  const ID = await getLatestCustomID()
+
+  const auth = getAuth()
+  const user = auth.currentUser
+
+  if (!user) throw new Error("User not authenticated")
+
+  const userUID = user.uid
+  const userDocRef = doc(db, "users", userUID)
+  const userDocSnap = await getDoc(userDocRef)  // ✅ FIXED HERE
+
+  if (!userDocSnap.exists()) throw new Error("User document not found")
+
+  const userData = userDocSnap.data()
+  const email = userData.email ?? ""
+  const fullName = userData.fullName ?? ""
+
+  await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
+    title: formData.title,
+    problemStatement: formData.problemStatement,
+    rubric: formData.rubric,
+    guidelines: formData.guidelines,
+    startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+    endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+    competitionid: maincompetition ?? "",
+    emailoflatestupdate: email,
+    nameoflatestupdate: fullName,
+    lastupdatetime: Timestamp.now(),
+  })
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
