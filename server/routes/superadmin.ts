@@ -183,16 +183,40 @@ router.delete(
   }
 );
 
-// ✅ POST /superadmin/create-judge
-router.post("/create-judge", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
-  const { email, password, displayName } = req.body;
+// ✅ POST /superadmin/create-user
+router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
+  const { email, password, displayName, role } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
+  const allowedRoles = ["superadmin", "admin", "judge"];
+
+  // Basic presence check
+  if (!email || !password || !displayName || !role) {
+    return res.status(400).json({ error: "All fields are required: email, password, displayName, role" });
   }
 
-  if (password.length < 6) {
-    return res.status(400).json({ error: "Password must be at least 6 characters long" });
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  // Password validation
+  const validatePassword = (pw: string): string | null => {
+    if (pw.length <= 10) return "Password must be longer than 10 characters.";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return "Password must include at least one special character.";
+    if (!/\d/.test(pw)) return "Password must include at least one number.";
+    if (!/[A-Z]/.test(pw)) return "Password must include at least one capital letter.";
+    return null;
+  };
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ error: passwordError });
+  }
+
+  // Role validation
+  if (!allowedRoles.includes(role)) {
+    return res.status(400).json({ error: `Invalid role. Must be one of: ${allowedRoles.join(", ")}` });
   }
 
   try {
@@ -204,21 +228,21 @@ router.post("/create-judge", verifySuperAdmin, async (req: RequestWithUser, res:
       emailVerified: false
     });
 
-    // Assign judge role
-    await auth.setCustomUserClaims(userRecord.uid, { role: "judge" });
+    // Assign custom role claim
+    await auth.setCustomUserClaims(userRecord.uid, { role });
 
     return res.status(201).json({
-      message: `✅ Judge account created successfully for ${email}`,
+      message: `✅ ${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
       user: {
         uid: userRecord.uid,
         email: userRecord.email || "",
         displayName: userRecord.displayName || "",
-        role: "judge"
+        role
       }
     });
   } catch (err: any) {
-    let errorMessage = "Failed to create judge account";
-    
+    let errorMessage = "Failed to create user account";
+
     if (err.code === "auth/email-already-exists") {
       errorMessage = "Email already exists";
     } else if (err.code === "auth/invalid-email") {
@@ -227,12 +251,14 @@ router.post("/create-judge", verifySuperAdmin, async (req: RequestWithUser, res:
       errorMessage = "Password is too weak";
     }
 
-    return res.status(400).json({ 
-      error: `❌ ${errorMessage}`, 
-      detail: err.message 
+    return res.status(400).json({
+      error: `❌ ${errorMessage}`,
+      detail: err.message
     });
   }
 });
+
+
 
 // ✅ GET /superadmin/users — all users with pagination and filtering
 router.get("/users", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
