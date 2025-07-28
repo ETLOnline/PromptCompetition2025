@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
-
 import { db } from "@/lib/firebase"
 import {
   getDocs,
@@ -28,8 +27,11 @@ import {
   query,
   orderBy,
   limit,
-  where
+  where,
+  deleteDoc,
+  doc
 } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
 
 type Challenge = {
   id: string
@@ -46,12 +48,21 @@ type Challenge = {
 
 export default function GetChallenges() {
   const [challenges, setChallenges] = useState<Challenge[]>([])
-  const router = useRouter()
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const router = useRouter()
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
+
 
   useEffect(() => {
-    const fetchChallenges = async () => {
+    const fetchUserRoleAndChallenges = async () => {
       try {
+        const auth = getAuth()
+        const tokenResult = await auth.currentUser?.getIdTokenResult()
+        const role = tokenResult?.claims?.role || null
+        setUserRole(role)
+
         const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
         if (!CHALLENGE_COLLECTION) {
           throw new Error("NEXT_PUBLIC_CHALLENGE_DATABASE is not defined in the environment")
@@ -81,12 +92,24 @@ export default function GetChallenges() {
 
         setChallenges(fetched)
       } catch (error) {
-        console.error("Error fetching challenges:", error)
+        console.error("Error fetching challenges or user role:", error)
       }
     }
 
-    fetchChallenges()
+    fetchUserRoleAndChallenges()
   }, [])
+
+  const handleDelete = async (challengeId: string) => {
+    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
+    if (!CHALLENGE_COLLECTION) return
+
+    try {
+      await deleteDoc(doc(db, CHALLENGE_COLLECTION, challengeId))
+      setChallenges((prev) => prev.filter((c) => c.id !== challengeId))
+    } catch (err) {
+      console.error("Error deleting challenge:", err)
+    }
+  }
 
   return (
     <div className="mb-8 bg-[#07073a] text-white min-h-screen p-6 rounded-lg">
@@ -173,6 +196,58 @@ export default function GetChallenges() {
                   >
                     Edit
                   </Button>
+
+                  {["admin", "superadmin"].includes(userRole || "") && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="bg-red-500 hover:bg-red-600 text-white font-semibold"
+                        onClick={() => {
+                          setChallengeToDelete(challenge.id)
+                          setDeleteConfirmOpen(true)
+                        }}
+                      >
+                        Delete
+                      </Button>
+
+                        {/* Delete Confirmation Dialog */}
+                        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                          <DialogContent className="bg-[#0c0c4f] border-[#56ffbc]/30 text-white rounded-2xl">
+                            <DialogHeader>
+                              <DialogTitle className="text-red-400">Are you sure?</DialogTitle>
+                              <DialogDescription className="text-gray-300">
+                                This action will permanently delete the challenge. This cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                onClick={() => {
+                                  setChallengeToDelete(null)
+                                  setDeleteConfirmOpen(false)
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                className="bg-red-500 hover:bg-red-600 text-white font-semibold"
+                                onClick={async () => {
+                                  if (!challengeToDelete) return
+                                  await handleDelete(challengeToDelete)
+                                  setChallengeToDelete(null)
+                                  setDeleteConfirmOpen(false)
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </>
+                    )}
+
+
                   <Dialog open={showModal} onOpenChange={setShowModal}>
                     <DialogContent className="bg-[#0c0c4f] border-[#56ffbc]/30 text-white rounded-2xl">
                       <DialogHeader>
