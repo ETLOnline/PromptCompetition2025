@@ -160,6 +160,21 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+
+            {role === "superadmin" && (
+              <div className="mr-1"> {/* slightly reduce spacing to the right */}
+                <Button
+                  size="lg"
+                  className="bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
+                  onClick={() => router.push("/admin/edit-competitions")}
+                >
+                  <Settings className="h-5 w-5 mr-2" />
+                  Edit Competition
+                </Button>
+              </div>
+            )}
+
+
             <div className="flex items-center gap-3">
               <Button
                 size="lg"
