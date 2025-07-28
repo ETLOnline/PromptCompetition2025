@@ -1,636 +1,1013 @@
-'use client';
+"use client"
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { UserCheck, Settings, Shuffle, ChevronDown, Trophy, Search, X, CheckCircle2, AlertCircle, Hash, Info } from 'lucide-react';
-import { writeBatch, doc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getIdTokenResult } from 'firebase/auth';
-import { getIdToken } from "@/lib/firebaseAuth";
-
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import {
+  UserCheck,
+  Settings,
+  Shuffle,
+  Trophy,
+  Search,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Hash,
+  Info,
+  Loader,
+  Users,
+  Target,
+  ArrowRight,
+  Check,
+  Clock,
+  Zap,
+  ChevronRight,
+  Star,
+  Award,
+  TrendingUp,
+} from "lucide-react"
+import { writeBatch, doc, collection, query, orderBy, limit, getDocs, getDoc, setDoc, Timestamp, serverTimestamp } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { getAuth, onAuthStateChanged } from "firebase/auth"
+import { getIdTokenResult } from "firebase/auth"
+import { getIdToken } from "@/lib/firebaseAuth"
 
 interface Judge {
-    id: string;
-    name: string;
-    email: string;
-    institution?: string;
+    id: string
+    name: string
+    email: string
+    institution?: string
+    status?: "available" | "busy" | "offline"
+    rating?: number
+    totalAssigned?: number
 }
 
 interface JudgeCapacity {
-    judgeId: string;
-    capacity: number;
+    judgeId: string
+    capacity: number
 }
 
-type AssignmentMethod = 'Round-Robin' | 'Weighted' | 'Automatic';
+type AssignmentMethod = "Round-Robin" | "Weighted" | "Automatic"
 
 export default function ParticipantDistribution() {
-    const router = useRouter();
-    const [totalParticipants, setTotalParticipants] = useState<number>(0);
-    const [judges, setJudges] = useState<Judge[]>([]);
-    const [selectedTopN, setSelectedTopN] = useState<number>(0);
-    const [selectedJudges, setSelectedJudges] = useState<string[]>([]);
-    const [assignmentMethod, setAssignmentMethod] = useState<AssignmentMethod | null>(null);
-    const [judgeCapacities, setJudgeCapacities] = useState<JudgeCapacity[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [fetchingData, setFetchingData] = useState(true);
-    const [judgeAssignments, setJudgeAssignments] = useState<{ [key: string]: number }>({});
-    const [currentUser, setCurrentUser] = useState<any>(null);
-    const [judgeSearch, setJudgeSearch] = useState('');
-    const [toast, setToast] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+    const router = useRouter()
+    const [totalParticipants, setTotalParticipants] = useState<number>(0)
+    const [judges, setJudges] = useState<Judge[]>([])
+    const [selectedJudges, setSelectedJudges] = useState<string[]>([])
+    const [assignmentMethod, setAssignmentMethod] = useState<AssignmentMethod | null>(null)
+    const [judgeCapacities, setJudgeCapacities] = useState<JudgeCapacity[]>([])
+    const [loading, setLoading] = useState(false)
+    const [fetchingData, setFetchingData] = useState(true)
+    const [judgeAssignments, setJudgeAssignments] = useState<{ [key: string]: number }>({})
+    const [currentUser, setCurrentUser] = useState<any>(null)
+    const [judgeSearch, setJudgeSearch] = useState("")
+    const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null)
+    const [existingAssignments, setExistingAssignments] = useState<{ [key: string]: number }>({})
+    const [currentStep, setCurrentStep] = useState<number>(1)
+    const [selectedTopN, setSelectedTopN] = useState<number>(0)
+    const [initialTopN, setInitialTopN] = useState<number | null>(null)
+    const [configExists, setConfigExists] = useState(false)
+
+    // ───── CONFIGURATION STATE ────────────────────────────────
+    const [savedConfig, setSavedConfig] = useState<{
+    selectedTopN: number;
+    timestamp: Timestamp;
+    } | null>(null);
+
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
 
     // Auth and data fetching
     useEffect(() => {
-        const auth = getAuth();
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const idTokenResult = await getIdTokenResult(user, true);
-                    const role = idTokenResult.claims.role;
-                    
-                    if (role !== "superadmin") {
-                        router.push('/');
-                        return;
-                    }
-                    
-                    setCurrentUser(user);
-                    await fetchData();
-                } catch (error) {
-                    console.error('Error getting user role:', error);
-                    router.push('/login');
-                }
-            } else {
-                router.push('/login');
-            }
-        });
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+        try {
+            const idTokenResult = await getIdTokenResult(user, true);
+            const role = idTokenResult.claims.role;
 
-        return () => unsubscribe();
+            if (role !== "superadmin") {
+            router.push("/");
+            return;
+            }
+
+            setCurrentUser(user);
+            await fetchData();
+
+            // Load existing selectedTopN configuration
+            const configDocRef = doc(db, "leaderboard", "configurations");
+            const configSnapshot = await getDoc(configDocRef);
+
+            if (configSnapshot.exists()) {
+            const data = configSnapshot.data();
+            if (data[user.uid]?.selectedTopN) {
+                setSelectedTopN(data[user.uid].selectedTopN);
+            }
+            }
+        } catch (error) {
+            console.error("Error getting user role or loading config:", error);
+            router.push("/auth/login/admin");
+        }
+        } else {
+        router.push("/auth/login/admin");
+        }
+    });
+
+    return () => unsubscribe();
     }, [router]);
 
-    const fetchData = async () => {
-        setFetchingData(true);
-
-        try {
-            // 1. Get total count of participants from leaderboard
-            const leaderboardSnapshot = await getDocs(collection(db, 'leaderboard'));
-            setTotalParticipants(leaderboardSnapshot.size);
-
-            // 2. Get judges from backend API using proper role-based filtering
-            const token = await getIdToken();
-            const url = `http://localhost:8080/superadmin/users?role=judge`;
-            const res = await fetch(url, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!res.ok) {
-                throw new Error(`Failed to fetch judges: ${res.status}`);
-            }
-
-            const data = await res.json();
-            const judgeUsers = data.users || [];
-
-            // 3. Transform API judge data for frontend state
-            const judgesData: Judge[] = judgeUsers.map((user: any) => ({
-                id: user.uid,
-                name: user.displayName || user.email.split('@')[0] || 'Unknown Judge',
-                email: user.email,
-            }));
-
-            setJudges(judgesData);
-
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            showToast('Failed to load data from database', 'error');
-        } finally {
-            setFetchingData(false);
+    // Update current step based on form completion
+    useEffect(() => {
+        if (selectedTopN > 0) {
+        setCurrentStep(2)
+        if (assignmentMethod) {
+            setCurrentStep(3)
         }
-    };
+        } else {
+        setCurrentStep(1)
+        }
+    }, [selectedTopN, assignmentMethod])
+
+    const fetchData = async () => {
+        setFetchingData(true)
+        try {
+        // 1. Get total count of participants from leaderboard
+        const leaderboardSnapshot = await getDocs(collection(db, "leaderboard"))
+        setTotalParticipants(leaderboardSnapshot.size)
+
+        // 2. Get judges from backend API using proper role-based filtering
+        const token = await getIdToken()
+        const url = `http://localhost:8080/superadmin/users?role=judge`
+        const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (!res.ok) {
+            throw new Error(`Failed to fetch judges: ${res.status}`)
+        }
+
+        const data = await res.json()
+        const judgeUsers = data.users || []
+
+        // 3. Transform API judge data for frontend state
+        const judgesData: Judge[] = judgeUsers.map((user: any) => ({
+            id: user.uid,
+            name: user.displayName || user.email.split("@")[0] || "Unknown Judge",
+            email: user.email,
+            status: "available", // Default status
+            rating: 4.5 + Math.random() * 0.5, // Mock rating
+            totalAssigned: 0,
+        }))
+
+        setJudges(judgesData)
+
+        // 4. Fetch existing judge assignments
+        await fetchExistingAssignments(judgesData)
+        } catch (error) {
+        console.error("Error fetching data:", error)
+        showToast("Failed to load data from database", "error")
+        } finally {
+        setFetchingData(false)
+        }
+    }
+
+    const fetchExistingAssignments = async (judgesData: Judge[]) => {
+        try {
+        const assignments: { [key: string]: number } = {}
+
+        // Fetch assignments for each judge
+        for (const judge of judgesData) {
+            const judgeDocRef = doc(db, "judges", judge.id)
+            const judgeDoc = await getDocs(query(collection(db, "judges")))
+
+            judgeDoc.docs.forEach((doc) => {
+            if (doc.id === judge.id) {
+                const data = doc.data()
+                if (data.assignedCount && data.assignedCount > 0) {
+                assignments[judge.id] = data.assignedCount
+                }
+            }
+            })
+        }
+
+        setExistingAssignments(assignments)
+        setJudgeAssignments(assignments)
+        } catch (error) {
+        console.error("Error fetching existing assignments:", error)
+        }
+    }
 
     // Auto-populate judge capacities when judges are selected for weighted method
     useEffect(() => {
-        if (assignmentMethod === 'Weighted') {
-            const newCapacities = selectedJudges.map(judgeId => ({
-                judgeId,
-                capacity: judgeCapacities.find(jc => jc.judgeId === judgeId)?.capacity || 1
-            }));
-            setJudgeCapacities(newCapacities);
+        if (assignmentMethod === "Weighted") {
+        const newCapacities = selectedJudges.map((judgeId) => ({
+            judgeId,
+            capacity: judgeCapacities.find((jc) => jc.judgeId === judgeId)?.capacity || 1,
+        }))
+
+        // Only update if the capacities array has actually changed
+        const hasChanged =
+            newCapacities.length !== judgeCapacities.length ||
+            newCapacities.some(
+            (nc, index) =>
+                !judgeCapacities[index] ||
+                nc.judgeId !== judgeCapacities[index].judgeId ||
+                nc.capacity !== judgeCapacities[index].capacity,
+            )
+
+        if (hasChanged) {
+            setJudgeCapacities(newCapacities)
         }
-    }, [selectedJudges, assignmentMethod, judgeCapacities]);
+        }
+    }, [selectedJudges, assignmentMethod])
 
-    const handleJudgeToggle = (judgeId: string) => {
-        setSelectedJudges(prev => 
-            prev.includes(judgeId) 
-                ? prev.filter(id => id !== judgeId)
-                : [...prev, judgeId]
-        );
-    };
+    const handleSaveConfig = async () => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user || selectedTopN === 0) return;
 
-    const handleCapacityChange = (judgeId: string, capacity: number) => {
-        setJudgeCapacities(prev => 
-            prev.map(jc => jc.judgeId === judgeId ? { ...jc, capacity } : jc)
-        );
-    };
-
-    const handleDistributeParticipants = async () => {
-        if (selectedTopN === 0 || !assignmentMethod) {
-            showToast('Please complete all required fields', 'error');
+        // If a config already exists *and* the number changed, confirm overwrite.
+        if (savedConfig && savedConfig.selectedTopN !== selectedTopN) {
+            setShowConfirmDialog(true);
             return;
         }
 
-        if (assignmentMethod === 'Weighted') {
-            const totalAssigned = Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0);
-            if (totalAssigned === 0) {
-                showToast('Please assign at least one participant to judges', 'error');
-                return;
-            }
-        }
+        await saveConfigToFirestore(user.uid);
+        };
 
-        setLoading(true);
-
+        const saveConfigToFirestore = async (uid: string) => {
         try {
-            // Step 1: Fetch top N participants from leaderboard
-            const leaderboardQuery = query(
-                collection(db, 'leaderboard'),
-                orderBy('totalScore', 'desc'),
-                limit(selectedTopN)
+            const cfgRef = doc(db, "leaderboard", "configurations");
+            await setDoc(
+            cfgRef,
+            {
+                [uid]: {
+                userId: uid,
+                timestamp: serverTimestamp(),
+                selectedTopN,
+                },
+            },
+            { merge: true }
             );
-            const leaderboardSnapshot = await getDocs(leaderboardQuery);
-            const participants = leaderboardSnapshot.docs.map(doc => doc.id);
 
-            if (!participants || participants.length === 0) {
-                throw new Error('No participants found');
-            }
-
-            // Step 2: Get available judges based on assignment method
-            let availableJudges: string[] = [];
-            
-            if (assignmentMethod === 'Round-Robin') {
-                // Use all judges for round-robin
-                availableJudges = judges.map(j => j.id);
-            } else if (assignmentMethod === 'Weighted') {
-                // Use only judges with assigned capacity > 0
-                availableJudges = Object.entries(judgeAssignments)
-                    .filter(([_, capacity]) => capacity > 0)
-                    .map(([judgeId, _]) => judgeId);
-            }
-
-            if (availableJudges.length === 0) {
-                throw new Error('No judges available for assignment');
-            }
-
-            // Step 3: Distribute participants
-            const assignments: { [key: string]: string[] } = {};
-
-            if (assignmentMethod === 'Round-Robin') {
-                // Distribute participants evenly among all judges
-                participants.forEach((pid, index) => {
-                    const judgeId = availableJudges[index % availableJudges.length];
-                    if (!assignments[judgeId]) assignments[judgeId] = [];
-                    assignments[judgeId].push(pid);
-                });
-            } else if (assignmentMethod === 'Weighted') {
-                let remainingParticipants = [...participants];
-                
-                // Distribute participants based on each judge's capacity
-                for (const judgeId of availableJudges) {
-                    const capacity = judgeAssignments[judgeId] || 0;
-                    
-                    if (capacity > 0 && remainingParticipants.length > 0) {
-                        // Assign up to the capacity or remaining participants, whichever is smaller
-                        const assignCount = Math.min(capacity, remainingParticipants.length);
-                        assignments[judgeId] = remainingParticipants.slice(0, assignCount);
-                        remainingParticipants = remainingParticipants.slice(assignCount);
-                    }
-                }
-
-                // Provide feedback if not all participants were assigned
-                if (remainingParticipants.length > 0) {
-                    showToast(
-                        `Warning: ${remainingParticipants.length} participants were not assigned due to insufficient judge capacity`,
-                        'info'
-                    );
-                }
-            }
-
-            // Step 4: Save to Firestore
-            const batch = writeBatch(db);
-            Object.entries(assignments).forEach(([judgeId, pids]) => {
-                const ref = doc(db, 'judges', judgeId);
-                batch.set(ref, {
-                    participants: pids,
-                    assignedCount: pids.length
-                }, { merge: true });
-            });
-            await batch.commit();
-
-            const assignedCount = Object.values(assignments).reduce((sum, pids) => sum + pids.length, 0);
-            showToast(`${assignedCount} participants distributed successfully!`, 'success');
-
-            // Reset form
-            setSelectedTopN(0);
-            setAssignmentMethod(null);
-            setSelectedJudges([]);
-            setJudgeCapacities([]);
-            setJudgeAssignments({});
+            showToast("Configuration saved ✔️", "success");
+            setSavedConfig({ selectedTopN, timestamp: serverTimestamp() as any });
         } catch (err) {
-            console.error('Distribution error:', err);
-            showToast(`Failed to distribute participants: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
-        } finally {
-            setLoading(false);
+            console.error("Save config error:", err);
+            showToast("Could not save configuration", "error");
         }
-    };
+        };
 
-    const showToast = (message: string, type: 'success' | 'error' | 'info') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 5000);
-    };
 
-    const selectAllJudges = () => {
-        setSelectedJudges(judges.map(j => j.id));
-    };
+    const handleDistributeParticipants = async () => {
+        if (selectedTopN === 0 || !assignmentMethod) {
+        showToast("Please complete all required fields", "error")
+        return
+        }
 
-    const filteredJudges = judges.filter(j => 
+        if (assignmentMethod === "Weighted") {
+        const totalAssigned = Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0)
+
+        if (totalAssigned === 0) {
+            showToast("Please assign at least one participant to judges", "error")
+            return
+        }
+
+        if (totalAssigned < selectedTopN) {
+            showToast(
+            `Warning: Only ${totalAssigned} out of ${selectedTopN} participants are assigned to judges. Some participants will not have judges assigned.`,
+            "error",
+            )
+            return
+        }
+
+        if (totalAssigned > selectedTopN) {
+            showToast(
+            `Error: Total assigned participants (${totalAssigned}) exceeds the selected number of participants (${selectedTopN}). Please reduce the assignments.`,
+            "error",
+            )
+            return
+        }
+        }
+
+        setLoading(true)
+        try {
+        // Step 1: Fetch top N participants from leaderboard
+        const leaderboardQuery = query(collection(db, "leaderboard"), orderBy("totalScore", "desc"), limit(selectedTopN))
+        const leaderboardSnapshot = await getDocs(leaderboardQuery)
+        const participants = leaderboardSnapshot.docs.map((doc) => doc.id)
+
+        if (!participants || participants.length === 0) {
+            throw new Error("No participants found")
+        }
+
+        // Step 2: Get available judges based on assignment method
+        let availableJudges: string[] = []
+
+        if (assignmentMethod === "Round-Robin") {
+            // Use all judges for round-robin
+            availableJudges = judges.map((j) => j.id)
+        } else if (assignmentMethod === "Weighted") {
+            // Use only judges with assigned capacity > 0
+            availableJudges = Object.entries(judgeAssignments)
+            .filter(([_, capacity]) => capacity > 0)
+            .map(([judgeId, _]) => judgeId)
+        }
+
+        if (availableJudges.length === 0) {
+            throw new Error("No judges available for assignment")
+        }
+
+        // Step 3: Distribute participants
+        const assignments: { [key: string]: string[] } = {}
+        if (assignmentMethod === "Round-Robin") {
+            // Distribute participants evenly among all judges
+            participants.forEach((pid, index) => {
+            const judgeId = availableJudges[index % availableJudges.length]
+            if (!assignments[judgeId]) assignments[judgeId] = []
+            assignments[judgeId].push(pid)
+            })
+        } else if (assignmentMethod === "Weighted") {
+            let remainingParticipants = [...participants]
+
+            // Distribute participants based on each judge's capacity
+            for (const judgeId of availableJudges) {
+            const capacity = judgeAssignments[judgeId] || 0
+
+            if (capacity > 0 && remainingParticipants.length > 0) {
+                // Assign up to the capacity or remaining participants, whichever is smaller
+                const assignCount = Math.min(capacity, remainingParticipants.length)
+                assignments[judgeId] = remainingParticipants.slice(0, assignCount)
+                remainingParticipants = remainingParticipants.slice(assignCount)
+            }
+            }
+        }
+
+        // Step 4: Save to Firestore
+        const batch = writeBatch(db)
+        Object.entries(assignments).forEach(([judgeId, pids]) => {
+            const ref = doc(db, "judges", judgeId)
+            batch.set(
+            ref,
+            {
+                participants: pids,
+                assignedCount: pids.length,
+            },
+            { merge: true },
+            )
+        })
+
+        await batch.commit()
+
+        const assignedCount = Object.values(assignments).reduce((sum, pids) => sum + pids.length, 0)
+        showToast(`🎉 ${assignedCount} participants distributed successfully!`, "success")
+
+        // Update existing assignments state
+        const newAssignments: { [key: string]: number } = {}
+        Object.entries(assignments).forEach(([judgeId, pids]) => {
+            newAssignments[judgeId] = pids.length
+        })
+        setExistingAssignments(newAssignments)
+
+        // Reset form
+        setSelectedTopN(0)
+        setAssignmentMethod(null)
+        setSelectedJudges([])
+        setJudgeCapacities([])
+        setJudgeAssignments({})
+        } catch (err) {
+        console.error("Distribution error:", err)
+        showToast(`Failed to distribute participants: ${err instanceof Error ? err.message : "Unknown error"}`, "error")
+        } finally {
+        setLoading(false)
+        }
+    }
+
+    const showToast = (message: string, type: "success" | "error" | "info") => {
+        setToast({ message, type })
+        setTimeout(() => setToast(null), 5000)
+    }
+
+
+    const filteredJudges = judges.filter(
+        (j) =>
         j.name.toLowerCase().includes(judgeSearch.toLowerCase()) ||
-        j.email.toLowerCase().includes(judgeSearch.toLowerCase())
-    );
+        j.email.toLowerCase().includes(judgeSearch.toLowerCase()),
+    )
 
     // Check if distribute button should be enabled
     const canDistribute = () => {
-        if (selectedTopN === 0 || !assignmentMethod) return false;
-        if (assignmentMethod === 'Weighted') {
-            const totalAssigned = Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0);
-            return totalAssigned > 0;
+        if (selectedTopN === 0 || !assignmentMethod) return false
+        if (assignmentMethod === "Weighted") {
+        const totalAssigned = Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0)
+        return totalAssigned > 0
         }
-        return true;
-    };
+        return true
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+        case "available":
+            return "bg-emerald-50 text-emerald-800 border-emerald-200"
+        case "busy":
+            return "bg-amber-50 text-amber-800 border-amber-200"
+        case "offline":
+            return "bg-gray-100 text-gray-600 border-gray-200"
+        default:
+            return "bg-gray-100 text-gray-600 border-gray-200"
+        }
+    }
+
+    const getStatusDot = (status: string) => {
+        switch (status) {
+        case "available":
+            return "bg-emerald-500"
+        case "busy":
+            return "bg-amber-500"
+        case "offline":
+            return "bg-red-500"
+        default:
+            return "bg-gray-400"
+        }
+    }
 
     if (fetchingData) {
         return (
-            <div className="min-h-screen bg-[#07073a] text-white flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-[#56ffbc]/20 border-t-[#56ffbc] rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-[#56ffbc]">Loading participants and judges...</p>
-                </div>
+        <div className="min-h-screen bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center py-12">
+            <div className="relative">
+                <Loader className="animate-spin w-12 h-12 text-gray-700" />
+                <div className="absolute inset-0 w-12 h-12 border-4 border-gray-300 rounded-full animate-pulse"></div>
             </div>
-        );
-    }
-
-    const NavBar = () => (
-        <header className="w-full bg-[#0d0d2b] text-white px-6 py-4 shadow-md flex items-center justify-between sticky top-0 z-50">
-            <div />
-            <button
-                onClick={() => router.push('/admin')}
-                className="flex items-center gap-2 bg-[#56ffbc] text-[#07073a] hover:bg-[#48e6a3] font-medium px-4 py-1.5 rounded-lg shadow transition-all"
-            >
-                <Settings className="w-4 h-4" />
-                <span>Back to Admin</span>
-            </button>
-        </header>
-    );
-
-    return (
-        <div className="min-h-screen bg-[#07073a] text-white">
-            <NavBar />  
-
-            {/* Toast Notification */}
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border backdrop-blur-sm transition-all duration-300 ${
-                    toast.type === 'success' ? 'bg-green-900/80 border-green-500/50 text-green-100' :
-                    toast.type === 'error' ? 'bg-red-900/80 border-red-500/50 text-red-100' :
-                    'bg-blue-900/80 border-blue-500/50 text-blue-100'
-                }`}>
-                    <div className="flex items-center gap-2">
-                        {toast.type === 'success' && <CheckCircle2 className="w-5 h-5" />}
-                        {toast.type === 'error' && <AlertCircle className="w-5 h-5" />}
-                        {toast.type === 'info' && <Info className="w-5 h-5" />}
-                        <span>{toast.message}</span>
-                        <button onClick={() => setToast(null)} className="ml-2">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Header */}
-            <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0c0c4f] to-[#07073a]" />
-                <div className="relative px-6 py-12">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <div className="inline-flex items-center gap-3 mb-6">
-                            <div className="p-3 rounded-xl bg-gradient-to-br from-[#56ffbc]/20 to-[#56ffbc]/5 border border-[#56ffbc]/30">
-                                <Shuffle className="w-8 h-8 text-[#56ffbc]" />
-                            </div>
-                            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-[#56ffbc] bg-clip-text text-transparent">
-                                Participant Distribution
-                            </h1>
-                        </div>
-                        <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                            Assign top-performing participants to judges using intelligent distribution strategies
-                        </p>
-                        
-                        {/* Quick Stats */}
-                        <div className="flex justify-center gap-8 mt-8">
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-[#56ffbc]">{totalParticipants}</div>
-                                <div className="text-sm text-gray-400">Total Participants</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-[#56ffbc]">{judges.length}</div>
-                                <div className="text-sm text-gray-400">Available Judges</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="max-w-4xl mx-auto px-6 py-8">
-                {/* Step 1: Number of Participants */}
-                <Card className="mb-8 bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border-[#56ffbc]/20">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-[#56ffbc]">
-                            <Hash className="w-5 h-5" />
-                            Step 1: Number of Top Participants
-                        </CardTitle>
-                        <CardDescription className="text-gray-300">
-                            How many top-ranked participants should be distributed to judges?
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1 relative">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max={totalParticipants}
-                                    value={selectedTopN || ''}
-                                    onChange={(e) => setSelectedTopN(parseInt(e.target.value) || 0)}
-                                    placeholder="Enter number (e.g., 10)"
-                                    className="w-full p-4 bg-[#07073a] border border-[#56ffbc]/30 rounded-lg text-white text-xl font-bold focus:border-[#56ffbc]/50 focus:outline-none"
-                                />
-                                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                                    / {totalParticipants}
-                                </div>
-                            </div>
-                            
-                            {/* Quick select buttons */}
-                            <div className="flex gap-2">
-                                {[10, 20, 50].map(n => (
-                                    <Button
-                                        key={n}
-                                        onClick={() => setSelectedTopN(n)}
-                                        variant={selectedTopN === n ? "default" : "outline"}
-                                        size="sm"
-                                        className={selectedTopN === n 
-                                            ? "bg-[#56ffbc] text-black hover:bg-[#56ffbc]/90" 
-                                            : "border-[#56ffbc]/30 text-[#56ffbc] hover:bg-[#56ffbc]/10"
-                                        }
-                                        disabled={n > totalParticipants}
-                                    >
-                                        {n}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        {selectedTopN > 0 && (
-                            <div className="mt-4 p-3 bg-[#56ffbc]/10 rounded-lg border border-[#56ffbc]/20">
-                                <div className="text-sm text-gray-300">
-                                    ✅ Selected: Top {selectedTopN} participants (ranks #1 - #{selectedTopN})
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Step 2: Assignment Strategy (only show if step 1 is complete) */}
-                {selectedTopN > 0 && (
-                    <Card className="mb-8 bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border-[#56ffbc]/20">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-[#56ffbc]">
-                                <Settings className="w-5 h-5" />
-                                Step 2: Assignment Strategy
-                            </CardTitle>
-                            <CardDescription className="text-gray-300">
-                                Choose how participants should be distributed among judges
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {/* Round-Robin Option */}
-                                <label className="flex items-start gap-4 p-4 bg-[#07073a] rounded-lg border border-transparent hover:border-[#56ffbc]/30 cursor-pointer transition-all">
-                                    <input
-                                        type="radio"
-                                        name="assignmentMethod"
-                                        value="Round-Robin"
-                                        checked={assignmentMethod === 'Round-Robin'}
-                                        onChange={(e) => setAssignmentMethod(e.target.value as AssignmentMethod)}
-                                        className="w-5 h-5 accent-[#56ffbc] mt-0.5"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-semibold text-white mb-1">Round-Robin (Balanced Assignment)</div>
-                                        <div className="text-sm text-gray-300">
-                                            Automatically distributes participants evenly across all available judges. 
-                                            Simple and fair - no manual judge selection required.
-                                        </div>
-                                    </div>
-                                </label>
-
-                                {/* Weighted Option */}
-                                <label className="flex items-start gap-4 p-4 bg-[#07073a] rounded-lg border border-transparent hover:border-[#56ffbc]/30 cursor-pointer transition-all">
-                                    <input
-                                        type="radio"
-                                        name="assignmentMethod"
-                                        value="Weighted"
-                                        checked={assignmentMethod === 'Weighted'}
-                                        onChange={(e) => setAssignmentMethod(e.target.value as AssignmentMethod)}
-                                        className="w-5 h-5 accent-[#56ffbc] mt-0.5"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="font-semibold text-white mb-1">Weighted (Based on Judge Capacity)</div>
-                                        <div className="text-sm text-gray-300">
-                                            Distribute participants based on each judge's individual capacity. 
-                                            Allows you to specify how many participants each judge can handle.
-                                        </div>
-                                    </div>
-                                </label>
-
-                                {/* Automatic Option (Disabled) */}
-                                <div className="relative">
-                                    <label className="flex items-start gap-4 p-4 bg-[#07073a]/50 rounded-lg border border-gray-600/30 cursor-not-allowed opacity-60">
-                                        <input
-                                            type="radio"
-                                            name="assignmentMethod"
-                                            value="Automatic"
-                                            disabled
-                                            className="w-5 h-5 accent-gray-500 mt-0.5"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="font-semibold text-gray-400 mb-1">Automatic Load-Balanced Distribution</div>
-                                            <div className="text-sm text-gray-500">
-                                                AI-powered distribution based on judge availability and workload. Coming soon!
-                                            </div>
-                                        </div>
-                                    </label>
-                                    <div className="absolute top-2 right-2 bg-gray-600 text-gray-300 text-xs px-2 py-1 rounded">
-                                        Coming Soon
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Step 3: Judge Configuration (only show for Weighted method) */}
-                {assignmentMethod === 'Weighted' && (
-                    <Card className="mb-8 bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border-[#56ffbc]/20">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-[#56ffbc]">
-                                <UserCheck className="w-5 h-5" />
-                                Step 3: Configure Judge Assignments
-                            </CardTitle>
-                            <CardDescription className="text-gray-300">
-                                Assign number of participants to each judge
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                {/* Search */}
-                                <div className="relative mb-4">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search judges..."
-                                        value={judgeSearch}
-                                        onChange={(e) => setJudgeSearch(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-[#07073a] border border-[#56ffbc]/30 rounded-lg text-white placeholder-gray-400 focus:border-[#56ffbc]/50 focus:outline-none"
-                                    />
-                                </div>
-
-                                {/* Judge List with Assignment Inputs */}
-                                <div className="space-y-3">
-                                    {filteredJudges.map(judge => (
-                                        <div key={judge.id} className="flex items-center gap-3 p-3 bg-[#07073a] rounded-lg">
-                                            <div className="flex-1">
-                                                <div className="font-medium text-[#56ffbc]">{judge.name}</div>
-                                                <div className="text-xs text-gray-400">{judge.email}</div>
-                                                {judge.institution && (
-                                                    <div className="text-xs text-gray-500">{judge.institution}</div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-gray-300">Participants:</span>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max={selectedTopN}
-                                                    value={judgeAssignments[judge.id] || 0}
-                                                    onChange={(e) => {
-                                                        const value = Math.max(0, parseInt(e.target.value) || 0);
-                                                        setJudgeAssignments(prev => ({ ...prev, [judge.id]: value }));
-                                                    }}
-                                                    className="w-16 p-2 bg-[#0c0c4f] border border-[#56ffbc]/30 rounded text-center text-white text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Total Assigned Display */}
-                                <div className="mt-4 p-3 bg-[#07073a]/50 rounded-lg border border-[#56ffbc]/20">
-                                    <div className="text-sm text-gray-300">
-                                        <div className="flex justify-between items-center">
-                                            <span>Total participants to assign:</span>
-                                            <span className="font-bold text-[#56ffbc]">{selectedTopN}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span>Total assigned:</span>
-                                            <span className={`font-bold ${
-                                                Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0) > selectedTopN 
-                                                    ? 'text-red-400' 
-                                                    : 'text-[#56ffbc]'
-                                            }`}>
-                                                {Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0)}
-                                            </span>
-                                        </div>
-                                        {Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0) > selectedTopN && (
-                                            <div className="text-red-400 text-xs mt-1">
-                                                ⚠️ Exceeds selected participants
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-4">
-                    <Button
-                        onClick={handleDistributeParticipants}
-                        disabled={loading || !canDistribute()}
-                        className="flex-1 bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/80 hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/70 text-black font-semibold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                        {loading ? (
-                            <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                                Distributing Participants...
-                            </div>
-                        ) : (
-                            <>
-                                <Shuffle className="w-5 h-5 mr-2" />
-                                Distribute Participants
-                            </>
-                        )}
-                    </Button>
-                </div>
-
-                {/* Preview Section */}
-                {canDistribute() && (
-                    <Card className="mt-8 bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border-[#56ffbc]/20">
-                        <CardHeader>
-                            <CardTitle className="text-[#56ffbc] flex items-center gap-2">
-                                <Trophy className="w-5 h-5" />
-                                Distribution Summary
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-[#56ffbc]/10 rounded-lg p-4 border border-[#56ffbc]/20 text-center">
-                                    <div className="text-2xl font-bold text-[#56ffbc]">{selectedTopN}</div>
-                                    <div className="text-sm text-gray-400">Participants to Distribute</div>
-                                </div>
-                                <div className="bg-[#56ffbc]/10 rounded-lg p-4 border border-[#56ffbc]/20 text-center">
-                                    <div className="text-2xl font-bold text-[#56ffbc]">
-                                        {assignmentMethod === 'Weighted' 
-                                            ? Object.values(judgeAssignments).filter(val => val > 0).length
-                                            : judges.length}
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                        {assignmentMethod === 'Weighted' ? 'Active Judges' : 'All Judges'}
-                                    </div>
-                                </div>
-                                <div className="bg-[#56ffbc]/10 rounded-lg p-4 border border-[#56ffbc]/20 text-center">
-                                    <div className="text-2xl font-bold text-[#56ffbc]">{assignmentMethod}</div>
-                                    <div className="text-sm text-gray-400">Distribution Method</div>
-                                </div>
-                            </div>
-                            
-                            <div className="mt-4 p-4 bg-[#07073a] rounded-lg border border-[#56ffbc]/20">
-                                <div className="text-sm text-gray-300">
-                                    <strong className="text-[#56ffbc]">Ready to distribute:</strong> The top {selectedTopN} participants 
-                                    will be assigned to judges using the {assignmentMethod} method.
-                                    {assignmentMethod === 'Round-Robin' && ' All available judges will receive participants automatically.'}
-                                    {assignmentMethod === 'Weighted' && ` ${Object.values(judgeAssignments).filter(val => val > 0).length} selected judges will receive participants based on their capacity settings.`}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+            <p className="text-gray-800 font-semibold mt-4 text-lg">Loading participants and judges...</p>
+            <p className="text-gray-600 font-medium mt-1">Setting up your distribution workspace</p>
             </div>
         </div>
-    );
+        )
+    }
+
+    const StepIndicator = () => (
+        <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center space-x-4">
+            {[1, 2, 3].map((step) => (
+            <div key={step} className="flex items-center">
+                <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 font-semibold text-sm transition-all duration-300 ${
+                    currentStep >= step
+                    ? "bg-gray-900 border-gray-900 text-white shadow-lg"
+                    : "bg-white border-gray-300 text-gray-400"
+                }`}
+                >
+                {currentStep > step ? <Check className="w-5 h-5" /> : step}
+                </div>
+                {step < 3 && (
+                <ChevronRight
+                    className={`w-5 h-5 mx-2 transition-colors duration-300 ${
+                    currentStep > step ? "text-gray-900" : "text-gray-300"
+                    }`}
+                />
+                )}
+            </div>
+            ))}
+        </div>
+        </div>
+    )
+
+    const NavBar = () => (
+        <header className="w-full bg-gradient-to-r from-gray-900 to-gray-800 shadow-sm border-b border-gray-700 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-gray-700 to-gray-600">
+            <Shuffle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+            <h2 className="font-bold text-white">Distribution Center</h2>
+            <p className="text-xs text-gray-300">Participant Assignment System</p>
+            </div>
+        </div>
+        <Button
+            onClick={() => router.push("/admin")}
+            className="bg-gray-700 text-white hover:bg-gray-600 rounded-lg px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
+        >
+            <Settings className="w-4 h-4 mr-2" />
+            Back to Admin
+        </Button>
+        </header>
+    )
+
+    return (
+        <div className="min-h-screen bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100">
+        <NavBar />
+
+        {/* Toast Notification */}
+        {toast && (
+            <div
+            className={`fixed top-4 right-4 z-50 max-w-sm p-4 rounded-xl shadow-xl border backdrop-blur-sm transition-all duration-300 ${
+                toast.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                : toast.type === "error"
+                    ? "bg-red-50 border-red-200 text-red-800"
+                    : "bg-blue-50 border-blue-200 text-blue-800"
+            }`}
+            >
+            <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                {toast.type === "success" && <CheckCircle2 className="w-5 h-5" />}
+                {toast.type === "error" && <AlertCircle className="w-5 h-5" />}
+                {toast.type === "info" && <Info className="w-5 h-5" />}
+                </div>
+                <div className="flex-1">
+                <span className="text-sm font-medium leading-relaxed">{toast.message}</span>
+                </div>
+                <button
+                onClick={() => setToast(null)}
+                className="flex-shrink-0 h-6 w-6 hover:bg-white/50 rounded-lg transition-all duration-200 flex items-center justify-center"
+                >
+                <X className="w-4 h-4" />
+                </button>
+            </div>
+            </div>
+        )}
+
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 border-b border-gray-200">
+            <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="text-center">
+                <div className="inline-flex items-center gap-4 mb-8">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-600 shadow-lg">
+                    <Target className="w-8 h-8 text-white" />
+                </div>
+                <div className="text-left">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-1">Participant Distribution</h1>
+                    <p className="text-gray-700 font-medium">Intelligent Assignment System</p>
+                </div>
+                </div>
+                <p className="text-lg font-medium text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
+                Distribute top-performing participants to qualified judges using advanced assignment algorithms and
+                capacity management
+                </p>
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+                <StepIndicator />
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-4xl mx-auto">
+                <div className="bg-white shadow-sm rounded-xl p-6 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-gray-50">
+                        <Users className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Pool</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 mb-1">{totalParticipants}</div>
+                    <div className="text-sm text-gray-600">Registered Participants</div>
+                </div>
+                <div className="bg-white shadow-sm rounded-xl p-6 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-emerald-50">
+                        <Award className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Available</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 mb-1">{judges.length}</div>
+                    <div className="text-sm text-gray-600">Active Judges</div>
+                </div>
+                <div className="bg-white shadow-sm rounded-xl p-6 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 rounded-lg bg-amber-50">
+                        <TrendingUp className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Assigned</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {Object.values(existingAssignments).reduce((sum, val) => sum + val, 0)}
+                    </div>
+                    <div className="text-sm text-gray-600">Current Assignments</div>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
+            
+            {/* Step 1: Number of Participants */}
+            <Card className="bg-white shadow-sm rounded-xl transition-all duration-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700">
+                    <CardTitle className="flex items-center gap-3 text-white text-xl">
+                    <div className="p-2 rounded-lg bg-gray-700">
+                        <Hash className="w-5 h-5 text-white" />
+                    </div>
+                    Step 1: Select Top Participants
+                    </CardTitle>
+                    <CardDescription className="text-gray-300 leading-relaxed mt-2 text-base">
+                    Choose how many top-ranked participants should be distributed to judges for evaluation.
+                    </CardDescription>
+                </div>
+
+                <CardContent className="p-6 space-y-6">
+                    <div className="space-y-4">
+                    <div className="relative">
+                        <input
+                        type="number"
+                        min="1"
+                        max={totalParticipants}
+                        value={selectedTopN || ""}
+                        onChange={(e) => setSelectedTopN(Number.parseInt(e.target.value) || 0)}
+                        placeholder="Enter number (e.g., 20)"
+                        className="w-full h-16 px-6 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 text-2xl font-bold focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 transition-all duration-200"
+                        />
+                        <div className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">
+                        / {totalParticipants}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                        {[10, 20, 50].map((n) => (
+                        <Button
+                            key={n}
+                            onClick={() => setSelectedTopN(n)}
+                            className={`h-12 px-6 rounded-lg font-semibold transition-all duration-200 ${
+                            selectedTopN === n
+                                ? "bg-gray-900 text-white hover:bg-gray-800"
+                                : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+                            }`}
+                            disabled={n > totalParticipants}
+                        >
+                            {n}
+                        </Button>
+                        ))}
+                    </div>
+                    </div>
+
+                    <div>
+                    <Button
+                        onClick={handleSaveConfig}
+                        disabled={selectedTopN === 0}
+                        className="w-full h-12 px-6 rounded-lg font-semibold bg-gradient-to-r from-gray-700 to-gray-600  text-white hover:bg-emerald-500 transition-all duration-200 disabled:opacity-40"
+                    >
+                        Save Configuration
+                    </Button>
+                    </div>
+
+                    {selectedTopN > 0 && (
+                    <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg">
+                        <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5" />
+                        <span className="font-medium">
+                            Selected: Top {selectedTopN} participants (ranks #1 - #{selectedTopN})
+                        </span>
+                        </div>
+                    </div>
+                    )}
+
+                    {/* Confirmation Dialog */}
+                    {showConfirmDialog && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-xl p-8 max-w-sm w-full space-y-6">
+                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <AlertCircle className="w-6 h-6 text-red-600" />
+                            Overwrite saved configuration?
+                        </h3>
+                        <p className="text-gray-700">
+                            You already saved <strong>{savedConfig?.selectedTopN}</strong> participants.
+                            Do you really want to change it to <strong>{selectedTopN}</strong>?
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <Button
+                            onClick={() => setShowConfirmDialog(false)}
+                            className="bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            >
+                            Cancel
+                            </Button>
+                            <Button
+                            onClick={async () => {
+                                const auth = getAuth();
+                                await saveConfigToFirestore(auth.currentUser!.uid);
+                                setShowConfirmDialog(false);
+                            }}
+                            className="bg-red-600 text-white hover:bg-red-500"
+                            >
+                            Yes, overwrite
+                            </Button>
+                        </div>
+                        </div>
+                    </div>
+                    )}
+                </CardContent>
+                </Card>
+
+
+            {/* Step 2: Assignment Strategy */}
+            {selectedTopN > 0 && (
+            <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700">
+                <CardTitle className="flex items-center gap-3 text-white text-xl">
+                    <div className="p-2 rounded-lg bg-gray-700">
+                    <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    Step 2: Assignment Strategy
+                </CardTitle>
+                <CardDescription className="text-gray-300 leading-relaxed mt-2 text-base">
+                    Choose the distribution method that best fits your evaluation requirements
+                </CardDescription>
+                </div>
+                <CardContent className="p-6">
+                <div className="space-y-4">
+                    {/* Round-Robin Option */}
+                    <label className="flex items-start gap-4 p-6 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm cursor-pointer transition-all duration-200">
+                    <input
+                        type="radio"
+                        name="assignmentMethod"
+                        value="Round-Robin"
+                        checked={assignmentMethod === "Round-Robin"}
+                        onChange={(e) => setAssignmentMethod(e.target.value as AssignmentMethod)}
+                        className="w-5 h-5 accent-gray-900 mt-1"
+                    />
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                        <div className="text-lg font-bold text-gray-900">Round-Robin Distribution</div>
+                        <div className="inline-flex items-center px-2 py-1 text-xs font-medium rounded border bg-blue-50 border-blue-200 text-blue-800">
+                            BALANCED
+                        </div>
+                        </div>
+                        <div className="text-base text-gray-700 leading-relaxed mb-3">
+                        Automatically distributes participants evenly across all available judges. Ensures fair workload
+                        distribution with no manual configuration required.
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        <span>Quick setup • Equal distribution • No bias</span>
+                        </div>
+                    </div>
+                    </label>
+
+                    {/* Weighted Option */}
+                    <label className="flex items-start gap-4 p-6 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm cursor-pointer transition-all duration-200">
+                    <input
+                        type="radio"
+                        name="assignmentMethod"
+                        value="Weighted"
+                        checked={assignmentMethod === "Weighted"}
+                        onChange={(e) => setAssignmentMethod(e.target.value as AssignmentMethod)}
+                        className="w-5 h-5 accent-gray-900 mt-1"
+                    />
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                        <div className="text-lg font-bold text-gray-900">Weighted Distribution</div>
+                        <div className="inline-flex items-center px-2 py-1 text-xs font-medium rounded border bg-emerald-50 border-emerald-200 text-emerald-800">
+                            CUSTOM
+                        </div>
+                        </div>
+                        <div className="text-base text-gray-700 leading-relaxed mb-3">
+                        Distribute participants based on each judge's individual capacity and availability. Perfect for
+                        scenarios with varying judge workloads and expertise levels.
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Target className="w-4 h-4" />
+                        <span>Flexible capacity • Custom allocation • Optimized matching</span>
+                        </div>
+                    </div>
+                    </label>
+
+                    {/* Automatic Option (Disabled) */}
+                    <div className="relative">
+                    <label className="flex items-start gap-4 p-6 bg-gray-100 rounded-xl border border-gray-200 cursor-not-allowed opacity-60">
+                        <input
+                        type="radio"
+                        name="assignmentMethod"
+                        value="Automatic"
+                        disabled
+                        className="w-5 h-5 accent-gray-400 mt-1"
+                        />
+                        <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="text-lg font-bold text-gray-500">AI-Powered Distribution</div>
+                            <div className="inline-flex items-center px-2 py-1 text-xs font-medium rounded border bg-gray-200 border-gray-300 text-gray-600">
+                            COMING SOON
+                            </div>
+                        </div>
+                        <div className="text-base text-gray-500 leading-relaxed mb-3">
+                            Advanced machine learning algorithms analyze judge expertise, availability, and historical
+                            performance to create optimal assignments automatically.
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                            <Star className="w-4 h-4" />
+                            <span>ML-powered • Smart matching • Performance optimization</span>
+                        </div>
+                        </div>
+                    </label>
+                    </div>
+                </div>
+                </CardContent>
+            </Card>
+            )}
+
+            {/* Step 3: Judge Configuration */}
+            {assignmentMethod === "Weighted" && (
+            <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700">
+                <CardTitle className="flex items-center gap-3 text-white text-xl">
+                    <div className="p-2 rounded-lg bg-gray-700">
+                    <UserCheck className="w-5 h-5 text-white" />
+                    </div>
+                    Step 3: Configure Judge Assignments
+                </CardTitle>
+                <CardDescription className="text-gray-300 leading-relaxed mt-2 text-base">
+                    Set the number of participants each judge should evaluate based on their capacity and expertise
+                </CardDescription>
+                </div>
+                <CardContent className="p-6">
+                <div className="space-y-6">
+                    {/* Search */}
+                    <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search judges by name, email, or institution..."
+                        value={judgeSearch}
+                        onChange={(e) => setJudgeSearch(e.target.value)}
+                        className="w-full h-12 pl-12 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:border-gray-900 focus:outline-none focus:ring-gray-900/20 transition-all duration-200"
+                    />
+                    </div>
+
+                    {/* Judge List */}
+                    <div className="space-y-4">
+                    {filteredJudges.map((judge) => (
+                        <div
+                        key={judge.id}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all duration-200"
+                        >
+                        {/* Judge Avatar & Status */}
+                        <div className="relative">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center font-bold text-gray-700 text-sm">
+                            {judge.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </div>
+                            <div
+                            className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${getStatusDot(judge.status || "available")}`}
+                            ></div>
+                        </div>
+
+                        {/* Judge Info */}
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                            <div className="font-bold text-gray-900">{judge.name}</div>
+                            <div
+                                className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded border ${getStatusColor(judge.status || "available")}`}
+                            >
+                                {(judge.status || "available").toUpperCase()}
+                            </div>
+                            {judge.rating && (
+                                <div className="flex items-center gap-1">
+                                <Star className="w-4 h-4 text-amber-500 fill-current" />
+                                <span className="text-sm font-medium text-gray-700">{judge.rating.toFixed(1)}</span>
+                                </div>
+                            )}
+                            </div>
+                            <div className="text-sm text-gray-600">{judge.email}</div>
+                            {judge.institution && <div className="text-xs text-gray-500">{judge.institution}</div>}
+                            {existingAssignments[judge.id] && existingAssignments[judge.id] > 0 && (
+                            <div className="text-xs text-blue-600 font-medium mt-1">
+                                Currently assigned: {existingAssignments[judge.id]} participants
+                            </div>
+                            )}
+                        </div>
+
+                        {/* Assignment Input */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Participants:</span>
+                            <input
+                            type="number"
+                            min="0"
+                            max={selectedTopN}
+                            value={judgeAssignments[judge.id] || 0}
+                            onChange={(e) => {
+                                const value = Math.max(0, Number.parseInt(e.target.value) || 0)
+                                setJudgeAssignments((prev) => ({ ...prev, [judge.id]: value }))
+                            }}
+                            className="w-16 p-2 bg-white border border-gray-200 rounded text-center text-gray-900 text-sm focus:border-gray-900 focus:outline-none"
+                            />
+                        </div>
+                        </div>
+                    ))}
+                    </div>
+
+                    {/* Total Display */}
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div>
+                        <div className="text-2xl font-bold text-gray-700">{selectedTopN}</div>
+                        <div className="text-sm text-gray-600">To Assign</div>
+                        </div>
+                        <div>
+                        <div
+                            className={`text-2xl font-bold ${
+                            Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0) > selectedTopN
+                                ? "text-red-600"
+                                : "text-emerald-600"
+                            }`}
+                        >
+                            {Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Assigned</div>
+                        </div>
+                        <div>
+                        <div className="text-2xl font-bold text-amber-600">
+                            {selectedTopN - Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Remaining</div>
+                        </div>
+                    </div>
+                    {Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0) > selectedTopN && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-center">
+                        <AlertCircle className="w-5 h-5 inline mr-2" />
+                        <span className="font-medium">Total assignments exceed selected participants</span>
+                        </div>
+                    )}
+                    </div>
+                </div>
+                </CardContent>
+            </Card>
+            )}
+
+            {/* Action Button */}
+            <div className="flex justify-center">
+            <Button
+                onClick={handleDistributeParticipants}
+                disabled={loading || !canDistribute()}
+                className="bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:from-gray-800 hover:to-gray-700 rounded-lg px-8 py-4 text-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105 disabled:transform-none"
+            >
+                {loading ? (
+                <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <span>Distributing Participants...</span>
+                </div>
+                ) : (
+                <div className="flex items-center gap-3">
+                    <Shuffle className="w-5 h-5" />
+                    <span>Distribute Participants</span>
+                    <ArrowRight className="w-5 h-5" />
+                </div>
+                )}
+            </Button>
+            </div>
+
+            {/* Preview Section */}
+            {canDistribute() && (
+            <Card className="bg-white shadow-sm rounded-xl overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 border-b border-gray-700">
+                <CardTitle className="flex items-center gap-3 text-white text-xl">
+                    <Trophy className="w-6 h-6 text-white" />
+                    Distribution Preview
+                </CardTitle>
+                <p className="text-gray-300 mt-2">Review your distribution settings before proceeding</p>
+                </div>
+                <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
+                    <div className="text-2xl font-bold text-gray-700 mb-1">{selectedTopN}</div>
+                    <div className="text-xs font-semibold text-gray-800 uppercase tracking-wide">Participants</div>
+                    </div>
+                    <div className="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-200">
+                    <div className="text-2xl font-bold text-emerald-600 mb-1">
+                        {assignmentMethod === "Weighted"
+                        ? Object.values(judgeAssignments).filter((val) => val > 0).length
+                        : judges.length}
+                    </div>
+                    <div className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Active Judges</div>
+                    </div>
+                    <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-200">
+                    <div className="text-lg font-bold text-amber-600 mb-1">{assignmentMethod}</div>
+                    <div className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Method</div>
+                    </div>
+                    <div className="bg-red-50 rounded-xl p-4 text-center border border-red-200">
+                    <div className="text-2xl font-bold text-red-600 mb-1">
+                        {assignmentMethod === "Weighted"
+                        ? Object.values(judgeAssignments).reduce((sum, val) => sum + val, 0)
+                        : selectedTopN}
+                    </div>
+                    <div className="text-xs font-semibold text-red-700 uppercase tracking-wide">Total Assignments</div>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="text-sm text-gray-700 leading-relaxed">
+                    <strong className="text-gray-900">Ready to distribute:</strong> The top {selectedTopN} participants
+                    will be assigned to judges using the <strong>{assignmentMethod}</strong> method.
+                    {assignmentMethod === "Round-Robin" &&
+                        " All available judges will receive participants automatically with balanced distribution."}
+                    {assignmentMethod === "Weighted" &&
+                        ` ${Object.values(judgeAssignments).filter((val) => val > 0).length} selected judges will receive participants based on their individual capacity settings.`}
+                    </div>
+                </div>
+                </CardContent>
+            </Card>
+            )}
+        </div>
+        </div>
+    )
 }
