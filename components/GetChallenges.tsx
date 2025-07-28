@@ -1,15 +1,37 @@
 "use client"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Eye, Settings } from "lucide-react"
+import { Plus } from "lucide-react"
 
 // ---------------------- Firebase ----------------------
 import { db } from "@/lib/firebase"
-import { getDocs, Timestamp, collection } from "firebase/firestore"
+import {
+  getDocs,
+  Timestamp,
+  collection,
+  query,
+  orderBy,
+  limit,
+  where
+} from "firebase/firestore"
 
 type Challenge = {
   id: string
@@ -18,12 +40,15 @@ type Challenge = {
   problemStatement: string
   guidelines: string
   rubric: string
-  deadline: Timestamp
+  startDeadline: Timestamp
+  competitionid: string
 }
 
 export default function GetChallenges() {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const router = useRouter()
+  const [showModal, setShowModal] = useState(false)
+
 
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -33,11 +58,30 @@ export default function GetChallenges() {
           throw new Error("NEXT_PUBLIC_CHALLENGE_DATABASE is not defined in the environment")
         }
 
-        const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
-        const fetched: Challenge[] = querySnapshot.docs.map((doc) => ({
+        // 1. Get latest competition ID
+        const competitionsRef = collection(db, "competitions")
+        const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
+        const snapshot = await getDocs(latestQuery)
+
+        if (snapshot.empty) {
+          console.warn("No competitions found.")
+          return
+        }
+
+        const maincompetitionid = snapshot.docs[0].id
+
+        // 2. Get challenges filtered by maincompetitionid
+        const challengesQuery = query(
+          collection(db, CHALLENGE_COLLECTION),
+          where("competitionid", "==", maincompetitionid)
+        )
+        const challengesSnap = await getDocs(challengesQuery)
+
+        const fetched: Challenge[] = challengesSnap.docs.map((doc) => ({
           id: doc.id,
           ...(doc.data() as Omit<Challenge, "id">),
         }))
+
         setChallenges(fetched)
       } catch (error) {
         console.error("Error fetching challenges:", error)
@@ -65,8 +109,8 @@ export default function GetChallenges() {
 
       <div className="grid gap-6">
         {challenges.map((challenge) => {
-          const deadlineDate = challenge.deadline.toDate()
-          const isExpired = deadlineDate < new Date()
+          const startDate = challenge.startDeadline.toDate()
+          const isExpired = startDate < new Date()
 
           return (
             <Card
@@ -102,9 +146,9 @@ export default function GetChallenges() {
                 <div className="flex justify-between items-center mb-4">
                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
                     <div>
-                      <span className="mr-2">Deadline:</span>
+                      <span className="mr-2">Start:</span>
                       <span className="font-semibold text-[#56ffbc]">
-                        {deadlineDate.toLocaleDateString()}
+                        {startDate.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -114,10 +158,37 @@ export default function GetChallenges() {
                   <Button
                     size="sm"
                     className="bg-[#56ffbc] text-black font-semibold hover:bg-[#42e0a8] transition-colors"
-                    onClick={() => router.push(`/admin/competitions/${challenge.id}/edit`)}
+                    onClick={() => {
+                      if (isExpired) {
+                        setShowModal(true)
+                      } else {
+                        router.push(`/admin/competitions/${challenge.id}/edit`)
+                      }
+                    }}
+
+
                   >
                     Edit
                   </Button>
+                  <Dialog open={showModal} onOpenChange={setShowModal}>
+                    <DialogContent className="bg-[#0c0c4f] border-[#56ffbc]/30 text-white rounded-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#56ffbc]">Editing Not Allowed</DialogTitle>
+                        <DialogDescription className="text-gray-400">
+                          You can't edit this challenge because the competition has already started.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button
+                          className="bg-[#56ffbc] text-[#07073a] hover:bg-[#42e0a8] font-semibold"
+                          onClick={() => setShowModal(false)}
+                        >
+                          Got it
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
