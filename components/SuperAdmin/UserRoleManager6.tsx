@@ -22,10 +22,14 @@ import {
   Filter,
   UserPlus,
   Trash2,
-  TrendingUp,
   UserCheck,
   UserX,
   Zap,
+  Settings,
+  BarChart3,
+  Activity,
+  Clock,
+  Mail,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -97,37 +101,41 @@ export const ROLE_CONFIG = {
     label: "Super Admin",
     pluralLabel: "Super Admins",
     icon: Crown,
-    color: "text-purple-700",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200",
+    color: "text-slate-700",
+    bgColor: "bg-slate-100",
+    borderColor: "border-slate-300",
     badgeVariant: "default" as const,
+    accentColor: "bg-slate-600",
   },
   admin: {
     label: "Admin",
     pluralLabel: "Admins",
     icon: Shield,
-    color: "text-blue-700",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
+    color: "text-gray-700",
+    bgColor: "bg-gray-100",
+    borderColor: "border-gray-300",
     badgeVariant: "secondary" as const,
+    accentColor: "bg-gray-600",
   },
   judge: {
     label: "Judge",
     pluralLabel: "Judges",
     icon: Scale,
-    color: "text-emerald-700",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
+    color: "text-zinc-700",
+    bgColor: "bg-zinc-100",
+    borderColor: "border-zinc-300",
     badgeVariant: "outline" as const,
+    accentColor: "bg-zinc-600",
   },
   user: {
-    label: "Contestant",
-    pluralLabel: "Contestants",
+    label: "Member",
+    pluralLabel: "Members",
     icon: Users,
-    color: "text-slate-700",
-    bgColor: "bg-slate-50",
-    borderColor: "border-slate-200",
+    color: "text-stone-700",
+    bgColor: "bg-stone-100",
+    borderColor: "border-stone-300",
     badgeVariant: "outline" as const,
+    accentColor: "bg-stone-600",
   },
 }
 
@@ -135,7 +143,7 @@ const ITEMS_PER_PAGE = 12
 
 // --- Helper Components ------------------------------------------------------
 
-// Modern Stats Card with enhanced design
+// Sophisticated Stats Card with modern design
 interface StatsCardProps {
   title: string
   count: number
@@ -146,7 +154,7 @@ interface StatsCardProps {
   role: string
   selectedRole: string
   onSelectRole: (role: string) => void
-  trend?: number
+  accentColor: string
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({
@@ -159,37 +167,33 @@ const StatsCard: React.FC<StatsCardProps> = ({
   role,
   selectedRole,
   onSelectRole,
-  trend = 0,
+  accentColor,
 }) => (
   <Card
-    className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
-      selectedRole === role ? `ring-2 ring-blue-500 shadow-md` : "hover:shadow-md"
+    className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-0 shadow-sm ${
+      selectedRole === role
+        ? `ring-2 ring-slate-400 shadow-lg bg-white`
+        : "hover:shadow-md bg-white hover:bg-gray-50/50"
     }`}
     onClick={() => onSelectRole(role)}
   >
     <CardContent className="p-6">
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <div className="flex items-baseline space-x-2">
-            <p className="text-3xl font-bold tracking-tight">{count.toLocaleString()}</p>
-            {trend !== 0 && (
-              <div className={`flex items-center text-xs ${trend > 0 ? "text-emerald-600" : "text-red-600"}`}>
-                <TrendingUp className={`w-3 h-3 mr-1 ${trend < 0 ? "rotate-180" : ""}`} />
-                {Math.abs(trend)}%
-              </div>
-            )}
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-gray-600 tracking-wide">{title}</p>
+          <div className="flex items-baseline space-x-3">
+            <p className="text-3xl font-bold tracking-tight text-gray-900">{count.toLocaleString()}</p>
           </div>
         </div>
-        <div className={`p-3 rounded-xl ${bgColor}`}>
-          <Icon className={`w-6 h-6 ${color}`} />
+        <div className={`p-4 rounded-2xl ${accentColor} shadow-sm`}>
+          <Icon className="w-7 h-7 text-white" />
         </div>
       </div>
     </CardContent>
   </Card>
 )
 
-// Enhanced User Row Component
+// Enhanced User Row with sophisticated styling
 interface UserRowProps {
   user: User
   formatDate: (d?: string) => string
@@ -203,71 +207,82 @@ const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onV
   const actions = getRoleActions(user)
 
   return (
-    <TableRow className="hover:bg-muted/50 transition-colors">
-      <TableCell>
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || user.email}`} />
-            <AvatarFallback className={cfg.bgColor}>
-              {(user.displayName || user.email).charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="space-y-1">
+    <TableRow className="hover:bg-gray-50/50 transition-all duration-200 border-b border-gray-100">
+      <TableCell className="py-4">
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm">
+              <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || user.email}`} />
+              <AvatarFallback className={`${cfg.bgColor} ${cfg.color} text-sm font-semibold`}>
+                {(user.displayName || user.email).charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {/* Status indicator */}
+            <div
+              className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                user.disabled ? "bg-red-400" : "bg-emerald-400"
+              }`}
+            />
+          </div>
+          <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center space-x-2">
-              <p className="font-medium leading-none">{user.displayName || user.email}</p>
-              {user.emailVerified && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+              <p className="font-semibold text-gray-900 truncate">{user.displayName || user.email}</p>
+              {user.emailVerified && <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
             </div>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm text-gray-500 truncate">{user.email}</p>
           </div>
         </div>
       </TableCell>
-      <TableCell>
-        <Badge variant={cfg.badgeVariant} className="gap-1">
-          <cfg.icon className="w-3 h-3" />
+      <TableCell className="py-4">
+        <Badge variant={cfg.badgeVariant} className={`gap-1.5 ${cfg.bgColor} ${cfg.color} border-0 font-medium`}>
+          <cfg.icon className="w-3.5 h-3.5" />
           {cfg.label}
         </Badge>
       </TableCell>
-      <TableCell>
-        <div className="flex items-center space-x-2">
-          {user.disabled ? (
-            <Badge variant="destructive" className="gap-1">
-              <UserX className="w-3 h-3" />
-              Disabled
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200">
-              <UserCheck className="w-3 h-3" />
-              Active
-            </Badge>
-          )}
-        </div>
+      <TableCell className="py-4">
+        {user.disabled ? (
+          <Badge variant="outline" className="gap-1.5 text-red-600 border-red-200 bg-red-50">
+            <UserX className="w-3.5 h-3.5" />
+            Disabled
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="gap-1.5 text-emerald-600 border-emerald-200 bg-emerald-50">
+            <UserCheck className="w-3.5 h-3.5" />
+            Active
+          </Badge>
+        )}
       </TableCell>
-      <TableCell className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">{formatDate(user.lastSignIn)}</TableCell>
-      <TableCell>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={() => onViewDetails(user)} className="h-8 w-8 p-0">
+      <TableCell className="py-4 text-sm text-gray-600">{formatDate(user.createdAt)}</TableCell>
+      <TableCell className="py-4 text-sm text-gray-600">{formatDate(user.lastSignIn)}</TableCell>
+      <TableCell className="py-4">
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onViewDetails(user)}
+            className="h-8 w-8 p-0 hover:bg-gray-100"
+          >
             <Eye className="w-4 h-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" className="w-48 shadow-lg border-gray-200">
+              <DropdownMenuLabel className="text-gray-700">Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-100" />
               {actions.map((action, i) => (
-                <DropdownMenuItem key={i} onClick={action.action} className="gap-2">
+                <DropdownMenuItem key={i} onClick={action.action} className="gap-2 hover:bg-gray-50 text-gray-700">
                   <action.icon className="w-4 h-4" />
                   {action.label}
                 </DropdownMenuItem>
               ))}
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-gray-100" />
               <DropdownMenuItem
                 onClick={() => onDelete(user.uid, user.email)}
-                className="gap-2 text-destructive focus:text-destructive"
+                className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete User
@@ -280,7 +295,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onV
   )
 }
 
-// Enhanced Pagination
+// Modern Pagination Component
 interface PaginationProps {
   totalPages: number
   currentPage: number
@@ -302,16 +317,22 @@ const PaginationComponent: React.FC<PaginationProps> = ({
   const endItem = Math.min(currentPage * itemsPerPage, totalItems)
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-t">
-      <div className="text-sm text-muted-foreground">
-        Showing {startItem} to {endItem} of {totalItems} users
+    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/30">
+      <div className="text-sm text-gray-600 font-medium">
+        Showing <span className="text-gray-900">{startItem}</span> to <span className="text-gray-900">{endItem}</span>{" "}
+        of <span className="text-gray-900">{totalItems}</span> users
       </div>
       <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="border-gray-200 hover:bg-gray-50"
+        >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Previous
         </Button>
-
         <div className="flex items-center space-x-1">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum: number
@@ -331,19 +352,23 @@ const PaginationComponent: React.FC<PaginationProps> = ({
                 variant={currentPage === pageNum ? "default" : "outline"}
                 size="sm"
                 onClick={() => onPageChange(pageNum)}
-                className="w-8 h-8 p-0"
+                className={`w-9 h-9 p-0 ${
+                  currentPage === pageNum
+                    ? "bg-gray-900 hover:bg-gray-800 text-white"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
               >
                 {pageNum}
               </Button>
             )
           })}
         </div>
-
         <Button
           variant="outline"
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
+          className="border-gray-200 hover:bg-gray-50"
         >
           Next
           <ChevronRight className="w-4 h-4 ml-1" />
@@ -478,28 +503,28 @@ export default function UserRoleManager() {
       actions.push({
         label: "Make Admin",
         action: () => updateRole(u.uid, "admin"),
-        color: "text-blue-600 hover:text-blue-700",
+        color: "text-gray-600 hover:text-gray-700",
         icon: Shield,
       })
     if (u.role !== "judge")
       actions.push({
         label: "Make Judge",
         action: () => updateRole(u.uid, "judge"),
-        color: "text-green-600 hover:text-green-700",
+        color: "text-zinc-600 hover:text-zinc-700",
         icon: Scale,
       })
     if (u.role !== "superadmin")
       actions.push({
         label: "Make Super Admin",
         action: () => updateRole(u.uid, "superadmin"),
-        color: "text-purple-600 hover:text-purple-700",
+        color: "text-slate-600 hover:text-slate-700",
         icon: Crown,
       })
     if (u.role !== "user")
       actions.push({
         label: "Remove Role",
         action: () => updateRole(u.uid, "user"),
-        color: "text-gray-600 hover:text-gray-700",
+        color: "text-stone-600 hover:text-stone-700",
         icon: Users,
       })
     return actions
@@ -660,7 +685,7 @@ export default function UserRoleManager() {
     }
   }
 
-  // Render notification
+  // Render notification with sophisticated styling
   const renderNotification = (notification: NotificationState) => {
     const icons = {
       success: CheckCircle,
@@ -681,7 +706,7 @@ export default function UserRoleManager() {
     return (
       <div
         key={notification.id}
-        className={`flex items-start gap-3 p-4 rounded-lg border ${colors[notification.type]} shadow-lg backdrop-blur-sm`}
+        className={`flex items-start gap-3 p-4 rounded-xl border shadow-lg ${colors[notification.type]} animate-in slide-in-from-right-full duration-300`}
         role="alert"
       >
         <Icon className="w-5 h-5 mt-0.5 flex-shrink-0" />
@@ -693,7 +718,7 @@ export default function UserRoleManager() {
           variant="ghost"
           size="sm"
           onClick={() => removeNotification(notification.id)}
-          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+          className="h-6 w-6 p-0 opacity-60 hover:opacity-100 hover:bg-white/50"
         >
           <X className="w-4 h-4" />
         </Button>
@@ -703,48 +728,51 @@ export default function UserRoleManager() {
 
   // --- Render ---
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Notifications */}
       {notifications.length > 0 && (
-        <div className="fixed top-4 right-4 z-50 space-y-3 max-w-sm">{notifications.map(renderNotification)}</div>
+        <div className="fixed top-6 right-6 z-50 space-y-3 max-w-sm">{notifications.map(renderNotification)}</div>
       )}
 
-      <div className="container mx-auto p-6 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              User Management
-            </h1>
-            <p className="text-lg text-muted-foreground">Manage user accounts and permissions across your platform</p>
-          </div>
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Modern Header with Creative Layout */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-3xl opacity-95" />
+          <div className="relative px-8 py-12 text-white">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
+                    <Settings className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-4xl font-bold tracking-tight">User Management</h1>
+                    <p className="text-gray-300 text-lg mt-1">Comprehensive user administration and role management</p>
+                  </div>
+                </div>
+              </div>
 
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="outline"
-              onClick={loadInitialData}
-              disabled={loading.stats || loading.users}
-              className="gap-2 bg-transparent"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading.stats || loading.users ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-
-            <Button onClick={() => setShowCreateUser(true)} className="gap-2">
-              <UserPlus className="w-4 h-4" />
-              Add User
-            </Button>
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={() => setShowCreateUser(true)}
+                  className="gap-2 bg-white text-gray-900 hover:bg-gray-100"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add User
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Stats Overview */}
+        {/* Stats Overview with Creative Grid */}
         {loading.stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
+              <Card key={i} className="animate-pulse border-0 shadow-sm">
                 <CardContent className="p-6">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-3"></div>
-                  <div className="h-8 bg-muted rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
                 </CardContent>
               </Card>
             ))}
@@ -752,15 +780,16 @@ export default function UserRoleManager() {
         ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
-              title="All Users"
+              title="Total Users"
               count={stats.total}
-              icon={Users}
-              color="text-slate-700"
-              bgColor="bg-slate-50"
-              borderColor="border-slate-200"
+              icon={BarChart3}
+              color="text-gray-700"
+              bgColor="bg-gray-100"
+              borderColor="border-gray-300"
               role="all"
               selectedRole={selectedRole}
               onSelectRole={setSelectedRole}
+              accentColor="bg-gray-600"
             />
             {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => (
               <StatsCard
@@ -774,83 +803,111 @@ export default function UserRoleManager() {
                 role={roleKey}
                 selectedRole={selectedRole}
                 onSelectRole={setSelectedRole}
+                accentColor={config.accentColor}
               />
             ))}
           </div>
         ) : null}
 
-        {/* Filters and Search */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <Filter className="w-4 h-4" />
-                  <span>Filter by role:</span>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={selectedRole === "all" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedRole("all")}
-                    className="gap-1"
-                  >
-                    All Users ({allUsers.length})
-                  </Button>
-                  {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => {
-                    const count = allUsers.filter((u) => u.role === roleKey).length
-                    return (
+        {/* Enhanced Search and Filters */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Search Section */}
+          <div className="lg:col-span-2">
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Search className="w-5 h-5 text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-900">Search Users</h3>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Input
+                      placeholder="Search by name, email, or user ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-12 pr-12 h-12 border-gray-200 focus:border-gray-400 focus:ring-gray-400"
+                    />
+                    {searchQuery && (
                       <Button
-                        key={roleKey}
-                        variant={selectedRole === roleKey ? "default" : "outline"}
+                        variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedRole(roleKey)}
-                        className="gap-1"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
                       >
-                        <config.icon className="w-3 h-3" />
-                        {config.label} ({count})
+                        <X className="w-4 h-4" />
                       </Button>
-                    )
-                  })}
+                    )}
+                  </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+          </div>
 
-              <div className="relative w-full lg:w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-10"
-                />
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Filter Section */}
+          <div>
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Filter className="w-5 h-5 text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-900">Filter by Role</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <Button
+                      variant={selectedRole === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedRole("all")}
+                      className={`w-full justify-start gap-2 ${
+                        selectedRole === "all"
+                          ? "bg-gray-900 hover:bg-gray-800 text-white"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      All Users ({allUsers.length})
+                    </Button>
+                    {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => {
+                      const count = allUsers.filter((u) => u.role === roleKey).length
+                      return (
+                        <Button
+                          key={roleKey}
+                          variant={selectedRole === roleKey ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedRole(roleKey)}
+                          className={`w-full justify-start gap-2 ${
+                            selectedRole === roleKey
+                              ? "bg-gray-900 hover:bg-gray-800 text-white"
+                              : "border-gray-200 hover:bg-gray-50"
+                          }`}
+                        >
+                          <config.icon className="w-4 h-4" />
+                          {config.label} ({count})
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-        {/* Users Table */}
-        <Card>
-          <CardHeader className="pb-4">
+        {/* Users Table with Modern Design */}
+        <Card className="border-0 shadow-sm overflow-hidden">
+          <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-6">
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl">Users ({filteredUsers.length})</CardTitle>
-                <CardDescription>
+              <div className="space-y-1">
+                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                  <Activity className="w-6 h-6 text-gray-600" />
+                  Users ({filteredUsers.length})
+                </CardTitle>
+                <CardDescription className="text-gray-600">
                   {selectedRole !== "all" &&
-                    `Filtered by ${ROLE_CONFIG[selectedRole as keyof typeof ROLE_CONFIG]?.label}`}
+                    `Showing ${ROLE_CONFIG[selectedRole as keyof typeof ROLE_CONFIG]?.pluralLabel} • `}
+                  Manage user accounts and permissions
                 </CardDescription>
               </div>
-
               {selectedRole !== "all" && (
                 <Button
                   variant="outline"
@@ -858,10 +915,10 @@ export default function UserRoleManager() {
                     setRoleToAssign(selectedRole)
                     setShowExistingUsers(true)
                   }}
-                  className="gap-2"
+                  className="gap-2 border-gray-200 hover:bg-gray-50"
                 >
                   <Zap className="w-4 h-4" />
-                  Bulk Promote
+                  Bulk Actions
                 </Button>
               )}
             </div>
@@ -869,24 +926,35 @@ export default function UserRoleManager() {
 
           <CardContent className="p-0">
             {loading.users ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-3">
-                  <RefreshCw className="w-8 h-8 text-muted-foreground animate-spin mx-auto" />
-                  <p className="text-muted-foreground">Loading users...</p>
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center space-y-4">
+                  <RefreshCw className="w-10 h-10 text-gray-400 animate-spin mx-auto" />
+                  <div className="space-y-2">
+                    <p className="text-gray-600 font-medium">Loading users...</p>
+                    <p className="text-gray-400 text-sm">Please wait while we fetch the latest data</p>
+                  </div>
                 </div>
               </div>
             ) : paginatedUsers.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-4">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto" />
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center space-y-6">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                    <Users className="w-8 h-8 text-gray-400" />
+                  </div>
                   <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">No users found</h3>
-                    <p className="text-muted-foreground">
-                      {searchQuery ? "Try adjusting your search criteria" : "No users match the selected filters"}
+                    <h3 className="text-xl font-semibold text-gray-900">No users found</h3>
+                    <p className="text-gray-500 max-w-md">
+                      {searchQuery
+                        ? "Try adjusting your search criteria or clearing the current filters"
+                        : "No users match the selected role filter"}
                     </p>
                   </div>
                   {searchQuery && (
-                    <Button variant="outline" onClick={() => setSearchQuery("")}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSearchQuery("")}
+                      className="border-gray-200 hover:bg-gray-50"
+                    >
                       Clear search
                     </Button>
                   )}
@@ -896,13 +964,23 @@ export default function UserRoleManager() {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead>Last Active</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableRow className="bg-gray-50/50 border-b border-gray-100">
+                      <TableHead className="font-semibold text-gray-700 py-4">User</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4">Role</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4">Status</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          Joined
+                        </div>
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4">
+                        <div className="flex items-center gap-1">
+                          <Activity className="w-4 h-4" />
+                          Last Active
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[120px] font-semibold text-gray-700 py-4">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -932,30 +1010,37 @@ export default function UserRoleManager() {
         </Card>
       </div>
 
+      {/* Enhanced Dialogs with Modern Styling */}
+
       {/* Create User Dialog */}
       <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5" />
+        <DialogContent className="sm:max-w-md border-0 shadow-xl">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <UserPlus className="w-5 h-5 text-gray-600" />
+              </div>
               Create New User
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600">
               Add a new user to your platform with the specified role and permissions.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role" className="text-sm font-semibold text-gray-700">
+                Role
+              </Label>
               <Select
                 value={createUserForm.role}
                 onValueChange={(value) => setCreateUserForm((f) => ({ ...f, role: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-200 focus:border-gray-400">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-gray-200">
+                  <SelectItem value="user">Member</SelectItem>
                   <SelectItem value="judge">Judge</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="superadmin">Super Admin</SelectItem>
@@ -964,65 +1049,84 @@ export default function UserRoleManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="displayName">Display Name *</Label>
+              <Label htmlFor="displayName" className="text-sm font-semibold text-gray-700">
+                Full Name *
+              </Label>
               <Input
                 id="displayName"
                 placeholder="Enter full name"
                 value={createUserForm.displayName}
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, displayName: e.target.value }))}
+                className="border-gray-200 focus:border-gray-400"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter email address"
-                value={createUserForm.email}
-                onChange={(e) => setCreateUserForm((f) => ({ ...f, email: e.target.value }))}
-              />
+              <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
+                Email Address *
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={createUserForm.email}
+                  onChange={(e) => setCreateUserForm((f) => ({ ...f, email: e.target.value }))}
+                  className="pl-10 border-gray-200 focus:border-gray-400"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
+                Password *
+              </Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Minimum 6 characters"
                 value={createUserForm.password}
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, password: e.target.value }))}
+                className="border-gray-200 focus:border-gray-400"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateUser(false)} disabled={loading.action}>
+          <DialogFooter className="border-t border-gray-100 pt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateUser(false)}
+              disabled={loading.action}
+              className="border-gray-200 hover:bg-gray-50"
+            >
               Cancel
             </Button>
-            <Button onClick={createUser} disabled={loading.action}>
+            <Button onClick={createUser} disabled={loading.action} className="bg-gray-900 hover:bg-gray-800 text-white">
               {loading.action ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Promote Dialog */}
+      {/* Bulk Actions Dialog */}
       <Dialog open={showExistingUsers} onOpenChange={setShowExistingUsers}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5" />
-              Promote Users to {ROLE_CONFIG[roleToAssign as keyof typeof ROLE_CONFIG]?.label}
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col border-0 shadow-xl">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Zap className="w-5 h-5 text-gray-600" />
+              </div>
+              Bulk Role Assignment
             </DialogTitle>
-            <DialogDescription>
-              Select users to promote to the {ROLE_CONFIG[roleToAssign as keyof typeof ROLE_CONFIG]?.label} role.
+            <DialogDescription className="text-gray-600">
+              Select users to assign the {ROLE_CONFIG[roleToAssign as keyof typeof ROLE_CONFIG]?.label} role.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search users to promote..."
                 value={promoteSearchQuery}
@@ -1030,18 +1134,18 @@ export default function UserRoleManager() {
                   setPromoteSearchQuery(e.target.value)
                   setPromoteCurrentPage(1)
                 }}
-                className="pl-10"
+                className="pl-10 border-gray-200 focus:border-gray-400"
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 max-h-96">
+            <div className="flex-1 overflow-y-auto space-y-3 max-h-96">
               {paginatedPromoteUsers.map((u) => (
                 <div
                   key={u.uid}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     selectedExistingUsers.has(u.uid)
-                      ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100"
-                      : "bg-background border-border hover:border-muted-foreground"
+                      ? "bg-gray-50 border-gray-300 ring-2 ring-gray-200"
+                      : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                   }`}
                   onClick={() => {
                     const s = new Set(selectedExistingUsers)
@@ -1051,39 +1155,55 @@ export default function UserRoleManager() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <Checkbox checked={selectedExistingUsers.has(u.uid)} onChange={() => {}} />
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{(u.displayName || u.email).charAt(0).toUpperCase()}</AvatarFallback>
+                      <Checkbox
+                        checked={selectedExistingUsers.has(u.uid)}
+                        onChange={() => {}}
+                        className="border-gray-300"
+                      />
+                      <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm">
+                        <AvatarFallback className="bg-gray-100 text-gray-600 font-semibold">
+                          {(u.displayName || u.email).charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{u.displayName || u.email}</p>
-                        <p className="text-sm text-muted-foreground">{u.email}</p>
+                        <p className="font-semibold text-gray-900">{u.displayName || u.email}</p>
+                        <p className="text-sm text-gray-500">{u.email}</p>
                       </div>
                     </div>
-                    <Badge variant="outline">{ROLE_CONFIG[u.role as keyof typeof ROLE_CONFIG]?.label || u.role}</Badge>
+                    <Badge variant="outline" className="border-gray-200 text-gray-600">
+                      {ROLE_CONFIG[u.role as keyof typeof ROLE_CONFIG]?.label || u.role}
+                    </Badge>
                   </div>
                 </div>
               ))}
 
               {hasMorePromoteUsers && (
-                <Button variant="outline" onClick={() => setPromoteCurrentPage((p) => p + 1)} className="w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setPromoteCurrentPage((p) => p + 1)}
+                  className="w-full border-gray-200 hover:bg-gray-50"
+                >
                   Load More ({promoteUsers.length - promoteEnd} remaining)
                 </Button>
               )}
 
               {!promoteUsers.length && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No users available for promotion</p>
+                <div className="text-center py-12 text-gray-500">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="font-medium">No users available for promotion</p>
                 </div>
               )}
             </div>
           </div>
 
-          <DialogFooter className="border-t pt-4">
+          <DialogFooter className="border-t border-gray-100 pt-6">
             <div className="flex items-center justify-between w-full">
-              <p className="text-sm text-muted-foreground">{selectedExistingUsers.size} user(s) selected</p>
-              <div className="flex space-x-2">
+              <p className="text-sm font-medium text-gray-600">
+                <span className="text-gray-900">{selectedExistingUsers.size}</span> user(s) selected
+              </p>
+              <div className="flex space-x-3">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1093,11 +1213,16 @@ export default function UserRoleManager() {
                     setPromoteCurrentPage(1)
                   }}
                   disabled={loading.action}
+                  className="border-gray-200 hover:bg-gray-50"
                 >
                   Cancel
                 </Button>
-                <Button onClick={assignRoleToExistingUsers} disabled={!selectedExistingUsers.size || loading.action}>
-                  {loading.action ? "Promoting..." : "Promote Users"}
+                <Button
+                  onClick={assignRoleToExistingUsers}
+                  disabled={!selectedExistingUsers.size || loading.action}
+                  className="bg-gray-900 hover:bg-gray-800 text-white"
+                >
+                  {loading.action ? "Updating..." : "Update Roles"}
                 </Button>
               </div>
             </div>
@@ -1107,21 +1232,29 @@ export default function UserRoleManager() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
+        <DialogContent className="sm:max-w-md border-0 shadow-xl">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-bold text-red-600 flex items-center gap-3">
+              <div className="p-2 bg-red-50 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
               Confirm Deletion
             </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{userToDelete?.email}</strong>?
-              <br />
-              <span className="text-destructive text-sm">This action cannot be undone.</span>
+            <DialogDescription className="text-gray-600 space-y-2">
+              <p>
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-gray-900">{userToDelete?.email}</span>?
+              </p>
+              <p className="text-red-600 text-sm font-medium">⚠️ This action cannot be undone.</p>
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUserToDelete(null)}>
+          <DialogFooter className="border-t border-gray-100 pt-6">
+            <Button
+              variant="outline"
+              onClick={() => setUserToDelete(null)}
+              className="border-gray-200 hover:bg-gray-50"
+            >
               Cancel
             </Button>
             <Button
@@ -1132,6 +1265,7 @@ export default function UserRoleManager() {
                   setUserToDelete(null)
                 }
               }}
+              className="bg-red-600 hover:bg-red-700"
             >
               Delete User
             </Button>
@@ -1141,10 +1275,12 @@ export default function UserRoleManager() {
 
       {/* User Details Dialog */}
       <Dialog open={!!showUserDetails} onOpenChange={() => setShowUserDetails(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
+        <DialogContent className="sm:max-w-md border-0 shadow-xl">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Eye className="w-5 h-5 text-gray-600" />
+              </div>
               User Details
             </DialogTitle>
           </DialogHeader>
@@ -1152,45 +1288,53 @@ export default function UserRoleManager() {
           {showUserDetails && (
             <div className="space-y-6 py-4">
               <div className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage
-                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${showUserDetails.displayName || showUserDetails.email}`}
+                <div className="relative">
+                  <Avatar className="h-20 w-20 ring-4 ring-gray-100 shadow-sm">
+                    <AvatarImage
+                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${showUserDetails.displayName || showUserDetails.email}`}
+                    />
+                    <AvatarFallback className="text-xl font-bold bg-gray-100 text-gray-600">
+                      {(showUserDetails.displayName || showUserDetails.email).charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div
+                    className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white ${
+                      showUserDetails.disabled ? "bg-red-400" : "bg-emerald-400"
+                    }`}
                   />
-                  <AvatarFallback className="text-lg">
-                    {(showUserDetails.displayName || showUserDetails.email).charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                </div>
                 <div className="space-y-2">
-                  <h4 className="text-lg font-semibold">{showUserDetails.displayName || showUserDetails.email}</h4>
-                  <Badge variant={ROLE_CONFIG[showUserDetails.role as keyof typeof ROLE_CONFIG]?.badgeVariant}>
+                  <h4 className="text-xl font-bold text-gray-900">
+                    {showUserDetails.displayName || showUserDetails.email}
+                  </h4>
+                  <Badge
+                    variant={ROLE_CONFIG[showUserDetails.role as keyof typeof ROLE_CONFIG]?.badgeVariant}
+                    className="font-medium"
+                  >
                     {ROLE_CONFIG[showUserDetails.role as keyof typeof ROLE_CONFIG]?.label || showUserDetails.role}
                   </Badge>
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="bg-gray-200" />
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Display Name
-                    </Label>
-                    <p className="text-sm mt-1">{showUserDetails.displayName || "Not set"}</p>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</Label>
+                    <p className="text-sm font-medium text-gray-900">{showUserDetails.displayName || "Not set"}</p>
                   </div>
 
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Email Status
-                    </Label>
-                    <div className="flex items-center space-x-2 mt-1">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Status</Label>
+                    <div className="flex items-center space-x-2">
                       {showUserDetails.emailVerified ? (
-                        <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200">
+                        <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200 bg-emerald-50">
                           <CheckCircle2 className="w-3 h-3" />
                           Verified
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="gap-1 text-red-600 border-red-200">
+                        <Badge variant="outline" className="gap-1 text-red-600 border-red-200 bg-red-50">
                           <XCircle className="w-3 h-3" />
                           Unverified
                         </Badge>
@@ -1199,46 +1343,40 @@ export default function UserRoleManager() {
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Email Address
-                  </Label>
-                  <p className="text-sm mt-1 font-mono">{showUserDetails.email}</p>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address</Label>
+                  <p className="text-sm font-mono text-gray-900 bg-gray-50 p-2 rounded-lg">{showUserDetails.email}</p>
                 </div>
 
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User ID</Label>
-                  <p className="text-sm mt-1 font-mono text-muted-foreground">{showUserDetails.uid}</p>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">User ID</Label>
+                  <p className="text-sm font-mono text-gray-500 bg-gray-50 p-2 rounded-lg break-all">
+                    {showUserDetails.uid}
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Member Since
-                    </Label>
-                    <p className="text-sm mt-1">{formatDate(showUserDetails.createdAt)}</p>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Member Since</Label>
+                    <p className="text-sm font-medium text-gray-900">{formatDate(showUserDetails.createdAt)}</p>
                   </div>
 
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Last Active
-                    </Label>
-                    <p className="text-sm mt-1">{formatDate(showUserDetails.lastSignIn)}</p>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Last Active</Label>
+                    <p className="text-sm font-medium text-gray-900">{formatDate(showUserDetails.lastSignIn)}</p>
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Account Status
-                  </Label>
-                  <div className="flex items-center space-x-2 mt-1">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Account Status</Label>
+                  <div className="flex items-center space-x-2">
                     {showUserDetails.disabled ? (
-                      <Badge variant="destructive" className="gap-1">
+                      <Badge variant="outline" className="gap-1 text-red-600 border-red-200 bg-red-50">
                         <UserX className="w-3 h-3" />
                         Disabled
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200">
+                      <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200 bg-emerald-50">
                         <UserCheck className="w-3 h-3" />
                         Active
                       </Badge>
@@ -1249,8 +1387,11 @@ export default function UserRoleManager() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button onClick={() => setShowUserDetails(null)} className="w-full">
+          <DialogFooter className="border-t border-gray-100 pt-6">
+            <Button
+              onClick={() => setShowUserDetails(null)}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+            >
               Close
             </Button>
           </DialogFooter>
@@ -1267,3 +1408,4 @@ async function getIdToken(): Promise<string> {
   if (!user) throw new Error("No user signed in")
   return await user.getIdToken()
 }
+               
