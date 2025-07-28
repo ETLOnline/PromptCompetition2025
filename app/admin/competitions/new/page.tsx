@@ -1,39 +1,84 @@
 "use client"
 
-import type React from "react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-
+import { getAuth } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
 import { db } from "@/lib/firebase"
-import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
+import {
+  doc,
+  setDoc,
+  getDocs,
+  Timestamp,
+  collection
+} from "firebase/firestore"
+import { getFirestore, orderBy, limit, query } from "firebase/firestore"
+
+async function getLatestCompetition() {
+  const competitionsRef = collection(db, "competitions")
+  const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
+  const querySnapshot = await getDocs(latestQuery)
+  if (querySnapshot.empty) return null
+  const doc = querySnapshot.docs[0]
+  return { id: doc.id, ...doc.data() }
+}
 
 export default function NewCompetitionPage() {
   const router = useRouter()
   const { toast } = useToast()
+
+  const [maincompetition, setMainCompetition] = useState<string | null>(null)
+  const [startDeadline, setStartDeadline] = useState<string | null>(null)
+  const [endDeadline, setEndDeadline] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     problemStatement: "",
     rubric: "",
     guidelines: "",
-    deadline: "",
   })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const latest = await getLatestCompetition()
+      if (latest) {
+        setMainCompetition(latest.id)
+
+        const start = latest.startDeadline?.toDate?.() ?? new Date(latest.startDeadline)
+        const end = latest.endDeadline?.toDate?.() ?? new Date(latest.endDeadline)
+
+        setStartDeadline(start.toISOString().slice(0, 16))
+        setEndDeadline(end.toISOString().slice(0, 16))
+      }
+
+      const user = await getAuth().currentUser?.getIdTokenResult()
+      const role = user?.claims?.role || null
+      setUserRole(role)
+    }
+
+    fetchData()
+  }, [])
 
   const getLatestCustomID = async (): Promise<string> => {
     const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
     if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
     const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
-
     const ids: number[] = []
     querySnapshot.forEach((doc) => {
       const numericID = parseInt(doc.id, 10)
@@ -41,7 +86,7 @@ export default function NewCompetitionPage() {
     })
 
     const nextID = ids.length === 0 ? 1 : Math.max(...ids) + 1
-    return nextID.toString().padStart(2, "0") // e.g. "01", "02", ...
+    return nextID.toString().padStart(2, "0")
   }
 
   const uploadToFirestore = async () => {
@@ -56,7 +101,9 @@ export default function NewCompetitionPage() {
       problemStatement: formData.problemStatement,
       rubric: formData.rubric,
       guidelines: formData.guidelines,
-      deadline: Timestamp.fromDate(new Date(formData.deadline)),
+      startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+      endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+      competitionid: maincompetition ?? "",
     })
   }
 
@@ -69,14 +116,14 @@ export default function NewCompetitionPage() {
 
       toast({
         title: "Success",
-        description: "Competition created successfully!",
+        description: "Challenge created successfully!",
       })
 
       router.push("/admin")
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create competition. Please try again.",
+        description: "Failed to create challenge. Please try again.",
         variant: "destructive",
       })
       console.error("Create error:", error)
@@ -90,6 +137,11 @@ export default function NewCompetitionPage() {
       ...prev,
       [e.target.name]: e.target.value,
     }))
+  }
+
+  const handleDeadlineChange = (key: "start" | "end", value: string) => {
+    if (key === "start") setStartDeadline(value)
+    else setEndDeadline(value)
   }
 
   return (
@@ -134,7 +186,7 @@ export default function NewCompetitionPage() {
                     name="problemStatement"
                     value={formData.problemStatement}
                     onChange={handleChange}
-                    placeholder="Detailed problem statement that participants will work on"
+                    placeholder="Detailed problem statement"
                     rows={6}
                     required
                   />
@@ -147,7 +199,7 @@ export default function NewCompetitionPage() {
                     name="rubric"
                     value={formData.rubric}
                     onChange={handleChange}
-                    placeholder="Detailed rubric for LLM-based evaluation"
+                    placeholder="Rubric for evaluation"
                     rows={6}
                     required
                   />
@@ -160,20 +212,32 @@ export default function NewCompetitionPage() {
                     name="guidelines"
                     value={formData.guidelines}
                     onChange={handleChange}
-                    placeholder="Submission guideline highlights for this challenge"
+                    placeholder="Submission guidelines"
                     rows={4}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="deadline">Submission Deadline</Label>
+                  <Label htmlFor="startDeadline">Start Deadline</Label>
                   <Input
-                    id="deadline"
-                    name="deadline"
+                    id="startDeadline"
                     type="datetime-local"
-                    value={formData.deadline}
-                    onChange={handleChange}
+                    value={startDeadline ?? ""}
+                    onChange={(e) => handleDeadlineChange("start", e.target.value)}
+                    disabled={userRole !== "superadmin"}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endDeadline">End Deadline</Label>
+                  <Input
+                    id="endDeadline"
+                    type="datetime-local"
+                    value={endDeadline ?? ""}
+                    onChange={(e) => handleDeadlineChange("end", e.target.value)}
+                    disabled={userRole !== "superadmin"}
                     required
                   />
                 </div>

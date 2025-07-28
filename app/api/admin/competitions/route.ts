@@ -1,51 +1,144 @@
-import { type NextRequest, NextResponse } from "next/server"
-import type { Competition } from "@/types/auth"
+// app/api/admin/competitions/route.ts
+import { type NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/firebase";
+import { addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
+import { getAuth } from "firebase-admin/auth";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import type { Competition } from "@/types/auth";
 
-// Mock database - in production, use a real database
-const competitions: Competition[] = [
-  {
-    id: "comp-1",
-    title: "Creative Writing Assistant",
-    description: "Design prompts that help AI generate creative and engaging stories",
-    problemStatement:
-      "Create a prompt that guides an AI to write a compelling short story (500-800 words) about a character who discovers they can communicate with plants. The story should include dialogue, character development, and a meaningful resolution.",
-    rubric:
-      "Scoring will be based on: 1) Creativity and originality (25 points), 2) Story structure and coherence (25 points), 3) Character development (20 points), 4) Dialogue quality (15 points), 5) Resolution satisfaction (15 points). Total: 100 points.",
-    evaluationCriteria:
-      "Stories will be evaluated for creativity, narrative structure, character depth, dialogue authenticity, and satisfying conclusion. Bonus points for unique perspectives and emotional resonance.",
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    isActive: true,
-    isLocked: false,
-    createdAt: new Date().toISOString(),
-  },
-]
+const admin = require("firebase-admin");
+const serviceAccount = require("@/serviceAccountKey.json");
+
+if (!getApps().length) {
+  console.log("Initializing Firebase Admin SDK...");
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    console.log("Firebase Admin SDK initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize Firebase Admin SDK:", error);
+    throw error;
+  }
+}
+
+const adminDb = admin.firestore();
 
 export async function GET() {
   try {
-    return NextResponse.json(competitions)
+    console.log("GET request received for competitions at", new Date().toISOString());
+    const querySnapshot = await getDocs(collection(db, "competitions"));
+    const competitions: Competition[] = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Competition[];
+
+    return NextResponse.json(competitions);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch competitions" }, { status: 500 })
+    console.error("Error fetching competitions:", error);
+    return NextResponse.json({ error: "Failed to fetch competitions" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const competitionData = await request.json()
+    console.log("POST request received at", new Date().toISOString());
 
-    const newCompetition: Competition = {
-      id: `comp-${Date.now()}`,
-      ...competitionData,
-      isLocked: false,
-      createdAt: new Date().toISOString(),
+    const token = request.headers.get("authorization")?.split("Bearer ")[1];
+    if (!token) {
+      console.warn("No authentication token provided");
+      return NextResponse.json({ error: "Unauthorized: No token provided" }, { status: 401 });
     }
 
-    competitions.push(newCompetition)
+    const auth = getAuth();
+    const user = await auth.verifyIdToken(token);
+    const userRecord = await auth.getUser(user.uid);
+    const role = userRecord.customClaims?.role;
+
+    console.log("User role:", role);
+    if (role !== "superadmin") {
+      console.warn("User", user.uid, "lacks superadmin role. Current role:", role);
+      return NextResponse.json({ error: "Unauthorized: Superadmin access required" }, { status: 403 });
+    }
+
+    const competitionData = await request.json();
+    const { title, description, prizeMoney, startDeadline, endDeadline, location, isActive, isLocked } = competitionData;
+
+    if (!title || !description || !prizeMoney || !startDeadline || !endDeadline || !location) {
+      console.error("Missing required fields:", { title, description, prizeMoney, startDeadline, endDeadline, location });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const startDate = new Date(startDeadline);
+    const endDate = new Date(endDeadline);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      console.error("Invalid datetime format:", { startDeadline, endDeadline });
+      return NextResponse.json({ error: "Invalid start or end datetime format" }, { status: 400 });
+    }
+
+    if (location !== "online" && location !== "offsite") {
+      console.error("Invalid location format:", location);
+      return NextResponse.json({ error: "Invalid location: must be 'online' or 'offsite'" }, { status: 400 });
+    }
+
+    console.log("Attempting to create competition in Firestore with data:", {
+      title,
+      description,
+      prizeMoney,
+      startDeadline,
+      endDeadline,
+      location,
+      isActive: isActive ?? true,
+      isLocked: isLocked ?? false,
+      createdAt: new Date().toISOString(),
+    });
+
+    const competitionRef = await adminDb.collection("competitions").add({
+      title,
+      description,
+      prizeMoney,
+      startDeadline,
+      endDeadline,
+      location,
+      isActive: isActive ?? true,
+      isLocked: isLocked ?? false,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log("Competition created with ID:", competitionRef.id);
+    const maincompetition = competitionRef.id;
+
+    try {
+      await adminDb.collection("competitionlist").add({
+        competitionId: maincompetition,
+        createdAt: new Date().toISOString(),
+      });
+      console.log("Competition added with ID:", competitionRef.id);
+    } catch (error) {
+      console.error("Error adding competition:", error);
+    }
+
+    const newCompetition: Competition = {
+      id: competitionRef.id,
+      title,
+      description,
+      prizeMoney,
+      startDeadline,
+      endDeadline,
+      location,
+      isActive: isActive ?? true,
+      isLocked: isLocked ?? false,
+      createdAt: new Date().toISOString(),
+    };
 
     return NextResponse.json({
       message: "Competition created successfully",
       competition: newCompetition,
-    })
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to create competition" }, { status: 500 })
+      redirectUrl: `/admin/competition/${maincompetition}`,
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error("Error creating competition:", error);
+    return NextResponse.json({ error: "Failed to create competition", details: error.message }, { status: 500 });
   }
 }
