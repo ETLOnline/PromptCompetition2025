@@ -1,4 +1,12 @@
 "use client"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -39,6 +47,8 @@ type Challenge = {
 export default function GetChallenges() {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const router = useRouter()
+  const [showModal, setShowModal] = useState(false)
+
 
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -148,10 +158,37 @@ export default function GetChallenges() {
                   <Button
                     size="sm"
                     className="bg-[#56ffbc] text-black font-semibold hover:bg-[#42e0a8] transition-colors"
-                    onClick={() => router.push(`/admin/competitions/${challenge.id}/edit`)}
+                    onClick={() => {
+                      if (isExpired) {
+                        setShowModal(true)
+                      } else {
+                        router.push(`/admin/competitions/${challenge.id}/edit`)
+                      }
+                    }}
+
+
                   >
                     Edit
                   </Button>
+                  <Dialog open={showModal} onOpenChange={setShowModal}>
+                    <DialogContent className="bg-[#0c0c4f] border-[#56ffbc]/30 text-white rounded-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-[#56ffbc]">Editing Not Allowed</DialogTitle>
+                        <DialogDescription className="text-gray-400">
+                          You can't edit this challenge because the competition has already started.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button
+                          className="bg-[#56ffbc] text-[#07073a] hover:bg-[#42e0a8] font-semibold"
+                          onClick={() => setShowModal(false)}
+                        >
+                          Got it
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>
