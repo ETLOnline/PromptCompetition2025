@@ -14,14 +14,12 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
 
-// ---------------------- Firebase ----------------------
 import { db } from "@/lib/firebase"
 import {
   getDocs,
@@ -42,13 +40,14 @@ type Challenge = {
   rubric: string
   startDeadline: Timestamp
   competitionid: string
+  emailoflatestupdate: string
+  lastupdatetime: Timestamp
 }
 
 export default function GetChallenges() {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
-
 
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -58,7 +57,6 @@ export default function GetChallenges() {
           throw new Error("NEXT_PUBLIC_CHALLENGE_DATABASE is not defined in the environment")
         }
 
-        // 1. Get latest competition ID
         const competitionsRef = collection(db, "competitions")
         const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
         const snapshot = await getDocs(latestQuery)
@@ -70,7 +68,6 @@ export default function GetChallenges() {
 
         const maincompetitionid = snapshot.docs[0].id
 
-        // 2. Get challenges filtered by maincompetitionid
         const challengesQuery = query(
           collection(db, CHALLENGE_COLLECTION),
           where("competitionid", "==", maincompetitionid)
@@ -110,6 +107,7 @@ export default function GetChallenges() {
       <div className="grid gap-6">
         {challenges.map((challenge) => {
           const startDate = challenge.startDeadline.toDate()
+          const updateDate = challenge.lastupdatetime?.toDate()
           const isExpired = startDate < new Date()
 
           return (
@@ -123,9 +121,6 @@ export default function GetChallenges() {
                     <CardTitle className="text-2xl font-bold text-[#56ffbc] mb-3">
                       {challenge.title}
                     </CardTitle>
-                    <CardDescription className="mt-2 text-gray-400">
-                      {challenge.description}
-                    </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 ml-4">
                     <Badge
@@ -143,14 +138,24 @@ export default function GetChallenges() {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
-                    <div>
-                      <span className="mr-2">Start:</span>
-                      <span className="font-semibold text-[#56ffbc]">
-                        {startDate.toLocaleString()}
-                      </span>
-                    </div>
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-400 mb-4">
+                  <div>
+                    <span className="mr-2">Start:</span>
+                    <span className="font-semibold text-[#56ffbc]">
+                      {startDate.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="mr-2">Updated By:</span>
+                    <span className="font-semibold text-[#56ffbc]">
+                      {challenge.emailoflatestupdate}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="mr-2">Last Update:</span>
+                    <span className="font-semibold text-[#56ffbc]">
+                      {updateDate?.toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
@@ -165,8 +170,6 @@ export default function GetChallenges() {
                         router.push(`/admin/competitions/${challenge.id}/edit`)
                       }
                     }}
-
-
                   >
                     Edit
                   </Button>
@@ -188,7 +191,6 @@ export default function GetChallenges() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-
                 </div>
               </CardContent>
             </Card>

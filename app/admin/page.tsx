@@ -314,7 +314,7 @@ export default function AdminDashboard() {
               <Button
                 size="lg"
                 className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-                onClick={() => router.push("/admin/judges")}
+                onClick={() => router.push("/admin/judge")}
               >
                 <Users className="h-4 w-4 mr-2" />
                 Manage Judges
