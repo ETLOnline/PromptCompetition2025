@@ -3,15 +3,15 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { db } from "@/lib/firebase"
-import { collection, getDocs, Timestamp } from "firebase/firestore"
+import { collection, getDocs, query, where, orderBy, limit, Timestamp } from "firebase/firestore"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Clock } from "lucide-react"
 
 type Challenge = {
   id: string
   title: string
-  deadline: Timestamp // store as Firebase Timestamp
+  deadline: Timestamp
+  competitionid: string
 }
 
 export default function ChallengeList() {
@@ -25,11 +25,28 @@ export default function ChallengeList() {
         throw new Error("Environment variable NEXT_PUBLIC_CHALLENGE_DATABASE is not defined.")
       }
 
-      const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
-      const data = querySnapshot.docs.map((doc) => ({
+      // 1. Get latest competition ID
+      const competitionsRef = collection(db, "competitions")
+      const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
+      const snapshot = await getDocs(latestQuery)
+
+      if (snapshot.empty) {
+        console.warn("No competitions found.")
+        return
+      }
+
+      const maincompetitionid = snapshot.docs[0].id
+
+      // 2. Fetch challenges with matching competitionid
+      const challengesRef = collection(db, CHALLENGE_COLLECTION)
+      const challengesQuery = query(challengesRef, where("competitionid", "==", maincompetitionid))
+      const challengeSnapshot = await getDocs(challengesQuery)
+
+      const data = challengeSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...(doc.data() as Omit<Challenge, "id">),
       }))
+
       setChallenges(data)
     }
 
