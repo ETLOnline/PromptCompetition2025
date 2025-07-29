@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -9,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, Users, Trophy, FileText, Settings } from "lucide-react"
+import { Plus, Users, Trophy, FileText, Settings, Activity } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
@@ -35,41 +37,38 @@ export default function AdminDashboard() {
     location: "online",
   })
 
-    const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   //const [loading, setLoading] = useState(true)
-    useEffect(() => {
-      if (!user) {
-        router.push("/")
-        return
-      }
 
-      const unsubscribeSubmissions = onSnapshot(
-        collection(db, process.env.NEXT_PUBLIC_SUBMISSION_DATABASE!),
-        (snapshot) => {
-          setSubmissionCount(snapshot.size)
-        }
-      )
+  useEffect(() => {
+    if (!user) {
+      router.push("/")
+      return
+    }
 
-      // Real-time listener for users (total participants)
-      const unsubscribeUsers = onSnapshot(
-        collection(db, process.env.NEXT_PUBLIC_USER_DATABASE!),
-        (snapshot) => {
-          setStats((prev) => ({
-            ...prev,
-            totalParticipants: snapshot.size,
-          }))
-        }
-      )
+    const unsubscribeSubmissions = onSnapshot(
+      collection(db, process.env.NEXT_PUBLIC_SUBMISSION_DATABASE!),
+      (snapshot) => {
+        setSubmissionCount(snapshot.size)
+      },
+    )
 
-      // Cleanup both listeners on unmount
-      return () => {
-        unsubscribeSubmissions()
-        unsubscribeUsers()
-      }
-    }, [user, role, router])
+    // Real-time listener for users (total participants)
+    const unsubscribeUsers = onSnapshot(collection(db, process.env.NEXT_PUBLIC_USER_DATABASE!), (snapshot) => {
+      setStats((prev) => ({
+        ...prev,
+        totalParticipants: snapshot.size,
+      }))
+    })
 
+    // Cleanup both listeners on unmount
+    return () => {
+      unsubscribeSubmissions()
+      unsubscribeUsers()
+    }
+  }, [user, role, router])
 
-    const handleNewCompetitionClick = () => {
+  const handleNewCompetitionClick = () => {
     if (role !== "superadmin") {
       alert("You are not allowed to create new competitions.")
       return
@@ -87,6 +86,7 @@ export default function AdminDashboard() {
     setFormError(null)
 
     const { title, description, prizeMoney, startTime, endTime, location } = formData
+
     if (!title || !description || !prizeMoney || !startTime || !endTime || !location) {
       setFormError("All fields are required.")
       return
@@ -99,28 +99,30 @@ export default function AdminDashboard() {
       setFormError("Invalid start or end date/time.")
       return
     }
+
     if (endDateTime <= startDateTime) {
       setFormError("End time must be after start time.")
       return
     }
+
     try {
       const response = await fetch("/api/admin/competitions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${await user?.getIdToken()}`,
-      },
-      body: JSON.stringify({
-        title,
-        description,
-        prizeMoney,
-        startDeadline: startDateTime.toISOString(),
-        endDeadline: endDateTime.toISOString(),
-        location,
-        isActive: true,
-        isLocked: false,
-      }),
-    })
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await user?.getIdToken()}`,
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          prizeMoney,
+          startDeadline: startDateTime.toISOString(),
+          endDeadline: endDateTime.toISOString(),
+          location,
+          isActive: true,
+          isLocked: false,
+        }),
+      })
 
       if (!response.ok) {
         throw new Error("Failed to create competition")
@@ -135,7 +137,6 @@ export default function AdminDashboard() {
         endTime: "",
         location: "online",
       })
-
     } catch (error) {
       console.error("Error creating competition:", error)
       setFormError("Failed to create competition. Please try again.")
@@ -143,120 +144,131 @@ export default function AdminDashboard() {
   }
 
   if (!user || (role !== "admin" && role !== "superadmin")) return null
+
   // console.log("User role:", role)
 
-    return (
-    <div className="min-h-screen bg-[#07073a] text-white">
-      <header className="bg-gradient-to-r from-[#0c0c4f] to-[#07073a] border-b border-[#56ffbc]/20 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#56ffbc] to-[#56ffbc]/80 flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-[#07073a]" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/80 bg-clip-text text-transparent">
-                    Admin Dashboard
-                  </h1>
-                  <p className="text-gray-300 text-lg">Manage competitions and monitor submissions</p>
-                </div>
-              </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-150">
+      <header className="bg-gradient-to-r from-slate-100 to-slate-200 border-b border-gray-200">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          
+          {/* Left Section: Enhanced Icon + Title + Stats */}
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-gray-700 to-gray-600 flex items-center justify-center shadow-sm shrink-0">
+              <Settings className="h-5 w-5 text-white" />
             </div>
-
-            {role === "superadmin" && (
-              <div className="mr-1"> {/* slightly reduce spacing to the right */}
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-                  onClick={() => router.push("/admin/edit-competitions")}
-                >
-                  <Settings className="h-5 w-5 mr-2" />
-                  Edit Competition
-                </Button>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 leading-tight">
+                  Admin Dashboard
+                </h1>
+                <span className="px-2.5 py-1 bg-gray-200 text-gray-700 text-xs font-semibold rounded-full uppercase tracking-wide">
+                  {role === "superadmin" ? "Super Admin" : "Admin"}
+                </span>
               </div>
-            )}
-
-
-            <div className="flex items-center gap-3">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-                onClick={handleNewCompetitionClick}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                New Competition
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-2 border-[#56ffbc]/50 text-[#56ffbc] hover:bg-[#56ffbc]/10 hover:border-[#56ffbc] transition-all duration-300" 
-                onClick={logout}>
-                Logout
-              </Button>
+              
+              <p className="text-gray-600 text-sm sm:text-base">
+                Manage competitions and monitor submissions
+              </p>
+              
             </div>
           </div>
+
+          {/* Right Section: Action Buttons */}
+          <div className="flex flex-wrap gap-3 justify-end items-center">
+            {role === "superadmin" && (
+              <button
+                className="px-4 py-2.5 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-small rounded-lg hover:shadow-lg hover:from-gray-800 hover:to-gray-700 focus-visible:ring-2 focus-visible:ring-gray-500 transition-all duration-200"
+                onClick={() => router.push("/admin/edit-competitions")}
+              >
+                <div className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  <span>Edit Competition</span>
+                </div>
+              </button>
+            )}
+            <button
+              className="px-4 py-2.5 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-small rounded-lg hover:shadow-lg hover:from-gray-800 hover:to-gray-700 focus-visible:ring-2 focus-visible:ring-gray-500 transition-all duration-200"
+              onClick={handleNewCompetitionClick}
+            >
+              <div className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                <span>New Competition</span>
+              </div>
+            </button>
+            <button
+              className="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-small rounded-lg hover:bg-gray-100 hover:text-gray-900 hover:border-gray-400 focus-visible:ring-2 focus-visible:ring-gray-400 transition-all duration-200"
+              onClick={logout}
+            >
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <main className="max-w-7xl mx-auto py-10 px-6 space-y-10">
+      <main className="max-w-6xl mx-auto py-10 px-6 space-y-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20 hover:border-[#56ffbc]/40 transition-all duration-300 group">
+          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-[#56ffbc]/80">Total Participants</CardTitle>
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10 group-hover:bg-[#56ffbc]/20 transition-colors">
-                  <Users className="h-5 w-5 text-[#56ffbc]" />
+                <CardTitle className="text-sm font-medium text-gray-700">Total Participants</CardTitle>
+                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-white mb-2">{stats.totalParticipants.toLocaleString()}</div>
-              <p className="text-sm text-gray-400">Registered users</p>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalParticipants.toLocaleString()}</div>
+              <p className="text-sm text-gray-700 font-medium">Registered users</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20 hover:border-[#56ffbc]/40 transition-all duration-300 group">
+          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-[#56ffbc]/80">Total Submissions</CardTitle>
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10 group-hover:bg-[#56ffbc]/20 transition-colors">
-                  <FileText className="h-5 w-5 text-[#56ffbc]" />
+                <CardTitle className="text-sm font-medium text-gray-700">Total Submissions</CardTitle>
+                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
+                  <FileText className="h-5 w-5 text-white" />
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-white mb-2">{totalSubmissions}</div>
-              <p className="text-sm text-gray-400">Across all competitions</p>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{totalSubmissions}</div>
+              <p className="text-sm text-gray-700 font-medium">Across all competitions</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20 hover:border-[#56ffbc]/40 transition-all duration-300 group">
+          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-[#56ffbc]/80">Pending Reviews</CardTitle>
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10 group-hover:bg-[#56ffbc]/20 transition-colors">
-                  <Trophy className="h-5 w-5 text-[#56ffbc]" />
+                <CardTitle className="text-sm font-medium text-gray-700">Pending Reviews</CardTitle>
+                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
+                  <Trophy className="h-5 w-5 text-white" />
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-white mb-2">{stats.pendingReviews.toLocaleString()}</div>
-              <p className="text-sm text-gray-400">Flagged for manual review</p>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.pendingReviews.toLocaleString()}</div>
+              <p className="text-sm text-gray-700 font-medium">Flagged for manual review</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20">
-            <CardHeader className="pb-4">
+          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+            <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10">
-                  <Trophy className="h-5 w-5 text-[#56ffbc]" />
+                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600">
+                  <Trophy className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-[#56ffbc] text-lg">Leaderboard Management</CardTitle>
-                  <CardDescription className="text-gray-400">View and export final rankings</CardDescription>
+                  <CardTitle className="text-gray-900 text-lg font-bold">Leaderboard Management</CardTitle>
+                  <CardDescription className="text-gray-700 font-medium">
+                    View and export final rankings
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -264,7 +276,7 @@ export default function AdminDashboard() {
               <Button
                 size="lg"
                 onClick={() => router.push("/admin/leaderboard")}
-                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
+                className="w-full bg-gradient-to-r from-gray-700 to-gray-600 text-white font-medium hover:shadow-md transition-all duration-200"
               >
                 <Trophy className="h-4 w-4 mr-2" />
                 View Leaderboard
@@ -274,64 +286,74 @@ export default function AdminDashboard() {
           </Card>
 
           {(role === "admin" || role === "superadmin") && (
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20 hover:border-[#56ffbc]/40 transition-all duration-300 group">
-            <CardHeader className="pb-4">
+            <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
+              <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
+                    <Settings className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-gray-900 text-lg font-bold">Admin Controls</CardTitle>
+                    <CardDescription className="text-gray-700 font-medium">
+                      Manage roles, judges, or platform access
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Manage Roles button */}
+                <Button
+                  size="lg"
+                  className={`w-full font-medium transition-all duration-200 ${
+                    role === "superadmin"
+                      ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
+                  }`}
+                  disabled={role !== "superadmin"}
+                  onClick={() => {
+                    if (role === "superadmin") {
+                      router.push("/admin/superadmin")
+                    } else {
+                      alert("You don't have permission to manage roles.")
+                    }
+                  }}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Roles
+                </Button>
+                {/* Second button: e.g. Judge Management */}
+                <Button
+                  size="lg"
+                  className={`w-full font-medium transition-all duration-200 ${
+                    role === "superadmin"
+                      ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
+                  }`}
+                  disabled={role !== "superadmin"}
+                  onClick={() => {
+                    if (role === "superadmin") {
+                      router.push("/admin/participant-distribution")
+                    } else {
+                      alert("You don't have permission to manage roles.")
+                    }
+                  }}
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Manage Judges
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+            <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10 group-hover:bg-[#56ffbc]/20 transition-colors">
-                  <Settings className="h-5 w-5 text-[#56ffbc]" />
+                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600">
+                  <Trophy className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-[#56ffbc] text-lg">Admin Controls</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Manage roles, judges, or platform access
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Manage Roles button */}
-              <Button
-                size="lg"
-                className={`w-full font-semibold transition-all duration-300 ${
-                  role === "superadmin"
-                    ? "bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25"
-                    : "bg-[#1f1f3b] text-gray-400 cursor-not-allowed border border-gray-600"
-                }`}
-                disabled={role !== "superadmin"}
-                onClick={() => {
-                  if (role === "superadmin") {
-                    router.push("/admin/superadmin");
-                  } else {
-                    alert("You don't have permission to manage roles.");
-                  }
-                }}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Manage Roles
-              </Button>
-
-              {/* Second button: e.g. Judge Management */}
-              <Button
-                size="lg"
-                className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
-                onClick={() => router.push("/admin/judge")}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Manage Judges
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-          <Card className="bg-gradient-to-br from-[#0c0c4f] to-[#07073a] border border-[#56ffbc]/20">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#56ffbc]/10">
-                  <Trophy className="h-5 w-5 text-[#56ffbc]" />
-                </div>
-                <div>
-                  <CardTitle className="text-[#56ffbc] text-lg">Evaluation</CardTitle>
-                  <CardDescription className="text-gray-400">Manual or LLM scoring</CardDescription>
+                  <CardTitle className="text-gray-900 text-lg font-bold">Evaluation</CardTitle>
+                  <CardDescription className="text-gray-700 font-medium">Manual or LLM scoring</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -343,96 +365,104 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-[#0c0c4f]/50 to-[#07073a]/50 rounded-xl border border-[#56ffbc]/10 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <GetChallenges />
           </div>
         </div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="bg-[#0c0c4f] border-[#56ffbc]/20 text-white">
+          <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl">
             <DialogHeader>
-              <DialogTitle className="text-[#56ffbc] text-2xl">Create New Competition</DialogTitle>
+              <DialogTitle className="text-gray-900 text-2xl font-bold">Create New Competition</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="title" className="text-[#56ffbc]/80">Title</Label>
+                <Label htmlFor="title" className="text-gray-700 font-medium">
+                  Title
+                </Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleFormChange("title", e.target.value)}
-                  className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
+                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                   placeholder="e.g., Quantum Prompt Challenge"
                 />
               </div>
               <div>
-                <Label htmlFor="description" className="text-[#56ffbc]/80">Description</Label>
+                <Label htmlFor="description" className="text-gray-700 font-medium">
+                  Description
+                </Label>
                 <Input
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleFormChange("description", e.target.value)}
-                  className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
+                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                   placeholder="e.g., A battle of wits to craft the most efficient and creative prompts"
                 />
               </div>
               <div>
-                <Label htmlFor="prizeMoney" className="text-[#56ffbc]/80">Prize Money</Label>
+                <Label htmlFor="prizeMoney" className="text-gray-700 font-medium">
+                  Prize Money
+                </Label>
                 <Input
                   id="prizeMoney"
                   value={formData.prizeMoney}
                   onChange={(e) => handleFormChange("prizeMoney", e.target.value)}
-                  className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
+                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                   placeholder="e.g., 5000$"
                 />
               </div>
               <div>
-                <Label htmlFor="startTime" className="text-[#56ffbc]/80">Start Date & Time</Label>
+                <Label htmlFor="startTime" className="text-gray-700 font-medium">
+                  Start Date & Time
+                </Label>
                 <Input
                   id="startTime"
                   type="datetime-local"
                   value={formData.startTime}
                   onChange={(e) => handleFormChange("startTime", e.target.value)}
-                  className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
+                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                 />
               </div>
               <div>
-                <Label htmlFor="endTime" className="text-[#56ffbc]/80">End Deadline</Label>
+                <Label htmlFor="endTime" className="text-gray-700 font-medium">
+                  End Deadline
+                </Label>
                 <Input
                   id="endTime"
                   type="datetime-local"
                   value={formData.endTime}
                   onChange={(e) => handleFormChange("endTime", e.target.value)}
-                  className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white placeholder-gray-400"
+                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                 />
               </div>
-
               <div>
-                <Label htmlFor="location" className="text-[#56ffbc]/80">Location</Label>
-                <Select
-                  value={formData.location}
-                  onValueChange={(value) => handleFormChange("location", value)}
-                >
-                  <SelectTrigger className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white">
+                <Label htmlFor="location" className="text-gray-700 font-medium">
+                  Location
+                </Label>
+                <Select value={formData.location} onValueChange={(value) => handleFormChange("location", value)}>
+                  <SelectTrigger className="bg-gray-50 border-gray-300 text-gray-900">
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1f1f3b] border-[#56ffbc]/20 text-white">
+                  <SelectContent className="bg-white border-gray-200 text-gray-900">
                     <SelectItem value="online">Online</SelectItem>
                     <SelectItem value="offsite">Offsite</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {formError && <p className="text-red-400 text-sm">{formError}</p>}
+              {formError && <p className="text-red-600 text-sm font-medium">{formError}</p>}
               <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-[#56ffbc]/50 text-[#56ffbc] hover:bg-[#56ffbc]/10"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
                   onClick={() => setIsModalOpen(false)}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80"
+                  className="bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md transition-all duration-200"
                 >
                   Create Competition
                 </Button>
