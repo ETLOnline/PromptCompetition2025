@@ -38,8 +38,6 @@ interface Judge {
     name: string
     email: string
     institution?: string
-    status?: "available" | "busy" | "offline"
-    rating?: number
     totalAssigned?: number
 }
 
@@ -155,8 +153,6 @@ export default function ParticipantDistribution() {
             id: user.uid,
             name: user.displayName || user.email.split("@")[0] || "Unknown Judge",
             email: user.email,
-            status: "available", // Default status
-            rating: 4.5 + Math.random() * 0.5, // Mock rating
             totalAssigned: 0,
         }))
 
@@ -370,12 +366,12 @@ export default function ParticipantDistribution() {
         })
         setExistingAssignments(newAssignments)
 
-        // Reset form
-        setSelectedTopN(0)
-        setAssignmentMethod(null)
-        setSelectedJudges([])
-        setJudgeCapacities([])
-        setJudgeAssignments({})
+        // // Reset form
+        // setSelectedTopN(0)
+        // setAssignmentMethod(null)
+        // setSelectedJudges([])
+        // setJudgeCapacities([])
+        // setJudgeAssignments({})
         } catch (err) {
         console.error("Distribution error:", err)
         showToast(`Failed to distribute participants: ${err instanceof Error ? err.message : "Unknown error"}`, "error")
@@ -434,7 +430,7 @@ export default function ParticipantDistribution() {
 
     if (fetchingData) {
         return (
-        <div className="min-h-screen bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-r from-slate-100 to-slate-150 flex items-center justify-center">
             <div className="flex flex-col items-center justify-center py-12">
             <div className="relative">
                 <Loader className="animate-spin w-12 h-12 text-gray-700" />
@@ -448,7 +444,7 @@ export default function ParticipantDistribution() {
     }
 
     const StepIndicator = () => (
-        <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center justify-center mb-4">
         <div className="flex items-center space-x-4">
             {[1, 2, 3].map((step) => (
             <div key={step} className="flex items-center">
@@ -475,14 +471,15 @@ export default function ParticipantDistribution() {
     )
 
     const NavBar = () => (
-        <header className="w-full bg-gradient-to-r from-gray-900 to-gray-800 shadow-sm border-b border-gray-700 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <header className="w-full bg-gradient-to-r from-slate-100 to-slate-200 shadow-sm border-b border-gray-700 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-gray-700 to-gray-600">
-            <Shuffle className="w-5 h-5 text-white" />
+                <Shuffle className="w-5 h-5 text-white" />
             </div>
+
             <div>
-            <h2 className="font-bold text-white">Distribution Center</h2>
-            <p className="text-xs text-gray-300">Participant Assignment System</p>
+                <h2 className="font-bold text-black">Distribution Center</h2>
+                <p className="text-xs text-gray-700">Participant Assignment System</p>
             </div>
         </div>
         <Button
@@ -496,7 +493,7 @@ export default function ParticipantDistribution() {
     )
 
     return (
-        <div className="min-h-screen bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100">
+        <div className="min-h-screen bg-gradient-to-r from-slate-100 to-slate-150">
         <NavBar />
 
         {/* Toast Notification */}
@@ -530,24 +527,26 @@ export default function ParticipantDistribution() {
         )}
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-100 via-blue-100 to-indigo-100 border-b border-gray-200">
+        <div className="bg-gradient-to-r from-slate-100 to-slate-150 border-b border-gray-200">
             <div className="max-w-6xl mx-auto px-6 py-16">
             <div className="text-center">
                 <div className="inline-flex items-center gap-4 mb-8">
-                <div className="p-4 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-600 shadow-lg">
-                    <Target className="w-8 h-8 text-white" />
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-600 shadow-lg">
+                        <Target className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="text-left">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-1">Participant Distribution</h1>
+                        <p className="text-gray-700 font-medium">Intelligent Assignment System</p>
+                    </div>
                 </div>
-                <div className="text-left">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-1">Participant Distribution</h1>
-                    <p className="text-gray-700 font-medium">Intelligent Assignment System</p>
-                </div>
-                </div>
+
                 <p className="text-lg font-medium text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
                 Distribute top-performing participants to qualified judges using advanced assignment algorithms and
                 capacity management
                 </p>
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
-                <StepIndicator />
+
+                <div className="bg-white backdrop-blur-sm rounded-xl p-4 shadow-sm w-full max-w-md mx-auto">
+                    <StepIndicator />
                 </div>
 
                 {/* Quick Stats */}
@@ -594,14 +593,14 @@ export default function ParticipantDistribution() {
             
             {/* Step 1: Number of Participants */}
             <Card className="bg-white shadow-sm rounded-xl transition-all duration-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700">
-                    <CardTitle className="flex items-center gap-3 text-white text-xl">
+                <div className="bg-white p-6 border-b border-gray-700">
+                    <CardTitle className="flex items-center gap-3 text-black text-xl">
                     <div className="p-2 rounded-lg bg-gray-700">
                         <Hash className="w-5 h-5 text-white" />
                     </div>
                     Step 1: Select Top Participants
                     </CardTitle>
-                    <CardDescription className="text-gray-300 leading-relaxed mt-2 text-base">
+                    <CardDescription className="text-gray-700 leading-relaxed mt-2 text-base">
                     Choose how many top-ranked participants should be distributed to judges for evaluation.
                     </CardDescription>
                 </div>
@@ -702,14 +701,14 @@ export default function ParticipantDistribution() {
             {/* Step 2: Assignment Strategy */}
             {selectedTopN > 0 && (
             <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700">
-                <CardTitle className="flex items-center gap-3 text-white text-xl">
+                <div className="bg-white p-6 border-b border-gray-700">
+                <CardTitle className="flex items-center gap-3 text-black text-xl">
                     <div className="p-2 rounded-lg bg-gray-700">
-                    <Zap className="w-5 h-5 text-white" />
+                        <Zap className="w-5 h-5 text-white" />
                     </div>
                     Step 2: Assignment Strategy
                 </CardTitle>
-                <CardDescription className="text-gray-300 leading-relaxed mt-2 text-base">
+                <CardDescription className="text-gray-700 leading-relaxed mt-2 text-base">
                     Choose the distribution method that best fits your evaluation requirements
                 </CardDescription>
                 </div>
@@ -807,14 +806,14 @@ export default function ParticipantDistribution() {
             {/* Step 3: Judge Configuration */}
             {assignmentMethod === "Weighted" && (
             <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 border-b border-gray-700">
-                <CardTitle className="flex items-center gap-3 text-white text-xl">
+                <div className="bg-white p-6 border-b border-gray-700">
+                <CardTitle className="flex items-center gap-3 text-black text-xl">
                     <div className="p-2 rounded-lg bg-gray-700">
-                    <UserCheck className="w-5 h-5 text-white" />
+                        <UserCheck className="w-5 h-5 text-white" />
                     </div>
                     Step 3: Configure Judge Assignments
                 </CardTitle>
-                <CardDescription className="text-gray-300 leading-relaxed mt-2 text-base">
+                <CardDescription className="text-gray-700 leading-relaxed mt-2 text-base">
                     Set the number of participants each judge should evaluate based on their capacity and expertise
                 </CardDescription>
                 </div>
@@ -856,17 +855,7 @@ export default function ParticipantDistribution() {
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
                             <div className="font-bold text-gray-900">{judge.name}</div>
-                            <div
-                                className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded border ${getStatusColor(judge.status || "available")}`}
-                            >
-                                {(judge.status || "available").toUpperCase()}
-                            </div>
-                            {judge.rating && (
-                                <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 text-amber-500 fill-current" />
-                                <span className="text-sm font-medium text-gray-700">{judge.rating.toFixed(1)}</span>
-                                </div>
-                            )}
+                            
                             </div>
                             <div className="text-sm text-gray-600">{judge.email}</div>
                             {judge.institution && <div className="text-xs text-gray-500">{judge.institution}</div>}
@@ -959,12 +948,14 @@ export default function ParticipantDistribution() {
             {/* Preview Section */}
             {canDistribute() && (
             <Card className="bg-white shadow-sm rounded-xl overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-6 border-b border-gray-700">
-                <CardTitle className="flex items-center gap-3 text-white text-xl">
-                    <Trophy className="w-6 h-6 text-white" />
+                <div className="bg-white text-black p-6 border-b border-gray-700">
+                <CardTitle className="flex items-center gap-3 text-black text-xl">
+                    <div className="p-2 rounded-lg bg-gray-700">
+                        <Trophy className="w-6 h-6 text-white" />
+                    </div>
                     Distribution Preview
                 </CardTitle>
-                <p className="text-gray-300 mt-2">Review your distribution settings before proceeding</p>
+                <p className="text-gray-700 mt-2">Review your distribution settings before proceeding</p>
                 </div>
                 <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
