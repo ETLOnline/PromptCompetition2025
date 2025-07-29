@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { BarChart3 } from "lucide-react"
+import { BarChart3, Loader } from "lucide-react"
 
 export default function StartEvaluationButton() {
   const [loading, setLoading] = useState(false)
@@ -13,11 +13,11 @@ export default function StartEvaluationButton() {
       const res = await fetch("http://localhost:8080/bulk-evaluate/start-evaluation", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({}),
-        })
-      
+      })
+
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Evaluation failed")
       //alert("✅ Judge llm evaluation completed and uploaded to Firestore.")
@@ -29,14 +29,22 @@ export default function StartEvaluationButton() {
   }
 
   return (
-    <Button 
+    <Button
       size="lg"
       onClick={handleStartEvaluation}
       disabled={loading}
-      className="w-full bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
+      className="w-full bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold hover:from-gray-600 hover:to-gray-500 hover:shadow-md shadow-sm transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <BarChart3 className="h-4 w-4 mr-2" />
-      {loading ? "Evaluating..." : "Start Evaluation"}
+      <div className="flex items-center justify-center">
+        <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg p-1 mr-2">
+          {loading ? (
+            <Loader className="h-4 w-4 text-white animate-spin" />
+          ) : (
+            <BarChart3 className="h-4 w-4 text-white" />
+          )}
+        </div>
+        {loading ? "Evaluating..." : "Start Evaluation"}
+      </div>
     </Button>
   )
 }

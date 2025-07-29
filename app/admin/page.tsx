@@ -155,9 +155,7 @@ export default function AdminDashboard() {
           
           {/* Left Section: Enhanced Icon + Title + Stats */}
           <div className="flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-gray-700 to-gray-600 flex items-center justify-center shadow-sm shrink-0">
-              <Settings className="h-5 w-5 text-white" />
-            </div>
+            
             
             <div className="space-y-2">
               <div className="flex items-center gap-3 flex-wrap">
@@ -298,7 +296,7 @@ export default function AdminDashboard() {
                   <div>
                     <CardTitle className="text-gray-900 text-lg font-bold">Admin Controls</CardTitle>
                     <CardDescription className="text-gray-700 font-medium">
-                      Manage roles, judges, or platform access
+                      Manage roles and judges
                     </CardDescription>
                   </div>
                 </div>
@@ -312,7 +310,7 @@ export default function AdminDashboard() {
                       ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
                   }`}
-                  disabled={role !== "superadmin"}
+                  //disabled={role !== "superadmin"}
                   onClick={() => {
                     if (role === "superadmin") {
                       router.push("/admin/superadmin")
@@ -332,7 +330,7 @@ export default function AdminDashboard() {
                       ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"
                       : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
                   }`}
-                  disabled={role !== "superadmin"}
+                  //disabled={role !== "superadmin"}
                   onClick={() => {
                     if (role === "superadmin") {
                       router.push("/admin/participant-distribution")

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Trophy } from "lucide-react"
+import { Trophy, Loader } from "lucide-react"
 
 export default function GenerateLeaderboardButton() {
   const [loading, setLoading] = useState(false)
@@ -25,14 +25,18 @@ export default function GenerateLeaderboardButton() {
   }
 
   return (
-    <Button 
+    <Button
       size="lg"
       onClick={handleGenerateLeaderboard}
       disabled={loading}
-      className="w-full mt-3 bg-gradient-to-r from-[#56ffbc] to-[#56ffbc]/90 text-[#07073a] font-semibold hover:from-[#56ffbc]/90 hover:to-[#56ffbc]/80 shadow-lg shadow-[#56ffbc]/25 transition-all duration-300"
+      className="w-full mt-3 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold hover:from-gray-600 hover:to-gray-500 hover:shadow-md shadow-sm transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <Trophy className="h-4 w-4 mr-2" />
-      {loading ? "Generating..." : "Generate Leaderboard"}
+      <div className="flex items-center justify-center">
+        <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg p-1 mr-2">
+          {loading ? <Loader className="h-4 w-4 text-white animate-spin" /> : <Trophy className="h-4 w-4 text-white" />}
+        </div>
+        {loading ? "Generating..." : "Generate Leaderboard"}
+      </div>
     </Button>
   )
 }
