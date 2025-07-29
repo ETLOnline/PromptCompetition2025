@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { getAuth } from "firebase/auth"
@@ -7,32 +9,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card"
-import { ArrowLeft } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import {
-  doc,
-  setDoc,
-  getDocs,
-  Timestamp,
-  collection
-} from "firebase/firestore"
+import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
 import { getDoc } from "firebase/firestore" // add this at the top
-
-import { getFirestore, orderBy, limit, query } from "firebase/firestore"
+import { orderBy, limit, query } from "firebase/firestore"
 
 async function getLatestCompetition() {
   const competitionsRef = collection(db, "competitions")
   const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
   const querySnapshot = await getDocs(latestQuery)
+
   if (querySnapshot.empty) return null
+
   const doc = querySnapshot.docs[0]
   return { id: doc.id, ...doc.data() }
 }
@@ -40,13 +31,11 @@ async function getLatestCompetition() {
 export default function NewCompetitionPage() {
   const router = useRouter()
   const { toast } = useToast()
-
   const [maincompetition, setMainCompetition] = useState<string | null>(null)
   const [startDeadline, setStartDeadline] = useState<string | null>(null)
   const [endDeadline, setEndDeadline] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -60,10 +49,8 @@ export default function NewCompetitionPage() {
       const latest = await getLatestCompetition()
       if (latest) {
         setMainCompetition(latest.id)
-
         const start = latest.startDeadline?.toDate?.() ?? new Date(latest.startDeadline)
         const end = latest.endDeadline?.toDate?.() ?? new Date(latest.endDeadline)
-
         setStartDeadline(start.toISOString().slice(0, 16))
         setEndDeadline(end.toISOString().slice(0, 16))
       }
@@ -82,8 +69,9 @@ export default function NewCompetitionPage() {
 
     const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
     const ids: number[] = []
+
     querySnapshot.forEach((doc) => {
-      const numericID = parseInt(doc.id, 10)
+      const numericID = Number.parseInt(doc.id, 10)
       if (!isNaN(numericID)) ids.push(numericID)
     })
 
@@ -91,41 +79,39 @@ export default function NewCompetitionPage() {
     return nextID.toString().padStart(2, "0")
   }
 
+  const uploadToFirestore = async () => {
+    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
+    if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-const uploadToFirestore = async () => {
-  const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
-  if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
+    const ID = await getLatestCustomID()
+    const auth = getAuth()
+    const user = auth.currentUser
 
-  const ID = await getLatestCustomID()
+    if (!user) throw new Error("User not authenticated")
 
-  const auth = getAuth()
-  const user = auth.currentUser
+    const userUID = user.uid
+    const userDocRef = doc(db, "users", userUID)
+    const userDocSnap = await getDoc(userDocRef) // ✅ FIXED HERE
 
-  if (!user) throw new Error("User not authenticated")
+    if (!userDocSnap.exists()) throw new Error("User document not found")
 
-  const userUID = user.uid
-  const userDocRef = doc(db, "users", userUID)
-  const userDocSnap = await getDoc(userDocRef)  // ✅ FIXED HERE
+    const userData = userDocSnap.data()
+    const email = userData.email ?? ""
+    const fullName = userData.fullName ?? ""
 
-  if (!userDocSnap.exists()) throw new Error("User document not found")
-
-  const userData = userDocSnap.data()
-  const email = userData.email ?? ""
-  const fullName = userData.fullName ?? ""
-
-  await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
-    title: formData.title,
-    problemStatement: formData.problemStatement,
-    rubric: formData.rubric,
-    guidelines: formData.guidelines,
-    startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-    endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
-    competitionid: maincompetition ?? "",
-    emailoflatestupdate: email,
-    nameoflatestupdate: fullName,
-    lastupdatetime: Timestamp.now(),
-  })
-}
+    await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
+      title: formData.title,
+      problemStatement: formData.problemStatement,
+      rubric: formData.rubric,
+      guidelines: formData.guidelines,
+      startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+      endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+      competitionid: maincompetition ?? "",
+      emailoflatestupdate: email,
+      nameoflatestupdate: fullName,
+      lastupdatetime: Timestamp.now(),
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -133,12 +119,10 @@ const uploadToFirestore = async () => {
 
     try {
       await uploadToFirestore()
-
       toast({
         title: "Success",
         description: "Challenge created successfully!",
       })
-
       router.push("/admin")
     } catch (error) {
       toast({
@@ -165,42 +149,60 @@ const uploadToFirestore = async () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <Button variant="ghost" onClick={() => router.push("/admin")} className="mr-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
-            </Button>
-            <h1 className="text-3xl font-bold text-gray-900">Create New Challenge</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-150">
+      <header className="bg-gradient-to-r from-slate-100 to-slate-150 border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full flex items-center py-6 justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900">Create New Challenge</h1>
+            </div>
+            <div>
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/admin")}
+                className="mr-4 text-gray-700 hover:bg-gray-50 transition-all duration-200"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Admin
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-6xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Challenge Details</CardTitle>
-              <CardDescription>Fill in the details for the new Challenge. All fields are required.</CardDescription>
+          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
+            <CardHeader className="bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
+              <CardTitle className="text-xl font-bold text-gray-900">Challenge Details</CardTitle>
+              <CardDescription className="text-gray-700 font-medium">
+                Fill in the details for the new Challenge. All fields are required.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Challenge Title</Label>
+                  <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                    Challenge Title
+                  </Label>
                   <Input
                     id="title"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
                     placeholder="Enter Challenge title"
+                    className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition-all duration-200"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="problemStatement">Problem Statement</Label>
+                  <Label htmlFor="problemStatement" className="text-sm font-medium text-gray-700">
+                    Problem Statement
+                  </Label>
                   <Textarea
                     id="problemStatement"
                     name="problemStatement"
@@ -208,12 +210,15 @@ const uploadToFirestore = async () => {
                     onChange={handleChange}
                     placeholder="Detailed problem statement"
                     rows={6}
+                    className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition-all duration-200 resize-none"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rubric">Detailed Rubric</Label>
+                  <Label htmlFor="rubric" className="text-sm font-medium text-gray-700">
+                    Detailed Rubric
+                  </Label>
                   <Textarea
                     id="rubric"
                     name="rubric"
@@ -221,12 +226,15 @@ const uploadToFirestore = async () => {
                     onChange={handleChange}
                     placeholder="Rubric for evaluation"
                     rows={6}
+                    className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition-all duration-200 resize-none"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="guidelines">Submission Guidelines</Label>
+                  <Label htmlFor="guidelines" className="text-sm font-medium text-gray-700">
+                    Submission Guidelines
+                  </Label>
                   <Textarea
                     id="guidelines"
                     name="guidelines"
@@ -234,39 +242,71 @@ const uploadToFirestore = async () => {
                     onChange={handleChange}
                     placeholder="Submission guidelines"
                     rows={4}
+                    className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 transition-all duration-200 resize-none"
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="startDeadline">Start Deadline</Label>
-                  <Input
-                    id="startDeadline"
-                    type="datetime-local"
-                    value={startDeadline ?? ""}
-                    onChange={(e) => handleDeadlineChange("start", e.target.value)}
-                    disabled={userRole !== "superadmin"}
-                    required
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDeadline" className="text-sm font-medium text-gray-700">
+                      Start Deadline
+                    </Label>
+                    <Input
+                      id="startDeadline"
+                      type="datetime-local"
+                      value={startDeadline ?? ""}
+                      onChange={(e) => handleDeadlineChange("start", e.target.value)}
+                      disabled={userRole !== "superadmin"}
+                      className={`transition-all duration-200 ${
+                        userRole !== "superadmin"
+                          ? "bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                      }`}
+                      required
+                    />
+                    {userRole !== "superadmin" && (
+                      <p className="text-xs text-amber-600 font-medium">Only superadmins can modify deadlines</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="endDeadline" className="text-sm font-medium text-gray-700">
+                      End Deadline
+                    </Label>
+                    <Input
+                      id="endDeadline"
+                      type="datetime-local"
+                      value={endDeadline ?? ""}
+                      onChange={(e) => handleDeadlineChange("end", e.target.value)}
+                      disabled={userRole !== "superadmin"}
+                      className={`transition-all duration-200 ${
+                        userRole !== "superadmin"
+                          ? "bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-50 border-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                      }`}
+                      required
+                    />
+                    {userRole !== "superadmin" && (
+                      <p className="text-xs text-amber-600 font-medium">Only superadmins can modify deadlines</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="endDeadline">End Deadline</Label>
-                  <Input
-                    id="endDeadline"
-                    type="datetime-local"
-                    value={endDeadline ?? ""}
-                    onChange={(e) => handleDeadlineChange("end", e.target.value)}
-                    disabled={userRole !== "superadmin"}
-                    required
-                  />
-                </div>
-
-                <div className="flex gap-4">
-                  <Button type="submit" disabled={loading}>
+                <div className="flex gap-4 pt-4 border-t border-gray-200">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium px-6"
+                  >
                     {loading ? "Creating..." : "Create Challenge"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push("/admin")}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push("/admin")}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 bg-transparent px-6"
+                  >
                     Cancel
                   </Button>
                 </div>

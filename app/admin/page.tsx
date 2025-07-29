@@ -305,12 +305,7 @@ export default function AdminDashboard() {
                 {/* Manage Roles button */}
                 <Button
                   size="lg"
-                  className={`w-full font-medium transition-all duration-200 ${
-                    role === "superadmin"
-                      ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
-                  }`}
-                  //disabled={role !== "superadmin"}
+                  className={"w-full font-medium transition-all duration-200 bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"}
                   onClick={() => {
                     if (role === "superadmin") {
                       router.push("/admin/superadmin")
@@ -325,12 +320,7 @@ export default function AdminDashboard() {
                 {/* Second button: e.g. Judge Management */}
                 <Button
                   size="lg"
-                  className={`w-full font-medium transition-all duration-200 ${
-                    role === "superadmin"
-                      ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
-                  }`}
-                  //disabled={role !== "superadmin"}
+                  className={"w-full font-medium transition-all duration-200 bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"}
                   onClick={() => {
                     if (role === "superadmin") {
                       router.push("/admin/participant-distribution")
