@@ -220,6 +220,7 @@ export default function JudgeReviewPage() {
         comment: comment || "",
         updatedAt: serverTimestamp(),
       }
+      // setDoc(documentReference, dataObject)
 
       await setDoc(doc(db, "submissions", submissionId, "evaluation", "Judge_Score"), judgeScoreData)
 

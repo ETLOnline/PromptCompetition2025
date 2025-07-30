@@ -1,5 +1,5 @@
 import express, { Response, NextFunction } from "express";
-import { admin, auth } from "../config/firebase-admin.js";
+import { admin, auth, db } from "../config/firebase-admin.js";
 import { Request } from "express";
 
 const router = express.Router();
@@ -73,6 +73,8 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
 
     // Finally, apply the new role
     await auth.setCustomUserClaims(uid, { role });
+
+  
     return res.status(200).json({
       message: `✅ Role '${role}' assigned to user ${userRecord.email || uid}`,
       user: {
@@ -230,7 +232,16 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
 
     // Assign custom role claim
     await auth.setCustomUserClaims(userRecord.uid, { role });
-
+    const institution = ""; // An empty string is valid, though may not be useful
+    
+    await db.collection("users").doc(userRecord.uid).set({
+      displayName,                  // Must be a defined string
+      email,                     // Must be a defined string
+      institution,               // Empty string is fine if intentional
+      createdAt: new Date().toISOString(), // ISO string timestamp
+      isVerified: true,          // Boolean flag
+    });
+    
     return res.status(201).json({
       message: `✅ ${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
       user: {

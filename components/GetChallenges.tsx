@@ -46,15 +46,18 @@ export default function GetChallenges() {
         const tokenResult = await auth.currentUser?.getIdTokenResult()
         const role = tokenResult?.claims?.role || null
         setUserRole(role)
+        console.log("User Role:", role)
 
         const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
         if (!CHALLENGE_COLLECTION) {
           throw new Error("NEXT_PUBLIC_CHALLENGE_DATABASE is not defined in the environment")
         }
 
+        console.log("Fetching challenges for competition...")
         const competitionsRef = collection(db, "competitions")
         const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
         const snapshot = await getDocs(latestQuery)
+        // console.log("Competition snapshot:", snapshot)
 
         if (snapshot.empty) {
           console.warn("No competitions found.")
@@ -62,11 +65,12 @@ export default function GetChallenges() {
         }
 
         const maincompetitionid = snapshot.docs[0].id
+        // console.log("Main Competition ID:", maincompetitionid)
 
         const challengesQuery = query(
-          collection(db, CHALLENGE_COLLECTION),
-          where("competitionid", "==", maincompetitionid),
+          collection(db, "competitions", maincompetitionid, "challenges")
         )
+        
         const challengesSnap = await getDocs(challengesQuery)
 
         const fetched: Challenge[] = challengesSnap.docs.map((doc) => ({
@@ -83,12 +87,9 @@ export default function GetChallenges() {
     fetchUserRoleAndChallenges()
   }, [])
 
-  const handleDelete = async (challengeId: string) => {
-    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
-    if (!CHALLENGE_COLLECTION) return
-
+  const handleDelete = async (competitionId: string, challengeId: string) => {
     try {
-      await deleteDoc(doc(db, CHALLENGE_COLLECTION, challengeId))
+      await deleteDoc(doc(db, "competitions", competitionId, "challenges", challengeId))
       setChallenges((prev) => prev.filter((c) => c.id !== challengeId))
     } catch (err) {
       console.error("Error deleting challenge:", err)

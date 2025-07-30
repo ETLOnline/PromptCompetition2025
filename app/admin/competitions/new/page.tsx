@@ -18,6 +18,7 @@ import { getDoc } from "firebase/firestore" // add this at the top
 import { orderBy, limit, query } from "firebase/firestore"
 
 async function getLatestCompetition() {
+  console.log("Fetching latest competition...")
   const competitionsRef = collection(db, "competitions")
   const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
   const querySnapshot = await getDocs(latestQuery)
@@ -25,6 +26,7 @@ async function getLatestCompetition() {
   if (querySnapshot.empty) return null
 
   const doc = querySnapshot.docs[0]
+  console.log("Latest competition found:", doc.id, doc.data())
   return { id: doc.id, ...doc.data() }
 }
 
@@ -63,11 +65,20 @@ export default function NewCompetitionPage() {
     fetchData()
   }, [])
 
-  const getLatestCustomID = async (): Promise<string> => {
+  const getLatestCustomID = async (competitionId: string): Promise<string> =>{
+    console.log("Fetching latest custom ID...")
+    if (!maincompetition) {
+      throw new Error("maincompetition is null");
+    }
+
+
     const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
     if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-    const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
+    // const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
+    const querySnapshot = await getDocs(
+      collection(db, "competitions", competitionId, "challenges")
+    );
     const ids: number[] = []
 
     querySnapshot.forEach((doc) => {
@@ -76,6 +87,7 @@ export default function NewCompetitionPage() {
     })
 
     const nextID = ids.length === 0 ? 1 : Math.max(...ids) + 1
+    console.log("Next custom ID:", nextID)
     return nextID.toString().padStart(2, "0")
   }
 
@@ -83,14 +95,16 @@ export default function NewCompetitionPage() {
     const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
     if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
 
-    const ID = await getLatestCustomID()
+    const ID = await getLatestCustomID(maincompetition)
     const auth = getAuth()
     const user = auth.currentUser
 
     if (!user) throw new Error("User not authenticated")
 
     const userUID = user.uid
+    // console.log("User UID:", userUID)
     const userDocRef = doc(db, "users", userUID)
+    // console.log("User Document Reference:", userUID)
     const userDocSnap = await getDoc(userDocRef) // ✅ FIXED HERE
 
     if (!userDocSnap.exists()) throw new Error("User document not found")
@@ -98,19 +112,37 @@ export default function NewCompetitionPage() {
     const userData = userDocSnap.data()
     const email = userData.email ?? ""
     const fullName = userData.fullName ?? ""
+    console.log("User Data:", userData)
+    console.log("competitionID:", maincompetition)
 
-    await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
-      title: formData.title,
-      problemStatement: formData.problemStatement,
-      rubric: formData.rubric,
-      guidelines: formData.guidelines,
-      startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-      endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
-      competitionid: maincompetition ?? "",
-      emailoflatestupdate: email,
-      nameoflatestupdate: fullName,
-      lastupdatetime: Timestamp.now(),
-    })
+    // await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
+    //   title: formData.title,
+    //   problemStatement: formData.problemStatement,
+    //   rubric: formData.rubric,
+    //   guidelines: formData.guidelines,
+    //   startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+    //   endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+    //   competitionid: maincompetition ?? "",
+    //   emailoflatestupdate: email,
+    //   nameoflatestupdate: fullName,
+    //   lastupdatetime: Timestamp.now(),
+    // })
+
+    await setDoc(
+      doc(db, "competitions", maincompetition, "challenges", ID),
+        {
+          title: formData.title,
+          problemStatement: formData.problemStatement,
+          rubric: formData.rubric,
+          guidelines: formData.guidelines,
+          startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+          endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+          emailoflatestupdate: email,
+          nameoflatestupdate: fullName,
+          lastupdatetime: Timestamp.now(),
+        }
+      )
+
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
