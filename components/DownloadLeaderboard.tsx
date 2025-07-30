@@ -1,41 +1,74 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Download } from "lucide-react"
+import { Download, Loader, CheckCircle } from "lucide-react"
 import { getLeaderboardEntries } from "@/lib/firebase/leaderboard"
 
 export default function DownloadLeaderboardButton() {
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    if (success) {
+      const timeout = setTimeout(() => setSuccess(false), 5000)
+      return () => clearTimeout(timeout)
+    }
+  }, [success])
+
   const handleDownload = async () => {
-    const { entries } = await getLeaderboardEntries()
+    setLoading(true)
+    setSuccess(false)
 
-    const csvContent = [
-      ["Rank", "Full Name", "Email", "Score"],
-      ...entries.map((e) => [e.rank, e.fullName, e.email, e.totalScore]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n")
+    try {
+      const { entries } = await getLeaderboardEntries()
 
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "leaderboard.csv"
-    a.click()
-    URL.revokeObjectURL(url)
+      const csvContent = [
+        ["Rank", "Full Name", "Email", "Score"],
+        ...entries.map((e) => [e.rank, e.fullName, e.email, e.totalScore]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n")
+
+      const blob = new Blob([csvContent], { type: "text/csv" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "leaderboard.csv"
+      a.click()
+      URL.revokeObjectURL(url)
+
+      setSuccess(true)
+    } catch (error) {
+      alert("❌ Failed to download leaderboard.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <Button
       size="lg"
       onClick={handleDownload}
-      className="w-full mt-3 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold hover:from-gray-600 hover:to-gray-500 hover:shadow-md shadow-sm transition-all duration-200 rounded-lg"
+      disabled={loading || success}
+      className="w-full py-3 rounded-lg font-semibold transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed bg-gray-900 text-white hover:bg-gray-800"
     >
-      <div className="flex items-center justify-center">
-        <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg p-1 mr-2">
-          <Download className="h-4 w-4 text-white" />
-        </div>
-        Download Leaderboard
-      </div>
+      {loading ? (
+        <>
+          <Loader className="h-4 w-4 mr-2 animate-spin" />
+          Downloading...
+        </>
+      ) : success ? (
+        <>
+          <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+          Leaderboard downloaded!
+        </>
+      ) : (
+        <>
+          <Download className="h-4 w-4 mr-2" />
+          Download Leaderboard
+        </>
+      )}
     </Button>
   )
 }
