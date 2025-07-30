@@ -1,17 +1,28 @@
 "use client"
 
 import type React from "react"
-
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, Users, Trophy, FileText, Settings, Activity } from "lucide-react"
+import {
+  Plus,
+  Users,
+  Trophy,
+  FileText,
+  Settings,
+  Activity,
+  BarChart3,
+  Shield,
+  UserCog,
+  Edit3,
+  Download,
+} from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
@@ -36,9 +47,7 @@ export default function AdminDashboard() {
     endTime: "",
     location: "online",
   })
-
   const [formError, setFormError] = useState<string | null>(null)
-  //const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!user) {
@@ -145,266 +154,249 @@ export default function AdminDashboard() {
 
   if (!user || (role !== "admin" && role !== "superadmin")) return null
 
-  // console.log("User role:", role)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-150">
-      <header className="bg-gradient-to-r from-slate-100 to-slate-200 border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          
-          {/* Left Section: Enhanced Icon + Title + Stats */}
-          <div className="flex items-start sm:items-center gap-4">
-            
-            
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white px-8 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 leading-tight">
-                  Admin Dashboard
-                </h1>
-                <span className="px-2.5 py-1 bg-gray-200 text-gray-700 text-xs font-semibold rounded-full uppercase tracking-wide">
-                  {role === "superadmin" ? "Super Admin" : "Admin"}
+              <div className="flex items-center gap-4">
+                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded uppercase tracking-wide">
+                  {role === "superadmin" ? "SUPER ADMIN" : "ADMIN"}
                 </span>
               </div>
-              
-              <p className="text-gray-600 text-sm sm:text-base">
-                Manage competitions and monitor submissions
-              </p>
-              
+              <p className="text-gray-600 text-lg">Manage competitions and monitor submissions</p>
             </div>
-          </div>
 
-          {/* Right Section: Action Buttons */}
-          <div className="flex flex-wrap gap-3 justify-end items-center">
-            {role === "superadmin" && (
-              <>
-                <button
-                  className="px-4 py-2.5 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-small rounded-lg hover:shadow-lg hover:from-gray-800 hover:to-gray-700 focus-visible:ring-2 focus-visible:ring-gray-500 transition-all duration-200"
-                  onClick={() => router.push("/admin/edit-competitions")}
-                >
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    <span>Edit Competition</span>
-                  </div>
-                </button>
-              
-              <button
-                className="px-4 py-2.5 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-small rounded-lg hover:shadow-lg hover:from-gray-800 hover:to-gray-700 focus-visible:ring-2 focus-visible:ring-gray-500 transition-all duration-200"
-                onClick={handleNewCompetitionClick}
+            <div className="flex items-center gap-3">
+              {role === "superadmin" && (
+                <>
+                  <Button
+                    onClick={() => router.push("/admin/edit-competitions")}
+                    className="bg-gray-900 text-white hover:bg-gray-800 px-6 py-2 rounded-lg"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Edit Competition
+                  </Button>
+                  <Button
+                    onClick={handleNewCompetitionClick}
+                    className="bg-gray-900 text-white hover:bg-gray-800 px-6 py-2 rounded-lg"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Competition
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="outline"
+                onClick={logout}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg bg-transparent"
               >
-                <div className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  <span>New Competition</span>
-                </div>
-              </button>
-            </>
-            )}
-            <button 
-              className="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-small rounded-lg hover:bg-gray-100 hover:text-gray-900 hover:border-gray-400 focus-visible:ring-2 focus-visible:ring-gray-400 transition-all duration-200"
-              onClick={logout}
-            >
-              <span>Logout</span>
-            </button>
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </header>
 
-      <main className="max-w-6xl mx-auto py-10 px-6 space-y-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-700">Total Participants</CardTitle>
-                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-white rounded-2xl border-0 shadow-sm p-6 h-full">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <h3 className="text-gray-600 font-medium">Total Participants</h3>
+                <div className="text-4xl font-bold text-gray-900">{stats.totalParticipants}</div>
+                <p className="text-gray-500 text-sm">Registered users</p>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalParticipants.toLocaleString()}</div>
-              <p className="text-sm text-gray-700 font-medium">Registered users</p>
-            </CardContent>
+              <div className="p-3 bg-green-100 rounded-xl">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
           </Card>
 
-          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-700">Total Submissions</CardTitle>
-                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
+          <Card className="bg-white rounded-2xl border-0 shadow-sm p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <h3 className="text-gray-600 font-medium">Total Submissions</h3>
+                <div className="text-4xl font-bold text-gray-900">{totalSubmissions}</div>
+                <p className="text-gray-500 text-sm">Across all competitions</p>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-gray-900 mb-2">{totalSubmissions}</div>
-              <p className="text-sm text-gray-700 font-medium">Across all competitions</p>
-            </CardContent>
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
           </Card>
 
-          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-700">Pending Reviews</CardTitle>
-                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
-                  <Trophy className="h-5 w-5 text-white" />
-                </div>
+          <Card className="bg-white rounded-2xl border-0 shadow-sm p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <h3 className="text-gray-600 font-medium">Pending Reviews</h3>
+                <div className="text-4xl font-bold text-gray-900">{stats.pendingReviews}</div>
+                <p className="text-gray-500 text-sm">Flagged for manual review</p>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.pendingReviews.toLocaleString()}</div>
-              <p className="text-sm text-gray-700 font-medium">Flagged for manual review</p>
-            </CardContent>
+              <div className="p-3 bg-amber-100 rounded-xl">
+                <Activity className="h-6 w-6 text-amber-600" />
+              </div>
+            </div>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-            <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600">
-                  <Trophy className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-gray-900 text-lg font-bold">Leaderboard Management</CardTitle>
-                  <CardDescription className="text-gray-700 font-medium">
-                    View and export final rankings
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                size="lg"
-                onClick={() => router.push("/admin/leaderboard")}
-                className="w-full bg-gradient-to-r from-gray-700 to-gray-600 text-white font-medium hover:shadow-md transition-all duration-200"
-              >
-                <Trophy className="h-4 w-4 mr-2" />
-                View Leaderboard
-              </Button>
-              <DownloadLeaderboardButton />
-            </CardContent>
-          </Card>
-
+        {/* Action Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          
+          {/* Admin Controls */}
           {(role === "admin" || role === "superadmin") && (
-            <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 group">
-              <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
+            <Card className="bg-white rounded-2xl border-0 shadow-sm p-6 h-full">
+              <div className="space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 group-hover:shadow-sm transition-all duration-200">
-                    <Settings className="h-5 w-5 text-white" />
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Shield className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-gray-900 text-lg font-bold">Admin Controls</CardTitle>
-                    <CardDescription className="text-gray-700 font-medium">
-                      Manage roles and judges
-                    </CardDescription>
+                    <h3 className="text-xl font-semibold text-gray-900">Admin Controls</h3>
+                    <p className="text-gray-600">Manage roles and judges</p>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Manage Roles button */}
-                <Button
-                  size="lg"
-                  className={"w-full font-medium transition-all duration-200 bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"}
-                  onClick={() => {
-                    if (role === "superadmin") {
-                      router.push("/admin/superadmin")
-                    } else {
-                      alert("You don't have permission to manage roles.")
-                    }
-                  }}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage Roles
-                </Button>
-                {/* Second button: e.g. Judge Management */}
-                <Button
-                  size="lg"
-                  className={"w-full font-medium transition-all duration-200 bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md"}
-                  onClick={() => {
-                    if (role === "superadmin") {
-                      router.push("/admin/participant-distribution")
-                    } else {
-                      alert("You don't have permission to manage roles.")
-                    }
-                  }}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Judges
-                </Button>
-              </CardContent>
+
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => {
+                      if (role === "superadmin") {
+                        router.push("/admin/superadmin")
+                      } else {
+                        alert("You don't have permission to manage roles.")
+                      }
+                    }}
+                    className="w-full py-3 rounded-lg font-semibold transition-colors duration-200 bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <UserCog className="h-4 w-4 mr-2" />
+                    Manage Roles
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (role === "superadmin") {
+                        router.push("/admin/participant-distribution")
+                      } else {
+                        alert("You don't have permission to manage roles.")
+                      }
+                    }}
+                    className="w-full py-3 rounded-lg font-semibold transition-colors duration-200 bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Judges
+                  </Button>
+                </div>
+              </div>
             </Card>
           )}
 
-          <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-            <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
+          {/* Evaluation */}
+          <Card className="bg-white rounded-2xl border-0 shadow-sm p-6 h-full">
+            <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600">
-                  <Trophy className="h-5 w-5 text-white" />
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-gray-900 text-lg font-bold">Evaluation</CardTitle>
-                  <CardDescription className="text-gray-700 font-medium">Manual or LLM scoring</CardDescription>
+                  <h3 className="text-xl font-semibold text-gray-900">Evaluation</h3>
+                  <p className="text-gray-600">Manual or LLM scoring</p>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <StartEvaluationButton />
-              <GenerateLeaderboardButton />
-            </CardContent>
+
+              <div className="space-y-3">
+                <StartEvaluationButton />
+                <GenerateLeaderboardButton />
+              </div>
+            </div>
           </Card>
+          {/* Leaderboard Management */}
+          <Card className="bg-white rounded-2xl border-0 shadow-sm p-6 h-full">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Trophy className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Leaderboard Management</h3>
+                  <p className="text-gray-600">View and export final rankings</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={() => router.push("/admin/leaderboard")}
+                  className="w-full py-3 rounded-lg font-semibold transition-colors duration-200 bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  View Leaderboard
+                </Button>
+
+                <DownloadLeaderboardButton />
+              </div>
+            </div>
+          </Card>
+
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+
+        {/* Challenges Section */}
+        <Card className="bg-white rounded-2xl border-0 shadow-sm">
+          <CardContent className="p-6">
             <GetChallenges />
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl">
-            <DialogHeader>
-              <DialogTitle className="text-gray-900 text-2xl font-bold">Create New Competition</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+      {/* Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="bg-white border border-gray-200 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Create New Competition</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                Title
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleFormChange("title", e.target.value)}
+                className="mt-1 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                placeholder="e.g., Quantum Prompt Challenge"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                Description
+              </Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleFormChange("description", e.target.value)}
+                className="mt-1 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                placeholder="e.g., A battle of wits to craft the most efficient and creative prompts"
+              />
+            </div>
+            <div>
+              <Label htmlFor="prizeMoney" className="text-sm font-medium text-gray-700">
+                Prize Money
+              </Label>
+              <Input
+                id="prizeMoney"
+                value={formData.prizeMoney}
+                onChange={(e) => handleFormChange("prizeMoney", e.target.value)}
+                className="mt-1 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                placeholder="e.g., 5000$"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label htmlFor="title" className="text-gray-700 font-medium">
-                  Title
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleFormChange("title", e.target.value)}
-                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
-                  placeholder="e.g., Quantum Prompt Challenge"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description" className="text-gray-700 font-medium">
-                  Description
-                </Label>
-                <Input
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleFormChange("description", e.target.value)}
-                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
-                  placeholder="e.g., A battle of wits to craft the most efficient and creative prompts"
-                />
-              </div>
-              <div>
-                <Label htmlFor="prizeMoney" className="text-gray-700 font-medium">
-                  Prize Money
-                </Label>
-                <Input
-                  id="prizeMoney"
-                  value={formData.prizeMoney}
-                  onChange={(e) => handleFormChange("prizeMoney", e.target.value)}
-                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
-                  placeholder="e.g., 5000$"
-                />
-              </div>
-              <div>
-                <Label htmlFor="startTime" className="text-gray-700 font-medium">
+                <Label htmlFor="startTime" className="text-sm font-medium text-gray-700">
                   Start Date & Time
                 </Label>
                 <Input
@@ -412,11 +404,11 @@ export default function AdminDashboard() {
                   type="datetime-local"
                   value={formData.startTime}
                   onChange={(e) => handleFormChange("startTime", e.target.value)}
-                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                  className="mt-1 bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                 />
               </div>
               <div>
-                <Label htmlFor="endTime" className="text-gray-700 font-medium">
+                <Label htmlFor="endTime" className="text-sm font-medium text-gray-700">
                   End Deadline
                 </Label>
                 <Input
@@ -424,44 +416,45 @@ export default function AdminDashboard() {
                   type="datetime-local"
                   value={formData.endTime}
                   onChange={(e) => handleFormChange("endTime", e.target.value)}
-                  className="bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                  className="mt-1 bg-white border-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
                 />
               </div>
-              <div>
-                <Label htmlFor="location" className="text-gray-700 font-medium">
-                  Location
-                </Label>
-                <Select value={formData.location} onValueChange={(value) => handleFormChange("location", value)}>
-                  <SelectTrigger className="bg-gray-50 border-gray-300 text-gray-900">
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200 text-gray-900">
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="offsite">Offsite</SelectItem>
-                  </SelectContent>
-                </Select>
+            </div>
+            <div>
+              <Label htmlFor="location" className="text-sm font-medium text-gray-700">
+                Location
+              </Label>
+              <Select value={formData.location} onValueChange={(value) => handleFormChange("location", value)}>
+                <SelectTrigger className="mt-1 bg-white border-gray-300 text-gray-900">
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-200">
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="offsite">Offsite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formError && (
+              <div className="p-3 rounded-md bg-red-50 border border-red-200">
+                <p className="text-red-700 text-sm">{formError}</p>
               </div>
-              {formError && <p className="text-red-600 text-sm font-medium">{formError}</p>}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md transition-all duration-200"
-                >
-                  Create Competition
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </main>
+            )}
+            <DialogFooter className="gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-gray-900 text-white hover:bg-gray-800">
+                Create Competition
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

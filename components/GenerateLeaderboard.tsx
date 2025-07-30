@@ -1,24 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Trophy, Loader } from "lucide-react"
+import { Trophy, Loader, CheckCircle } from "lucide-react"
 
 export default function GenerateLeaderboardButton() {
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    if (success) {
+      const timeout = setTimeout(() => setSuccess(false), 5000)
+      return () => clearTimeout(timeout)
+    }
+  }, [success])
 
   const handleGenerateLeaderboard = async () => {
     setLoading(true)
+    setSuccess(false)
+
     try {
       const res = await fetch("http://localhost:8080/leaderboard/generate", {
         method: "POST",
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Generation failed")
-      // You can trigger a toast/snackbar here instead of alert
-      console.log("✅ Leaderboard generation completed.")
+
+      setSuccess(true)
     } catch (err: any) {
-      console.error(`❌ Error: ${err.message}`)
+      alert(`❌ Error: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -28,15 +38,25 @@ export default function GenerateLeaderboardButton() {
     <Button
       size="lg"
       onClick={handleGenerateLeaderboard}
-      disabled={loading}
-      className="w-full mt-3 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold hover:from-gray-600 hover:to-gray-500 hover:shadow-md shadow-sm transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled={loading || success}
+      className="w-full py-3 rounded-lg font-semibold transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed bg-gray-900 text-white hover:bg-gray-800"
     >
-      <div className="flex items-center justify-center">
-        <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg p-1 mr-2">
-          {loading ? <Loader className="h-4 w-4 text-white animate-spin" /> : <Trophy className="h-4 w-4 text-white" />}
-        </div>
-        {loading ? "Generating..." : "Generate Leaderboard"}
-      </div>
+      {loading ? (
+        <>
+          <Loader className="h-4 w-4 mr-2 animate-spin" />
+          Generating...
+        </>
+      ) : success ? (
+        <>
+          <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+          Leaderboard generated!
+        </>
+      ) : (
+        <>
+          <Trophy className="h-4 w-4 mr-2" />
+          Generate Leaderboard
+        </>
+      )}
     </Button>
   )
 }

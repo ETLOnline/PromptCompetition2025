@@ -44,8 +44,9 @@ export default function GetChallenges() {
       try {
         const auth = getAuth()
         const tokenResult = await auth.currentUser?.getIdTokenResult()
-        const role = tokenResult?.claims?.role || null
+        const role = (tokenResult?.claims?.role as string) || null
         setUserRole(role)
+
 
         const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
         if (!CHALLENGE_COLLECTION) {
@@ -96,41 +97,41 @@ export default function GetChallenges() {
   }
 
   return (
-    <div className="bg-gradient-to-r from-slate-100 to-slate-150 p-6 rounded-xl">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Challenges</h2>
-          <p className="text-gray-700 font-medium">Manage and monitor your competition events</p>
+    <div className="bg-white rounded-2xl border-0 shadow-sm mt-10">
+      <CardHeader className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Challenges</h2>
+            <p className="text-gray-600 text-sm">Manage and monitor your competition events</p>
+          </div>
+          <Button
+            onClick={() => router.push("/admin/competitions/new")}
+            className="bg-gray-900 text-white hover:bg-gray-800 px-5 py-2 rounded-lg font-semibold"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create New
+          </Button>
         </div>
-        <Button
-          onClick={() => router.push("/admin/competitions/new")}
-          className="bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:shadow-md transition-all duration-200 font-medium"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create New
-        </Button>
-      </div>
+      </CardHeader>
 
-      <div className="grid gap-6">
-        {challenges.map((challenge) => {
-          const startDate = challenge.startDeadline.toDate()
-          const updateDate = challenge.lastupdatetime?.toDate()
-          const isExpired = startDate < new Date()
+      <CardContent className="p-6">
+        <div className="grid gap-6">
+          {challenges.map((challenge) => {
+            const startDate = challenge.startDeadline.toDate()
+            const updateDate = challenge.lastupdatetime?.toDate()
+            const isExpired = startDate < new Date()
 
-          return (
-            <Card
-              key={challenge.id}
-              className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 border border-gray-200"
-            >
-              <CardHeader className="pb-4 bg-gradient-to-r from-slate-100 to-slate-150 rounded-t-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl font-bold text-gray-900 mb-3">{challenge.title}</CardTitle>
-                  </div>
-                  <div className="flex flex-col items-end gap-2 ml-4">
+            return (
+              <Card
+                key={challenge.id}
+                className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+              >
+                <CardHeader className="bg-gray-50 p-5 rounded-t-xl border-b border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
                     <Badge
                       variant="outline"
-                      className={`px-3 py-1 text-xs font-medium uppercase ${
+                      className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                         isExpired
                           ? "bg-red-50 border-red-200 text-red-800"
                           : "bg-emerald-50 border-emerald-200 text-emerald-800"
@@ -138,87 +139,79 @@ export default function GetChallenges() {
                     >
                       {isExpired ? (
                         <>
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          Expired
+                          <AlertCircle className="w-3 h-3 mr-1" /> Expired
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Active
+                          <CheckCircle className="w-3 h-3 mr-1" /> Active
                         </>
                       )}
                     </Badge>
                   </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-6">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded bg-gradient-to-r from-gray-700 to-gray-600">
-                      <Calendar className="w-3 h-3 text-white" />
+                <CardContent className="p-5 space-y-6">
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-gray-800">
+                        <Calendar className="w-3 h-3 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-gray-700 font-medium">Start:</span>
+                        <div className="font-bold text-gray-900">{startDate.toLocaleString()}</div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-gray-700 font-medium">Start:</span>
-                      <div className="font-bold text-gray-900">{startDate.toLocaleString()}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-gray-800">
+                        <User className="w-3 h-3 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-gray-700 font-medium">Updated By:</span>
+                        <div className="font-bold text-gray-900 truncate">{challenge.emailoflatestupdate}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-gray-800">
+                        <Clock className="w-3 h-3 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-gray-700 font-medium">Last Update:</span>
+                        <div className="font-bold text-gray-900">{updateDate?.toLocaleString()}</div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded bg-gradient-to-r from-gray-700 to-gray-600">
-                      <User className="w-3 h-3 text-white" />
-                    </div>
-                    <div>
-                      <span className="text-gray-700 font-medium">Updated By:</span>
-                      <div className="font-bold text-gray-900 truncate">{challenge.emailoflatestupdate}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded bg-gradient-to-r from-gray-700 to-gray-600">
-                      <Clock className="w-3 h-3 text-white" />
-                    </div>
-                    <div>
-                      <span className="text-gray-700 font-medium">Last Update:</span>
-                      <div className="font-bold text-gray-900">{updateDate?.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-wrap pt-4 border-t border-gray-200">
-                  <Button
-                    size="sm"
-                    className="bg-gradient-to-r from-gray-700 to-gray-600 text-white font-medium hover:shadow-md transition-all duration-200"
-                    onClick={() => {
-                      if (isExpired) {
-                        setShowModal(true)
-                      } else {
-                        router.push(`/admin/competitions/${challenge.id}/edit`)
-                      }
-                    }}
-                  >
-                    Edit
-                  </Button>
-
-                  {["admin", "superadmin"].includes(userRole || "") && (
+                  <div className="flex gap-3 flex-wrap">
                     <Button
                       size="sm"
-                      variant="destructive"
-                      className="bg-gradient-to-r from-red-500 to-red-600 text-white font-medium hover:shadow-md transition-all duration-200"
+                      className="bg-gray-900 text-white hover:bg-gray-800 font-semibold px-4 py-2"
                       onClick={() => {
-                        setChallengeToDelete(challenge.id)
-                        setDeleteConfirmOpen(true)
+                        if (isExpired) setShowModal(true)
+                        else router.push(`/admin/competitions/${challenge.id}/edit`)
                       }}
                     >
-                      Delete
+                      Edit
                     </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                    {userRole === "admin" || userRole === "superadmin" ? (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="bg-red-600 text-white hover:bg-red-700 font-semibold px-4 py-2"
+                        onClick={() => {
+                          setChallengeToDelete(challenge.id)
+                          setDeleteConfirmOpen(true)
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </CardContent>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -246,7 +239,7 @@ export default function GetChallenges() {
               Cancel
             </Button>
             <Button
-              className="bg-gradient-to-r from-red-500 to-red-600 text-white font-medium hover:shadow-md transition-all duration-200"
+              className="bg-red-600 text-white hover:bg-red-700 font-semibold"
               onClick={async () => {
                 if (!challengeToDelete) return
                 await handleDelete(challengeToDelete)
@@ -276,7 +269,7 @@ export default function GetChallenges() {
           </DialogHeader>
           <DialogFooter>
             <Button
-              className="bg-gradient-to-r from-gray-700 to-gray-600 text-white font-medium hover:shadow-md transition-all duration-200"
+              className="bg-gray-900 text-white hover:bg-gray-800 font-semibold"
               onClick={() => setShowModal(false)}
             >
               Got it

@@ -1,26 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { BarChart3, Loader } from "lucide-react"
+import { BarChart3, Loader, CheckCircle } from "lucide-react"
 
 export default function StartEvaluationButton() {
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    if (success) {
+      const timeout = setTimeout(() => {
+        setSuccess(false)
+      }, 5000)
+      return () => clearTimeout(timeout)
+    }
+  }, [success])
 
   const handleStartEvaluation = async () => {
     setLoading(true)
+    setSuccess(false)
+
     try {
       const res = await fetch("http://localhost:8080/bulk-evaluate/start-evaluation", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       })
-
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Evaluation failed")
-      //alert("✅ Judge llm evaluation completed and uploaded to Firestore.")
+      setSuccess(true)
     } catch (err: any) {
       alert(`❌ Error: ${err.message}`)
     } finally {
@@ -32,19 +41,25 @@ export default function StartEvaluationButton() {
     <Button
       size="lg"
       onClick={handleStartEvaluation}
-      disabled={loading}
-      className="w-full bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold hover:from-gray-600 hover:to-gray-500 hover:shadow-md shadow-sm transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      disabled={loading || success}
+      className="w-full py-3 rounded-lg font-semibold transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed bg-gray-900 text-white hover:bg-gray-800"
     >
-      <div className="flex items-center justify-center">
-        <div className="bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg p-1 mr-2">
-          {loading ? (
-            <Loader className="h-4 w-4 text-white animate-spin" />
-          ) : (
-            <BarChart3 className="h-4 w-4 text-white" />
-          )}
-        </div>
-        {loading ? "Evaluating..." : "Start Evaluation"}
-      </div>
+      {loading ? (
+        <>
+          <Loader className="h-4 w-4 mr-2 animate-spin" />
+          Evaluating...
+        </>
+      ) : success ? (
+        <>
+          <CheckCircle className="h-4 w-4 mr-2 text-green-400" />
+          Evaluation completed!
+        </>
+      ) : (
+        <>
+          <BarChart3 className="h-4 w-4 mr-2" />
+          Start Evaluation
+        </>
+      )}
     </Button>
   )
 }
