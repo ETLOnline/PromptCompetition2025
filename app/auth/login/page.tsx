@@ -35,12 +35,17 @@ export default function ParticipantLoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    try {
+    try 
+    {
       await signIn(email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
+      router.push("/participants");
+    } 
+    catch (err: any) 
+    {
       setError(err.message || "Failed to login. Please check your credentials.");
-    } finally {
+    } 
+    finally 
+    {
       setLoading(false);
     }
   };
@@ -99,20 +104,7 @@ export default function ParticipantLoginPage() {
                 disabled={loading}
               />
             </div>
-            {/* Password Input */}
-            {/* <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-white/80">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
-                disabled={loading}
-              />
-            </div> */}
-
+            
             {/* Password Input */}
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium text-white/80">
@@ -188,12 +180,17 @@ export default function ParticipantLoginPage() {
               onClick={async () => {
                 setError(null);
                 setGoogleLoading(true);
-                try {
+                try 
+                {
                   await signInWithGoogle();
-                  router.push("/dashboard");
-                } catch (err: any) {
+                  router.push("/participants");
+                } 
+                catch (err: any) 
+                {
                   setError(err.message || "Failed to sign in with Google.");
-                } finally {
+                } 
+                finally 
+                {
                   setGoogleLoading(false);
                 }
               }}
@@ -267,7 +264,7 @@ export default function ParticipantLoginPage() {
               </p>
             )}
           </div>
-        </div>
+        </div>  
       )}
     </div>
   );

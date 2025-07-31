@@ -180,7 +180,7 @@ export default function EditCompetitions() {
             </h1>
             <p className="text-lg text-muted-foreground">Manage and edit your competition settings and details</p>
           </div>
-          <Button variant="outline" onClick={() => router.push("/admin")} className="gap-2 bg-transparent">
+          <Button variant="outline" onClick={() => router.push("/admin/select-competition")} className="gap-2 bg-transparent">
             <ArrowLeft className="w-4 h-4" />
             Back to Admin
           </Button>

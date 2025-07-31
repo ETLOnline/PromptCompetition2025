@@ -16,6 +16,8 @@ type Challenge = {
 
 export default function ChallengeList() {
   const [challenges, setChallenges] = useState<Challenge[]>([])
+  const [competitionId, setCompetitionId] = useState<string | null>(null)
+
   const router = useRouter()
 
   useEffect(() => {
@@ -36,11 +38,12 @@ export default function ChallengeList() {
       }
 
       const maincompetitionid = snapshot.docs[0].id
+      setCompetitionId(maincompetitionid)
 
-      // 2. Fetch challenges with matching competitionid
-      const challengesRef = collection(db, CHALLENGE_COLLECTION)
-      const challengesQuery = query(challengesRef, where("competitionid", "==", maincompetitionid))
-      const challengeSnapshot = await getDocs(challengesQuery)
+
+      // 2. Directly fetch challenges nested under that competition
+      const challengesRef = collection(db, "competitions", maincompetitionid, "challenges")
+      const challengeSnapshot = await getDocs(challengesRef)
 
       const data = challengeSnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -66,12 +69,13 @@ export default function ChallengeList() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                onClick={() => router.push(`/competition/${challenge.id}`)}
-                className="bg-[#56ffbc] text-gray-900 hover:bg-[#45e0a6]"
-              >
-                Participate
-              </Button>
+                <Button
+                  onClick={() => competitionId && router.push(`/competition/${competitionId}/${challenge.id}`)}
+                  className="bg-[#56ffbc] text-gray-900 hover:bg-[#45e0a6]"
+                >
+                  Participate
+                </Button>
+
             </CardContent>
           </Card>
         ))}
