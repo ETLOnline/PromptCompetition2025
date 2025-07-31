@@ -25,7 +25,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!user || !competitionId) {
-      router.push("/admin/select-competition")
+      router.push("/")
       return
     }
 
@@ -85,9 +85,8 @@ export default function AdminDashboard() {
             <Button
               variant="outline"
               onClick={() => router.push("/admin/select-competition")}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg bg-transparent gap-2"
-            >
-              <Trophy className="w-4 h-4" />
+              className="rounded-lg font-semibold bg-gray-900 text-white px-6 py-2 gap-2 hover:bg-gray-800 hover:text-white transition-colors"
+              >
               Go to Competitions
             </Button>
               <Button
