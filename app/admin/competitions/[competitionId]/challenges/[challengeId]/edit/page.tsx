@@ -12,30 +12,29 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft } from "lucide-react"
 
-export default function EditCompetitionPage() {
+export default function EditChallengePage() {
   const router = useRouter()
   const params = useParams()
-  const competitionId = params?.id as string
+  const competitionId = params?.competitionId as string
+  const challengeId = params?.challengeId as string
 
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
-    description: "",
     problemStatement: "",
     rubric: "",
     guidelines: "",
   })
 
   useEffect(() => {
-    const fetchCompetition = async () => {
-      const docRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE!, competitionId)
+    const fetchChallenge = async () => {
+      const docRef = doc(db, "competitions", competitionId, "challenges", challengeId)
       const docSnap = await getDoc(docRef)
 
       if (docSnap.exists()) {
         const data = docSnap.data()
         setFormData({
           title: data.title || "",
-          description: data.description || "",
           problemStatement: data.problemStatement || "",
           rubric: data.rubric || "",
           guidelines: data.guidelines || "",
@@ -43,8 +42,8 @@ export default function EditCompetitionPage() {
       }
     }
 
-    if (competitionId) fetchCompetition()
-  }, [competitionId])
+    if (competitionId && challengeId) fetchChallenge()
+  }, [competitionId, challengeId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -58,29 +57,23 @@ export default function EditCompetitionPage() {
     try {
       const auth = getAuth()
       const user = auth.currentUser
-
       if (!user) throw new Error("User not authenticated")
 
       const userUID = user.uid
-      const userDocRef = doc(db, "users", userUID)
-      const userDocSnap = await getDoc(userDocRef)
-
+      const userDocSnap = await getDoc(doc(db, "users", userUID))
       if (!userDocSnap.exists()) throw new Error("User document not found")
 
-      const userData = userDocSnap.data()
-      const email = userData.email ?? ""
-      const fullName = userData.fullName ?? ""
+      const { email = "", fullName = "" } = userDocSnap.data()
 
-      await updateDoc(doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE!, competitionId), {
+      await updateDoc(doc(db, "competitions", competitionId, "challenges", challengeId), {
         ...formData,
         emailoflatestupdate: email,
-        nameoflatestupdate: fullName,
+        nameOfLatestUpdate: fullName,
         lastupdatetime: Timestamp.now(),
       })
-
-      router.push("/admin")
+      router.push(`/admin/dashboard?competitionId=${competitionId}`)
     } catch (error) {
-      console.error("Error updating competition:", error)
+      console.error("Error updating challenge:", error)
     } finally {
       setLoading(false)
     }
@@ -91,11 +84,11 @@ export default function EditCompetitionPage() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
-            <Button variant="ghost" onClick={() => router.push("/admin")} className="mr-4">
+            <Button variant="ghost" onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)} className="mr-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Admin
+              Back to Competition
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Competition</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Edit Challenge</h1>
           </div>
         </div>
       </header>
@@ -104,13 +97,13 @@ export default function EditCompetitionPage() {
         <div className="px-4 py-6 sm:px-0">
           <Card>
             <CardHeader>
-              <CardTitle>Competition Details</CardTitle>
-              <CardDescription>Update the competition details below.</CardDescription>
+              <CardTitle>Challenge Details</CardTitle>
+              <CardDescription>Update the challenge details below.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Competition Title</Label>
+                  <Label htmlFor="title">Challenge Title</Label>
                   <Input id="title" name="title" value={formData.title} onChange={handleChange} required />
                 </div>
 
@@ -154,7 +147,7 @@ export default function EditCompetitionPage() {
                   <Button type="submit" disabled={loading}>
                     {loading ? "Saving..." : "Save Changes"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push("/admin")}>
+                  <Button type="button" variant="outline" onClick={() => router.push(`/admin/competitions/${competitionId}`)}>
                     Cancel
                   </Button>
                 </div>
