@@ -1,95 +1,140 @@
 import Link from "next/link"
+import { Linkedin, Twitter, Github } from "lucide-react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="border-t-0 py-12 md:py-16 bg-gradient-to-br from-[#07073a] via-[#10104a] to-[#1a1a5a] relative text-white shadow-[0_-4px_32px_0_rgba(86,255,188,0.08)]">
-      {/* Top Glow Accent */}
-      <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#56ffbc]/40 via-transparent to-[#56ffbc]/40 blur-md opacity-70 pointer-events-none" />
-      <div className="container px-4 md:px-6 relative z-10">
+    <footer className="bg-gradient-to-br from-slate-100 to-slate-150 border-t border-gray-200 py-12 md:py-16 relative shadow-lg">
+      {/* Subtle top accent line */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 opacity-20" />
+
+      <div className="container mx-auto max-w-6xl px-4 md:px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[#56ffbc]">ETL Online</h3>
-            <p className="text-sm text-gray-300">
+            <h3 className="text-xl font-bold text-gray-900">ETL Online</h3>
+            <p className="text-sm font-medium text-gray-700 leading-relaxed">
               Official website for the All Pakistan Prompt Engineering Competition, hosted by ETL Online.
             </p>
           </div>
+
+          {/* Product Links */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-[#56ffbc]">Product</h3>
+            <h3 className="text-base font-bold text-gray-900">Product</h3>
             <nav aria-label="Product Navigation">
-              <ul className="space-y-2 text-sm">
+              <ul className="space-y-3 text-sm">
                 <li>
-                  <Link href="#features" className="text-gray-300 hover:text-[#56ffbc] transition-colors">
+                  <Link
+                    href="#features"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Features
                   </Link>
                 </li>
                 <li>
-                  <Link href="#security" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="#security"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Security
                   </Link>
                 </li>
                 <li>
-                  <Link href="#enterprise" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="#enterprise"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Enterprise
                   </Link>
                 </li>
                 <li>
-                  <Link href="#government" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="#government"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Government
                   </Link>
                 </li>
               </ul>
             </nav>
           </div>
+
+          {/* Resources Links */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-[#56ffbc]">Resources</h3>
+            <h3 className="text-base font-bold text-gray-900">Resources</h3>
             <nav aria-label="Resources Navigation">
-              <ul className="space-y-2 text-sm">
+              <ul className="space-y-3 text-sm">
                 <li>
-                  <Link href="/documentation" className="text-gray-300 hover:text-[#56ffbc] transition-colors">
+                  <Link
+                    href="/documentation"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Documentation
                   </Link>
                 </li>
                 <li>
-                  <Link href="/case-studies" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/case-studies"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Case Studies
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/blog"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <Link href="/support" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/support"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Support
                   </Link>
                 </li>
               </ul>
             </nav>
           </div>
+
+          {/* Company Links */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-[#56ffbc]">Company</h3>
+            <h3 className="text-base font-bold text-gray-900">Company</h3>
             <nav aria-label="Company Navigation">
-              <ul className="space-y-2 text-sm">
+              <ul className="space-y-3 text-sm">
                 <li>
-                  <Link href="/about" className="text-gray-300 hover:text-[#56ffbc] transition-colors">
+                  <Link
+                    href="/about"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="/careers" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/careers"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Careers
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/contact"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-muted-foreground hover:text-foreground">
+                  <Link
+                    href="/privacy"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                  >
                     Privacy Policy
                   </Link>
                 </li>
@@ -97,67 +142,43 @@ export default function Footer() {
             </nav>
           </div>
         </div>
-        <div className="mt-12 pt-8 border-t-0 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-400">© {currentYear} ETL Online. All rights reserved. Prompt Engineering Competition.</p>
-          <div className="flex gap-4">
+
+        {/* Bottom Section */}
+        <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-sm font-medium text-gray-700 text-center md:text-left">
+            © {currentYear} ETL Online. All rights reserved. Prompt Engineering Competition.
+          </p>
+
+          {/* Social Links with Gradient Containers */}
+          <div className="flex gap-3">
             <Link
               href="https://linkedin.com"
-              className="text-gray-300 hover:text-[#56ffbc] transition-colors"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-lg"
               aria-label="LinkedIn"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-              >
-                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-                <rect width="4" height="12" x="2" y="9"></rect>
-                <circle cx="4" cy="4" r="2"></circle>
-              </svg>
+              <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-2 shadow-sm hover:shadow-md transition-all duration-200">
+                <Linkedin className="h-4 w-4 text-white" />
+              </div>
             </Link>
+
             <Link
               href="https://twitter.com"
-              className="text-gray-300 hover:text-[#56ffbc] transition-colors"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-lg"
               aria-label="Twitter"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-              >
-                <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-              </svg>
+              <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-2 shadow-sm hover:shadow-md transition-all duration-200">
+                <Twitter className="h-4 w-4 text-white" />
+              </div>
             </Link>
-            <Link href="https://github.com" className="text-gray-300 hover:text-[#56ffbc] transition-colors" aria-label="GitHub">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-5 w-5"
-              >
-                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
-                <path d="M9 18c-4.51 2-5-2-7-2"></path>
-              </svg>
+
+            <Link
+              href="https://github.com"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-lg"
+              aria-label="GitHub"
+            >
+              <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-2 shadow-sm hover:shadow-md transition-all duration-200">
+                <Github className="h-4 w-4 text-white" />
+              </div>
             </Link>
           </div>
         </div>
