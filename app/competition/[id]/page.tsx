@@ -19,6 +19,7 @@ import {
   Trophy,
   Target
 } from "lucide-react"
+
 import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
@@ -46,6 +47,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
 
   const fetchCompetitionData = async () => {
     try {
+      // console.log("resolvedparams", resolvedParams.id)
       const challengeRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, resolvedParams.id)
       const challengeSnap = await getDoc(challengeRef)
 

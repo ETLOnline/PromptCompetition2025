@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { getDoc, doc, updateDoc } from "firebase/firestore"
@@ -12,9 +11,19 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Save, X, Trophy, Calendar, MapPin, DollarSign, Settings, Clock } from "lucide-react"
+import { ArrowLeft, Save, X, Trophy, Calendar, MapPin, DollarSign, Settings, Clock, Info } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export default function EditCompetitionPage() {
+  const [isOver, setIsOver] = useState(false)
+  const [showCompetitionEndedDialog, setShowCompetitionEndedDialog] = useState(false)
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.id as string
@@ -46,6 +55,9 @@ export default function EditCompetitionPage() {
       const docSnap = await getDoc(docRef)
       if (docSnap.exists()) {
         const data = docSnap.data()
+        const endDate = new Date(data.endDeadline)
+        const now = new Date()
+        setIsOver(now > endDate) // set competition status
         setFormData({
           title: data.title || "",
           description: data.description || "",
@@ -63,7 +75,7 @@ export default function EditCompetitionPage() {
   }, [competitionId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target as HTMLInputElement
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -81,6 +93,10 @@ export default function EditCompetitionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isOver) {
+      setShowCompetitionEndedDialog(true) // Show the dialog instead of alert
+      return
+    }
     setLoading(true)
     try {
       await updateDoc(doc(db, "competitions", competitionId), {
@@ -117,7 +133,6 @@ export default function EditCompetitionPage() {
             Back to Competitions
           </Button>
         </div>
-
         {/* Main Form Card */}
         <Card className="shadow-lg">
           <CardHeader className="pb-6">
@@ -141,7 +156,6 @@ export default function EditCompetitionPage() {
                   <Settings className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-semibold">Basic Information</h3>
                 </div>
-
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="title" className="text-sm font-medium">
@@ -157,7 +171,6 @@ export default function EditCompetitionPage() {
                       className="h-11"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="description" className="text-sm font-medium">
                       Description *
@@ -173,7 +186,6 @@ export default function EditCompetitionPage() {
                       className="resize-none"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
                       <MapPin className="w-4 h-4" />
@@ -189,7 +201,6 @@ export default function EditCompetitionPage() {
                       className="h-11"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="prizeMoney" className="text-sm font-medium flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
@@ -207,14 +218,12 @@ export default function EditCompetitionPage() {
                   </div>
                 </div>
               </div>
-
               {/* Schedule Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b">
                   <Clock className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-semibold">Schedule</h3>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="startDeadline" className="text-sm font-medium flex items-center gap-2">
@@ -231,7 +240,6 @@ export default function EditCompetitionPage() {
                       className="h-11"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="endDeadline" className="text-sm font-medium flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
@@ -249,14 +257,12 @@ export default function EditCompetitionPage() {
                   </div>
                 </div>
               </div>
-
               {/* Settings Section */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b">
                   <Settings className="w-5 h-5 text-muted-foreground" />
                   <h3 className="text-lg font-semibold">Competition Settings</h3>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
                     <Checkbox
@@ -271,7 +277,6 @@ export default function EditCompetitionPage() {
                       <p className="text-xs text-muted-foreground">Enable this competition for public participation</p>
                     </div>
                   </div>
-
                   <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
                     <Checkbox
                       id="isLocked"
@@ -287,7 +292,6 @@ export default function EditCompetitionPage() {
                   </div>
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t">
                 <Button type="submit" disabled={loading} className="gap-2">
@@ -308,6 +312,26 @@ export default function EditCompetitionPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Competition Ended Dialog */}
+      <Dialog open={showCompetitionEndedDialog} onOpenChange={setShowCompetitionEndedDialog}>
+        <DialogContent className="sm:max-w-[425px] p-6">
+          <DialogHeader className="flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-red-100 text-red-600 mb-4">
+              <Info className="w-8 h-8" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-slate-900">Competition Ended</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground mt-2">
+              This competition has already ended and can no longer be edited.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-center pt-4">
+            <Button onClick={() => setShowCompetitionEndedDialog(false)} className="w-full sm:w-auto">
+              Got It
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

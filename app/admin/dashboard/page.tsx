@@ -82,6 +82,14 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/admin/select-competition")}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg bg-transparent gap-2"
+            >
+              <Trophy className="w-4 h-4" />
+              Go to Competitions
+            </Button>
               <Button
                 variant="outline"
                 onClick={logout}
@@ -89,6 +97,8 @@ export default function AdminDashboard() {
               >
                 Logout
               </Button>
+
+              
             </div>
           </div>
         </div>
