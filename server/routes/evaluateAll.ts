@@ -6,9 +6,15 @@ const router = express.Router()
 
 router.post("/start-evaluation", async (req, res) => {
   try {
-    // Step 1: Fetch all unevaluated submissions
+    const { competitionId } = req.body
+
+    if (!competitionId) {
+      return res.status(400).json({ error: "Missing competitionId in request body." })
+    }
+
+    // Step 1: Fetch all unevaluated submissions under the competition
     const submissionsSnapshot = await db
-      .collection("submissions")
+      .collection(`competitions/${competitionId}/submissions`)
       .where("llmEvaluated", "==", false)
       .get()
 
@@ -18,8 +24,8 @@ router.post("/start-evaluation", async (req, res) => {
 
     const submissions = submissionsSnapshot.docs
 
-    // Step 2: Load all rubrics once
-    const rubricSnapshot = await db.collection("challenges").get()
+    // Step 2: Load all rubrics under challenges of this competition
+    const rubricSnapshot = await db.collection(`competitions/${competitionId}/challenges`).get()
     const rubricMap: Record<string, string> = {}
 
     rubricSnapshot.forEach((doc) => {
@@ -72,13 +78,13 @@ router.post("/start-evaluation", async (req, res) => {
 
         // Step 4: Write scores to Firestore
         await db
-          .collection("submissions")
+          .collection(`competitions/${competitionId}/submissions`)
           .doc(docSnap.id)
           .collection("evaluation")
           .doc("llmScore")
           .set(modelScores)
 
-        await db.collection("submissions").doc(docSnap.id).update({
+        await db.collection(`competitions/${competitionId}/submissions`).doc(docSnap.id).update({
           llmEvaluated: true,
           finalScore: average ?? null,
           status: "evaluated"
@@ -91,9 +97,7 @@ router.post("/start-evaluation", async (req, res) => {
       }
     }
 
-    return res
-      .status(200)
-      .json({ message: "✅ Evaluation completed for all applicable submissions." })
+    return res.status(200).json({ message: "✅ Evaluation completed for all applicable submissions." })
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err)
     console.error("🔥 Bulk Evaluation Error:", errorMessage)
@@ -103,5 +107,6 @@ router.post("/start-evaluation", async (req, res) => {
     })
   }
 })
+
 
 export default router

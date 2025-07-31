@@ -21,13 +21,14 @@ export type LeaderboardEntry = {
 }
 
 export async function getLeaderboardEntries(
+  competitionId: string,
   lastDoc?: DocumentSnapshot,
   pageSize: number = 25
 ): Promise<{ entries: LeaderboardEntry[]; lastDoc: DocumentSnapshot | null }> {
   try {
     let q: Query<DocumentData> = query(
-      collection(db, "leaderboard"), 
-      orderBy("rank", "asc"), 
+      collection(db, "competitions", competitionId, "leaderboard"),
+      orderBy("rank", "asc"),
       limit(pageSize)
     )
 
@@ -36,7 +37,6 @@ export async function getLeaderboardEntries(
     }
 
     const snapshot = await getDocs(q)
-
     const entries: LeaderboardEntry[] = snapshot.docs.map((doc) => {
       const data = doc.data()
       return {
@@ -49,7 +49,6 @@ export async function getLeaderboardEntries(
     })
 
     const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null
-
     return { entries, lastDoc: lastVisible }
   } catch (error) {
     console.error("Error fetching leaderboard entries:", error)
@@ -58,9 +57,9 @@ export async function getLeaderboardEntries(
 }
 
 // Optional: Add a function to get total count
-export async function getLeaderboardCount(): Promise<number> {
+export async function getLeaderboardCount(competitionId: string): Promise<number> {
   try {
-    const snapshot = await getDocs(collection(db, "leaderboard"))
+    const snapshot = await getDocs(collection(db, "competitions", competitionId, "leaderboard"))
     return snapshot.size
   } catch (error) {
     console.error("Error getting leaderboard count:", error)
@@ -70,15 +69,14 @@ export async function getLeaderboardCount(): Promise<number> {
 
 // Optional: Search function for server-side filtering (if needed for performance)
 export async function searchLeaderboardEntries(
+  competitionId: string,
   searchTerm: string,
   lastDoc?: DocumentSnapshot,
   pageSize: number = 25
 ): Promise<{ entries: LeaderboardEntry[]; lastDoc: DocumentSnapshot | null }> {
   try {
-    // Note: Firestore doesn't support full-text search well
-    // This is a basic implementation - consider using Algolia or similar for better search
     let q: Query<DocumentData> = query(
-      collection(db, "leaderboard"),
+      collection(db, "competitions", competitionId, "leaderboard"),
       orderBy("fullName"),
       limit(pageSize)
     )
@@ -89,7 +87,6 @@ export async function searchLeaderboardEntries(
 
     const snapshot = await getDocs(q)
 
-    // Filter results on client side (not ideal for large datasets)
     const allEntries: LeaderboardEntry[] = snapshot.docs.map((doc) => {
       const data = doc.data()
       return {

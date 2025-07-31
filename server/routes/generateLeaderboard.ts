@@ -5,9 +5,15 @@ const router = express.Router()
 
 router.post("/generate", async (req, res) => {
   try {
-    // Step 1: Get all evaluated submissions
+    const { competitionId } = req.body
+
+    if (!competitionId) {
+      return res.status(400).json({ error: "Missing competitionId in request body." })
+    }
+
+    // Step 1: Get all evaluated submissions for the competition
     const submissionsSnapshot = await db
-      .collection("submissions")
+      .collection(`competitions/${competitionId}/submissions`)
       .where("llmEvaluated", "==", true)
       .get()
 
@@ -20,12 +26,12 @@ router.post("/generate", async (req, res) => {
       }
     })
 
-    // Step 2: Convert to array and sort
+    // Step 2: Sort by score
     const leaderboardArray = Object.entries(userScores)
       .map(([userId, totalScore]) => ({ userId, totalScore }))
       .sort((a, b) => b.totalScore - a.totalScore)
 
-    // Step 3: Store in leaderboard collection
+    // Step 3: Save to /competitions/{competitionId}/leaderboard
     let rank = 1
     for (const entry of leaderboardArray) {
       const userRef = db.collection("users").doc(entry.userId)
@@ -40,11 +46,12 @@ router.post("/generate", async (req, res) => {
         email = userData?.email || ""
       }
 
-      await db.collection("leaderboard").doc(entry.userId).set({
+      await db.collection(`competitions/${competitionId}/leaderboard`).doc(entry.userId).set({
         totalScore: entry.totalScore,
         rank,
         fullName,
-        email
+        email,
+        submissionRef: db.doc(`competitions/${competitionId}/submissions/${entry.userId}`) // optional
       })
 
       rank++
@@ -59,5 +66,6 @@ router.post("/generate", async (req, res) => {
     })
   }
 })
+
 
 export default router

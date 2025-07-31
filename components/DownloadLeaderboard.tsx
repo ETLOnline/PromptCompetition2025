@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Download, Loader, CheckCircle } from "lucide-react"
 import { getLeaderboardEntries } from "@/lib/firebase/leaderboard"
 
-export default function DownloadLeaderboardButton() {
+type DownloadLeaderboardButtonProps = {
+  competitionId: string
+}
+
+export default function DownloadLeaderboardButton({ competitionId }: DownloadLeaderboardButtonProps) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -21,7 +25,7 @@ export default function DownloadLeaderboardButton() {
     setSuccess(false)
 
     try {
-      const { entries } = await getLeaderboardEntries()
+      const { entries } = await getLeaderboardEntries(competitionId)
 
       const csvContent = [
         ["Rank", "Full Name", "Email", "Score"],

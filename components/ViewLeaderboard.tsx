@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 type SortBy = "rank" | "name" | "score"
 type SortOrder = "asc" | "desc"
 
-export default function ViewLeaderboardTable() {
+export default function ViewLeaderboardTable({ competitionId }: { competitionId: string }) {
   const [allEntries, setAllEntries] = useState<LeaderboardEntry[]>([])
   const [lastDoc, setLastDoc] = useState<any>(null)
   const [search, setSearch] = useState("")
@@ -22,7 +22,6 @@ export default function ViewLeaderboardTable() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
 
-  // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("")
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -31,7 +30,6 @@ export default function ViewLeaderboardTable() {
     return () => clearTimeout(timer)
   }, [search])
 
-  // Initial load
   useEffect(() => {
     loadInitialData()
   }, [])
@@ -39,7 +37,7 @@ export default function ViewLeaderboardTable() {
   const loadInitialData = async () => {
     setInitialLoading(true)
     try {
-      const { entries: newEntries, lastDoc: newLastDoc } = await getLeaderboardEntries(undefined, 50)
+      const { entries: newEntries, lastDoc: newLastDoc } = await getLeaderboardEntries(competitionId, undefined, 50)
       setAllEntries(newEntries)
       setLastDoc(newLastDoc)
       setHasMore(newEntries.length === 50)
@@ -55,12 +53,11 @@ export default function ViewLeaderboardTable() {
 
     setLoading(true)
     try {
-      const { entries: newEntries, lastDoc: newLastDoc } = await getLeaderboardEntries(lastDoc, 25)
+      const { entries: newEntries, lastDoc: newLastDoc } = await getLeaderboardEntries(competitionId, lastDoc, 25)
 
       if (newEntries.length === 0) {
         setHasMore(false)
       } else {
-        // Prevent duplicates by checking if entry already exists
         setAllEntries((prev) => {
           const existingIds = new Set(prev.map((entry) => entry.id))
           const uniqueNewEntries = newEntries.filter((entry) => !existingIds.has(entry.id))
@@ -74,13 +71,11 @@ export default function ViewLeaderboardTable() {
     } finally {
       setLoading(false)
     }
-  }, [lastDoc, loading, hasMore])
+  }, [competitionId, lastDoc, loading, hasMore])
 
-  // Filtered and sorted entries
   const processedEntries = useMemo(() => {
     let filtered = allEntries
 
-    // Search filter
     if (debouncedSearch.trim()) {
       const searchLower = debouncedSearch.toLowerCase()
       filtered = filtered.filter(
@@ -89,7 +84,6 @@ export default function ViewLeaderboardTable() {
       )
     }
 
-    // Sort
     filtered.sort((a, b) => {
       let aVal: any, bVal: any
 
@@ -142,7 +136,6 @@ export default function ViewLeaderboardTable() {
 
   const hasActiveFilters = search !== "" || sortBy !== "rank" || sortOrder !== "asc"
 
-  // Calculate stats
   const stats = useMemo(() => {
     const totalParticipants = allEntries.length
     const highestScore = allEntries.length > 0 ? Math.max(...allEntries.map((e) => e.totalScore)) : 0
