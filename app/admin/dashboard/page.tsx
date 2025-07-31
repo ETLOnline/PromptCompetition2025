@@ -169,7 +169,7 @@ export default function AdminDashboard() {
                     <UserCog className="h-4 w-4 mr-2" /> Manage Roles
                   </Button>
                   <Button
-                    onClick={() => router.push("/admin/participant-distribution")}
+                    onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
                     className="w-full py-3 bg-gray-900 text-white rounded-lg"
                   >
                     <Users className="h-4 w-4 mr-2" /> Manage Judges

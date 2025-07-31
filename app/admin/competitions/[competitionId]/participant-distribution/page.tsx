@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,7 +30,8 @@ import {
 import { writeBatch, doc, collection, query, orderBy, limit, getDocs, getDoc, setDoc, Timestamp, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
-import { getIdTokenResult } from "firebase/auth"
+import { getIdTokenResult, User } from "firebase/auth"
+//const [currentUser, setCurrentUser] = useState<User | null>(null)
 import { getIdToken } from "@/lib/firebaseAuth"
 
 interface Judge {
@@ -50,6 +51,8 @@ type AssignmentMethod = "Round-Robin" | "Weighted" | "Automatic"
 
 export default function ParticipantDistribution() {
     const router = useRouter()
+    const params = useParams()
+    const competitionId = params?.competitionId as string
     const [totalParticipants, setTotalParticipants] = useState<number>(0)
     const [judges, setJudges] = useState<Judge[]>([])
     const [selectedJudges, setSelectedJudges] = useState<string[]>([])
@@ -74,7 +77,7 @@ export default function ParticipantDistribution() {
     } | null>(null);
 
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
+    
 
     // Auth and data fetching
     useEffect(() => {
@@ -131,12 +134,14 @@ export default function ParticipantDistribution() {
         setFetchingData(true)
         try {
         // 1. Get total count of participants from leaderboard
-        const leaderboardSnapshot = await getDocs(collection(db, "leaderboard"))
+        const leaderboardSnapshot = await getDocs(
+        collection(db, "competitions", competitionId, "leaderboard")
+        )
         setTotalParticipants(leaderboardSnapshot.size)
 
         // 2. Get judges from backend API using proper role-based filtering
         const token = await getIdToken()
-        const url = `http://localhost:8080/superadmin/users?role=judge`
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/superadmin/users?role=judge`
         const res = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },
         })
@@ -148,6 +153,10 @@ export default function ParticipantDistribution() {
         const data = await res.json()
         const judgeUsers = data.users || []
 
+        if (!Array.isArray(judgeUsers)) {
+            showToast("Invalid judge data received", "error")
+        return
+        }
         // 3. Transform API judge data for frontend state
         const judgesData: Judge[] = judgeUsers.map((user: any) => ({
             id: user.uid,
@@ -170,22 +179,21 @@ export default function ParticipantDistribution() {
 
     const fetchExistingAssignments = async (judgesData: Judge[]) => {
         try {
+        
+        const judgeDocRefs = judgesData.map(j => doc(db, "competitions", competitionId, "judges", j.id))
+        const judgeDocs = await Promise.all(judgeDocRefs.map(getDoc))
+
         const assignments: { [key: string]: number } = {}
-
-        // Fetch assignments for each judge
-        for (const judge of judgesData) {
-            const judgeDocRef = doc(db, "judges", judge.id)
-            const judgeDoc = await getDocs(query(collection(db, "judges")))
-
-            judgeDoc.docs.forEach((doc) => {
-            if (doc.id === judge.id) {
-                const data = doc.data()
-                if (data.assignedCount && data.assignedCount > 0) {
-                assignments[judge.id] = data.assignedCount
-                }
+        judgeDocs.forEach((doc, i) => {
+        if (doc.exists()) {
+            const data = doc.data()
+            if (data.assignedCount && data.assignedCount > 0) {
+            assignments[judgesData[i].id] = data.assignedCount
             }
-            })
         }
+        })
+
+
 
         setExistingAssignments(assignments)
         setJudgeAssignments(assignments)
@@ -234,7 +242,7 @@ export default function ParticipantDistribution() {
 
         const saveConfigToFirestore = async (uid: string) => {
         try {
-            const cfgRef = doc(db, "leaderboard", "configurations");
+            const cfgRef = doc(db, "competitions", competitionId, "leaderboard", "configurations")
             await setDoc(
             cfgRef,
             {
@@ -290,7 +298,11 @@ export default function ParticipantDistribution() {
         setLoading(true)
         try {
         // Step 1: Fetch top N participants from leaderboard
-        const leaderboardQuery = query(collection(db, "leaderboard"), orderBy("totalScore", "desc"), limit(selectedTopN))
+        const leaderboardQuery = query(
+        collection(db, "competitions", competitionId, "leaderboard"),
+        orderBy("totalScore", "desc"),
+        limit(selectedTopN)
+        )
         const leaderboardSnapshot = await getDocs(leaderboardQuery)
         const participants = leaderboardSnapshot.docs.map((doc) => doc.id)
 
@@ -343,7 +355,7 @@ export default function ParticipantDistribution() {
         // Step 4: Save to Firestore
         const batch = writeBatch(db)
         Object.entries(assignments).forEach(([judgeId, pids]) => {
-            const ref = doc(db, "judges", judgeId)
+            const ref = doc(db, "competitions", competitionId, "judges", judgeId)
             batch.set(
             ref,
             {
@@ -483,7 +495,7 @@ export default function ParticipantDistribution() {
             </div>
         </div>
         <Button
-            onClick={() => router.push("/admin")}
+            onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)}
             className="bg-gray-700 text-white hover:bg-gray-600 rounded-lg px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
         >
             <Settings className="w-4 h-4 mr-2" />
