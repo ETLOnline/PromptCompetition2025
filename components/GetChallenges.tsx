@@ -15,23 +15,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Calendar, User, Clock, AlertCircle, CheckCircle } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { getDocs, type Timestamp, collection, query, orderBy, limit, where, deleteDoc, doc } from "firebase/firestore"
+import { getDocs, type Timestamp, collection, query, orderBy, limit, deleteDoc, doc } from "firebase/firestore"
 import { getAuth } from "firebase/auth"
 
 type Challenge = {
   id: string
   title: string
-  description: string
   problemStatement: string
   guidelines: string
   rubric: string
   startDeadline: Timestamp
   competitionid: string
-  emailoflatestupdate: string
   lastupdatetime: Timestamp
+  nameOfLatestUpdate: string
+  emailoflatestupdate: string
 }
 
-export default function GetChallenges() {
+
+export default function GetChallenges({ competitionId }: { competitionId: string }) {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -46,32 +47,11 @@ export default function GetChallenges() {
         const tokenResult = await auth.currentUser?.getIdTokenResult()
         const role = (tokenResult?.claims?.role as string) || null
         setUserRole(role)
-        console.log("User Role:", role)
-
-
-        const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
-        if (!CHALLENGE_COLLECTION) {
-          throw new Error("NEXT_PUBLIC_CHALLENGE_DATABASE is not defined in the environment")
-        }
-
-        console.log("Fetching challenges for competition...")
-        const competitionsRef = collection(db, "competitions")
-        const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
-        const snapshot = await getDocs(latestQuery)
-        // console.log("Competition snapshot:", snapshot)
-
-        if (snapshot.empty) {
-          console.warn("No competitions found.")
-          return
-        }
-
-        const maincompetitionid = snapshot.docs[0].id
-        // console.log("Main Competition ID:", maincompetitionid)
 
         const challengesQuery = query(
-          collection(db, "competitions", maincompetitionid, "challenges")
+          collection(db, "competitions", competitionId, "challenges")
         )
-        
+
         const challengesSnap = await getDocs(challengesQuery)
 
         const fetched: Challenge[] = challengesSnap.docs.map((doc) => ({
@@ -86,9 +66,9 @@ export default function GetChallenges() {
     }
 
     fetchUserRoleAndChallenges()
-  }, [])
+  }, [competitionId])
 
-  const handleDelete = async (competitionId: string, challengeId: string) => {
+  const handleDelete = async (challengeId: string) => {
     try {
       await deleteDoc(doc(db, "competitions", competitionId, "challenges", challengeId))
       setChallenges((prev) => prev.filter((c) => c.id !== challengeId))

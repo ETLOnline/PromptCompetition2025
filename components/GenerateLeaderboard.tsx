@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Trophy, Loader, CheckCircle } from "lucide-react"
 
-export default function GenerateLeaderboardButton() {
+export default function GenerateLeaderboardButton({ competitionId }: { competitionId: string }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -22,6 +22,8 @@ export default function GenerateLeaderboardButton() {
     try {
       const res = await fetch("http://localhost:8080/leaderboard/generate", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId }) // ✅ include competitionId
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Generation failed")
@@ -60,3 +62,4 @@ export default function GenerateLeaderboardButton() {
     </Button>
   )
 }
+

@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
       }
   
       // Redirect only if admin
-      router.push("/admin");
+      router.push("/admin/select-competition");
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "Failed to login. Please check your credentials.");
@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
       
       if (role == "admin" || role == "superadmin" )
       {
-        router.push("/admin");      // Redirect only if admin
+        router.push("/admin/select-competition");      // Redirect only if admin
       }
       else if (role == "judge" )
       {

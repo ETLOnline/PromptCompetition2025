@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { BarChart3, Loader, CheckCircle } from "lucide-react"
 
-export default function StartEvaluationButton() {
+export default function StartEvaluationButton({ competitionId }: { competitionId: string }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -25,7 +25,7 @@ export default function StartEvaluationButton() {
       const res = await fetch("http://localhost:8080/bulk-evaluate/start-evaluation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ competitionId }), // ✅ pass competitionId here
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Evaluation failed")
