@@ -20,6 +20,9 @@ import {
   Mail,
   Phone,
   Loader,
+  Sparkles,
+  Zap,
+  Star,
 } from "lucide-react"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
@@ -125,105 +128,142 @@ function CompetitionEventsSection() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Active":
-        return "bg-emerald-50 text-emerald-800 border-emerald-200 text-xs font-medium uppercase tracking-wide"
+        return "bg-emerald-50 text-emerald-700 border-emerald-200"
       case "Upcoming":
-        return "bg-blue-50 text-blue-800 border-blue-200 text-xs font-medium uppercase tracking-wide"
+        return "bg-blue-50 text-blue-700 border-blue-200"
       case "Finished":
-        return "bg-gray-50 text-gray-800 border-gray-200 text-xs font-medium uppercase tracking-wide"
+        return "bg-slate-50 text-slate-700 border-slate-200"
       default:
-        return "bg-gray-50 text-gray-800 border-gray-200 text-xs font-medium uppercase tracking-wide"
+        return "bg-slate-50 text-slate-700 border-slate-200"
     }
   }
 
   return (
-    <section className="py-16 bg-gradient-to-b from-slate-100 to-slate-150">
-      <div className="container mx-auto max-w-6xl px-4">
-        <div className="flex flex-col md:flex-row justify-between md:items-center mb-12 gap-6">
-          <div className="text-center md:text-left">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Competition Events</h2>
-            <p className="text-lg font-medium text-gray-700 max-w-2xl">
-              Join our exciting events to showcase your prompt engineering skills.
-            </p>
+    <section className="py-20 bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-50/20 via-transparent to-purple-50/20" />
+      <div className="container mx-auto p-6 space-y-8 relative">
+        <div className="text-center space-y-4 mb-16">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50 rounded-xl px-4 py-2 mb-4">
+            <Sparkles className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Live Events</span>
           </div>
-          {/* Scroll Buttons */}
-          {isScrollable && (
-            <div className="flex justify-center md:justify-end gap-3">
-              <Button
-                onClick={() => handleScroll("left")}
-                disabled={isAtStart}
-                variant="outline"
-                size="icon"
-                className="w-12 h-12 rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-30"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <Button
-                onClick={() => handleScroll("right")}
-                disabled={isAtEnd}
-                variant="outline"
-                size="icon"
-                className="w-12 h-12 rounded-xl hover:bg-gray-50 transition-all duration-200 disabled:opacity-30"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+          <h2 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-6">
+            Competition Events
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Join our exciting events to showcase your prompt engineering skills and compete with the best minds in AI.
+          </p>
         </div>
 
+        {/* Scroll Buttons */}
+        {isScrollable && (
+          <div className="flex justify-center gap-4 mb-8">
+            <Button
+              onClick={() => handleScroll("left")}
+              disabled={isAtStart}
+              variant="outline"
+              size="icon"
+              className="w-12 h-12 rounded-xl border-2 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 disabled:opacity-30 bg-white/80 backdrop-blur-sm"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <Button
+              onClick={() => handleScroll("right")}
+              disabled={isAtEnd}
+              variant="outline"
+              size="icon"
+              className="w-12 h-12 rounded-xl border-2 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 disabled:opacity-30 bg-white/80 backdrop-blur-sm"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+
         {/* Horizontal Scroll Container */}
-        <div ref={scrollContainerRef} className="flex overflow-x-auto gap-6 pb-8 scrollbar-hide">
+        <div ref={scrollContainerRef} className="flex overflow-x-auto gap-8 pb-8 scrollbar-hide">
           {events.map((event, index) => (
             <motion.div
               key={event.id}
-              className="w-[90vw] md:w-[400px] flex-shrink-0"
+              className="w-[90vw] md:w-[420px] flex-shrink-0"
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <Card className="bg-white shadow-sm rounded-xl h-full flex flex-col hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl">
-                  <div className="flex justify-between items-start mb-4">
-                    <CardTitle className="text-xl font-bold text-white">{event.title}</CardTitle>
-                    <Badge className={`${getStatusBadge(event.status)} border`}>{event.status}</Badge>
-                  </div>
-                  <CardDescription className="text-gray-200 text-sm font-medium">{event.description}</CardDescription>
-                </CardHeader>
+              <Card className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
+                  <CardHeader className="p-8 relative">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="space-y-2 flex-1">
+                        <Badge className={`${getStatusBadge(event.status)} border font-medium px-3 py-1`}>
+                          {event.status}
+                        </Badge>
+                        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight">
+                          {event.title}
+                        </CardTitle>
+                      </div>
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Trophy className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                    <CardDescription className="text-muted-foreground text-base leading-relaxed">
+                      {event.description}
+                    </CardDescription>
+                  </CardHeader>
+                </div>
 
-                <CardContent className="p-6 mt-auto">
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-blue-400 to-indigo-500 rounded flex items-center justify-center">
-                        <Calendar className="h-3 w-3 text-white" />
+                <CardContent className="p-8 pt-0 mt-auto space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="h-4 w-4 text-blue-600" />
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{event.date}</span>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Date</p>
+                        <p className="text-sm font-semibold text-slate-900">{event.date}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-amber-400 to-orange-500 rounded flex items-center justify-center">
-                        <Clock className="h-3 w-3 text-white" />
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-emerald-600" />
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{event.time}</span>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Time</p>
+                        <p className="text-sm font-semibold text-slate-900">{event.time}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-emerald-400 to-teal-500 rounded flex items-center justify-center">
-                        <MapPin className="h-3 w-3 text-white" />
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <MapPin className="h-4 w-4 text-purple-600" />
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{event.location}</span>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Location</p>
+                        <p className="text-sm font-semibold text-slate-900">{event.location}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-pink-500 rounded flex items-center justify-center">
-                        <Trophy className="h-3 w-3 text-white" />
+                    <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                        <Trophy className="h-4 w-4 text-amber-600" />
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{event.prize}</span>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Prize</p>
+                        <p className="text-sm font-semibold text-slate-900">{event.prize}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                    <span className="text-sm font-medium text-gray-600">
-                      {event.participants.toLocaleString()} participants
-                    </span>
+                  <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {event.participants.toLocaleString()} participants
+                      </span>
+                    </div>
                     {event.status === "Active" && (
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all duration-200">
+                        <Zap className="h-4 w-4" />
                         Join Now
                       </Button>
                     )}
@@ -244,10 +284,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-150 flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader className="h-8 w-8 animate-spin text-gray-600" />
-          <span className="text-lg font-medium text-gray-700">Loading...</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="flex items-center gap-4">
+          <Loader className="h-10 w-10 animate-spin text-slate-600" />
+          <span className="text-xl font-medium text-muted-foreground">Loading...</span>
         </div>
       </div>
     )
@@ -260,105 +300,163 @@ export default function HomePage() {
         <Navbar />
 
         {/* Hero Section */}
-        <section id="hero" className="relative overflow-hidden min-h-screen flex items-center justify-center">
-          
-          <div className="container px-4 md:px-6 py-16 md:py-20 relative z-10">
-            <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-              <div className="inline-block rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm mb-6 text-gray-600 font-medium uppercase tracking-wide">
-                Prompt Engineering Competition
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-6 text-gray-600">
+        <section
+          id="hero"
+          className="relative overflow-hidden min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100"
+        >
+          {/* Background decorations */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 via-transparent to-purple-50/30" />
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-100/20 to-purple-100/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-emerald-100/20 to-blue-100/20 rounded-full blur-3xl" />
+
+          <div className="container mx-auto p-6 py-20 md:py-32 relative z-10">
+            <div className="flex flex-col items-center text-center max-w-5xl mx-auto space-y-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50 rounded-xl px-6 py-3 backdrop-blur-sm"
+              >
+                <Star className="h-5 w-5 text-blue-600" />
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Prompt Engineering Competition
+                </span>
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight"
+              >
                 All Pakistan Prompt Engineering Competition
-              </h1>
-              <p className="text-xl text-gray-600 md:text-2xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed max-w-3xl mb-12">
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-xl md:text-2xl text-muted-foreground max-w-4xl leading-relaxed"
+              >
                 Join the nation's premier competition for prompt engineering excellence. Showcase your skills, compete
                 with the best, and shape the future of AI interaction.
-              </p>
-              <TypingPromptInput />
+              </motion.p>
 
-              <div className="flex flex-wrap justify-center gap-4 mt-16">
-                  <>
-                    <Button
-                      variant="outline"
-                      className="px-6 py-3 h-12 rounded-xl border-2 bg-gray-600 backdrop-blur-sm hover:bg-white/20 text-white border-white/30 transition-all duration-200"
-                      asChild
-                    >
-                      <Link href="/auth/login/admin">
-                        <Shield className="h-5 w-5 mr-2" />
-                        <span className="font-medium">Admin Login</span>
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="px-6 py-3 h-12 rounded-xl border-2 bg-gray-600 backdrop-blur-sm hover:bg-white/20 text-white border-white/30 transition-all duration-200"
-                      asChild
-                    >
-                      <Link href="/auth/login">
-                        <User className="h-5 w-5 mr-2" />
-                        <span className="font-medium">Participant Login</span>
-                      </Link>
-                    </Button>
-                  </>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="w-full max-w-2xl"
+              >
+                <TypingPromptInput />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="flex flex-wrap justify-center gap-6 mt-12"
+              >
+                <Button
+                  variant="outline"
+                  className="gap-2 px-8 py-4 h-14 text-lg rounded-xl border-2 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm"
+                  asChild
+                >
+                  <Link href="/auth/login/admin">
+                    <Shield className="h-5 w-5" />
+                    <span className="font-semibold">Admin Login</span>
+                  </Link>
+                </Button>
+                <Button
+                  className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  asChild
+                >
+                  <Link href="/auth/login">
+                    <User className="h-5 w-5" />
+                    <span className="font-semibold">Participant Login</span>
+                  </Link>
+                </Button>
+              </motion.div>
             </div>
-          </div>
+          </div>  
         </section>
 
         {/* Features Section */}
-        <section className="py-20 bg-gradient-to-b from-slate-100 to-slate-150">
-          <div className="container mx-auto max-w-6xl px-4">
+        <section className="py-20 bg-gradient-to-br from-slate-50 to-slate-100">
+          <div className="container mx-auto p-6 space-y-8">
+
+             {/* Section Heading */}
+    <div className="text-center max-w-3xl mx-auto space-y-4">
+      <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+        Why Participate in PromptComp?
+      </h2>
+      <p className="text-lg text-muted-foreground">
+        Take your AI skills to the next level by competing in a national prompt engineering competition designed to challenge, evaluate, and reward the best talent across the country.
+      </p>
+    </div>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-              <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Trophy className="h-6 w-6 text-white" />
+              <Card className="bg-white shadow-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                <CardHeader className="text-center p-6">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Trophy className="h-6 w-6 text-emerald-600" />
                   </div>
-                  <CardTitle className="text-xl font-bold text-white">National Recognition</CardTitle>
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    National Recognition
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <CardDescription className="text-base font-medium text-gray-700">
+                <CardContent className="p-6 pt-0">
+                  <CardDescription className="text-muted-foreground">
                     Compete at the national level and gain recognition for your prompt engineering skills.
                   </CardDescription>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Users className="h-6 w-6 text-white" />
+              <Card className="bg-white shadow-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                <CardHeader className="text-center p-6">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Users className="h-6 w-6 text-blue-600" />
                   </div>
-                  <CardTitle className="text-xl font-bold text-white">Expert Evaluation</CardTitle>
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    Expert Evaluation
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <CardDescription className="text-base font-medium text-gray-700">
+                <CardContent className="p-6 pt-0">
+                  <CardDescription className="text-muted-foreground">
                     Your submissions are evaluated by advanced LLMs and expert human reviewers.
                   </CardDescription>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Award className="h-6 w-6 text-white" />
+              <Card className="bg-white shadow-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                <CardHeader className="text-center p-6">
+
+                
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Award className="h-6 w-6 text-purple-600" />
                   </div>
-                  <CardTitle className="text-xl font-bold text-white">Prestigious Awards</CardTitle>
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    Prestigious Awards
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <CardDescription className="text-base font-medium text-gray-700">
+                <CardContent className="p-6 pt-0">
+                  <CardDescription className="text-muted-foreground">
                     Win certificates, prizes, and recognition from leading AI organizations.
                   </CardDescription>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Target className="h-6 w-6 text-white" />
+              <Card className="bg-white shadow-lg rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                <CardHeader className="text-center p-6">
+                  <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Target className="h-6 w-6 text-slate-600" />
                   </div>
-                  <CardTitle className="text-xl font-bold text-white">Skill Development</CardTitle>
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    Skill Development
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <CardDescription className="text-base font-medium text-gray-700">
+                <CardContent className="p-6 pt-0">
+                  <CardDescription className="text-muted-foreground">
                     Enhance your prompt engineering abilities through challenging real-world problems.
                   </CardDescription>
                 </CardContent>
@@ -366,38 +464,38 @@ export default function HomePage() {
             </div>
 
             {/* How It Works */}
-            <Card className="bg-white shadow-sm rounded-xl">
+            <Card className="bg-white shadow-lg rounded-xl">
               <CardContent className="p-8">
-                <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">How It Works</h2>
+                <h2 className="text-4xl font-bold text-center bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-12">
+                  How It Works
+                </h2>
                 <div className="grid md:grid-cols-3 gap-8">
                   <div className="text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
-                      <span className="text-2xl font-bold text-white">1</span>
+                    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
+                      <span className="text-2xl font-bold text-blue-600">1</span>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Register & Login</h3>
-                    <p className="text-base font-medium text-gray-700">
-                      Create your account and access the competition platform.
-                    </p>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+                      Register & Login
+                    </h3>
+                    <p className="text-muted-foreground">Create your account and access the competition platform.</p>
                   </div>
-
                   <div className="text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
-                      <span className="text-2xl font-bold text-white">2</span>
+                    <div className="w-16 h-16 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
+                      <span className="text-2xl font-bold text-emerald-600">2</span>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Your Prompt</h3>
-                    <p className="text-base font-medium text-gray-700">
-                      Craft and submit your prompt with the LLM-generated output.
-                    </p>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+                      Submit Your Prompt
+                    </h3>
+                    <p className="text-muted-foreground">Craft and submit your prompt with the LLM-generated output.</p>
                   </div>
-
                   <div className="text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
-                      <span className="text-2xl font-bold text-white">3</span>
+                    <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
+                      <span className="text-2xl font-bold text-purple-600">3</span>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Get Evaluated</h3>
-                    <p className="text-base font-medium text-gray-700">
-                      Receive automated scoring and potential expert review.
-                    </p>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+                      Get Evaluated
+                    </h3>
+                    <p className="text-muted-foreground">Receive automated scoring and potential expert review.</p>
                   </div>
                 </div>
               </CardContent>
@@ -411,86 +509,112 @@ export default function HomePage() {
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="py-16 bg-gradient-to-b from-slate-100 to-slate-150">
-          <div className="container mx-auto max-w-6xl px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Contact Us</h2>
-              <p className="text-xl font-medium text-gray-700 max-w-3xl mx-auto">
-                Have questions about the competition? We're here to help!
-              </p>
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Contact Information */}
-              <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-t-xl">
-                  <CardTitle className="text-2xl font-bold text-white">Get in Touch</CardTitle>
-                  <CardDescription className="text-gray-200 font-medium">
-                    Reach out to us through any of the following channels
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
-                      <Mail className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">Email</h3>
-                      <p className="text-base font-medium text-gray-700">info@promptcompetition.pk</p>
-                      <p className="text-base font-medium text-gray-700">support@promptcompetition.pk</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">Phone</h3>
-                      <p className="text-base font-medium text-gray-700">+92 21 1234 5678</p>
-                      <p className="text-base font-medium text-gray-700">+92 42 8765 4321</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
-                      <MapPin className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">Address</h3>
-                      <p className="text-base font-medium text-gray-700">
-                        National Incubation Center
-                        <br />
-                        Lahore University of Management Sciences
-                        <br />
-                        Lahore, Punjab, Pakistan
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
-                      <Clock className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">Support Hours</h3>
-                      <p className="text-base font-medium text-gray-700">Monday - Friday: 9:00 AM - 6:00 PM PKT</p>
-                      <p className="text-base font-medium text-gray-700">Saturday: 10:00 AM - 4:00 PM PKT</p>
-                      <p className="text-base font-medium text-gray-700">Sunday: Closed</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact Form */}
-              <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200">
-                <CardContent className="p-6">
-                  <ContactForm />
-                </CardContent>
-              </Card>
-            </div>
+        <section id="contact" className="py-24 bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-50/20 via-transparent to-blue-50/20" />
+            <div className="container mx-auto p-6 space-y-8 relative">
+              <div className="text-center space-y-4 mb-16">
+                <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 mb-4">
+            <Mail className="h-4 w-4 text-purple-600" />
+            <span className="text-sm font-medium text-black uppercase tracking-wide">
+              Get In Touch
+            </span>
           </div>
-        </section>
+
+          <h2 className="text-5xl md:text-6xl font-bold text-black">
+            Contact Us
+          </h2>
+
+        <p className="text-xl text-black max-w-3xl mx-auto leading-relaxed">
+          Have questions about the competition? We're here to help you succeed.
+        </p>
+    </div>
+
+    <div className="grid lg:grid-cols-2 gap-12">
+      {/* Contact Info Card */}
+      <Card className="bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-xl border-0 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30 pointer-events-none" />
+        <CardHeader className="p-8 relative">
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+            Get in Touch
+          </CardTitle>
+          <CardDescription className="text-muted-foreground text-lg">
+            Reach out to us through any of the following channels
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-8 pt-0 space-y-6">
+  {[
+    {
+      icon: Mail,
+      title: "Email",
+      details: ["info@promptcompetition.pk", "support@promptcompetition.pk"],
+      bgColor: "bg-blue-100",
+      iconColor: "text-blue-600",
+    },
+    {
+      icon: Phone,
+      title: "Phone",
+      details: ["+92 21 1234 5678", "+92 42 8765 4321"],
+      bgColor: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+    },
+    {
+      icon: MapPin,
+      title: "Address",
+      details: [
+        "National Incubation Center",
+        "Lahore University of Management Sciences",
+        "Lahore, Punjab, Pakistan",
+      ],
+      bgColor: "bg-purple-100",
+      iconColor: "text-purple-600",
+    },
+    {
+      icon: Clock,
+      title: "Support Hours",
+      details: [
+        "Monday - Friday: 9:00 AM - 6:00 PM PKT",
+        "Saturday: 10:00 AM - 4:00 PM PKT",
+        "Sunday: Closed",
+      ],
+      bgColor: "bg-slate-100",
+      iconColor: "text-slate-600",
+    },
+  ].map((contact, index) => (
+    <div
+      key={index}
+      className="flex items-start gap-4 p-4 rounded-xl bg-white shadow"
+    >
+      <div
+        className={`w-12 h-12 ${contact.bgColor} rounded-xl flex items-center justify-center flex-shrink-0`}
+      >
+        <contact.icon className={`h-6 w-6 ${contact.iconColor}`} />
+      </div>
+      <div>
+        <h3 className="text-xl font-bold text-black mb-1">
+          {contact.title}
+        </h3>
+        {contact.details.map((detail, idx) => (
+          <p key={idx} className="text-black text-sm">
+            {detail}
+          </p>
+        ))}
+      </div>
+    </div>
+  ))}
+</CardContent>
+
+      </Card>
+{/* Contact Form */}
+<Card className="bg-white rounded-xl border-0">
+  <CardContent className="p-8 space-y-6">
+    <ContactForm />
+  </CardContent>
+</Card>
+
+    </div>
+  </div>
+</section>
+
 
         <Footer />
       </div>
