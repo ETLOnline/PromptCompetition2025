@@ -237,7 +237,7 @@ export default function NewCompetitionPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="startDeadline" className="text-sm font-medium text-gray-700">
                       Start Deadline
@@ -281,7 +281,7 @@ export default function NewCompetitionPage() {
                       <p className="text-xs text-amber-600 font-medium">Only superadmins can modify deadlines</p>
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="flex gap-4 pt-4 border-t border-gray-200">
                   <Button
