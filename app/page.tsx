@@ -3,6 +3,8 @@
 import { useRef, useState, useEffect } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase" 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -87,17 +89,66 @@ function CompetitionEventsSection() {
   const [isScrollable, setIsScrollable] = useState(false)
   const [isAtStart, setIsAtStart] = useState(true)
   const [isAtEnd, setIsAtEnd] = useState(false)
+  const [events, setEvents] = useState<any[]>([])
+  const router = useRouter()
 
-  // Checks if the container is scrollable and updates the state for button visibility
+
   const checkScrollability = () => {
     const el = scrollContainerRef.current
     if (el) {
       const hasOverflow = el.scrollWidth > el.clientWidth
       setIsScrollable(hasOverflow)
       setIsAtStart(el.scrollLeft === 0)
-      setIsAtEnd(el.scrollWidth - el.scrollLeft <= el.clientWidth + 1) // +1 for minor pixel variations
+      setIsAtEnd(el.scrollWidth - el.scrollLeft <= el.clientWidth + 1)
     }
   }
+
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      const snapshot = await getDocs(collection(db, "competitions"))
+      const competitions = snapshot.docs
+        .map((doc) => {
+          const data = doc.data()
+          const start = new Date(data.startDeadline)
+          const end = new Date(data.endDeadline)
+          const now = new Date()
+
+          let status = "Upcoming"
+          if (now >= start && now <= end) {
+            status = "Active"
+          } else if (now > end) {
+            status = "Finished"
+          }
+
+          return {
+            id: doc.id,
+            title: data.title,
+            description: data.description,
+            location: data.location,
+            prize: data.prizeMoney,
+            participants: 0,
+            status,
+            date: start.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+            time:
+              start.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              }) + " UTC",
+          }
+        })
+        .filter((event) => event.status !== "Finished") // ✅ FILTER OUT EXPIRED COMPETITIONS
+
+      setEvents(competitions)
+
+    }
+
+    fetchCompetitions()
+  }, [])
 
   useEffect(() => {
     checkScrollability()
@@ -117,7 +168,7 @@ function CompetitionEventsSection() {
   const handleScroll = (direction: "left" | "right") => {
     const el = scrollContainerRef.current
     if (el) {
-      const scrollAmount = el.clientWidth * 0.8 // Scroll by 80% of the visible width
+      const scrollAmount = el.clientWidth * 0.8
       el.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -140,13 +191,14 @@ function CompetitionEventsSection() {
 
   return (
     <section className="py-20 bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
-      {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-50/20 via-transparent to-purple-50/20" />
       <div className="container mx-auto p-6 space-y-8 relative">
         <div className="text-center space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50 rounded-xl px-4 py-2 mb-4">
             <Sparkles className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Live Events</span>
+            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Live Events
+            </span>
           </div>
           <h2 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-6">
             Competition Events
@@ -156,7 +208,6 @@ function CompetitionEventsSection() {
           </p>
         </div>
 
-        {/* Scroll Buttons */}
         {isScrollable && (
           <div className="flex justify-center gap-4 mb-8">
             <Button
@@ -180,7 +231,6 @@ function CompetitionEventsSection() {
           </div>
         )}
 
-        {/* Horizontal Scroll Container */}
         <div ref={scrollContainerRef} className="flex overflow-x-auto gap-8 pb-8 scrollbar-hide">
           {events.map((event, index) => (
             <motion.div
@@ -255,18 +305,22 @@ function CompetitionEventsSection() {
                   </div>
 
                   <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
+                    {/* <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-muted-foreground">
                         {event.participants.toLocaleString()} participants
                       </span>
-                    </div>
-                    {event.status === "Active" && (
-                      <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl transition-all duration-200">
-                        <Zap className="h-4 w-4" />
-                        Join Now
+                    </div> */}
+                    {(event.status === "Active" || event.status === "Upcoming") && (
+                      <Button
+                        onClick={() => router.push("/auth/login")}
+                        className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                      >
+                        <Zap className="h-5 w-5" />
+                        <span className="font-semibold">Join Now</span>
                       </Button>
                     )}
+
                   </div>
                 </CardContent>
               </Card>
@@ -277,7 +331,6 @@ function CompetitionEventsSection() {
     </section>
   )
 }
-
 export default function HomePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
