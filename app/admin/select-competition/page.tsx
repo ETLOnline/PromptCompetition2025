@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, Edit3, Trophy, Calendar, MapPin, Users } from "lucide-react"
+import { Plus, Edit3, Trophy, Calendar, MapPin, Users, RefreshCw } from "lucide-react"
 import { collection, onSnapshot, addDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
@@ -26,6 +25,43 @@ interface Competition {
   isActive: boolean
   isLocked: boolean
 }
+
+// Competition Skeleton Component
+const CompetitionSkeleton = () => (
+  <Card className="bg-white rounded-2xl border-0 shadow-sm animate-pulse">
+    <CardContent className="p-6">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+            </div>
+            <div className="h-6 bg-gray-200 rounded w-16 ml-2"></div>
+          </div>
+        </div>
+        {/* Details */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-20"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+        {/* Action Button */}
+        <div className="h-10 bg-gray-200 rounded-lg w-full"></div>
+      </div>
+    </CardContent>
+  </Card>
+)
 
 export default function CompetitionSelector() {
   const { user, role, logout } = useAuth()
@@ -126,7 +162,8 @@ export default function CompetitionSelector() {
       if (!user) {
         setFormError("User not authenticated.")
         return
-        }  
+      }
+
       await addDoc(collection(db, "competitions"), {
         title,
         description,
@@ -138,12 +175,11 @@ export default function CompetitionSelector() {
         isLocked: false,
         createdAt: new Date().toISOString(),
         createdBy: {
-            uid: user.uid,
-            name: user.displayName || "",
-            email: user.email || "",
+          uid: user.uid,
+          name: user.displayName || "",
+          email: user.email || "",
         },
-        })
-
+      })
 
       setIsModalOpen(false)
       setFormData({
@@ -166,8 +202,55 @@ export default function CompetitionSelector() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading competitions...</div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white px-8 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <h1 className="text-3xl font-bold text-gray-900">Select a Competition to Manage</h1>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded uppercase tracking-wide">
+                    {role === "superadmin" ? "SUPER ADMIN" : "ADMIN"}
+                  </span>
+                </div>
+                <p className="text-gray-600 text-lg">Choose a competition to access its management dashboard</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={logout}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg bg-transparent"
+                >
+                  Logout
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Content */}
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          <div className="space-y-8">
+            {/* Loading Message */}
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-4">
+                <RefreshCw className="w-12 h-12 text-gray-400 animate-spin mx-auto" />
+                <div className="space-y-2">
+                  <p className="text-gray-700 font-semibold text-lg">Loading competitions...</p>
+                  <p className="text-gray-500">Please wait while we fetch your competitions from the database</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Skeleton Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <CompetitionSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -187,7 +270,6 @@ export default function CompetitionSelector() {
               </div>
               <p className="text-gray-600 text-lg">Choose a competition to access its management dashboard</p>
             </div>
-
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -266,7 +348,6 @@ export default function CompetitionSelector() {
                         </div>
                         <p className="text-gray-600 text-sm line-clamp-2">{competition.description}</p>
                       </div>
-
                       {/* Details */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -284,7 +365,6 @@ export default function CompetitionSelector() {
                           <span>{competition.prizeMoney}</span>
                         </div>
                       </div>
-
                       {/* Action */}
                       <Button
                         onClick={() => handleManageClick(competition.id)}

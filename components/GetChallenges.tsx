@@ -86,7 +86,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             <p className="text-gray-600 text-sm">Manage and monitor your competition events</p>
           </div>
           <Button
-            onClick={() => router.push("/admin/competitions/new")}
+            onClick={() => router.push(`/admin/competitions/${competitionId}/challenges/new`)}
             className="bg-gray-900 text-white hover:bg-gray-800 px-5 py-2 rounded-lg font-semibold"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -168,7 +168,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                       className="bg-gray-900 text-white hover:bg-gray-800 font-semibold px-4 py-2"
                       onClick={() => {
                         if (isExpired) setShowModal(true)
-                        else router.push(`/admin/competitions/${challenge.id}/edit`)
+                        else router.push(`/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`)
                       }}
                     >
                       Edit

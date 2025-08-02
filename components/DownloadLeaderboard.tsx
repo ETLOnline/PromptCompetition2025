@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Download, Loader, CheckCircle } from "lucide-react"
 import { getLeaderboardEntries } from "@/lib/firebase/leaderboard"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
 
 type DownloadLeaderboardButtonProps = {
   competitionId: string
@@ -12,6 +14,27 @@ type DownloadLeaderboardButtonProps = {
 export default function DownloadLeaderboardButton({ competitionId }: DownloadLeaderboardButtonProps) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [competitionName, setCompetitionName] = useState("leaderboard")
+
+  useEffect(() => {
+    // Fetch competition name from Firestore
+    const fetchCompetitionName = async () => {
+      try {
+        const compRef = doc(db, "competitions", competitionId)
+        const compSnap = await getDoc(compRef)
+        if (compSnap.exists()) {
+          const data = compSnap.data()
+          const title = data.title || "leaderboard"
+          const sanitized = title.replace(/[^a-z0-9]/gi, "_").toLowerCase()
+          setCompetitionName(sanitized)
+        }
+      } catch (err) {
+        console.error("Failed to fetch competition title:", err)
+      }
+    }
+
+    fetchCompetitionName()
+  }, [competitionId])
 
   useEffect(() => {
     if (success) {
@@ -38,7 +61,7 @@ export default function DownloadLeaderboardButton({ competitionId }: DownloadLea
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = "leaderboard.csv"
+      a.download = `${competitionName}_leaderboard.csv`
       a.click()
       URL.revokeObjectURL(url)
 

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { getAuth } from "firebase/auth"
 import { Button } from "@/components/ui/button"
@@ -13,27 +13,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import { doc, setDoc, getDocs, Timestamp, collection } from "firebase/firestore"
-import { getDoc } from "firebase/firestore" // add this at the top
+import { doc, setDoc, getDocs, Timestamp, collection, getDoc } from "firebase/firestore"
 import { orderBy, limit, query } from "firebase/firestore"
-
-async function getLatestCompetition() {
-  console.log("Fetching latest competition...")
-  const competitionsRef = collection(db, "competitions")
-  const latestQuery = query(competitionsRef, orderBy("createdAt", "desc"), limit(1))
-  const querySnapshot = await getDocs(latestQuery)
-
-  if (querySnapshot.empty) return null
-
-  const doc = querySnapshot.docs[0]
-  console.log("Latest competition found:", doc.id, doc.data())
-  return { id: doc.id, ...doc.data() }
-}
 
 export default function NewCompetitionPage() {
   const router = useRouter()
+  const params = useParams()
+  const competitionId = params?.competitionId as string
   const { toast } = useToast()
-  const [maincompetition, setMainCompetition] = useState<string | null>(null)
+
   const [startDeadline, setStartDeadline] = useState<string | null>(null)
   const [endDeadline, setEndDeadline] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -48,37 +36,29 @@ export default function NewCompetitionPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const latest = await getLatestCompetition()
-      if (latest) {
-        setMainCompetition(latest.id)
-        const start = latest.startDeadline?.toDate?.() ?? new Date(latest.startDeadline)
-        const end = latest.endDeadline?.toDate?.() ?? new Date(latest.endDeadline)
+      const competitionDoc = await getDoc(doc(db, "competitions", competitionId))
+      if (competitionDoc.exists()) {
+        const data = competitionDoc.data()
+        const start = data.startDeadline?.toDate?.() ?? new Date(data.startDeadline)
+        const end = data.endDeadline?.toDate?.() ?? new Date(data.endDeadline)
         setStartDeadline(start.toISOString().slice(0, 16))
         setEndDeadline(end.toISOString().slice(0, 16))
       }
 
       const user = await getAuth().currentUser?.getIdTokenResult()
-      const role = user?.claims?.role || null
+      const claims = user?.claims as { role?: string }
+      const role = claims?.role ?? null
       setUserRole(role)
+
     }
 
     fetchData()
-  }, [])
+  }, [competitionId])
 
-  const getLatestCustomID = async (competitionId: string): Promise<string> =>{
-    console.log("Fetching latest custom ID...")
-    if (!maincompetition) {
-      throw new Error("maincompetition is null");
-    }
-
-
-    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
-    if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
-
-    // const querySnapshot = await getDocs(collection(db, CHALLENGE_COLLECTION))
+  const getLatestCustomID = async (competitionId: string): Promise<string> => {
     const querySnapshot = await getDocs(
       collection(db, "competitions", competitionId, "challenges")
-    );
+    )
     const ids: number[] = []
 
     querySnapshot.forEach((doc) => {
@@ -87,62 +67,40 @@ export default function NewCompetitionPage() {
     })
 
     const nextID = ids.length === 0 ? 1 : Math.max(...ids) + 1
-    console.log("Next custom ID:", nextID)
     return nextID.toString().padStart(2, "0")
   }
 
   const uploadToFirestore = async () => {
-    const CHALLENGE_COLLECTION = process.env.NEXT_PUBLIC_CHALLENGE_DATABASE
-    if (!CHALLENGE_COLLECTION) throw new Error("Missing env: NEXT_PUBLIC_CHALLENGE_DATABASE")
-
-    const ID = await getLatestCustomID(maincompetition)
+    const ID = await getLatestCustomID(competitionId)
     const auth = getAuth()
     const user = auth.currentUser
 
     if (!user) throw new Error("User not authenticated")
 
     const userUID = user.uid
-    // console.log("User UID:", userUID)
     const userDocRef = doc(db, "users", userUID)
-    // console.log("User Document Reference:", userUID)
-    const userDocSnap = await getDoc(userDocRef) // ✅ FIXED HERE
+    const userDocSnap = await getDoc(userDocRef)
 
     if (!userDocSnap.exists()) throw new Error("User document not found")
 
     const userData = userDocSnap.data()
     const email = userData.email ?? ""
     const fullName = userData.fullName ?? ""
-    console.log("User Data:", userData)
-    console.log("competitionID:", maincompetition)
-
-    // await setDoc(doc(db, CHALLENGE_COLLECTION, ID), {
-    //   title: formData.title,
-    //   problemStatement: formData.problemStatement,
-    //   rubric: formData.rubric,
-    //   guidelines: formData.guidelines,
-    //   startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-    //   endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
-    //   competitionid: maincompetition ?? "",
-    //   emailoflatestupdate: email,
-    //   nameoflatestupdate: fullName,
-    //   lastupdatetime: Timestamp.now(),
-    // })
 
     await setDoc(
-      doc(db, "competitions", maincompetition, "challenges", ID),
-        {
-          title: formData.title,
-          problemStatement: formData.problemStatement,
-          rubric: formData.rubric,
-          guidelines: formData.guidelines,
-          startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-          endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
-          emailoflatestupdate: email,
-          nameoflatestupdate: fullName,
-          lastupdatetime: Timestamp.now(),
-        }
-      )
-
+      doc(db, "competitions", competitionId, "challenges", ID),
+      {
+        title: formData.title,
+        problemStatement: formData.problemStatement,
+        rubric: formData.rubric,
+        guidelines: formData.guidelines,
+        startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+        endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+        emailoflatestupdate: email,
+        nameoflatestupdate: fullName,
+        lastupdatetime: Timestamp.now(),
+      }
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,7 +113,7 @@ export default function NewCompetitionPage() {
         title: "Success",
         description: "Challenge created successfully!",
       })
-      router.push("/admin")
+      router.push(`/admin/dashboard?competitionId=${competitionId}`)
     } catch (error) {
       toast({
         title: "Error",
@@ -194,7 +152,7 @@ export default function NewCompetitionPage() {
             <div>
               <Button
                 variant="ghost"
-                onClick={() => router.push("/admin")}
+                onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)}
                 className="mr-4 text-gray-700 hover:bg-gray-50 transition-all duration-200"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -279,7 +237,7 @@ export default function NewCompetitionPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="startDeadline" className="text-sm font-medium text-gray-700">
                       Start Deadline
@@ -323,7 +281,7 @@ export default function NewCompetitionPage() {
                       <p className="text-xs text-amber-600 font-medium">Only superadmins can modify deadlines</p>
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="flex gap-4 pt-4 border-t border-gray-200">
                   <Button
@@ -336,7 +294,7 @@ export default function NewCompetitionPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push("/admin")}
+                    onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)}
                     className="border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 bg-transparent px-6"
                   >
                     Cancel
