@@ -1,205 +1,258 @@
 "use client"
-
 import { useState } from "react"
+import type React from "react"
+
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { signInWithEmailAndPassword, getIdTokenResult } from "firebase/auth";
-import { auth } from "@/lib/firebase"; // adjust the path to your actual Firebase client setup
-
-// HomeIcon for the "Back to Home" link
-const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
+import { signInWithEmailAndPassword, getIdTokenResult } from "firebase/auth"
+import { auth } from "@/lib/firebase"
+import { Eye, EyeOff, Home, Shield, Mail, Lock } from "lucide-react"
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth(); // Added signInWithGoogle
-  const router = useRouter();
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const { signIn, signInWithGoogle } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-  
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
     try {
-      // Sign in the user
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-  
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const user = userCredential.user
+
       if (!user) {
-        throw new Error("Login failed: No user found.");
+        throw new Error("Login failed: No user found.")
       }
-  
-      // Force refresh the ID token to get latest custom claims
-      const idTokenResult = await getIdTokenResult(user, true);
-      const role = idTokenResult.claims.role;
-  
+
+      const idTokenResult = await getIdTokenResult(user, true)
+      const role = idTokenResult.claims.role
+
       if (role !== "admin" && role !== "superadmin" && role !== "judge") {
-        setError("Access denied: You are not an admin.");
-        await auth.signOut(); // Log them out
-        return;
+        setError("Access denied: You are not an admin.")
+        await auth.signOut()
+        return
       }
-  
-      // Redirect only if admin
-      router.push("/admin/select-competition");
+
+      router.push("/admin/select-competition")
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Failed to login. Please check your credentials.");
+      console.error("Login error:", err)
+      setError(err.message || "Failed to login. Please check your credentials.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleGoogleSignIn = async () => {
-    setError(null);
-    setGoogleLoading(true);
+    setError(null)
+    setGoogleLoading(true)
     try {
-      // Sign in with Google
-      const userCredential = await signInWithGoogle();
-      const user = userCredential.user;
-  
+      const userCredential = await signInWithGoogle()
+      const user = userCredential.user
+
       if (!user) {
-        throw new Error("Google login failed: No user found.");
-      }
-  
-      // Force refresh the ID token to get latest custom claims
-      const idTokenResult = await getIdTokenResult(user, true);
-      const role = idTokenResult.claims.role;
-  
-      if (role !== "admin" && role !== "superadmin" && role !== "judge") 
-      {
-        setError("Access denied: You are not an admin.");
-        await auth.signOut(); // Log them out
-        return;
-      }
-      
-      if (role == "admin" || role == "superadmin" )
-      {
-        router.push("/admin/select-competition");      // Redirect only if admin
-      }
-      else if (role == "judge" )
-      {
-        router.push("/judge");
+        throw new Error("Google login failed: No user found.")
       }
 
+      const idTokenResult = await getIdTokenResult(user, true)
+      const role = idTokenResult.claims.role
 
+      if (role !== "admin" && role !== "superadmin" && role !== "judge") {
+        setError("Access denied: You are not an admin.")
+        await auth.signOut()
+        return
+      }
+
+      if (role == "admin" || role == "superadmin") {
+        router.push("/admin/select-competition")
+      } else if (role == "judge") {
+        router.push("/judge")
+      }
     } catch (err: any) {
-      console.error("Google login error:", err);
-      setError(err.message || "Failed to sign in with Google.");
+      console.error("Google login error:", err)
+      setError(err.message || "Failed to sign in with Google.")
     } finally {
-      setGoogleLoading(false);
+      setGoogleLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#07073a] via-[#121244] to-black p-4 font-sans">
-      <Link 
-        href="/" 
-        className="absolute top-6 left-6 flex items-center gap-2 text-white/70 hover:text-[#56ffbc] transition-colors duration-300"
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+      {/* Back to Home Link */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors duration-200 group"
       >
-        <HomeIcon className="h-5 w-5" />
-        <span>Back to Home</span>
+        <Home className="h-5 w-5 group-hover:scale-110 transition-transform" />
+        <span className="font-medium">Back to Home</span>
       </Link>
 
-      <div className="w-full max-w-md rounded-2xl bg-[rgba(38,38,92,0.25)] backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-300">
-        <div className="p-8 text-white">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#56ffbc]">Admin Sign In</h1>
-            <p className="text-white/70 mt-2">Admin access only. Please enter your credentials.</p>
+      {/* Main Card */}
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
+          {/* Header */}
+          <div className="p-8 pb-6">
+            <div className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-[#10142c] rounded-xl flex items-center justify-center shadow-lg">
+                <div className="p-3 bg-[#10142c] rounded-xl">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                  Admin Portal
+                </h1>
+                <p className="text-muted-foreground mt-2">Secure access for administrators only</p>
+              </div>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-white/80">Email</label>
-              <input 
-                id="email" 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
-                placeholder="admin@test.com"
-                className="w-full px-4 py-3 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
-                disabled={loading || googleLoading}
-              />
-            </div>
 
-            <div className="space-y-2 relative">
-              <label htmlFor="password" className="text-sm font-medium text-white/80">Password</label>
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••••"
-                className="w-full px-4 py-3 pr-12 bg-black/20 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] transition-all duration-300"
-                disabled={loading || googleLoading}
-              />
+
+          {/* Form */}
+          <div className="px-8 pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Field */}
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="admin@example.com"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
+                    disabled={loading || googleLoading}
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Enter your password"
+                    className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
+                    disabled={loading || googleLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  <p className="font-medium">{error}</p>
+                </div>
+              )}
+
+              {/* Sign In Button */}
               <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-[38px] text-white/60 hover:text-[#56ffbc] focus:outline-none"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                type="submit"
+                className="w-full bg-[#10142c] text-white font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                disabled={loading || googleLoading}
               >
-                {showPassword ? (
-                  // Eye Off Icon
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.657.402-3.22 1.125-4.575m2.1-2.1A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 2.21-.715 4.25-1.925 5.925M15 12a3 3 0 11-6 0 3 3 0 016 0zM3 3l18 18" />
-                  </svg>
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Signing In...</span>
+                  </div>
                 ) : (
-                  // Eye Icon
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1.5 12S5.25 5.25 12 5.25 22.5 12 22.5 12 18.75 18.75 12 18.75 1.5 12 1.5 12z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
+                  "Sign In"
                 )}
               </button>
-            </div>
 
-            {error && (
-              <div className="bg-red-500/40 border border-red-500/60 text-red-100 px-4 py-3 rounded-lg text-center text-sm">
-                <p>{error}</p>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-slate-500">Or continue with</span>
+                </div>
               </div>
-            )}
 
-            <button 
-              type="submit" 
-              className="w-full py-3 bg-[#11998e] text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] focus:ring-offset-2 focus:ring-offset-[#07073a] disabled:bg-[#56ffbc]/50 disabled:cursor-not-allowed transition-all duration-300"
-              disabled={loading || googleLoading}
-            >
-              {loading ? "Signing In..." : "Sign In"}
-            </button>
-          </form>
+              {/* Google Sign In Button */}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full flex items-center justify-center gap-2 px-8 py-4 h-14 text-lg border border-slate-300 rounded-xl bg-white text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                disabled={googleLoading || loading}
+              >
+                {googleLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Signing in with Google...</span>
+                  </div>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g clipPath="url(#clip0_17_40)">
+                        <path
+                          d="M47.532 24.552c0-1.636-.146-3.2-.418-4.704H24.48v9.02h13.02c-.56 3.02-2.24 5.58-4.76 7.3v6.06h7.7c4.5-4.14 7.09-10.24 7.09-17.68z"
+                          fill="#4285F4"
+                        />
+                        <path
+                          d="M24.48 48c6.48 0 11.92-2.14 15.89-5.82l-7.7-6.06c-2.14 1.44-4.88 2.3-8.19 2.3-6.3 0-11.64-4.26-13.56-9.98H2.6v6.26C6.56 43.98 14.7 48 24.48 48z"
+                          fill="#34A853"
+                        />
+                        <path
+                          d="M10.92 28.44c-.5-1.44-.8-2.98-.8-4.44s.3-3 .8-4.44v-6.26H2.6A23.98 23.98 0 000 24c0 3.98.96 7.76 2.6 11.18l8.32-6.74z"
+                          fill="#FBBC05"
+                        />
+                        <path
+                          d="M24.48 9.52c3.54 0 6.68 1.22 9.17 3.62l6.86-6.86C36.4 2.14 30.96 0 24.48 0 14.7 0 6.56 4.02 2.6 10.08l8.32 6.26c1.92-5.72 7.26-9.98 13.56-9.98z"
+                          fill="#EA4335"
+                        />
+                      </g>
+                      <defs>
+                        <clipPath id="clip0_17_40">
+                          <rect width="48" height="48" fill="white" />
+                        </clipPath>
+                      </defs>
+                    </svg>
+                    <span>Sign in with Google</span>
+                  </>
+                )}
+              </button>
+            </form>
 
-          {/* Google Sign-In Button */}
-          <div className="mt-4 flex flex-col items-center">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-white text-black font-bold rounded-lg shadow-lg hover:bg-[#56ffbc]/10 border border-white/30 focus:outline-none focus:ring-2 focus:ring-[#56ffbc] focus:ring-offset-2 focus:ring-offset-[#07073a] disabled:bg-[#56ffbc]/30 disabled:cursor-not-allowed transition-all duration-300"
-              disabled={googleLoading || loading}
-            >
-              {googleLoading ? (
-                <span>Signing in with Google...</span>
-              ) : (
-                <>
-                  <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_17_40)"><path d="M47.532 24.552c0-1.636-.146-3.2-.418-4.704H24.48v9.02h13.02c-.56 3.02-2.24 5.58-4.76 7.3v6.06h7.7c4.5-4.14 7.09-10.24 7.09-17.68z" fill="#4285F4"/><path d="M24.48 48c6.48 0 11.92-2.14 15.89-5.82l-7.7-6.06c-2.14 1.44-4.88 2.3-8.19 2.3-6.3 0-11.64-4.26-13.56-9.98H2.6v6.26C6.56 43.98 14.7 48 24.48 48z" fill="#34A853"/><path d="M10.92 28.44c-.5-1.44-.8-2.98-.8-4.44s.3-3 .8-4.44v-6.26H2.6A23.98 23.98 0 000 24c0 3.98.96 7.76 2.6 11.18l8.32-6.74z" fill="#FBBC05"/><path d="M24.48 9.52c3.54 0 6.68 1.22 9.17 3.62l6.86-6.86C36.4 2.14 30.96 0 24.48 0 14.7 0 6.56 4.02 2.6 10.08l8.32 6.26c1.92-5.72 7.26-9.98 13.56-9.98z" fill="#EA4335"/></g><defs><clipPath id="clip0_17_40"><rect width="48" height="48" fill="white"/></clipPath></defs></svg>
-                  <span>Sign in with Google</span>
-                </>
-              )}
-            </button>
+            {/* Footer */}
+            <div className="mt-6 text-center">
+              <p className="text-xs text-slate-500">This portal is restricted to authorized administrators only.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

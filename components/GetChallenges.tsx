@@ -1,3 +1,4 @@
+// Final code with create/delete protection after competition start
 "use client"
 
 import {
@@ -15,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Calendar, User, Clock, AlertCircle, CheckCircle } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { getDocs, type Timestamp, collection, query, orderBy, limit, deleteDoc, doc } from "firebase/firestore"
+import { getDocs, type Timestamp, collection, query, doc, getDoc, deleteDoc } from "firebase/firestore"
 import { getAuth } from "firebase/auth"
 
 type Challenge = {
@@ -31,14 +32,15 @@ type Challenge = {
   emailoflatestupdate: string
 }
 
-
 export default function GetChallenges({ competitionId }: { competitionId: string }) {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const router = useRouter()
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [competitionStartTime, setCompetitionStartTime] = useState<Date | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchUserRoleAndChallenges = async () => {
@@ -47,6 +49,24 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         const tokenResult = await auth.currentUser?.getIdTokenResult()
         const role = (tokenResult?.claims?.role as string) || null
         setUserRole(role)
+
+        const compDocRef = doc(db, "competitions", competitionId)
+        const compSnap = await getDoc(compDocRef)
+        if (compSnap.exists()) {
+
+          // const startTimestamp = compSnap.data()?.startDeadline
+          // if (startTimestamp?.toDate) {
+          //   setCompetitionStartTime(startTimestamp.toDate())
+          // }
+          const startTimestamp = compSnap.data()?.startDeadline
+          if (startTimestamp) {
+            const startDate = new Date(startTimestamp)  // ← simple conversion
+            setCompetitionStartTime(startDate)
+            console.log("Competition Start:", startDate)
+          }
+
+
+        }
 
         const challengesQuery = query(
           collection(db, "competitions", competitionId, "challenges")
@@ -86,7 +106,13 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             <p className="text-gray-600 text-sm">Manage and monitor your competition events</p>
           </div>
           <Button
-            onClick={() => router.push(`/admin/competitions/${competitionId}/challenges/new`)}
+            onClick={() => {
+              if (competitionStartTime && competitionStartTime < new Date()) {
+                setShowCreateModal(true)
+              } else {
+                router.push(`/admin/competitions/${competitionId}/challenges/new`)
+              }
+            }}
             className="bg-gray-900 text-white hover:bg-gray-800 px-5 py-2 rounded-lg font-semibold"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -103,30 +129,12 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             const isExpired = startDate < new Date()
 
             return (
-              <Card
-                key={challenge.id}
-                className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-              >
+              <Card key={challenge.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                 <CardHeader className="bg-gray-50 p-5 rounded-t-xl border-b border-gray-200">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
-                    <Badge
-                      variant="outline"
-                      className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                        isExpired
-                          ? "bg-red-50 border-red-200 text-red-800"
-                          : "bg-emerald-50 border-emerald-200 text-emerald-800"
-                      }`}
-                    >
-                      {isExpired ? (
-                        <>
-                          <AlertCircle className="w-3 h-3 mr-1" /> Expired
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-3 h-3 mr-1" /> Active
-                        </>
-                      )}
+                    <Badge variant="outline" className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${isExpired ? "bg-red-50 border-red-200 text-red-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
+                      {isExpired ? <><AlertCircle className="w-3 h-3 mr-1" /> Expired</> : <><CheckCircle className="w-3 h-3 mr-1" /> Active</>}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -173,19 +181,23 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                     >
                       Edit
                     </Button>
-                    {userRole === "admin" || userRole === "superadmin" ? (
+                    {(userRole === "admin" || userRole === "superadmin") && (
                       <Button
                         size="sm"
                         variant="destructive"
                         className="bg-red-600 text-white hover:bg-red-700 font-semibold px-4 py-2"
                         onClick={() => {
-                          setChallengeToDelete(challenge.id)
-                          setDeleteConfirmOpen(true)
+                          if (competitionStartTime && competitionStartTime < new Date()) {
+                            setShowModal(true)
+                          } else {
+                            setChallengeToDelete(challenge.id)
+                            setDeleteConfirmOpen(true)
+                          }
                         }}
                       >
                         Delete
                       </Button>
-                    ) : null}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -209,32 +221,21 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 bg-transparent"
-              onClick={() => {
-                setChallengeToDelete(null)
-                setDeleteConfirmOpen(false)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-red-600 text-white hover:bg-red-700 font-semibold"
-              onClick={async () => {
-                if (!challengeToDelete) return
-                await handleDelete(challengeToDelete)
-                setChallengeToDelete(null)
-                setDeleteConfirmOpen(false)
-              }}
-            >
-              Delete
-            </Button>
+            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => {
+              setChallengeToDelete(null)
+              setDeleteConfirmOpen(false)
+            }}>Cancel</Button>
+            <Button className="bg-red-600 text-white hover:bg-red-700 font-semibold" onClick={async () => {
+              if (!challengeToDelete) return
+              await handleDelete(challengeToDelete)
+              setChallengeToDelete(null)
+              setDeleteConfirmOpen(false)
+            }}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Not Allowed Modal */}
+      {/* Shared Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl rounded-xl">
           <DialogHeader>
@@ -242,17 +243,36 @@ export default function GetChallenges({ competitionId }: { competitionId: string
               <div className="p-2 rounded-full bg-amber-50">
                 <AlertCircle className="w-6 h-6 text-amber-600" />
               </div>
-              <DialogTitle className="text-xl font-bold text-gray-900">Editing Not Allowed</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-gray-900">Action Not Allowed</DialogTitle>
             </div>
             <DialogDescription className="text-gray-700 font-medium">
-              You can't edit this challenge because the competition has already started.
+              You can't modify or delete challenges after the competition has started.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              className="bg-gray-900 text-white hover:bg-gray-800 font-semibold"
-              onClick={() => setShowModal(false)}
-            >
+            <Button className="bg-gray-900 text-white hover:bg-gray-800 font-semibold" onClick={() => setShowModal(false)}>
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Not Allowed Modal */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl rounded-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-amber-50">
+                <AlertCircle className="w-6 h-6 text-amber-600" />
+              </div>
+              <DialogTitle className="text-xl font-bold text-gray-900">Challenge Creation Not Allowed</DialogTitle>
+            </div>
+            <DialogDescription className="text-gray-700 font-medium">
+              You can't create a new challenge because the competition has already started.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button className="bg-gray-900 text-white hover:bg-gray-800 font-semibold" onClick={() => setShowCreateModal(false)}>
               Got it
             </Button>
           </DialogFooter>

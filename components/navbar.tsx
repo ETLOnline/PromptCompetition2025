@@ -65,27 +65,29 @@ export default function Navbar() {
                 <Button
                   asChild
                   className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-                 bg-gradient-to-r from-gray-700 to-gray-600 text-white"
+                            bg-[#10142c] text-white"
                 >
                   <Link href="/auth/login">
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-md p-1 mr-2">
+                    <div className="bg-[#0d1024] rounded-md p-1 mr-2">
                       <LogIn className="h-3 w-3 text-white" />
                     </div>
                     Login
                   </Link>
                 </Button>
+
                 <Button
                   asChild
                   className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-                 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-bold"
+                            bg-[#10142c] text-white font-bold"
                 >
                   <Link href="/auth/register">
-                    <div className="bg-white/20 rounded-md p-1 mr-2">
-                      <UserPlus className="h-3 w-3" />
+                    <div className="bg-[#10142c] rounded-md p-1 mr-2">
+                      <UserPlus className="h-3 w-3 text-white" />
                     </div>
                     Sign Up
                   </Link>
                 </Button>
+
               </div>
               {/* Mobile Menu Trigger */}
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
