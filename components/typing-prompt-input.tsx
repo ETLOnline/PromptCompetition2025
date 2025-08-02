@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Send } from "lucide-react"
 
 export default function TypingPromptInput() {
-  const prompts = [
-    "Analyze our customer feedback from last month and identify key trends...",
-    "Summarize the latest policy documents and highlight important changes...",
-    "Create a knowledge base article about our new security features...",
-    "Generate a report on our department's performance metrics...",
-    "Draft a response to the government RFP based on our previous submissions...",
-  ]
+const prompts = [
+  "Design a prompt that helps generate creative marketing copy for a new AI product...",
+  "Write a prompt to extract action items from a lengthy project meeting transcript...",
+  "Craft a prompt that converts raw customer support logs into concise summaries...",
+  "Develop a prompt to simulate a job interview for a software engineering role...",
+  "Create a prompt that transforms technical documentation into beginner-friendly FAQs...",
+  "Generate a prompt that helps analyze sentiment across thousands of product reviews...",
+  "Write a prompt that assists students in learning complex physics concepts interactively...",
+  "Draft a prompt to convert spreadsheet data into a natural language report...",
+  "Design a prompt that automates writing LinkedIn posts from research paper abstracts...",
+  "Create a prompt that translates legal jargon into layman's terms for general audiences...",
+];
+
 
   const [displayText, setDisplayText] = useState("")
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0)
