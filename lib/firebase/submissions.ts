@@ -1,9 +1,7 @@
 import { db } from "@/lib/firebase"
 import {
     collection,
-    query,
-    where,
-    getDocs,
+    getDoc,
     setDoc,
     updateDoc,
     serverTimestamp,
@@ -18,18 +16,12 @@ export const checkExistingSubmission = async (
     challenge_ID: string
 ) => {
     try {
-        const submissionsRef = collection(db, "competitions", competition_ID, "submissions");        
+        const submissionId = `${participant_ID}_${challenge_ID}`;
+        const submissionDocRef = doc(db, "competitions", competition_ID, "submissions", submissionId);
+        const submissionSnap = await getDoc(submissionDocRef);
         
-        const q = query(
-            submissionsRef,
-            where("participantId", "==", participant_ID),
-            where("challengeId", "==", challenge_ID)
-        );
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const docSnap = querySnapshot.docs[0]
-            return docSnap.id
+        if (submissionSnap.exists()) {
+            return submissionId;
         }
 
         return false;
