@@ -113,7 +113,7 @@ export default function NewCompetitionPage() {
         title: "Success",
         description: "Challenge created successfully!",
       })
-      router.push(`/admin/dashboard?competitionId=${competitionId}`)
+      router.push(`/admin/competitions/${competitionId}/dashboard`)
     } catch (error) {
       toast({
         title: "Error",
@@ -152,7 +152,7 @@ export default function NewCompetitionPage() {
             <div>
               <Button
                 variant="ghost"
-                onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)}
+                onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}
                 className="mr-4 text-gray-700 hover:bg-gray-50 transition-all duration-200"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -294,7 +294,7 @@ export default function NewCompetitionPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)}
+                    onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}
                     className="border-gray-300 text-gray-700 hover:bg-gray-50 transition-all duration-200 bg-transparent px-6"
                   >
                     Cancel

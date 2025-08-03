@@ -29,10 +29,7 @@ export default function AdminLeaderboardPage() {
           </div>
           <p className="text-gray-600">Track participant rankings and performance</p>
         </div>
-        {/* Suspense wrapper */}
-        <Suspense fallback={<p className="text-gray-500">Loading leaderboard...</p>}>
           <ViewLeaderboardTable competitionId={competitionId} />
-        </Suspense>
       </div>
     </div>
   )

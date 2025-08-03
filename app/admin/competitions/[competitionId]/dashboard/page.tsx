@@ -10,6 +10,7 @@ import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
 import DownloadLeaderboardButton from "@/components/DownloadLeaderboard"
+import AdminHeader from "@/components/AdminHeader"
 import { collection, onSnapshot, doc, getDoc, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
@@ -67,42 +68,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white px-8 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-4">
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded uppercase tracking-wide">
-                  {role === "superadmin" ? "SUPER ADMIN" : "ADMIN"}
-                </span>
-              </div>
-              <p className="text-gray-600 text-lg">
-                {competitionTitle ? `Managing: ${competitionTitle}` : "Loading competition..."}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/admin/select-competition")}
-              className="rounded-lg font-semibold bg-gray-900 text-white px-6 py-2 gap-2 hover:bg-gray-800 hover:text-white transition-colors"
-              >
-              Go to Competitions
-            </Button>
-              <Button
-                variant="outline"
-                onClick={logout}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg bg-transparent"
-              >
-                Logout
-              </Button>
-
-              
-            </div>
-          </div>
-        </div>
-      </div>
-
+      
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Stats Cards */}

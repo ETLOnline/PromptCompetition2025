@@ -497,7 +497,7 @@ export default function ParticipantDistribution() {
             </div>
         </div>
         <Button
-            onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)}
+            onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}
             className="bg-gray-700 text-white hover:bg-gray-600 rounded-lg px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
         >
             <Settings className="w-4 h-4 mr-2" />

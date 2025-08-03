@@ -71,7 +71,7 @@ export default function EditChallengePage() {
         nameOfLatestUpdate: fullName,
         lastupdatetime: Timestamp.now(),
       })
-      router.push(`/admin/dashboard?competitionId=${competitionId}`)
+      router.push(`/admin/competitions/${competitionId}/dashboard`)
     } catch (error) {
       console.error("Error updating challenge:", error)
     } finally {
@@ -84,7 +84,7 @@ export default function EditChallengePage() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
-            <Button variant="ghost" onClick={() => router.push(`/admin/dashboard?competitionId=${competitionId}`)} className="mr-4">
+            <Button variant="ghost" onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)} className="mr-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Competition
             </Button>
@@ -147,7 +147,7 @@ export default function EditChallengePage() {
                   <Button type="submit" disabled={loading}>
                     {loading ? "Saving..." : "Save Changes"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push(`/admin/competitions/${competitionId}`)}>
+                  <Button type="button" variant="outline" onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}>
                     Cancel
                   </Button>
                 </div>
