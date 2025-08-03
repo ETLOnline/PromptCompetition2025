@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, ArrowLeft, Trophy, Clock, LogOut, User, ArrowRight, CheckCircle2} from "lucide-react"
-import { collection, getDocs, limit, orderBy, query, doc, getDoc } from "firebase/firestore"
+import { collection, getDocs, query, doc, getDoc, where} from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { use } from "react"
 
@@ -26,6 +26,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
   const [loadingSubmissions, setLoadingSubmissions] = useState(true)
 
+
   useEffect(() => {
     if (!user) {
       router.push("/")
@@ -39,6 +40,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
     loadData();
   }, [user, router])
+
 
   const fetchCompetitionData = async () => {
     try {          
@@ -73,12 +75,6 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
           setChallenges(challengeList);
         }
 
-      // Get user submissions count
-      if (user?.uid) 
-      {
-
-      }
-
     } 
     catch (error) 
     {
@@ -98,25 +94,26 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
         console.error("competitionId is null or undefined");
         return;
       }
-
-      const submissionsRef = collection(db, "competitions", competitionId, "submissions");
-      const submissionsSnapshot = await getDocs(submissionsRef);
-      
-      const userSubmissionMap: Record<string, boolean> = {};
-
-      // If submissions collection exists and has documents
-      if (!submissionsSnapshot.empty) 
+      else
       {
-        submissionsSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          // Check if this submission belongs to current user
-          if (data.participantId === user.uid) {
-            userSubmissionMap[data.challengeId] = true;
-          }
-        });
-      }
+        const submissionsRef = collection(db, "competitions", competitionId, "submissions");
+        const q = query(submissionsRef, where("participantId", "==", user.uid));
+        const submissionsSnapshot = await getDocs(q);
+        
+        const userSubmissionMap: Record<string, boolean> = {};
 
-      setUserSubmissions(userSubmissionMap);
+        // If submissions collection exists and has documents
+        if (!submissionsSnapshot.empty) 
+        {
+          submissionsSnapshot.docs.forEach(doc => {
+            const data = doc.data();
+            userSubmissionMap[data.challengeId] = true;
+          });
+        }
+        
+        setUserSubmissions(userSubmissionMap);
+        setSubmissions(Object.keys(userSubmissionMap).length);
+      }
     } 
     catch (error) 
     {
@@ -200,7 +197,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
               </CardHeader>
               <CardContent className="pt-6 pb-4">
                 <div className="text-3xl font-bold text-gray-900 mb-1">{challengeCount !== null ? challengeCount : "—"}</div>
-                <p className="text-sm font-medium text-gray-700">In current competition</p>
+                <p className="text-sm font-medium text-gray-700">In current challenge</p>
               </CardContent>
             </Card>
 
@@ -358,7 +355,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Challenges</h2>
-                <p className="text-base font-medium text-gray-700">Available competition challenges</p>
+                <p className="text-base font-medium text-gray-700">Available challenges in current competition</p>
               </div>
 
             </div>
@@ -387,7 +384,7 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
 
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Challenges</h2>
-                  <p className="text-base font-medium text-gray-700">Available competition challenges</p>
+                  <p className="text-base font-medium text-gray-700">Available challenges in current competition</p>
                 </div>
 
               </div>
