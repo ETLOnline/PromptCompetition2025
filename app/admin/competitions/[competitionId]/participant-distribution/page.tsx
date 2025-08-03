@@ -40,6 +40,7 @@ interface Judge {
     email: string
     institution?: string
     totalAssigned?: number
+    status?: "available" | "busy" | "offline"
 }
 
 interface JudgeCapacity {
@@ -87,7 +88,7 @@ export default function ParticipantDistribution() {
         try {
             const idTokenResult = await getIdTokenResult(user, true);
             const role = idTokenResult.claims.role;
-
+            console.log("🎭 Role from token:", role);
             if (role !== "superadmin") {
             router.push("/");
             return;
@@ -179,6 +180,7 @@ export default function ParticipantDistribution() {
 
     const fetchExistingAssignments = async (judgesData: Judge[]) => {
         try {
+        console.log("Accessing path: competitions/" + competitionId + "/judges");
         
         const judgeDocRefs = judgesData.map(j => doc(db, "competitions", competitionId, "judges", j.id))
         const judgeDocs = await Promise.all(judgeDocRefs.map(getDoc))
