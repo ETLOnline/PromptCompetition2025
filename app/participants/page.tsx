@@ -147,11 +147,107 @@ export default function CompetitionsPage() {
                     <Sparkles className="w-3 h-3 text-emerald-600" />
                   </div>
                 </div>
+<<<<<<< HEAD
                 <div className="space-y-3">
                   <h3 className="text-xl font-bold text-slate-900">Loading Competitions</h3>
                   <p className="text-slate-600 leading-relaxed">
                     Fetching the latest competitions from our database...
                   </p>
+=======
+            </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            {!hasCompetitions ? (
+                <Card className="bg-white shadow-sm rounded-xl">
+                    <CardContent className="text-center py-16">
+                    <div className="w-20 h-20 bg-gradient-to-r from-gray-700 to-gray-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                        <Trophy className="h-10 w-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No Competitions Available</h3>
+                    <p className="text-base font-medium text-gray-700 max-w-md mx-auto">
+                        There are currently no competitions available. Check back later for new competitions.
+                    </p>
+                    </CardContent>
+                </Card>
+            ) : 
+            (
+                <div className="space-y-4">
+                    {competitions.map((competition) => {
+                    const status = getCompetitionStatus(competition)
+                    
+                    if (status.status !== "ENDED")
+                    {
+                        return (
+                            <Card
+                            key={competition.id}
+                            className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 cursor-pointer group border border-gray-100"
+                            >
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between">
+                                {/* Left Section - Competition Info */}
+                                <div className="flex items-center gap-6 flex-1">
+                                    {/* Icon */}
+                                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                        <Trophy className="h-6 w-6 text-white" />
+                                    </div>
+
+                                    {/* Competition Details */}
+                                    <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors duration-200 truncate">
+                                        {competition.title}
+                                        </h3>
+                                        <div
+                                        className={`px-3 py-1 rounded-lg border text-xs font-medium uppercase tracking-wide flex-shrink-0 ${status.bgColor} ${status.textColor} ${status.borderColor}`}
+                                        >
+                                        {status.message}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-700 line-clamp-2 leading-relaxed mb-3">
+                                        {competition.description}
+                                    </p>
+
+                                    {/* Timeline - Horizontal */}
+                                    <div className="flex items-center gap-6 text-xs text-gray-600">
+                                        <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <Calendar className="h-2.5 w-2.5 text-blue-600" />
+                                        </div>
+                                        <span className="font-medium">Starts: {formatDate(competition.startDeadline)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-red-100 rounded-full flex items-center justify-center">
+                                            <Clock className="h-2.5 w-2.5 text-red-600" />
+                                        </div>
+                                        <span className="font-medium">Ends: {formatDate(competition.endDeadline)}</span>
+                                        </div>
+                                    </div>
+                                    </div>
+                                </div>
+
+                                    {/* Right Section - Action Button */}
+                                    {status.status === "ACTIVE" && (
+                                        <div className="flex-shrink-0 ml-6">
+                                            <Button
+                                            className="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-medium transition-all duration-200 rounded-lg px-6 py-2.5 focus:ring-2 focus:ring-gray-900/10 focus:ring-offset-2"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleCompetitionClick(competition.id)
+                                            }}
+                                            >
+                                            Join Competition
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                            </Card>
+                        )
+                    }
+                })}
+>>>>>>> mess
                 </div>
               </div>
             </CardContent>
