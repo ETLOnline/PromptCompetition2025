@@ -20,6 +20,7 @@ import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import Image from "next/image"
 
+
 export default function ModernAdminHeader() {
   const { user, role, logout } = useAuth()
   const router = useRouter()
@@ -75,35 +76,55 @@ export default function ModernAdminHeader() {
         <div className="flex items-center justify-between h-20">
           {/* Left Section - Logo and Title */}
           <div className="flex items-center space-x-3 sm:space-x-4">
-            <div
-              className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => router.push("/admin")}
-            >
+            <div className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
+              {/* Logo (External Link) */}
               <div className="flex-shrink-0">
-                <Image
-                  src="/images/Logo-for-Picton-Blue.png"
-                  alt="Empowerment Through Learning Logo"
-                  width={120}
-                  height={120}
-                  className="object-contain"
-                  priority
-                />
+                <a
+                  href="https://www.etlonline.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Image
+                    src="/images/Logo-for-Picton-Blue.png"
+                    alt="Empowerment Through Learning Logo"
+                    width={120}
+                    height={120}
+                    className="object-contain"
+                    priority
+                  />
+                </a>
               </div>
+
+              {/* Title (Conditional internal navigation) */}
               <div className="flex flex-col">
-                <h1 className="text-xl font-semibold text-gray-900 leading-tight">Admin Dashboard</h1>
-                {competitionId && (
-                loading ? (
-                    <div className="animate-pulse bg-gray-200 rounded h-4 w-40" />
+                {competitionId ? (
+                  <h1
+                    onClick={() =>
+                      router.push(`/admin/competitions/${competitionId}/dashboard`)
+                    }
+                    className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
+                  >
+                    Admin Dashboard
+                  </h1>
                 ) : (
-                    <p className="text-sm text-gray-500 leading-tight">
-                    {title || "Competition"}
-                    </p>
-                )
+                  <h1 className="text-xl font-semibold text-gray-900 leading-tight">
+                    Admin Dashboard
+                  </h1>
                 )}
 
+                {competitionId && (
+                  loading ? (
+                    <div className="animate-pulse bg-gray-200 rounded h-4 w-40" />
+                  ) : (
+                    <p className="text-sm text-gray-500 leading-tight">
+                      {title || "Competition"}
+                    </p>
+                  )
+                )}
               </div>
             </div>
           </div>
+
 
           {/* Right Section - Badge and User Menu */}
           <div className="flex items-center space-x-4">

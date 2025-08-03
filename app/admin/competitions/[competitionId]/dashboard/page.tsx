@@ -153,7 +153,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">Evaluation</h3>
-                  <p className="text-gray-600">Manual or LLM scoring</p>
+                  <p className="text-gray-600">LLM scoring</p>
                 </div>
               </div>
               <div className="space-y-3">
