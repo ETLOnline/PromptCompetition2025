@@ -126,7 +126,7 @@ export default function CompetitionSelector() {
   }
 
   const handleManageClick = (competitionId: string) => {
-    router.push(`/admin/dashboard?competitionId=${competitionId}`)
+    router.push(`/admin/competitions/${competitionId}/dashboard`)
   }
 
   const handleFormChange = (field: string, value: string) => {

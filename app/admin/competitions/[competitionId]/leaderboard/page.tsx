@@ -1,13 +1,14 @@
 "use client"
 
 import ViewLeaderboardTable from "@/components/ViewLeaderboard"
-import { useSearchParams } from "next/navigation"
+import { useParams } from "next/navigation"
+import { Suspense } from "react"
 
 export default function AdminLeaderboardPage() {
-  const searchParams = useSearchParams()
-  const competitionId = searchParams.get("competitionId")
+  const params = useParams()
+  const competitionId = params?.competitionId as string
   if (!competitionId) {
-    return <div className="p-6 text-red-600 font-semibold">Error: competitionId not provided</div>
+    return <div className="p-6 text-red-600 font-semibold">Error: Competition ID not found in the URL</div>
   }
   return (
     <div className="min-h-screen bg-gray-50">
@@ -28,7 +29,10 @@ export default function AdminLeaderboardPage() {
           </div>
           <p className="text-gray-600">Track participant rankings and performance</p>
         </div>
-        <ViewLeaderboardTable competitionId={competitionId} />
+        {/* Suspense wrapper */}
+        <Suspense fallback={<p className="text-gray-500">Loading leaderboard...</p>}>
+          <ViewLeaderboardTable competitionId={competitionId} />
+        </Suspense>
       </div>
     </div>
   )

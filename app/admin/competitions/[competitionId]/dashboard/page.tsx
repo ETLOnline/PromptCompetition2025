@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import { useAuth } from "@/components/auth-provider"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileText, Activity, Users, Trophy, BarChart3, Shield, UserCog } from "lucide-react"
@@ -16,8 +16,8 @@ import { db } from "@/lib/firebase"
 export default function AdminDashboard() {
   const { user, role, logout } = useAuth()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const competitionId = searchParams.get("competitionId")
+  const params = useParams()
+  const competitionId = params?.competitionId as string
 
   const [competitionTitle, setCompetitionTitle] = useState<string | null>(null)
   const [totalSubmissions, setSubmissionCount] = useState<number>(0)
@@ -191,8 +191,8 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="space-y-3">
-                <StartEvaluationButton competitionId={competitionId!} />
-                <GenerateLeaderboardButton competitionId={competitionId!} />
+                <StartEvaluationButton competitionId={competitionId} />
+                <GenerateLeaderboardButton competitionId={competitionId} />
               </div>
             </div>
           </Card>
@@ -210,12 +210,12 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-3">
                 <Button
-                  onClick={() => router.push(`/admin/leaderboard?competitionId=${competitionId}`)}
+                  onClick={() => router.push(`/admin/competitions/${competitionId}/leaderboard`)}
                   className="w-full py-3 bg-gray-900 text-white rounded-lg"
                 >
                   <Trophy className="h-4 w-4 mr-2" /> View Leaderboard
                 </Button>
-                <DownloadLeaderboardButton competitionId={competitionId!} />
+                <DownloadLeaderboardButton competitionId={competitionId} />
               </div>
             </div>
           </Card>
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
         {/* Challenges Section */}
         <Card className="bg-white rounded-2xl shadow-sm">
           <CardContent className="p-6">
-            <GetChallenges competitionId={competitionId!} />
+            <GetChallenges competitionId={competitionId} />
           </CardContent>
         </Card>
       </div>
