@@ -10,58 +10,81 @@ import {
     doc,
 } from "firebase/firestore"
 
-const submissionsRef = collection(db, "submissions")
 
 // 1. Check if a submission exists
-export const checkExistingSubmission = async (participant_ID: string, challenge_ID: string) => {
-    try 
-    {
+export const checkExistingSubmission = async (
+    competition_ID: string,
+    participant_ID: string,
+    challenge_ID: string
+) => {
+    try {
+        const submissionsRef = collection(db, "competitions", competition_ID, "submissions");        
+        
         const q = query(
             submissionsRef,
-            where("participant_ID", "==", participant_ID),
-            where("challenge_ID", "==", challenge_ID)
-        )
+            where("participantId", "==", participant_ID),
+            where("challengeId", "==", challenge_ID)
+        );
+        const querySnapshot = await getDocs(q);
 
-        const querySnapshot = await getDocs(q)
+        await fetch("/api/debugger", {
+            method: "POST",
+            body: JSON.stringify({
+                message: `Query returned ${querySnapshot.size} results. First ID: ${querySnapshot.docs[0]?.id || "none"}`
+            }),
+            headers: { "Content-Type": "application/json" }
+        });
+
 
         if (!querySnapshot.empty) {
             const docSnap = querySnapshot.docs[0]
-            return { id: docSnap.id, data: docSnap.data() }
+            return docSnap.id
         }
 
-        return null
+        return false;
     } 
-    catch (err) 
+    catch (error) 
     {
-        throw err // So that the caller also fails if needed
+        await fetch("/api/debugger", {
+            method: "POST",
+            body: JSON.stringify({
+                message: `Error checking submission: ${error.message || error}`
+            }),
+            headers: { "Content-Type": "application/json" }
+        });
+        return false;
     }
-}
+};
+
 
 // 2. Submit or update a submission
-export const submitPrompt = async (participant_ID: string, challenge_ID: string,
-    promptText: string ) => {
-        const existingSubmission = await checkExistingSubmission(participant_ID, challenge_ID)
+export const submitPrompt = async (
+    competition_ID: string,
+    participant_ID: string,
+    challenge_ID: string,
+    promptText: string
+) => {
+        const existingSubmission = await checkExistingSubmission(competition_ID, participant_ID, challenge_ID)
 
         const submissionData = {
-        participant_ID,
-        challenge_ID,
-        promptText,
-        submissionTime: serverTimestamp(),
-        plagiarismScore: null,
-        finalScore: null,
-        llmEvaluated: false,
-        status: "none"  // This can later be changed to "pending" for Top N users
+            participantId: participant_ID,
+            challengeId: challenge_ID,
+            promptText,
+            submissionTime: serverTimestamp(),
+            llmScore: null,
+            status: "pending" 
         }
         
         if (existingSubmission) 
         {
-            const submissionRef = doc(db, "submissions", existingSubmission.id)
-            await updateDoc(submissionRef, submissionData)
-            return existingSubmission.id
+            const submissionDocRef = doc(db, "competitions", competition_ID, "submissions", existingSubmission)
+            await updateDoc(submissionDocRef, submissionData)
+            return true
         } 
         else 
         {
+            const submissionsRef = collection(db, "competitions", competition_ID, "submissions")
             const docRef = await addDoc(submissionsRef, submissionData)
-            return docRef.id
+            return false
         }
 } 

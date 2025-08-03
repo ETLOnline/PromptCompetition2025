@@ -23,78 +23,94 @@ import {
 import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
+import { Timestamp } from "firebase-admin/firestore"
 
-export default function CompetitionPage({ params }: { params: Promise<{ id: string }> }) {
+interface Challenge {
+  id: string;
+  title: string;
+  problemStatement: string;
+  guidelines: string;
+  startDeadline: Timestamp;
+  endDeadline: Timestamp;
+}
+
+
+export default function ChallengePage({ params }: { params: Promise<{ id: string; challengeId: string }> }) {
+  
   const { user } = useAuth()
   const router = useRouter()
-  const [competition, setCompetition] = useState<Competition | null>(null)
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [prompt, setPrompt] = useState("")
   const [loading, setLoading] = useState(true)
-  const resolvedParams = use(params)
+
+  const resolvedParams = use(params); // ✅ unwrap the promise
+  const { id: competitionId, challengeId } = resolvedParams; 
+
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const confirmActionRef = useRef<() => void>(null);
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    if (!user) 
+    {
       router.push("/")
       return
     }
 
-    fetchCompetitionData()
-  }, [user, resolvedParams.id, router])
+    fetchChallengeData(competitionId, challengeId);
+  }, [user, resolvedParams, router])
 
-  const fetchCompetitionData = async () => {
+  const fetchChallengeData = async (competitionId: string, challengeId: string) => {
     try {
-      // console.log("resolvedparams", resolvedParams.id)
-      const challengeRef = doc(db, process.env.NEXT_PUBLIC_CHALLENGE_DATABASE, resolvedParams.id)
-      const challengeSnap = await getDoc(challengeRef)
+      const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId);
+      const challengeSnap = await getDoc(challengeRef);
 
-      if (challengeSnap.exists()) {
-        const firebaseData = challengeSnap.data()
-
-        const competitionData: Competition = {
-          id: resolvedParams.id,
-          title: firebaseData.title,
-          problemStatement: firebaseData.problemStatement,
-          startDeadline: firebaseData.startDeadline?.toDate?.() || firebaseData.startDeadline,
-          endDeadline: firebaseData.endDeadline?.toDate?.() || firebaseData.endDeadline,
-          isLocked: false,
-          guidelines: firebaseData.guidelines,
-        }
-
-        setCompetition(competitionData)
+      if (!challengeSnap.exists()) 
+      {
+        console.warn("Challenge document not found.");
+        return;
       }
+
+      const data = challengeSnap.data();
+
+      const challengeData: Challenge = {
+        id: challengeId,
+        title: data.title,
+        problemStatement: data.problemStatement,
+        guidelines: data.guidelines,
+      };
+
+      setChallenge(challengeData);
     } catch (error) {
-      console.error("Error fetching competition data:", error)
+      console.error("Error fetching challenge data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-4 border-[#56ffbc] mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading competition...</p>
+          <p className="text-gray-600 text-lg">Loading challenge...</p>
         </div>
       </div>
     )
   }
 
-  if (!competition) {
+  if (!challenge) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <Card className="bg-white shadow-xl border-0 max-w-md">
           <CardContent className="text-center py-8">
             <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-400" />
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Competition Not Found</h2>
-            <p className="text-gray-600 mb-6">The competition you're looking for doesn't exist or has been removed.</p>
+            <p className="text-gray-600 mb-6">The challenge you're looking for doesn't exist or has been removed.</p>
             <Button 
               className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold px-6 py-2 shadow-md" 
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push(`/participants/competitions/${competitionId}`)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
@@ -105,7 +121,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  const isCompetitionLocked = competition.endDeadline && new Date() > new Date(competition.endDeadline)
+  const isCompetitionLocked = challenge.endDeadline && new Date() > new Date(challenge.endDeadline)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -115,7 +131,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
-                onClick={() => router.push("/dashboard")} 
+                onClick={() => router.push(`/participants/competitions/${competitionId}`)} 
                 className="mr-4 text-gray-700 hover:text-[#56ffbc] hover:bg-[#56ffbc] transition-colors"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -124,7 +140,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <Trophy className="h-8 w-8 text-[#56ffbc]" />
-                  <h1 className="text-3xl font-bold text-gray-800">{competition.title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">{challenge.title}</h1>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge 
@@ -156,7 +172,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
             <CardContent className="pt-6">
               <div>
                 <h3 className="font-semibold text-gray-800 mb-3">Problem Statement</h3>
-                <p className="text-gray-700 leading-relaxed">{competition.problemStatement}</p>
+                <p className="text-gray-700 leading-relaxed">{challenge.problemStatement}</p>
               </div>
               <Card className="mb-6">
                 <CardContent className="p-6">
@@ -164,17 +180,11 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                     <Clock className="h-4 w-4 text-orange-500" />
                     Competition Timeline
                   </h3>
-                  <div className="text-gray-700 bg-orange-50 p-3 rounded-lg border border-orange-200 space-y-2">
-                    <div>
-                      <strong>Starts:</strong>{" "}
-                      {new Date(competition.startDeadline).toLocaleDateString()} at{" "}
-                      {new Date(competition.startDeadline).toLocaleTimeString()}
-                    </div>
-                    <div>
-                      <strong>Ends:</strong>{" "}
-                      {new Date(competition.endDeadline).toLocaleDateString()} at{" "}
-                      {new Date(competition.endDeadline).toLocaleTimeString()}
-                    </div>
+
+                  <div>
+                    <strong>Ends:</strong>{" "}
+                    {new Date(challenge.endDeadline).toLocaleDateString()} at{" "}
+                    {new Date(challenge.endDeadline).toLocaleTimeString()}
                   </div>
                 </CardContent>
               </Card>
@@ -191,7 +201,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent className="pt-6">
               <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {competition.guidelines}
+                {challenge.guidelines}
               </div>
             </CardContent>
           </Card>
@@ -230,7 +240,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                       {
                         confirmActionRef.current = async () => {
                           setLoading(true);
-                          await submitPrompt(user.uid, resolvedParams.id, prompt);
+                          await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt);
                           setLoading(false);  
                         };
                         setIsConfirmModalOpen(true);
@@ -238,7 +248,7 @@ export default function CompetitionPage({ params }: { params: Promise<{ id: stri
                       else 
                       {
                         setLoading(true);
-                        await submitPrompt(user.uid, resolvedParams.id, prompt);
+                        await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt);
                         setLoading(false);
                         setHasSubmittedOnce(true);
                       }

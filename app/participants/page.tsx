@@ -195,7 +195,6 @@ export default function CompetitionsPage()
                             <Card
                             key={competition.id}
                             className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 cursor-pointer group border border-gray-100"
-                            onClick={() => handleCompetitionClick(competition.id)}
                             >
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
