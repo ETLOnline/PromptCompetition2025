@@ -4,7 +4,7 @@ import {
     query,
     where,
     getDocs,
-    addDoc,
+    setDoc,
     updateDoc,
     serverTimestamp,
     doc,
@@ -27,15 +27,6 @@ export const checkExistingSubmission = async (
         );
         const querySnapshot = await getDocs(q);
 
-        await fetch("/api/debugger", {
-            method: "POST",
-            body: JSON.stringify({
-                message: `Query returned ${querySnapshot.size} results. First ID: ${querySnapshot.docs[0]?.id || "none"}`
-            }),
-            headers: { "Content-Type": "application/json" }
-        });
-
-
         if (!querySnapshot.empty) {
             const docSnap = querySnapshot.docs[0]
             return docSnap.id
@@ -45,13 +36,6 @@ export const checkExistingSubmission = async (
     } 
     catch (error) 
     {
-        await fetch("/api/debugger", {
-            method: "POST",
-            body: JSON.stringify({
-                message: `Error checking submission: ${error.message || error}`
-            }),
-            headers: { "Content-Type": "application/json" }
-        });
         return false;
     }
 };
@@ -83,8 +67,10 @@ export const submitPrompt = async (
         } 
         else 
         {
-            const submissionsRef = collection(db, "competitions", competition_ID, "submissions")
-            const docRef = await addDoc(submissionsRef, submissionData)
+            const submissionId = `${participant_ID}_${challenge_ID}`;
+            const submissionDocRef = doc(db, "competitions", competition_ID, "submissions", submissionId);
+            await setDoc(submissionDocRef, submissionData);
+
             return false
         }
 } 
