@@ -48,8 +48,6 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
 
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const confirmActionRef = useRef<() => void>(null);
-  const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
   useEffect(() => {
     if (!user) 
@@ -236,23 +234,8 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                 <div className="flex gap-2">
                   <Button 
                     onClick={async () => {
-                      if (hasSubmittedOnce) 
-                      {
-                        confirmActionRef.current = async () => {
-                          setLoading(true);
-                          await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt);
-                          setLoading(false);  
-                        };
                         setIsConfirmModalOpen(true);
-                      } 
-                      else 
-                      {
-                        setLoading(true);
-                        await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt);
-                        setLoading(false);
-                        setHasSubmittedOnce(true);
-                      }
-                    }}
+                      }}
                     disabled={!prompt.trim() || isCompetitionLocked || loading}
                     size="sm"
                     className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800 font-semibold shadow-md"
@@ -269,11 +252,10 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                         <Button
                           className="bg-[#56ffbc] hover:bg-[#45e6a8] text-gray-800"
                           onClick={async () => {
+                            setLoading(true);
                             setIsConfirmModalOpen(false);
-                            if (confirmActionRef.current) {
-                              await confirmActionRef.current();
-                              setHasSubmittedOnce(true);
-                            }
+                            await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt);
+                            setLoading(false);
                           }}
                         >
                           Yes
