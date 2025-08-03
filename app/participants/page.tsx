@@ -120,7 +120,12 @@ export default function CompetitionsPage()
                 }
             }
         }
-
+        else
+        {
+            return {
+                status: "INACTIVE",
+            }
+        }
     }
 
     const formatDate = (date: any) => {
@@ -187,9 +192,9 @@ export default function CompetitionsPage()
             (
                 <div className="space-y-4">
                     {competitions.map((competition) => {
-                    const status = getCompetitionStatus(competition)
+                    const status = getCompetitionStatus(competition)                    
                     
-                    if (status.status !== "ENDED")
+                    if (status && (status.status !== "ENDED" && status.status !== "INACTIVE"))
                     {
                         return (
                             <Card
@@ -265,3 +270,4 @@ export default function CompetitionsPage()
         </div>
     )
 }
+
