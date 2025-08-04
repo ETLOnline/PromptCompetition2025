@@ -37,6 +37,7 @@ import {
 import { collection, getDocs, query, orderBy } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
+import Image from "next/image"
 
 interface Competition {
   id: string
@@ -104,7 +105,6 @@ export default function CompetitionsPage() {
       setLoading(true)
       const competitionsQuery = query(collection(db, "competitions"), orderBy("startDeadline", "desc"))
       const competitionsSnapshot = await getDocs(competitionsQuery)
-
       const fetchedCompetitions = competitionsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -185,7 +185,6 @@ export default function CompetitionsPage() {
   const filteredCompetitions = competitions.filter((comp) => {
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
-
     const status = getCompetitionStatus(comp)
     if (filterStatus === "all") return status.status !== "ENDED" && status.status !== "INACTIVE"
     return status.status.toLowerCase() === filterStatus
@@ -208,19 +207,21 @@ export default function CompetitionsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Modern Header */}
+      {/* Modern Header (Navbar) */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
+              <Image
+                src="/images/Logo-for-Picton-Blue.png"
+                alt="Empowerment Through Learning Logo"
+                width={300}
+                height={130}
+                className="h-12 w-auto"
+                priority
+              />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Available Competitions</h1>
-                <p className="text-gray-600 text-sm">
-                  {filteredCompetitions.length} competition{filteredCompetitions.length !== 1 ? "s" : ""} available
-                </p>
+                <h1 className="text-xl font-semibold text-gray-900 leading-tight">Participant Dashboard</h1>
               </div>
             </div>
             {/* Profile Info and Dropdown */}
@@ -263,6 +264,21 @@ export default function CompetitionsPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Available Competitions Section */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Available Competitions</h2>
+            <p className="text-gray-600 text-sm">
+              {filteredCompetitions.length} competition{filteredCompetitions.length !== 1 ? "s" : ""} available
+            </p>
           </div>
         </div>
       </div>
@@ -313,7 +329,6 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
         {loading ? (
@@ -360,7 +375,6 @@ export default function CompetitionsPage() {
                 const status = getCompetitionStatus(competition)
                 const startDateTime = formatDateTime(competition.startDeadline)
                 const endDateTime = formatDateTime(competition.endDeadline)
-
                 return (
                   <Card
                     key={competition.id}
@@ -381,10 +395,8 @@ export default function CompetitionsPage() {
                             {status.label}
                           </Badge>
                         </div>
-
                         {/* Description */}
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{competition.description}</p>
-
                         {/* Details with consistent spacing */}
                         <div className="flex items-start gap-3 text-sm text-gray-600">
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -401,7 +413,6 @@ export default function CompetitionsPage() {
                             </div>
                           </div>
                         </div>
-
                         {competition.location && (
                           <div className="flex items-center gap-3 text-sm text-gray-600">
                             <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -410,7 +421,6 @@ export default function CompetitionsPage() {
                             <span className="font-medium capitalize">{competition.location}</span>
                           </div>
                         )}
-
                         {competition.prizeMoney && (
                           <div className="flex items-center gap-3 text-sm text-gray-600">
                             <div className="w-8 h-8 bg-yellow-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -420,7 +430,6 @@ export default function CompetitionsPage() {
                           </div>
                         )}
                       </div>
-
                       {/* Action Button */}
                       {status.status === "ACTIVE" && (
                         <Button
@@ -435,7 +444,6 @@ export default function CompetitionsPage() {
                           <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                         </Button>
                       )}
-
                       {status.status === "UPCOMING" && (
                         <Button
                           className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white border-0 transition-all duration-300"
