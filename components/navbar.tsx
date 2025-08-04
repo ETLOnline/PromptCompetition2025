@@ -21,17 +21,19 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full relative overflow-hidden">
+    <header className="w-full relative overflow-hidden">
       {/* Main Navigation Container */}
       <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 shadow-lg">
         <div className="container mx-auto max-w-6xl">
           <div className="flex h-20 items-center justify-between px-4">
             {/* Logo Section */}
             <div className="flex items-center">
-              <Link
-                href="/"
+              <a
+                href="https://www.etlonline.org/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
-                aria-label="Competition Homepage"
+                aria-label="Empowerment Through Learning Homepage"
               >
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2 border border-white/20 hover:bg-white/20 transition-all duration-200">
                   <Image
@@ -43,8 +45,9 @@ export default function Navbar() {
                     priority
                   />
                 </div>
-              </Link>
+              </a>
             </div>
+
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6" aria-label="Main Navigation">
               {navItems.map((item, index) => (
