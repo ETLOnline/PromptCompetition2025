@@ -12,6 +12,7 @@ import evaluateRouter from "./routes/evaluate.js";
 import evaluateAllRouter from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
+import competitionsRouter from "./routes/competitions.js";
 
 import { auth } from "./config/firebase-admin.js"; // ✅ Import Firebase Admin Auth
 
@@ -21,21 +22,6 @@ console.log("3. Routers imported successfully");
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// 🚨 TEMPORARY: Setup first superadmin (REMOVE AFTER FIRST USE)
-app.post("/setup-first-superadmin", async (req, res) => {
-  const { uid } = req.body;
-  if (!uid) {
-    return res.status(400).json({ error: "UID is required." });
-  }
-
-  try {
-    await auth.setCustomUserClaims(uid, { role: "superadmin" });
-    return res.status(200).json({ message: `✅ Superadmin assigned to UID ${uid}` });
-  } catch (err: any) {
-    return res.status(500).json({ error: "❌ Failed to assign superadmin", detail: err.message || String(err) });
-  }
-});
 
 // ✅ Healthcheck endpoint
 app.get("/test", (req, res) => {
@@ -51,6 +37,7 @@ app.use("/evaluate", evaluateRouter);
 app.use("/bulk-evaluate", evaluateAllRouter); 
 app.use("/leaderboard", leaderboardRouter);
 app.use("/superadmin", superadminRouter);
+app.use("/competition", competitionsRouter);
 
 console.log("4. Routes configured");
 
