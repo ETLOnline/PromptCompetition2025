@@ -47,7 +47,7 @@ export const submitPrompt = async (
             challengeId: challenge_ID,
             promptText,
             submissionTime: serverTimestamp(),
-            llmScore: null,
+            finalScore: null,
             status: "pending" 
         }
         
