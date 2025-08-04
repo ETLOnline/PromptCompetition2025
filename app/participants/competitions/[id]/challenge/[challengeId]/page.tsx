@@ -84,15 +84,28 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
       }
 
       const data = challengeSnap.data();
-      const isCompetitionLocked = data?.endDeadline && new Date() > new Date(data.endDeadline)
+      const isCompetitionLocked = data?.endDeadline && new Date() > new Date(data.endDeadline.seconds * 1000)
 
-      const challengeData: Challenge = {
-        id: challengeId,
-        title: data.title,
-        problemStatement: data.problemStatement,
-        guidelines: data.guidelines,
-        isCompetitionLocked: isCompetitionLocked
-      }
+      console.log("Is competition locked:", isCompetitionLocked);
+      
+
+      // fetch("/api/debugger", {
+      //     method: "POST",
+      //     body: JSON.stringify({ message: `user object: ${JSON.stringify(data)}` }),
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //   })
+
+    const challengeData: Challenge = {
+      id: challengeId,
+      title: data.title,
+      problemStatement: data.problemStatement,
+      guidelines: data.guidelines,
+      isCompetitionLocked: isCompetitionLocked,
+      endDeadline: data.endDeadline  // ✅ Add this line
+    }
+
 
       setChallenge(challengeData);
     } 
@@ -294,11 +307,19 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                       Competition Timeline
                     </h3>
 
-                    <div>
-                      <strong>Ends:</strong>{" "}
-                      {new Date(challenge.endDeadline).toLocaleDateString()} at{" "}
-                      {new Date(challenge.endDeadline).toLocaleTimeString()}
+                    <div className="text-gray-700">
+                      {challenge.endDeadline && (
+                        (() => {
+                          const deadlineDate = new Date(challenge.endDeadline.seconds * 1000)
+                          return (
+                            <div>
+                              <strong>Ends:</strong> {deadlineDate.toLocaleDateString()} at {deadlineDate.toLocaleTimeString()}
+                            </div>
+                          )
+                        })()
+                      )}
                     </div>
+
                   </CardContent>
                 </Card>
 

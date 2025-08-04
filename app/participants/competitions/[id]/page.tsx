@@ -9,6 +9,8 @@ import { FileText, ArrowLeft, Trophy, Clock, LogOut, User, ArrowRight, CheckCirc
 import { collection, getDocs, query, doc, getDoc, where} from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { use } from "react"
+import { useSubmissionStore } from "@/lib/store"
+
 
 
 
@@ -25,6 +27,16 @@ export default function DashboardPage({ params }: { params: Promise<{ id: string
   const [challenges, setChallenges] = useState<any[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
   const [loadingSubmissions, setLoadingSubmissions] = useState(true)
+    const setStoreValues = useSubmissionStore((state) => state.setValues)
+
+
+    useEffect(() => {
+    // only set when both values are available
+    if (submissions !== null && challengeCount !== null) {
+      setStoreValues(submissions, challengeCount)
+    }
+  }, [submissions, challengeCount, setStoreValues])
+
 
 
   useEffect(() => {
