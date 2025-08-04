@@ -14,7 +14,7 @@ router.post("/generate", async (req, res) => {
     // Step 1: Get all evaluated submissions for the competition
     const submissionsSnapshot = await db
       .collection(`competitions/${competitionId}/submissions`)
-      .where("llmEvaluated", "==", true)
+      .where("finalScore", "!=", null)
       .get()
 
     const userScores: Record<string, number> = {}
