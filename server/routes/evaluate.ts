@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing promptText or challenge_ID" })
     }
 
-    // Fetch challenge
+    // Fetch challenge rubric
     const challengeRef = db.collection("challenges").doc(challenge_ID)
     const challengeSnap = await challengeRef.get()
 
@@ -42,10 +42,7 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ error: "Challenge not found" })
     }
 
-    const challenge = challengeSnap.data() as {
-      rubric?: string
-    }
-
+    const challenge = challengeSnap.data() as { rubric?: string }
     const rubricText = challenge?.rubric
 
     if (!rubricText || typeof rubricText !== "string") {
@@ -59,8 +56,9 @@ router.post("/", async (req, res) => {
     // Build model scores object
     const modelScores: Record<string, number> = {}
     MODELS.forEach(({ model }, idx) => {
-      if (typeof scores[idx] === "number") {
-        modelScores[model] = scores[idx]
+      const score = scores[idx]
+      if (typeof score === "number") {
+        modelScores[model] = score
       }
     })
 
@@ -68,30 +66,22 @@ router.post("/", async (req, res) => {
       modelScores["average"] = average
     }
 
-    // Write evaluation scores
-    await db
-      .collection("submissions")
-      .doc(submissionId)
-      .collection("evaluation")
-      .doc("llmScore")
-      .set(modelScores)
-
-    // Update submission metadata
+    // Write evaluation scores to submission doc as a map
     await submissionRef.update({
-      finalScore: average,
-      llmEvaluated: true,
-      status: "evaluated"
+      llmScores: modelScores,
+      finalScore: average ?? null,
+      status: "evaluated",
     })
 
     return res.status(200).json({
       message: "Evaluation complete",
-      scores: modelScores
+      scores: modelScores,
     })
   } catch (err: any) {
     console.error("🔥 Evaluation error:", err.message || err)
     return res.status(500).json({
       error: "Evaluation failed",
-      detail: err.message || err
+      detail: err.message || err,
     })
   }
 })
