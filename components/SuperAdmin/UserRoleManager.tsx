@@ -515,7 +515,7 @@ export default function UserRoleManager() {
     try {
       setLoading((p) => ({ ...p, stats: true }))
       const token = await getIdToken()
-      const res = await fetch("http://localhost:8080/superadmin/stats", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -533,7 +533,7 @@ export default function UserRoleManager() {
     try {
       setLoading((p) => ({ ...p, users: true }))
       const token = await getIdToken()
-      const res = await fetch("http://localhost:8080/superadmin/users?limit=1000", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users?limit=1000`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -553,7 +553,7 @@ export default function UserRoleManager() {
     try {
       setLoading((p) => ({ ...p, action: true }))
       const token = await getIdToken()
-      const res = await fetch("http://localhost:8080/superadmin/assign-role", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/assign-role`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ uid, role: newRole }),
@@ -577,7 +577,7 @@ export default function UserRoleManager() {
     try {
       setLoading((p) => ({ ...p, action: true }))
       const token = await getIdToken()
-      const res = await fetch("http://localhost:8080/superadmin/delete-user", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/delete-user`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ uid }),
@@ -628,7 +628,7 @@ export default function UserRoleManager() {
     try {
       setLoading((p) => ({ ...p, action: true }))
       const token = await getIdToken()
-      const res = await fetch("http://localhost:8080/superadmin/create-user", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/create-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(createUserForm),
@@ -662,7 +662,7 @@ export default function UserRoleManager() {
       const token = await getIdToken()
       const results = await Promise.all(
         Array.from(selectedExistingUsers).map((uid) =>
-          fetch("http://localhost:8080/superadmin/assign-role", {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/assign-role`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({ uid, role: roleToAssign }),

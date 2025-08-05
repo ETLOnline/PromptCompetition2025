@@ -22,10 +22,10 @@ export default function StartEvaluationButton({ competitionId }: { competitionId
     setSuccess(false)
 
     try {
-      const res = await fetch("http://localhost:8080/bulk-evaluate/start-evaluation", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/start-evaluation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitionId }), // ✅ pass competitionId here
+        body: JSON.stringify({ competitionId }), 
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Evaluation failed")
