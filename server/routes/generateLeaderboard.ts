@@ -20,9 +20,9 @@ router.post("/generate", async (req, res) => {
     const userScores: Record<string, number> = {}
 
     submissionsSnapshot.forEach((docSnap) => {
-      const { participant_ID, finalScore } = docSnap.data()
-      if (participant_ID && typeof finalScore === "number") {
-        userScores[participant_ID] = (userScores[participant_ID] || 0) + finalScore
+      const { participantId, finalScore } = docSnap.data()
+      if (participantId && typeof finalScore === "number") {
+        userScores[participantId] = (userScores[participantId] || 0) + finalScore
       }
     })
 

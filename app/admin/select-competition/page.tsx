@@ -110,7 +110,6 @@ export default function ModernCompetitionSelector() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
   const [showCompetitionEndedDialog, setShowCompetitionEndedDialog] = useState(false)
-  const [showCompetitionStartedDialog, setShowCompetitionStartedDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "ended" | "upcoming">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -255,22 +254,22 @@ export default function ModernCompetitionSelector() {
     }
   }
 
-  const formatForDatetimeLocal = (isoString: string) => {
-    if (!isoString) return ""
-    const date = new Date(isoString)
-    // Convert to Pakistan timezone for editing
-    const pakistanDate = new Date(date.getTime() + 5 * 60 * 60 * 1000)
-    const offset = pakistanDate.getTimezoneOffset()
-    const localDate = new Date(pakistanDate.getTime() - offset * 60 * 1000)
-    return localDate.toISOString().slice(0, 16)
-  }
+  const formatForDatetimeLocal = (utcIsoString: string): string => {
+  if (!utcIsoString) return ""
+  
+  // Parse UTC time and convert to local
+  const utcDate = new Date(utcIsoString)
+  
+  // Get local time components
+  const year = utcDate.getFullYear()
+  const month = String(utcDate.getMonth() + 1).padStart(2, '0')
+  const day = String(utcDate.getDate()).padStart(2, '0')
+  const hours = String(utcDate.getHours()).padStart(2, '0')
+  const minutes = String(utcDate.getMinutes()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
 
-  const toPakistanISOString = (value: string) => {
-    const date = new Date(value)
-    // Convert to Pakistan timezone before saving
-    const pakistanTime = new Date(date.getTime() + 5 * 60 * 60 * 1000)
-    return pakistanTime.toISOString()
-  }
 
   const handleManageClick = (competitionId: string) => {
     router.push(`/admin/competitions/${competitionId}/dashboard`)
@@ -288,11 +287,6 @@ export default function ModernCompetitionSelector() {
 
     if (now > endDate) {
       setShowCompetitionEndedDialog(true)
-      return
-    }
-
-    if (now >= startDate) {
-      setShowCompetitionStartedDialog(true)
       return
     }
 
@@ -381,20 +375,20 @@ export default function ModernCompetitionSelector() {
           return
         }
 
-        const token = await user.getIdToken()
-
-        await createCompetition(
-          {
-            title,
-            description,
-            prizeMoney,
-            startDeadline: toPakistanISOString(startTime),
-            endDeadline: toPakistanISOString(endTime),
-            location,
-            ChallengeCount: 0, // ← Add this line
-          },
-          token,
-        )
+      const token = await user.getIdToken()
+      await createCompetition(
+        {
+          title,
+          description,
+          prizeMoney,
+          startDeadline: startDateTime.toISOString(),
+          endDeadline: endDateTime.toISOString(),
+          createdAt: new Date().toISOString(),
+          location,
+          ChallengeCount: 0, // ← Add this line
+        },
+        token,
+      )
 
         setIsCreateModalOpen(false)
         toast.success("Competition created successfully!")
@@ -433,19 +427,16 @@ export default function ModernCompetitionSelector() {
       return
     }
 
-    if (now >= startDate) {
-      setShowCompetitionStartedDialog(true)
-      return
-    }
-
     setEditLoading(true)
     try {
+      const startDateTime = new Date(editFormData.startDeadline)
+      const endDateTime = new Date(editFormData.endDeadline)
       await updateCompetition(
         selectedCompetition.id,
         {
           ...editFormData,
-          startDeadline: toPakistanISOString(editFormData.startDeadline),
-          endDeadline: toPakistanISOString(editFormData.endDeadline),
+          startDeadline: startDateTime.toISOString(),
+          endDeadline: endDateTime.toISOString(),
         },
         token,
       )
@@ -923,7 +914,7 @@ export default function ModernCompetitionSelector() {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="edit-title" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Competition Title *
+                    Competition Title
                   </Label>
                   <Input
                     id="edit-title"
@@ -936,7 +927,7 @@ export default function ModernCompetitionSelector() {
                 </div>
                 <div>
                   <Label htmlFor="edit-description" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Description *
+                    Description
                   </Label>
                   <Textarea
                     id="edit-description"
@@ -951,7 +942,7 @@ export default function ModernCompetitionSelector() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-location" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Location *
+                      Location
                     </Label>
                     <Input
                       id="edit-location"
@@ -964,7 +955,7 @@ export default function ModernCompetitionSelector() {
                   </div>
                   <div>
                     <Label htmlFor="edit-prizeMoney" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Prize Money *
+                      Prize Money
                     </Label>
                     <Input
                       id="edit-prizeMoney"
@@ -988,7 +979,7 @@ export default function ModernCompetitionSelector() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-startDeadline" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Start Date & Time *
+                    Start Date & Time 
                   </Label>
                   <Input
                     id="edit-startDeadline"
@@ -1002,7 +993,7 @@ export default function ModernCompetitionSelector() {
                 </div>
                 <div>
                   <Label htmlFor="edit-endDeadline" className="text-sm font-medium text-gray-700 mb-2 block">
-                    End Date & Time *
+                    End Date & Time 
                   </Label>
                   <Input
                     id="edit-endDeadline"
@@ -1225,26 +1216,6 @@ export default function ModernCompetitionSelector() {
           </DialogHeader>
           <DialogFooter className="flex justify-center pt-4">
             <Button onClick={() => setShowCompetitionEndedDialog(false)} className="w-full sm:w-auto">
-              Got It
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Competition Started Dialog */}
-      <Dialog open={showCompetitionStartedDialog} onOpenChange={setShowCompetitionStartedDialog}>
-        <DialogContent className="sm:max-w-[425px] p-6">
-          <DialogHeader className="flex flex-col items-center text-center">
-            <div className="p-3 rounded-full bg-orange-100 text-orange-600 mb-4">
-              <Info className="w-8 h-8" />
-            </div>
-            <DialogTitle className="text-2xl font-bold text-gray-900">Competition Started</DialogTitle>
-            <DialogDescription className="text-base text-gray-600 mt-2">
-              This competition has already started and can no longer be edited.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-center pt-4">
-            <Button onClick={() => setShowCompetitionStartedDialog(false)} className="w-full sm:w-auto">
               Got It
             </Button>
           </DialogFooter>
