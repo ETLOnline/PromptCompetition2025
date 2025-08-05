@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
 import {
   Trophy,
   Clock,
@@ -33,8 +34,10 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
+  X,
 } from "lucide-react"
-import { collection, getDocs, query, orderBy } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import Image from "next/image"
@@ -50,6 +53,81 @@ interface Competition {
   isLocked?: boolean
   location?: string
   prizeMoney?: string
+}
+
+// Registration Modal Component
+const RegistrationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  competitionTitle,
+  isLoading,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: (input: string) => void
+  competitionTitle: string
+  isLoading: boolean
+}) => {
+  const [registerInput, setRegisterInput] = useState("")
+
+  const handleConfirm = () => {
+    onConfirm(registerInput)
+    setRegisterInput("")
+  }
+
+  const handleClose = () => {
+    setRegisterInput("")
+    onClose()
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Confirm Registration</h3>
+          <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">
+            You are about to register for <strong>{competitionTitle}</strong>
+          </p>
+          <p className="text-sm text-gray-600">
+            Type <strong>"REGISTER"</strong> to confirm your registration.
+          </p>
+
+          <Input
+            placeholder="Type REGISTER to confirm"
+            value={registerInput}
+            onChange={(e) => setRegisterInput(e.target.value)}
+            className="w-full"
+            disabled={isLoading}
+          />
+
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleConfirm} disabled={registerInput !== "REGISTER" || isLoading} className="flex-1">
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Registering...
+                </>
+              ) : (
+                "Confirm Registration"
+              )}
+            </Button>
+            <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // Modern Competition Card Skeleton
@@ -82,6 +160,13 @@ export default function CompetitionsPage() {
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
+  const [participantMap, setParticipantMap] = useState<Record<string, boolean>>({})
+  const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({})
+
+  // Registration Modal States
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false)
+  const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
+
   const { submissions, challengeCount } = useSubmissionStore()
   const isSubmitted = submissions === challengeCount
 
@@ -109,13 +194,79 @@ export default function CompetitionsPage() {
         id: doc.id,
         ...doc.data(),
       })) as Competition[]
+
       setCompetitions(fetchedCompetitions)
+
+      // Check participant status for all competitions
+      if (fetchedCompetitions.length > 0 && user) {
+        await checkParticipantStatus(fetchedCompetitions)
+      }
     } catch (error) {
       console.error("Error fetching competitions:", error)
       setCompetitions([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const checkParticipantStatus = async (competitions: Competition[]) => {
+    const newMap: Record<string, boolean> = {}
+    const newLoadingMap: Record<string, boolean> = {}
+
+    for (const comp of competitions) {
+      // Set loading true for this competition
+      newLoadingMap[comp.id] = true
+      setLoadingMap((prev) => ({ ...prev, [comp.id]: true }))
+
+      try {
+        const participantDocRef = doc(db, "competitions", comp.id, "participants", user.uid)
+        const participantDoc = await getDoc(participantDocRef)
+        newMap[comp.id] = participantDoc.exists()
+      } catch (err) {
+        console.error(`Error checking participant status for ${comp.id}:`, err)
+        newMap[comp.id] = false
+      } finally {
+        // Set loading false for this competition
+        setParticipantMap((prev) => ({ ...prev, [comp.id]: newMap[comp.id] }))
+        setLoadingMap((prev) => ({ ...prev, [comp.id]: false }))
+      }
+    }
+  }
+
+  const handleRegister = async (registerInput: string) => {
+    if (!selectedCompetition) return
+
+    if (registerInput !== "REGISTER") {
+      toast.error("Please type 'REGISTER' to confirm.")
+      return
+    }
+
+    try {
+      setLoadingMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
+
+      const participantDocRef = doc(db, "competitions", selectedCompetition.id, "participants", user.uid)
+      await setDoc(participantDocRef, {
+        fullName: user.displayName || user.email?.split("@")[0] || "Unknown",
+        email: user.email || "",
+        registeredAt: serverTimestamp(),
+        challengesCompleted: 0,
+      })
+
+      setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
+      setShowRegistrationModal(false)
+      setSelectedCompetition(null)
+      toast.success("Successfully registered for the competition!")
+    } catch (error) {
+      console.error("Error registering for competition:", error)
+      toast.error("Failed to register. Please try again.")
+    } finally {
+      setLoadingMap((prev) => ({ ...prev, [selectedCompetition.id]: false }))
+    }
+  }
+
+  const showRegistrationConfirmation = (competition: Competition) => {
+    setSelectedCompetition(competition)
+    setShowRegistrationModal(true)
   }
 
   const getCompetitionStatus = (competition: Competition) => {
@@ -177,8 +328,15 @@ export default function CompetitionsPage() {
     }
   }
 
-  const handleCompetitionClick = (competitionId: string) => {
-    router.push(`/participants/competitions/${competitionId}`)
+  const handleCompetitionClick = async (competition: Competition) => {
+    // If already registered, go directly to competition
+    if (participantMap[competition.id]) {
+      router.push(`/participants/competitions/${competition.id}`)
+      return
+    }
+
+    // Show registration confirmation for unregistered users
+    showRegistrationConfirmation(competition)
   }
 
   // Filtered competitions based on search term and status
@@ -207,6 +365,18 @@ export default function CompetitionsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      {/* Registration Modal */}
+      <RegistrationModal
+        isOpen={showRegistrationModal}
+        onClose={() => {
+          setShowRegistrationModal(false)
+          setSelectedCompetition(null)
+        }}
+        onConfirm={handleRegister}
+        competitionTitle={selectedCompetition?.title || ""}
+        isLoading={selectedCompetition ? loadingMap[selectedCompetition.id] || false : false}
+      />
+
       {/* Modern Header (Navbar) */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -329,6 +499,7 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
         {loading ? (
@@ -375,11 +546,14 @@ export default function CompetitionsPage() {
                 const status = getCompetitionStatus(competition)
                 const startDateTime = formatDateTime(competition.startDeadline)
                 const endDateTime = formatDateTime(competition.endDeadline)
+                const isRegistered = participantMap[competition.id]
+                const isButtonLoading = loadingMap[competition.id]
+
                 return (
                   <Card
                     key={competition.id}
                     className="group relative overflow-hidden bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit cursor-pointer"
-                    onClick={() => handleCompetitionClick(competition.id)}
+                    onClick={() => handleCompetitionClick(competition)}
                   >
                     <CardContent className="p-6">
                       <div className="space-y-4">
@@ -390,10 +564,18 @@ export default function CompetitionsPage() {
                               {competition.title}
                             </h3>
                           </div>
-                          <Badge className={`${status.color} border font-medium whitespace-nowrap`}>
-                            <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
-                            {status.label}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`${status.color} border font-medium whitespace-nowrap`}>
+                              <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+                              {status.label}
+                            </Badge>
+                            {isRegistered && (
+                              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium whitespace-nowrap">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Registered
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         {/* Description */}
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{competition.description}</p>
@@ -431,30 +613,37 @@ export default function CompetitionsPage() {
                         )}
                       </div>
                       {/* Action Button */}
-                      {status.status === "ACTIVE" && (
+                      {(status.status === "ACTIVE" || status.status === "UPCOMING") && (
                         <Button
                           className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white border-0 transition-all duration-300"
+                          disabled={isButtonLoading}
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleCompetitionClick(competition.id)
+                            if (isRegistered) {
+                              router.push(`/participants/competitions/${competition.id}`)
+                            } else {
+                              showRegistrationConfirmation(competition)
+                            }
                           }}
                         >
-                          <Trophy className="w-4 h-4 mr-2" />
-                          Join Competition
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                      )}
-                      {status.status === "UPCOMING" && (
-                        <Button
-                          className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white border-0 transition-all duration-300"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleCompetitionClick(competition.id)
-                          }}
-                        >
-                          <Trophy className="w-4 h-4 mr-2" />
-                          Join Competition
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                          {isButtonLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                              Loading...
+                            </>
+                          ) : isRegistered ? (
+                            <>
+                              <Trophy className="w-4 h-4 mr-2" />
+                              Join Competition
+                              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Register Competition
+                              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </>
+                          )}
                         </Button>
                       )}
                     </CardContent>
