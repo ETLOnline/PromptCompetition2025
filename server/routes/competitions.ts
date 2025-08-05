@@ -12,6 +12,20 @@ interface RequestWithUser extends Request {
   };
 }
 
+// GET /competitions - Fetch all competitions (public or protected as needed)
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const snapshot = await db.collection("competitions").orderBy("createdAt", "desc").get()
+    const competitions = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }))
+    return res.status(200).json(competitions)
+  } catch (err: any) {
+    return res.status(500).json({ error: "Failed to fetch competitions", detail: err.message })
+  }
+})
+
 // POST /competitions - Create a new competition (superadmin only)
 router.post("/", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   const {

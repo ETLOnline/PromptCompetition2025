@@ -20,10 +20,10 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
     setSuccess(false)
 
     try {
-      const res = await fetch("http://localhost:8080/leaderboard/generate", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/leaderboard/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitionId }) // ✅ include competitionId
+        body: JSON.stringify({ competitionId }) 
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Generation failed")

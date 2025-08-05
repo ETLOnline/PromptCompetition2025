@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { toast } from "react-hot-toast"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -20,13 +21,13 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition } from "@/lib/api"
 import {
   Plus,
   Trophy,
   Calendar,
   MapPin,
   Users,
-  RefreshCw,
   Search,
   Filter,
   Grid3X3,
@@ -47,8 +48,6 @@ import {
   Info,
   Trash2,
 } from "lucide-react"
-import { collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
 
 interface Competition {
   id: string
@@ -74,56 +73,30 @@ const CompetitionSkeleton = () => (
           </div>
           <div className="h-6 w-16 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full animate-pulse ml-4"></div>
         </div>
-
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex items-center gap-3">
-              <div className="h-4 w-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg animate-pulse"></div>
               <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded animate-pulse flex-1"></div>
             </div>
           ))}
         </div>
-
         <div className="h-11 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg animate-pulse"></div>
       </div>
     </CardContent>
   </Card>
 )
 
-// Enhanced Loading Component
-const LoadingState = () => (
-  <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-    {/* Modern Header */}
-    <div className="bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-8 w-80 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg animate-pulse"></div>
-            <div className="h-5 w-96 bg-gradient-to-r from-gray-200 to-gray-100 rounded animate-pulse"></div>
-          </div>
-        </div>
+// Skeleton for search and filter bar
+const SearchFilterSkeleton = () => (
+  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+    <div className="flex flex-1 gap-4 w-full sm:w-auto">
+      <div className="relative flex-1 max-w-md">
+        <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-100 rounded-md animate-pulse"></div>
       </div>
+      <div className="h-10 w-40 bg-gradient-to-r from-gray-200 to-gray-100 rounded-md animate-pulse"></div>
     </div>
-
-    {/* Loading Content */}
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      <div className="text-center mb-12">
-        <div className="relative">
-          <div className="w-16 h-16 mx-auto mb-6 bg-gray-900 rounded-2xl flex items-center justify-center">
-            <RefreshCw className="w-8 h-8 text-white animate-spin" />
-          </div>
-          <div className="absolute inset-0 w-16 h-16 mx-auto bg-gray-900 rounded-2xl opacity-20 animate-ping"></div>
-        </div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading your competitions</h3>
-        <p className="text-gray-600">Fetching the latest data from our servers...</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <CompetitionSkeleton key={i} />
-        ))}
-      </div>
-    </div>
+    <div className="h-10 w-20 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg animate-pulse"></div>
   </div>
 )
 
@@ -131,7 +104,7 @@ export default function ModernCompetitionSelector() {
   const { user, role } = useAuth()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
-  const [loading, setLoading] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
@@ -166,30 +139,29 @@ export default function ModernCompetitionSelector() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
+  const refetchCompetitions = async () => {
+    try {
+      const data = await fetchCompetitions()
+      const sorted = data.sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt || 0).getTime()
+        const dateB = new Date(b.createdAt || 0).getTime()
+        return dateB - dateA
+      })
+      setCompetitions(sorted)
+    } catch (error) {
+      console.error("Error reloading competitions:", error)
+      toast.error("Failed to load competitions.")
+    } finally {
+      setIsInitialLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (!user) {
       router.push("/")
       return
     }
-
-    const unsubscribe = onSnapshot(collection(db, "competitions"), (snapshot) => {
-      const competitionsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Competition[]
-
-      // Sort by createdAt, latest first
-      competitionsData.sort((a, b) => {
-        const dateA = new Date(a.createdAt || 0).getTime()
-        const dateB = new Date(b.createdAt || 0).getTime()
-        return dateB - dateA
-      })
-
-      setCompetitions(competitionsData)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
+    refetchCompetitions()
   }, [user, router])
 
   const getCompetitionStatus = (competition: Competition) => {
@@ -205,6 +177,7 @@ export default function ModernCompetitionSelector() {
         dotColor: "bg-gray-400",
       }
     }
+
     if (!competition.isActive) {
       return {
         label: "Inactive",
@@ -213,6 +186,7 @@ export default function ModernCompetitionSelector() {
         dotColor: "bg-red-400",
       }
     }
+
     if (now < startDate) {
       return {
         label: "Upcoming",
@@ -221,6 +195,7 @@ export default function ModernCompetitionSelector() {
         dotColor: "bg-blue-400",
       }
     }
+
     if (now >= startDate && now <= endDate && competition.isActive && !competition.isLocked) {
       return {
         label: "Active",
@@ -229,6 +204,7 @@ export default function ModernCompetitionSelector() {
         dotColor: "bg-green-400",
       }
     }
+
     if (now > endDate) {
       return {
         label: "Ended",
@@ -237,6 +213,7 @@ export default function ModernCompetitionSelector() {
         dotColor: "bg-gray-400",
       }
     }
+
     return {
       label: "Active",
       color: "bg-green-50 text-green-700 border-green-200",
@@ -247,7 +224,6 @@ export default function ModernCompetitionSelector() {
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
-
     return {
       date: date.toLocaleDateString("en-US", {
         month: "short",
@@ -336,7 +312,6 @@ export default function ModernCompetitionSelector() {
 
   const filteredCompetitions = competitions.filter((comp) => {
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
-
     if (!matchesSearch) return false
 
     if (filterStatus === "all") return true
@@ -406,24 +381,22 @@ export default function ModernCompetitionSelector() {
         return
       }
 
-      await addDoc(collection(db, "competitions"), {
-        title,
-        description,
-        prizeMoney,
-        startDeadline: toPakistanISOString(startTime),
-        endDeadline: toPakistanISOString(endTime),
-        location,
-        isActive: true,
-        isLocked: false,
-        createdAt: toPakistanISOString(new Date().toISOString()),
-        createdBy: {
-          uid: user.uid,
-          name: user.displayName || "",
-          email: user.email || "",
+      const token = await user.getIdToken()
+      await createCompetition(
+        {
+          title,
+          description,
+          prizeMoney,
+          startDeadline: toPakistanISOString(startTime),
+          endDeadline: toPakistanISOString(endTime),
+          location,
         },
-      })
+        token,
+      )
 
       setIsCreateModalOpen(false)
+      toast.success("Competition created successfully!")
+      refetchCompetitions()
       setFormData({
         title: "",
         description: "",
@@ -440,6 +413,12 @@ export default function ModernCompetitionSelector() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) {
+      setFormError("User not authenticated.")
+      return
+    }
+    const token = await user.getIdToken()
+
     if (!selectedCompetition) return
 
     const startDate = new Date(selectedCompetition.startDeadline)
@@ -458,16 +437,20 @@ export default function ModernCompetitionSelector() {
 
     setEditLoading(true)
     try {
-      const toISOString = (value: string) => new Date(value).toISOString()
-
-      await updateDoc(doc(db, "competitions", selectedCompetition.id), {
-        ...editFormData,
-        startDeadline: toPakistanISOString(editFormData.startDeadline),
-        endDeadline: toPakistanISOString(editFormData.endDeadline),
-      })
+      await updateCompetition(
+        selectedCompetition.id,
+        {
+          ...editFormData,
+          startDeadline: toPakistanISOString(editFormData.startDeadline),
+          endDeadline: toPakistanISOString(editFormData.endDeadline),
+        },
+        token,
+      )
 
       setIsEditModalOpen(false)
+      toast.success("Competition updated successfully!")
       setSelectedCompetition(null)
+      refetchCompetitions()
     } catch (error) {
       console.error("Error updating competition:", error)
     } finally {
@@ -476,14 +459,22 @@ export default function ModernCompetitionSelector() {
   }
 
   const handleDeleteCompetition = async () => {
+    if (!user) {
+      setFormError("User not authenticated.")
+      return
+    }
+    const token = await user.getIdToken()
+
     if (!selectedCompetition) return
 
     setDeleteLoading(true)
     try {
-      await deleteDoc(doc(db, "competitions", selectedCompetition.id))
+      await deleteCompetition(selectedCompetition.id, token)
       setIsEditModalOpen(false)
       setShowDeleteDialog(false)
+      toast.success("Competition deleted.")
       setSelectedCompetition(null)
+      setIsEditModalOpen(false)
     } catch (error) {
       console.error("Error deleting competition:", error)
     } finally {
@@ -493,10 +484,6 @@ export default function ModernCompetitionSelector() {
 
   if (!user || (role !== "admin" && role !== "superadmin")) {
     return null
-  }
-
-  if (loading) {
-    return <LoadingState />
   }
 
   return (
@@ -514,18 +501,19 @@ export default function ModernCompetitionSelector() {
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">Competition Management</h1>
                     <p className="text-gray-600 text-sm">
-                      {filteredCompetitions.length} competition{filteredCompetitions.length !== 1 ? "s" : ""} available
+                      {isInitialLoading ? (
+                        <span className="inline-block w-32 h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded animate-pulse"></span>
+                      ) : (
+                        `${filteredCompetitions.length} competition${filteredCompetitions.length !== 1 ? "s" : ""} available`
+                      )}
                     </p>
                   </div>
                 </div>
                 {role === "superadmin" && (
-                  <Badge className="bg-blue-600 text-white border-0 px-3 py-1">
-                    Super Admin
-                  </Badge>
+                  <Badge className="bg-blue-600 text-white border-0 px-3 py-1">Super Admin</Badge>
                 )}
               </div>
             </div>
-
             <div className="flex items-center gap-3">
               {role === "superadmin" && (
                 <Button
@@ -543,56 +531,69 @@ export default function ModernCompetitionSelector() {
 
       {/* Search and Filter Bar */}
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-1 gap-4 w-full sm:w-auto">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search competitions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-              />
+        {isInitialLoading ? (
+          <SearchFilterSkeleton />
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-1 gap-4 w-full sm:w-auto">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search competitions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+                <SelectTrigger className="w-40 border-gray-200">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="ended">Ended</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
-              <SelectTrigger className="w-40 border-gray-200">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="ended">Ended</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1">
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className="h-8 w-8 p-0"
+              >
+                <Grid3X3 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="h-8 w-8 p-0"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1">
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("grid")}
-              className="h-8 w-8 p-0"
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="h-8 w-8 p-0"
-            >
-              <List className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
-        {filteredCompetitions.length === 0 ? (
+        {isInitialLoading ? (
+          // Show skeleton cards while loading
+          <div
+            className={
+              viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" : "space-y-4 mb-8"
+            }
+          >
+            {[...Array(6)].map((_, i) => (
+              <CompetitionSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredCompetitions.length === 0 ? (
           <Card className="border-0 shadow-sm bg-white rounded-2xl overflow-hidden">
             <CardContent className="p-12 text-center">
               <div className="space-y-6">
@@ -604,7 +605,6 @@ export default function ModernCompetitionSelector() {
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold text-gray-900">
                     {searchTerm || filterStatus !== "all"
@@ -619,7 +619,6 @@ export default function ModernCompetitionSelector() {
                         : "Contact a super admin to create competitions for you to manage."}
                   </p>
                 </div>
-
                 {role === "superadmin" && !searchTerm && filterStatus === "all" && (
                   <Button
                     onClick={() => setIsCreateModalOpen(true)}
@@ -686,7 +685,6 @@ export default function ModernCompetitionSelector() {
                         </div>
 
                         {/* Details with consistent spacing */}
-
                         <div className="flex items-start gap-3 text-sm text-gray-600">
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                             <Calendar className="w-4 h-4 text-blue-600" />
@@ -720,14 +718,13 @@ export default function ModernCompetitionSelector() {
 
                       {/* Action Button */}
                       <Button
-                      onClick={() => handleManageClick(competition.id)}
-                      className="w-full mt-4 bg-gray-900 hover:from-gray-900 hover:to-gray-600 text-white border-0 transition-all duration-300"
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Manage Competition
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-
+                        onClick={() => handleManageClick(competition.id)}
+                        className="w-full mt-4 bg-gray-900 hover:from-gray-900 hover:to-gray-600 text-white border-0 transition-all duration-300"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Manage Competition
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
                     </CardContent>
                   </Card>
                 )
@@ -741,7 +738,6 @@ export default function ModernCompetitionSelector() {
                   Showing {startIndex + 1} to {Math.min(endIndex, filteredCompetitions.length)} of{" "}
                   {filteredCompetitions.length} competitions
                 </div>
-
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -753,7 +749,6 @@ export default function ModernCompetitionSelector() {
                     <ChevronLeft className="w-4 h-4" />
                     Previous
                   </Button>
-
                   <div className="flex items-center gap-1">
                     {[...Array(totalPages)].map((_, i) => {
                       const page = i + 1
@@ -779,7 +774,6 @@ export default function ModernCompetitionSelector() {
                       return null
                     })}
                   </div>
-
                   <Button
                     variant="outline"
                     size="sm"
@@ -811,7 +805,6 @@ export default function ModernCompetitionSelector() {
               </div>
             </div>
           </DialogHeader>
-
           {selectedCompetition && (
             <div className="space-y-6">
               <div className="bg-gray-50 rounded-lg p-4">
@@ -824,7 +817,6 @@ export default function ModernCompetitionSelector() {
                   </p>
                 </div>
               </div>
-
               <div className="grid grid-cols-1 gap-6">
                 <div className="bg-blue-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -852,7 +844,6 @@ export default function ModernCompetitionSelector() {
                     </div>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-green-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -863,7 +854,6 @@ export default function ModernCompetitionSelector() {
                       {selectedCompetition.location}
                     </div>
                   </div>
-
                   <div className="bg-yellow-50 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="w-5 h-5 text-yellow-600" />
@@ -874,7 +864,6 @@ export default function ModernCompetitionSelector() {
                     </div>
                   </div>
                 </div>
-
                 <div className="bg-gray-50 rounded-lg p-4">
                   <Label className="text-base font-semibold text-gray-900 mb-3 block">Status</Label>
                   <div className="flex items-center gap-4">
@@ -899,7 +888,6 @@ export default function ModernCompetitionSelector() {
               </div>
             </div>
           )}
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
               Close
@@ -922,7 +910,6 @@ export default function ModernCompetitionSelector() {
               </div>
             </div>
           </DialogHeader>
-
           <form onSubmit={handleEditSubmit} className="space-y-6">
             {/* Basic Information */}
             <div className="space-y-4">
@@ -930,7 +917,6 @@ export default function ModernCompetitionSelector() {
                 <Info className="w-5 h-5 text-gray-600" />
                 <h3 className="text-lg font-semibold">Basic Information</h3>
               </div>
-
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="edit-title" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -945,7 +931,6 @@ export default function ModernCompetitionSelector() {
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="edit-description" className="text-sm font-medium text-gray-700 mb-2 block">
                     Description *
@@ -960,7 +945,6 @@ export default function ModernCompetitionSelector() {
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-location" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -975,7 +959,6 @@ export default function ModernCompetitionSelector() {
                       className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                     />
                   </div>
-
                   <div>
                     <Label htmlFor="edit-prizeMoney" className="text-sm font-medium text-gray-700 mb-2 block">
                       Prize Money *
@@ -999,7 +982,6 @@ export default function ModernCompetitionSelector() {
                 <Info className="w-5 h-5 text-gray-600" />
                 <h3 className="text-lg font-semibold">Schedule</h3>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-startDeadline" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -1015,7 +997,6 @@ export default function ModernCompetitionSelector() {
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="edit-endDeadline" className="text-sm font-medium text-gray-700 mb-2 block">
                     End Date & Time *
@@ -1039,7 +1020,6 @@ export default function ModernCompetitionSelector() {
                 <Info className="w-5 h-5 text-gray-600" />
                 <h3 className="text-lg font-semibold">Competition Settings</h3>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
                   <Checkbox
@@ -1054,7 +1034,6 @@ export default function ModernCompetitionSelector() {
                     <p className="text-xs text-gray-600">Enable this competition for public participation</p>
                   </div>
                 </div>
-
                 <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
                   <Checkbox
                     id="edit-isLocked"
@@ -1121,7 +1100,6 @@ export default function ModernCompetitionSelector() {
               </div>
             </div>
           </DialogHeader>
-
           <form onSubmit={handleFormSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
               <div>
@@ -1136,7 +1114,6 @@ export default function ModernCompetitionSelector() {
                   placeholder="e.g., AI Prompt Engineering Challenge 2024"
                 />
               </div>
-
               <div>
                 <Label htmlFor="description" className="text-sm font-medium text-gray-700 mb-2 block">
                   Description
@@ -1149,7 +1126,6 @@ export default function ModernCompetitionSelector() {
                   placeholder="Describe what this competition is about, its goals, and what participants can expect..."
                 />
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="prizeMoney" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -1163,7 +1139,6 @@ export default function ModernCompetitionSelector() {
                     placeholder="e.g., $5,000"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="location" className="text-sm font-medium text-gray-700 mb-2 block">
                     Location
@@ -1179,7 +1154,6 @@ export default function ModernCompetitionSelector() {
                   </Select>
                 </div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="startTime" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -1193,7 +1167,6 @@ export default function ModernCompetitionSelector() {
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="endTime" className="text-sm font-medium text-gray-700 mb-2 block">
                     End Date & Time
@@ -1208,14 +1181,12 @@ export default function ModernCompetitionSelector() {
                 </div>
               </div>
             </div>
-
             {formError && (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                 <p className="text-red-700 text-sm">{formError}</p>
               </div>
             )}
-
             <DialogFooter className="gap-3 pt-6">
               <Button
                 type="button"

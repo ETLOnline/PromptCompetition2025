@@ -15,7 +15,7 @@ interface RequestWithUser extends Request {
   user?: DecodedToken;
 }
 
-// 🧠 Middleware: Verify superadmin token
+// Middleware: Verify superadmin token
 async function verifySuperAdmin(req: RequestWithUser, res: Response, next: NextFunction) {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
 
@@ -39,7 +39,7 @@ async function verifySuperAdmin(req: RequestWithUser, res: Response, next: NextF
   }
 }
 
-// ✅ POST /superadmin/assign-role
+// POST /superadmin/assign-role
 router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   const { uid, role } = req.body;
   if (!uid || !role) {
@@ -76,7 +76,7 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
 
   
     return res.status(200).json({
-      message: `✅ Role '${role}' assigned to user ${userRecord.email || uid}`,
+      message: `Role '${role}' assigned to user ${userRecord.email || uid}`,
       user: {
         uid: userRecord.uid,
         email: userRecord.email || "",
@@ -94,7 +94,7 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
 });
 
 
-// 🚫 POST /superadmin/revoke-role
+// POST /superadmin/revoke-role
 router.post(
   "/revoke-role",
   verifySuperAdmin,
@@ -126,7 +126,7 @@ router.post(
       // Demote to "user"
       await auth.setCustomUserClaims(uid, { role: "user" });
       return res.status(200).json({
-        message: `✅ Role revoked for user ${userRecord.email || uid}`,
+        message: `Role revoked for user ${userRecord.email || uid}`,
         user: {
           uid: userRecord.uid,
           email: userRecord.email || "",
@@ -143,7 +143,7 @@ router.post(
   }
 );
 
-// 🚫 DELETE /superadmin/delete-user
+// DELETE /superadmin/delete-user
 router.delete(
   "/delete-user",
   verifySuperAdmin,
@@ -174,7 +174,7 @@ router.delete(
 
       await auth.deleteUser(uid);
       return res.status(200).json({
-        message: `✅ User ${userRecord.email || uid} has been deleted successfully`,
+        message: `User ${userRecord.email || uid} has been deleted successfully`,
       });
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : String(err);
@@ -185,7 +185,7 @@ router.delete(
   }
 );
 
-// ✅ POST /superadmin/create-user
+// POST /superadmin/create-user
 router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   const { email, password, displayName, role } = req.body;
 
@@ -243,7 +243,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     });
     
     return res.status(201).json({
-      message: `✅ ${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
       user: {
         uid: userRecord.uid,
         email: userRecord.email || "",
@@ -271,7 +271,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
 
 
 
-// ✅ GET /superadmin/users — all users with pagination and filtering
+// GET /superadmin/users — all users with pagination and filtering
 router.get("/users", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   try {
     const { role, limit = "50" } = req.query;
@@ -315,7 +315,7 @@ router.get("/users", verifySuperAdmin, async (req: RequestWithUser, res: Respons
   }
 });
 
-// ✅ GET /superadmin/user-by-email?q=email@example.com
+// GET /superadmin/user-by-email?q=email@example.com
 router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   const email = req.query.q as string;
 
@@ -342,7 +342,7 @@ router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res:
   }
 });
 
-// ✅ GET /superadmin/stats
+// GET /superadmin/stats
 router.get("/stats", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   try {
     const listUsersResult = await auth.listUsers(1000);
