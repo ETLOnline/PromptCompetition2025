@@ -283,7 +283,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                   <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
-                      onClick={() => router.push(`/participants/competitions`)}
+                      onClick={() => router.push(`/participants`)}
                       className="hidden sm:flex items-center gap-2 h-11 rounded-xl border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors duration-200"
                     >
                       <ArrowLeft className="h-4 w-4" />
