@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import { doc, setDoc, getDocs, Timestamp, collection, getDoc } from "firebase/firestore"
+import { doc, setDoc, getDocs, Timestamp, collection, getDoc, updateDoc, increment } from "firebase/firestore"
 import { orderBy, limit, query } from "firebase/firestore"
 
 export default function NewCompetitionPage() {
@@ -101,6 +101,12 @@ export default function NewCompetitionPage() {
         lastupdatetime: Timestamp.now(),
       }
     )
+
+        // Increment the ChallengeCount in the competition document
+    const competitionDocRef = doc(db, "competitions", competitionId)
+    await updateDoc(competitionDocRef, {
+      ChallengeCount: increment(1),
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

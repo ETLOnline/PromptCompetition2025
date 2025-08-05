@@ -6,7 +6,6 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { use } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
+import { use } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   FileText,
@@ -92,15 +92,14 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const [startDeadlineReached, setStartDeadlineReached] = useState<boolean>(false)
   const [endDeadlinePassed, setEndDeadlinePassed] = useState<boolean>(false)
   const [competitionStartDeadline, setCompetitionStartDeadline] = useState<Date | null>(null) // New state for start deadline
-
   // New loading states for progressive rendering
   const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true) // For deadlines and overall challenge count
   const [loadingChallengesList, setLoadingChallengesList] = useState(true) // For the actual list of challenges
   const [loadingUserSubmissions, setLoadingUserSubmissions] = useState(true) // Keep this for user submissions
   const [challenges, setChallenges] = useState<any[]>([])
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
-  const { id } = use(params)
-
+  // const { id } = params
+    const { id } = use(params) // ← Unwrap the promise using `use`
 
   // Filtering and View Mode States
   const [searchTerm, setSearchTerm] = useState("")
@@ -135,9 +134,20 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
           setStartDeadlineReached(now >= start)
           setEndDeadlinePassed(now > extendedEnd)
           setCompetitionStartDeadline(start) // Set the start deadline here
+
+          // Use ChallengeCount from competition document if it exists
+          if (competitionData.ChallengeCount !== undefined) {
+            setChallengeCount(competitionData.ChallengeCount)
+          } else {
+            setChallengeCount(null) // Explicitly set to null if key doesn't exist
+          }
+        } else {
+          // If competition document doesn't exist, set challengeCount to null
+          setChallengeCount(null)
         }
       } catch (error) {
         console.error("Error fetching competition metadata:", error)
+        setChallengeCount(null) // Also set to null on error
       } finally {
         setLoadingCompetitionMetadata(false)
       }
@@ -148,16 +158,19 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         setLoadingChallengesList(true)
         const challengesRef = collection(db, "competitions", id, "challenges")
         const challengesSnapshot = await getDocs(challengesRef)
-        setChallengeCount(challengesSnapshot.size) // Set challenge count here as it's related to challenges
+        // Removed: setChallengeCount(challengesSnapshot.size) - now fetched from competition doc
         if (!challengesSnapshot.empty) {
           const challengeList = challengesSnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }))
           setChallenges(challengeList)
+        } else {
+          setChallenges([]) // Ensure challenges is an empty array if no challenges found
         }
       } catch (error) {
         console.error("Error fetching challenges:", error)
+        setChallenges([]) // On error, ensure challenges is empty
       } finally {
         setLoadingChallengesList(false)
       }
@@ -203,6 +216,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const filteredChallenges = challenges.filter((challenge) => {
     const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
+
     const isSubmitted = userSubmissions[challenge.id]
     if (filterSubmissionStatus === "all") return true
     if (filterSubmissionStatus === "submitted") return isSubmitted
@@ -569,20 +583,18 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                 </div>
-              <div className="space-y-4 text-center">
-                <h3 className="text-2xl font-semibold text-gray-900">Competition Not Started</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Challenges will be available when the countdown ends. Get ready!
-                </p>
-                
-                {/* Countdown with spacing */}
-                {competitionStartDeadline && (
-                  <div className="mt-6">
-                    <Countdown targetDate={competitionStartDeadline} />
-                  </div>
-                )}
-              </div>
-
+                <div className="space-y-4 text-center">
+                  <h3 className="text-2xl font-semibold text-gray-900">Competition Not Started</h3>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    Challenges will be available when the countdown ends. Get ready!
+                  </p>
+                  {/* Countdown with spacing */}
+                  {competitionStartDeadline && (
+                    <div className="mt-6">
+                      <Countdown targetDate={competitionStartDeadline} />
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

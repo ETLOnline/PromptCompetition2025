@@ -351,65 +351,68 @@ export default function ModernCompetitionSelector() {
     }))
   }
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormError(null)
+    const handleFormSubmit = async (e: React.FormEvent) => {
+      e.preventDefault()
+      setFormError(null)
 
-    const { title, description, prizeMoney, startTime, endTime, location } = formData
+      const { title, description, prizeMoney, startTime, endTime, location } = formData
 
-    if (!title || !description || !prizeMoney || !startTime || !endTime || !location) {
-      setFormError("All fields are required.")
-      return
-    }
-
-    const startDateTime = new Date(startTime)
-    const endDateTime = new Date(endTime)
-
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      setFormError("Invalid start or end date/time.")
-      return
-    }
-
-    if (endDateTime <= startDateTime) {
-      setFormError("End time must be after start time.")
-      return
-    }
-
-    try {
-      if (!user) {
-        setFormError("User not authenticated.")
+      if (!title || !description || !prizeMoney || !startTime || !endTime || !location) {
+        setFormError("All fields are required.")
         return
       }
 
-      const token = await user.getIdToken()
-      await createCompetition(
-        {
-          title,
-          description,
-          prizeMoney,
-          startDeadline: toPakistanISOString(startTime),
-          endDeadline: toPakistanISOString(endTime),
-          location,
-        },
-        token,
-      )
+      const startDateTime = new Date(startTime)
+      const endDateTime = new Date(endTime)
 
-      setIsCreateModalOpen(false)
-      toast.success("Competition created successfully!")
-      refetchCompetitions()
-      setFormData({
-        title: "",
-        description: "",
-        prizeMoney: "",
-        startTime: "",
-        endTime: "",
-        location: "online",
-      })
-    } catch (error) {
-      console.error("Error creating competition:", error)
-      setFormError("Failed to create competition. Please try again.")
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        setFormError("Invalid start or end date/time.")
+        return
+      }
+
+      if (endDateTime <= startDateTime) {
+        setFormError("End time must be after start time.")
+        return
+      }
+
+      try {
+        if (!user) {
+          setFormError("User not authenticated.")
+          return
+        }
+
+        const token = await user.getIdToken()
+
+        await createCompetition(
+          {
+            title,
+            description,
+            prizeMoney,
+            startDeadline: toPakistanISOString(startTime),
+            endDeadline: toPakistanISOString(endTime),
+            location,
+            ChallengeCount: 0, // ← Add this line
+          },
+          token,
+        )
+
+        setIsCreateModalOpen(false)
+        toast.success("Competition created successfully!")
+        refetchCompetitions()
+        setFormData({
+          title: "",
+          description: "",
+          prizeMoney: "",
+          startTime: "",
+          endTime: "",
+          location: "online",
+        })
+      } catch (error) {
+        console.error("Error creating competition:", error)
+        setFormError("Failed to create competition. Please try again.")
+      }
     }
-  }
+
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

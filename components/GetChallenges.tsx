@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Calendar, User, Clock, AlertCircle, CheckCircle } from "lucide-react"
 import { db } from "@/lib/firebase"
-import { getDocs, type Timestamp, collection, query, doc, getDoc, deleteDoc } from "firebase/firestore"
+import { getDocs, type Timestamp, collection, query, doc, getDoc, deleteDoc ,updateDoc, increment} from "firebase/firestore"
 import { getAuth } from "firebase/auth"
 
 type Challenge = {
@@ -92,6 +92,10 @@ export default function GetChallenges({ competitionId }: { competitionId: string
     try {
       await deleteDoc(doc(db, "competitions", competitionId, "challenges", challengeId))
       setChallenges((prev) => prev.filter((c) => c.id !== challengeId))
+      const competitionDocRef = doc(db, "competitions", competitionId)
+      await updateDoc(competitionDocRef, {
+        ChallengeCount: increment(1),
+      })
     } catch (err) {
       console.error("Error deleting challenge:", err)
     }

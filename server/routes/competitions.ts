@@ -44,6 +44,7 @@ router.post("/", verifySuperAdmin, async (req: RequestWithUser, res: Response) =
   try {
     const newDoc = await db.collection("competitions").add({
       title,
+
       description,
       startDeadline,
       endDeadline,
@@ -51,6 +52,7 @@ router.post("/", verifySuperAdmin, async (req: RequestWithUser, res: Response) =
       prizeMoney,
       isActive: true,
       isLocked: false,
+      ChallengeCount: 0,
       createdAt: new Date().toISOString(),
       createdBy: {
         uid: req.user?.uid || "",
