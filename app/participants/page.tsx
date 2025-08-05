@@ -1,8 +1,7 @@
 "use client"
-
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -37,7 +36,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react"
-import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
+import { collection, query, orderBy, doc, getDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import Image from "next/image"
@@ -70,19 +69,15 @@ const RegistrationModal = ({
   isLoading: boolean
 }) => {
   const [registerInput, setRegisterInput] = useState("")
-
   const handleConfirm = () => {
     onConfirm(registerInput)
     setRegisterInput("")
   }
-
   const handleClose = () => {
     setRegisterInput("")
     onClose()
   }
-
   if (!isOpen) return null
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
@@ -92,7 +87,6 @@ const RegistrationModal = ({
             <X className="w-4 h-4" />
           </Button>
         </div>
-
         <div className="space-y-3">
           <p className="text-sm text-gray-600">
             You are about to register for <strong>{competitionTitle}</strong>
@@ -100,7 +94,6 @@ const RegistrationModal = ({
           <p className="text-sm text-gray-600">
             Type <strong>"REGISTER"</strong> to confirm your registration.
           </p>
-
           <Input
             placeholder="Type REGISTER to confirm"
             value={registerInput}
@@ -108,7 +101,6 @@ const RegistrationModal = ({
             className="w-full"
             disabled={isLoading}
           />
-
           <div className="flex gap-2 pt-2">
             <Button onClick={handleConfirm} disabled={registerInput !== "REGISTER" || isLoading} className="flex-1">
               {isLoading ? (
@@ -159,14 +151,13 @@ export default function CompetitionsPage() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadingInitialFetch, setLoadingInitialFetch] = useState(true)
   const [participantMap, setParticipantMap] = useState<Record<string, boolean>>({})
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({})
 
   // Registration Modal States
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
-
   const { submissions, challengeCount } = useSubmissionStore()
   const isSubmitted = submissions === challengeCount
 
@@ -177,73 +168,127 @@ export default function CompetitionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(9) // Number of items per page
 
+  // Ref to keep track of active timeouts for cleanup
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([])
+
   useEffect(() => {
     if (!user) {
       router.push("/")
       return
     }
-    fetchCompetitions()
+
+    setLoadingInitialFetch(true)
+    const competitionsQuery = query(collection(db, "competitions"), orderBy("startDeadline", "desc"))
+
+    const unsubscribe = onSnapshot(
+      competitionsQuery,
+      async (snapshot) => {
+        const addedCompetitions: Competition[] = []
+        const modifiedCompetitions: Competition[] = []
+        const removedCompetitionIds: string[] = []
+
+        snapshot.docChanges().forEach((change) => {
+          const competitionData = { id: change.doc.id, ...change.doc.data() } as Competition
+
+          if (change.type === "added") {
+            addedCompetitions.push(competitionData)
+          } else if (change.type === "modified") {
+            modifiedCompetitions.push(competitionData)
+          } else if (change.type === "removed") {
+            removedCompetitionIds.push(competitionData.id)
+          }
+        })
+
+        // Process removals immediately
+        if (removedCompetitionIds.length > 0) {
+          setCompetitions((prev) => prev.filter((comp) => !removedCompetitionIds.includes(comp.id)))
+          setParticipantMap((prev) => {
+            const newState = { ...prev }
+            removedCompetitionIds.forEach((id) => delete newState[id])
+            return newState
+          })
+          setLoadingMap((prev) => {
+            const newState = { ...prev }
+            removedCompetitionIds.forEach((id) => delete newState[id])
+            return newState
+          })
+        }
+
+        // Process modifications immediately
+        if (modifiedCompetitions.length > 0) {
+          setCompetitions((prev) =>
+            prev.map((comp) => {
+              const modified = modifiedCompetitions.find((m) => m.id === comp.id)
+              return modified ? modified : comp
+            }),
+          )
+        }
+
+        // Process additions progressively with a slight delay
+        let delay = 0
+        for (const comp of addedCompetitions) {
+          // Only add if it's not already in the current state (prevents duplicates on re-runs or initial load)
+          const timeoutId = setTimeout(() => {
+            setCompetitions((prev) => {
+              // Double-check inside timeout to prevent duplicates if state updates rapidly
+              if (!prev.some((existingComp) => existingComp.id === comp.id)) {
+                return [...prev, comp]
+              }
+              return prev
+            })
+
+            // Check participant status for this newly added competition
+            if (user) {
+              setLoadingMap((prev) => ({ ...prev, [comp.id]: true }))
+              getDoc(doc(db, "competitions", comp.id, "participants", user.uid))
+                .then((participantDoc) => {
+                  setParticipantMap((prev) => ({ ...prev, [comp.id]: participantDoc.exists() }))
+                })
+                .catch((err) => {
+                  console.error(`Error checking participant status for ${comp.id}:`, err)
+                  setParticipantMap((prev) => ({ ...prev, [comp.id]: false }))
+                })
+                .finally(() => {
+                  setLoadingMap((prev) => ({ ...prev, [comp.id]: false }))
+                })
+            }
+          }, delay)
+          timeoutRefs.current.push(timeoutId) // Store timeout ID for cleanup
+          delay += 50 // Small delay for progressive rendering effect
+        }
+
+        // Set initial loading to false after all initial additions are scheduled
+        // Use a final timeout to ensure it happens after the last scheduled item
+        if (addedCompetitions.length > 0) {
+          const finalTimeoutId = setTimeout(() => setLoadingInitialFetch(false), delay)
+          timeoutRefs.current.push(finalTimeoutId)
+        } else {
+          setLoadingInitialFetch(false) // If no additions, set immediately
+        }
+      },
+      (error) => {
+        console.error("Error fetching competitions:", error)
+        setLoadingInitialFetch(false)
+        toast.error("Failed to load competitions.")
+      },
+    )
+
+    return () => {
+      unsubscribe() // Cleanup on unmount
+      // Clear all scheduled timeouts
+      timeoutRefs.current.forEach((id) => clearTimeout(id))
+      timeoutRefs.current = [] // Reset the ref
+    }
   }, [user, router])
 
-  const fetchCompetitions = async () => {
-    try {
-      setLoading(true)
-      const competitionsQuery = query(collection(db, "competitions"), orderBy("startDeadline", "desc"))
-      const competitionsSnapshot = await getDocs(competitionsQuery)
-      const fetchedCompetitions = competitionsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Competition[]
-
-      setCompetitions(fetchedCompetitions)
-
-      // Check participant status for all competitions
-      if (fetchedCompetitions.length > 0 && user) {
-        await checkParticipantStatus(fetchedCompetitions)
-      }
-    } catch (error) {
-      console.error("Error fetching competitions:", error)
-      setCompetitions([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const checkParticipantStatus = async (competitions: Competition[]) => {
-    const newMap: Record<string, boolean> = {}
-    const newLoadingMap: Record<string, boolean> = {}
-
-    for (const comp of competitions) {
-      // Set loading true for this competition
-      newLoadingMap[comp.id] = true
-      setLoadingMap((prev) => ({ ...prev, [comp.id]: true }))
-
-      try {
-        const participantDocRef = doc(db, "competitions", comp.id, "participants", user.uid)
-        const participantDoc = await getDoc(participantDocRef)
-        newMap[comp.id] = participantDoc.exists()
-      } catch (err) {
-        console.error(`Error checking participant status for ${comp.id}:`, err)
-        newMap[comp.id] = false
-      } finally {
-        // Set loading false for this competition
-        setParticipantMap((prev) => ({ ...prev, [comp.id]: newMap[comp.id] }))
-        setLoadingMap((prev) => ({ ...prev, [comp.id]: false }))
-      }
-    }
-  }
-
   const handleRegister = async (registerInput: string) => {
-    if (!selectedCompetition) return
-
+    if (!selectedCompetition || !user) return
     if (registerInput !== "REGISTER") {
       toast.error("Please type 'REGISTER' to confirm.")
       return
     }
-
     try {
       setLoadingMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
-
       const participantDocRef = doc(db, "competitions", selectedCompetition.id, "participants", user.uid)
       await setDoc(participantDocRef, {
         fullName: user.displayName || user.email?.split("@")[0] || "Unknown",
@@ -251,7 +296,6 @@ export default function CompetitionsPage() {
         registeredAt: serverTimestamp(),
         challengesCompleted: 0,
       })
-
       setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
       setShowRegistrationModal(false)
       setSelectedCompetition(null)
@@ -275,7 +319,6 @@ export default function CompetitionsPage() {
       const end = competition.endDeadline?.toDate?.() ?? new Date(competition.endDeadline)
       const now = new Date()
       const extendedEnd = new Date(end.getTime() + 2 * 60 * 1000)
-
       if (now < start) {
         return {
           status: "UPCOMING",
@@ -329,32 +372,26 @@ export default function CompetitionsPage() {
   }
 
   const handleCompetitionClick = async (competition: Competition) => {
-    // If already registered, go directly to competition
     if (participantMap[competition.id]) {
       router.push(`/participants/competitions/${competition.id}`)
       return
     }
-
-    // Show registration confirmation for unregistered users
     showRegistrationConfirmation(competition)
   }
 
-  // Filtered competitions based on search term and status
   const filteredCompetitions = competitions.filter((comp) => {
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
     const status = getCompetitionStatus(comp)
     if (filterStatus === "all") return status.status !== "ENDED" && status.status !== "INACTIVE"
-    return status.status.toLowerCase() === filterStatus
+    return status.status.toLowerCase() === filterStatus.toLowerCase()
   })
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentCompetitions = filteredCompetitions.slice(startIndex, endIndex)
 
-  // Reset to first page when search/filter changes
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, filterStatus])
@@ -365,7 +402,6 @@ export default function CompetitionsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Registration Modal */}
       <RegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => {
@@ -376,8 +412,6 @@ export default function CompetitionsPage() {
         competitionTitle={selectedCompetition?.title || ""}
         isLoading={selectedCompetition ? loadingMap[selectedCompetition.id] || false : false}
       />
-
-      {/* Modern Header (Navbar) */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -394,7 +428,6 @@ export default function CompetitionsPage() {
                 <h1 className="text-xl font-semibold text-gray-900 leading-tight">Participant Dashboard</h1>
               </div>
             </div>
-            {/* Profile Info and Dropdown */}
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -437,8 +470,6 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
-
-      {/* Available Competitions Section */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
@@ -452,8 +483,6 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
-
-      {/* Search and Filter Bar */}
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="flex flex-1 gap-4 w-full sm:w-auto">
@@ -499,12 +528,10 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
-
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
-        {loading ? (
+        {loadingInitialFetch && competitions.length === 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(itemsPerPage)].map((_, i) => (
               <CompetitionSkeleton key={i} />
             ))}
           </div>
@@ -548,7 +575,6 @@ export default function CompetitionsPage() {
                 const endDateTime = formatDateTime(competition.endDeadline)
                 const isRegistered = participantMap[competition.id]
                 const isButtonLoading = loadingMap[competition.id]
-
                 return (
                   <Card
                     key={competition.id}
@@ -557,7 +583,6 @@ export default function CompetitionsPage() {
                   >
                     <CardContent className="p-6">
                       <div className="space-y-4">
-                        {/* Header with consistent height */}
                         <div className="flex items-start justify-between min-h-[40px]">
                           <div className="flex-1 min-w-0 pr-4">
                             <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight group-hover:text-gray-700 transition-colors">
@@ -577,9 +602,7 @@ export default function CompetitionsPage() {
                             )}
                           </div>
                         </div>
-                        {/* Description */}
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{competition.description}</p>
-                        {/* Details with consistent spacing */}
                         <div className="flex items-start gap-3 text-sm text-gray-600">
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                             <Calendar className="w-4 h-4 text-blue-600" />
@@ -612,7 +635,6 @@ export default function CompetitionsPage() {
                           </div>
                         )}
                       </div>
-                      {/* Action Button */}
                       {(status.status === "ACTIVE" || status.status === "UPCOMING") && (
                         <Button
                           className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white border-0 transition-all duration-300"
@@ -651,7 +673,6 @@ export default function CompetitionsPage() {
                 )
               })}
             </div>
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
