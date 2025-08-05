@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { use } from "react" 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { use } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   FileText,
@@ -85,15 +85,22 @@ const ChallengeCardSkeleton = () => (
 export default function DashboardPage({ params }: { params: { id: string } }) {
   const { user, logout } = useAuth()
   const router = useRouter()
+
   const [submissions, setSubmissions] = useState<number | null>(null)
   const [challengeCount, setChallengeCount] = useState<number | null>(null)
   const [currentCompetitionId, setCurrentCompetitionId] = useState<string | null>(null)
   const [startDeadlineReached, setStartDeadlineReached] = useState<boolean>(false)
   const [endDeadlinePassed, setEndDeadlinePassed] = useState<boolean>(false)
-  const [checkingDeadline, setCheckingDeadline] = useState(true)
+
+  // New loading states for progressive rendering
+  const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true) // For deadlines and overall challenge count
+  const [loadingChallengesList, setLoadingChallengesList] = useState(true) // For the actual list of challenges
+  const [loadingUserSubmissions, setLoadingUserSubmissions] = useState(true) // Keep this for user submissions
+
   const [challenges, setChallenges] = useState<any[]>([])
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
-  const [loadingSubmissions, setLoadingSubmissions] = useState(true)
+
+  // const { id } = params // Use params directly
   const { id } = use(params)
 
   // Filtering and View Mode States
@@ -115,83 +122,90 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
       router.push("/")
       return
     }
-    const loadData = async () => {
-      await fetchCompetitionData()
-      await fetchUserSubmissions(id) // Use params.id directly
-    }
-    loadData()
-  }, [user, router, id]) // Add params.id to dependency array
 
-  const fetchCompetitionData = async () => {
-    try {
-      setCurrentCompetitionId(id) // Use params.id directly
-      const challengesRef = collection(db, "competitions", id, "challenges")
-      const challengesSnapshot = await getDocs(challengesRef)
-      setChallengeCount(challengesSnapshot.size)
+    const loadCompetitionMetadata = async () => {
+      try {
+        setCurrentCompetitionId(id)
+        const competitionRef = doc(db, "competitions", id)
+        const competitionRefSnap = await getDoc(competitionRef)
 
-      const competitionRef = doc(db, "competitions", id)
-      const competitionRefSnap = await getDoc(competitionRef)
-      if (competitionRefSnap.exists()) {
-        const competitionData = competitionRefSnap.data()
-        // Check competition deadlines
-        const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
-        const end = competitionData.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
-        const now = new Date()
-        const extendedEnd = new Date(end.getTime() + 60 * 1000) // end + 1 minutes
-        setStartDeadlineReached(now >= start)
-        setEndDeadlinePassed(now > extendedEnd)
-      }
-
-      const querySnapshot = await getDocs(collection(db, "competitions", id, "challenges"))
-      if (!querySnapshot.empty) {
-        const challengeList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
-        setChallenges(challengeList)
-      }
-    } catch (error) {
-      console.error("Error fetching competition and challenges:", error)
-    } finally {
-      setCheckingDeadline(false)
-    }
-  }
-
-  const fetchUserSubmissions = async (competitionId: string) => {
-    try {
-      setLoadingSubmissions(true)
-      if (!competitionId) {
-        console.error("competitionId is null or undefined")
-        return
-      } else {
-        const submissionsRef = collection(db, "competitions", competitionId, "submissions")
-        const q = query(submissionsRef, where("participantId", "==", user.uid))
-        const submissionsSnapshot = await getDocs(q)
-        const userSubmissionMap: Record<string, boolean> = {}
-        // If submissions collection exists and has documents
-        if (!submissionsSnapshot.empty) {
-          submissionsSnapshot.docs.forEach((doc) => {
-            const data = doc.data()
-            userSubmissionMap[data.challengeId] = true
-          })
+        if (competitionRefSnap.exists()) {
+          const competitionData = competitionRefSnap.data()
+          const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
+          const end = competitionData.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
+          const now = new Date()
+          const extendedEnd = new Date(end.getTime() + 60 * 1000) // end + 1 minutes
+          setStartDeadlineReached(now >= start)
+          setEndDeadlinePassed(now > extendedEnd)
         }
-        setUserSubmissions(userSubmissionMap)
-        setSubmissions(Object.keys(userSubmissionMap).length)
+      } catch (error) {
+        console.error("Error fetching competition metadata:", error)
+      } finally {
+        setLoadingCompetitionMetadata(false)
       }
-    } catch (error) {
-      console.error("Error fetching user submissions:", error)
-      // On error, mark all as unsubmitted
-      setUserSubmissions({})
-    } finally {
-      setLoadingSubmissions(false)
     }
-  }
+
+    const fetchChallenges = async () => {
+      try {
+        setLoadingChallengesList(true)
+        const challengesRef = collection(db, "competitions", id, "challenges")
+        const challengesSnapshot = await getDocs(challengesRef)
+        setChallengeCount(challengesSnapshot.size) // Set challenge count here as it's related to challenges
+        if (!challengesSnapshot.empty) {
+          const challengeList = challengesSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          setChallenges(challengeList)
+        }
+      } catch (error) {
+        console.error("Error fetching challenges:", error)
+      } finally {
+        setLoadingChallengesList(false)
+      }
+    }
+
+    const fetchUserSubmissions = async (competitionId: string) => {
+      try {
+        setLoadingUserSubmissions(true)
+        if (!competitionId) {
+          console.error("competitionId is null or undefined")
+          return
+        } else {
+          const submissionsRef = collection(db, "competitions", competitionId, "submissions")
+          const q = query(submissionsRef, where("participantId", "==", user.uid))
+          const submissionsSnapshot = await getDocs(q)
+          const userSubmissionMap: Record<string, boolean> = {}
+          if (!submissionsSnapshot.empty) {
+            submissionsSnapshot.docs.forEach((doc) => {
+              const data = doc.data()
+              userSubmissionMap[data.challengeId] = true
+            })
+          }
+          setUserSubmissions(userSubmissionMap)
+          setSubmissions(Object.keys(userSubmissionMap).length)
+        }
+      } catch (error) {
+        console.error("Error fetching user submissions:", error)
+        setUserSubmissions({}) // On error, mark all as unsubmitted
+      } finally {
+        setLoadingUserSubmissions(false)
+      }
+    }
+
+    // Orchestrate fetching: Fetch metadata and user submissions in parallel, then fetch challenges
+    const loadAllData = async () => {
+      await Promise.all([loadCompetitionMetadata(), fetchUserSubmissions(id)])
+      await fetchChallenges()
+    }
+
+    loadAllData()
+  }, [user, router, id]) // Add params.id to dependency array
 
   // Filtered challenges based on search term and submission status
   const filteredChallenges = challenges.filter((challenge) => {
     const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
-
     const isSubmitted = userSubmissions[challenge.id]
     if (filterSubmissionStatus === "all") return true
     if (filterSubmissionStatus === "submitted") return isSubmitted
@@ -199,7 +213,8 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
     return true
   })
 
-  if (!user || checkingDeadline) {
+  // Initial full page loading state (before any metadata or user data is available)
+  if (!user || loadingCompetitionMetadata || loadingUserSubmissions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
         {/* Header Skeleton */}
@@ -234,6 +249,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
     )
   }
 
+  // Once initial data is loaded, render the main dashboard
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       {/* Modern Header */}
@@ -334,7 +350,6 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                 <p className="text-sm text-gray-500">Across all submissions</p>
               </Card>
             </div>
-
             {/* Combined Challenges List Header and Filter Bar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               {/* Challenges List Header */}
@@ -347,7 +362,6 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                   <p className="text-gray-600 text-sm">Browse and start challenges for this competition</p>
                 </div>
               </div>
-
               {/* Search, Filter, and View Mode Bar */}
               <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
                 <div className="relative flex-1 max-w-md w-full">
@@ -390,10 +404,15 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
             </div>
-
             {/* Challenge Cards Container with Border */}
             <div className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
-              {filteredChallenges.length === 0 ? (
+              {loadingChallengesList ? (
+                <div className={viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
+                  {[...Array(4)].map((_, i) => (
+                    <ChallengeCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : filteredChallenges.length === 0 ? (
                 <Card className="border-0 shadow-none bg-transparent">
                   <CardContent className="p-0 text-center">
                     <div className="space-y-6">
@@ -428,7 +447,6 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                 >
                   {filteredChallenges.map((challenge) => {
                     const isSubmitted = userSubmissions[challenge.id]
-                    const isLoading = loadingSubmissions
                     return (
                       <Card
                         key={challenge.id}
@@ -459,7 +477,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                               </div>
                             </div>
                             {/* Dynamic Status Badge */}
-                            {isLoading ? (
+                            {loadingUserSubmissions ? (
                               <Badge className="bg-gray-50 text-gray-500 border-gray-200 font-medium uppercase flex items-center gap-2">
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
                                 LOADING
@@ -496,7 +514,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                           </div>
                           {/* Action Button - Color coded based on submission status */}
                           <div className="flex flex-col sm:flex-row justify-center gap-2 mt-4">
-                            {isLoading ? (
+                            {loadingUserSubmissions ? (
                               <Button
                                 disabled
                                 className="w-full bg-gray-200 text-gray-500 cursor-not-allowed flex items-center gap-2"
