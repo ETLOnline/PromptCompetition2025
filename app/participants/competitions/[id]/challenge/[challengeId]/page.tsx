@@ -1,6 +1,5 @@
 "use client"
 import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +20,8 @@ import { ArrowLeft, FileText, Send, AlertCircle, ClipboardList, Target, ChevronD
 import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
+import { useRouter } from "next/navigation"
+
 import type { Timestamp } from "firebase-admin/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
 
@@ -46,6 +47,15 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const [loadingPrompt, setLoadingPrompt] = useState<boolean>(false)
   const [loadingChallenge, setLoadingChallenge] = useState<boolean>(true)
+  const [compid, setCompid] = useState<string | null>(null)
+
+  useEffect(() => {
+    const getParams = async () => {
+      const { id } = await params
+      setCompid(id)
+    }
+    getParams()
+  }, [params])
 
   useEffect(() => {
     if (!user) {
@@ -65,6 +75,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
       setLoadingChallenge(true)
       const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId)
       const challengeSnap = await getDoc(challengeRef)
+      // console.log("competitionId", competitionId, "challengeId", challengeId)
       if (!challengeSnap.exists()) {
         console.warn("Challenge document not found.")
         return
@@ -257,7 +268,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
               </p>
               <Button
                 className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-8 py-3 rounded-xl transition-colors duration-200"
-                onClick={() => router.push(`/participants/competitions/${competitionId}`)}
+                onClick={() => router.push(`/participants/competitions/${compid}`)}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
@@ -283,7 +294,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                   <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
-                      onClick={() => router.push(`/participants`)}
+                      onClick={() => router.push(`/participants/competitions/${compid}`)}
                       className="hidden sm:flex items-center gap-2 h-11 rounded-xl border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors duration-200"
                     >
                       <ArrowLeft className="h-4 w-4" />

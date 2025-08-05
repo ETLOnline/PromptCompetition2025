@@ -382,11 +382,8 @@ export default function CompetitionsPage() {
   }
 
   const handleCompetitionClick = async (competition: Competition) => {
-    if (participantMap[competition.id]) {
-      router.push(`/participants/competitions/${competition.id}`)
-      return
-    }
-    showRegistrationConfirmation(competition)
+    // Always show details when clicking the card
+    handleViewDetails(competition)
   }
 
   const filteredCompetitions = competitions.filter((comp) => {
@@ -641,7 +638,7 @@ export default function CompetitionsPage() {
                               </Button>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                          <p className="text-sm text-gray-600 line-clamp-1 leading-relaxed">
                             {competition.description}
                           </p>
                           <div className="flex items-start gap-3 text-sm text-gray-600">

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { use } from "react" 
+import { use } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +35,7 @@ import {
 import { collection, getDocs, query, doc, getDoc, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
+import { Countdown } from "@/components/countdown" // Import the new Countdown component
 
 // Skeleton for Dashboard Summary Cards
 const DashboardCardSkeleton = () => (
@@ -85,29 +86,26 @@ const ChallengeCardSkeleton = () => (
 export default function DashboardPage({ params }: { params: { id: string } }) {
   const { user, logout } = useAuth()
   const router = useRouter()
-
   const [submissions, setSubmissions] = useState<number | null>(null)
   const [challengeCount, setChallengeCount] = useState<number | null>(null)
   const [currentCompetitionId, setCurrentCompetitionId] = useState<string | null>(null)
   const [startDeadlineReached, setStartDeadlineReached] = useState<boolean>(false)
   const [endDeadlinePassed, setEndDeadlinePassed] = useState<boolean>(false)
+  const [competitionStartDeadline, setCompetitionStartDeadline] = useState<Date | null>(null) // New state for start deadline
 
   // New loading states for progressive rendering
   const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true) // For deadlines and overall challenge count
   const [loadingChallengesList, setLoadingChallengesList] = useState(true) // For the actual list of challenges
   const [loadingUserSubmissions, setLoadingUserSubmissions] = useState(true) // Keep this for user submissions
-
   const [challenges, setChallenges] = useState<any[]>([])
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
-
-  // const { id } = params // Use params directly
   const { id } = use(params)
+
 
   // Filtering and View Mode States
   const [searchTerm, setSearchTerm] = useState("")
   const [filterSubmissionStatus, setFilterSubmissionStatus] = useState<"all" | "submitted" | "not-submitted">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-
   const setStoreValues = useSubmissionStore((state) => state.setValues)
 
   useEffect(() => {
@@ -128,7 +126,6 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         setCurrentCompetitionId(id)
         const competitionRef = doc(db, "competitions", id)
         const competitionRefSnap = await getDoc(competitionRef)
-
         if (competitionRefSnap.exists()) {
           const competitionData = competitionRefSnap.data()
           const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
@@ -137,6 +134,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
           const extendedEnd = new Date(end.getTime() + 60 * 1000) // end + 1 minutes
           setStartDeadlineReached(now >= start)
           setEndDeadlinePassed(now > extendedEnd)
+          setCompetitionStartDeadline(start) // Set the start deadline here
         }
       } catch (error) {
         console.error("Error fetching competition metadata:", error)
@@ -198,7 +196,6 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
       await Promise.all([loadCompetitionMetadata(), fetchUserSubmissions(id)])
       await fetchChallenges()
     }
-
     loadAllData()
   }, [user, router, id]) // Add params.id to dependency array
 
@@ -572,12 +569,20 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-gray-900">Competition Not Started</h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
-                    Challenges will be available once the competition starts. Please check back later.
-                  </p>
-                </div>
+              <div className="space-y-4 text-center">
+                <h3 className="text-2xl font-semibold text-gray-900">Competition Not Started</h3>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Challenges will be available when the countdown ends. Get ready!
+                </p>
+                
+                {/* Countdown with spacing */}
+                {competitionStartDeadline && (
+                  <div className="mt-6">
+                    <Countdown targetDate={competitionStartDeadline} />
+                  </div>
+                )}
+              </div>
+
               </div>
             </CardContent>
           </Card>
