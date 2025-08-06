@@ -1,6 +1,8 @@
 import express, { Response, NextFunction } from "express";
 import { admin, auth, db } from "../config/firebase-admin.js";
 import { Request } from "express";
+// import { sendEmailVerification } from "firebase/auth"
+import { transporter } from "../utils/email.js";
 
 const router = express.Router();
 
@@ -233,7 +235,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     // Assign custom role claim
     await auth.setCustomUserClaims(userRecord.uid, { role });
     const institution = ""; // An empty string is valid, though may not be useful
-    
+    // console.log(`Creating user in Firestore: ${userRecord.uid}`);
     await db.collection("users").doc(userRecord.uid).set({
       displayName,                  // Must be a defined string
       email,                     // Must be a defined string
@@ -242,6 +244,30 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       isVerified: true,          // Boolean flag
     });
     
+    const verificationLink = await auth.generateEmailVerificationLink(email);
+
+    console.log(`Verification link: ${verificationLink}`);
+    console.log("EMAIL_SENDER:", process.env.EMAIL_SENDER);
+    console.log("EMAIL_APP_PASSWORD:", process.env.EMAIL_APP_PASSWORD);
+
+try {
+  await transporter.sendMail({
+    from: process.env.EMAIL_SENDER,
+    to: email,
+    subject: "Verify your email",
+    html: `
+      <p>Hi ${displayName},</p>
+      <p>Thanks for signing up! Please verify your email by clicking the link below:</p>
+      <a href="${verificationLink}">Verify Email</a>
+      <p>If you did not sign up, you can ignore this email.</p>
+    `,
+  });
+} catch (emailErr: any) {
+  console.error("❌ Failed to send verification email:", emailErr);
+}
+
+    // await sendEmailVerification(user);
+
     return res.status(201).json({
       message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
       user: {
