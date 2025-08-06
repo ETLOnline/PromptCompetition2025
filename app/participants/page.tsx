@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +40,7 @@ import {
   X,
   Eye,
 } from "lucide-react"
-import { collection, query, orderBy, doc, getDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore"
+import { collection, query, orderBy, doc, getDoc, setDoc, serverTimestamp, onSnapshot, updateDoc, increment } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import Image from "next/image"
@@ -303,7 +304,14 @@ export default function CompetitionsPage() {
         registeredAt: serverTimestamp(),
         challengesCompleted: 0,
       })
+
+
       setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
+      const competitionDocRef = doc(db, "competitions", selectedCompetition.id)
+      // await updateDoc(competitionDocRef, {
+      //   RegisteredUserCount: increment(1),
+      // })
+
       setShowRegistrationModal(false)
       setSelectedCompetition(null)
       toast.success("Successfully registered for the competition!")

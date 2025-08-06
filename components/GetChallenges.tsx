@@ -94,7 +94,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
       setChallenges((prev) => prev.filter((c) => c.id !== challengeId))
       const competitionDocRef = doc(db, "competitions", competitionId)
       await updateDoc(competitionDocRef, {
-        ChallengeCount: increment(1),
+        ChallengeCount: increment(-1),
       })
     } catch (err) {
       console.error("Error deleting challenge:", err)

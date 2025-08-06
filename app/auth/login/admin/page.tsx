@@ -1,13 +1,13 @@
 "use client"
+
 import { useState } from "react"
 import type React from "react"
-
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { signInWithEmailAndPassword, getIdTokenResult } from "firebase/auth"
+import { signInWithEmailAndPassword, getIdTokenResult, sendPasswordResetEmail } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { Eye, EyeOff, Home, Shield, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, Home, Shield, Mail, Lock, X } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
@@ -16,6 +16,13 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+
+  // State for Forgot Password functionality
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetMessage, setResetMessage] = useState("")
+  const [isResetting, setIsResetting] = useState(false)
+
   const { signIn, signInWithGoogle } = useAuth()
   const router = useRouter()
 
@@ -23,24 +30,19 @@ export default function AdminLoginPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
-
       if (!user) {
         throw new Error("Login failed: No user found.")
       }
-
       const idTokenResult = await getIdTokenResult(user, true)
       const role = idTokenResult.claims.role
-
       if (role !== "admin" && role !== "superadmin" && role !== "judge") {
         setError("Access denied: You are not an admin.")
         await auth.signOut()
         return
       }
-
       router.push("/admin/select-competition")
     } catch (err: any) {
       console.error("Login error:", err)
@@ -56,20 +58,16 @@ export default function AdminLoginPage() {
     try {
       const userCredential = await signInWithGoogle()
       const user = userCredential.user
-
       if (!user) {
         throw new Error("Google login failed: No user found.")
       }
-
       const idTokenResult = await getIdTokenResult(user, true)
       const role = idTokenResult.claims.role
-
       if (role !== "admin" && role !== "superadmin" && role !== "judge") {
         setError("Access denied: You are not an admin.")
         await auth.signOut()
         return
       }
-
       if (role == "admin" || role == "superadmin") {
         router.push("/admin/select-competition")
       } else if (role == "judge") {
@@ -83,6 +81,24 @@ export default function AdminLoginPage() {
     }
   }
 
+  const handlePasswordReset = async () => {
+    setIsResetting(true)
+    setResetMessage("")
+    try {
+      await sendPasswordResetEmail(auth, resetEmail)
+      setResetMessage("Password reset link sent to your email!")
+    } catch (err: any) {
+      console.error("Password reset error:", err)
+      if (err.code === "auth/user-not-found") {
+        setResetMessage("No account found with that email address.")
+      } else {
+        setResetMessage(`Failed to send reset link: ${err.message}`)
+      }
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
       {/* Back to Home Link */}
@@ -93,7 +109,6 @@ export default function AdminLoginPage() {
         <Home className="h-5 w-5 group-hover:scale-110 transition-transform" />
         <span className="font-medium">Back to Home</span>
       </Link>
-
       {/* Main Card */}
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
@@ -113,9 +128,6 @@ export default function AdminLoginPage() {
               </div>
             </div>
           </div>
-
-
-
           {/* Form */}
           <div className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -138,7 +150,6 @@ export default function AdminLoginPage() {
                   />
                 </div>
               </div>
-
               {/* Password Field */}
               <div className="space-y-2">
                 <label htmlFor="password" className="text-sm font-medium text-slate-700">
@@ -166,14 +177,26 @@ export default function AdminLoginPage() {
                   </button>
                 </div>
               </div>
-
+              {/* Forgot Password Button */}
+              <div className="text-right -mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPasswordModalOpen(true)
+                    setResetEmail(email) // Pre-fill with the email from the login form
+                    setResetMessage("")
+                  }}
+                  className="text-sm text-blue-600 hover:underline focus:outline-none"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                   <p className="font-medium">{error}</p>
                 </div>
               )}
-
               {/* Sign In Button */}
               <button
                 type="submit"
@@ -189,8 +212,6 @@ export default function AdminLoginPage() {
                   "Sign In"
                 )}
               </button>
-
-
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -200,7 +221,6 @@ export default function AdminLoginPage() {
                   <span className="px-2 bg-white text-slate-500">Or continue with</span>
                 </div>
               </div>
-
               {/* Google Sign In Button */}
               <button
                 type="button"
@@ -245,7 +265,6 @@ export default function AdminLoginPage() {
                 )}
               </button>
             </form>
-
             {/* Footer */}
             <div className="mt-6 text-center">
               <p className="text-xs text-slate-500">This portal is restricted to authorized administrators only.</p>
@@ -253,6 +272,68 @@ export default function AdminLoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotPasswordModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-xl bg-white border border-slate-200 shadow-lg p-8 text-slate-900 relative mx-4">
+            <button
+              onClick={() => setIsForgotPasswordModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <h2 className="text-2xl font-bold text-center mb-4 bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+              Reset Password
+            </h2>
+            <p className="text-center text-muted-foreground mb-6">Enter your email to receive a password reset link.</p>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="emailInput" className="sr-only">
+                  Enter your email address
+                </label>
+                <input
+                  type="email"
+                  id="emailInput"
+                  placeholder="Enter your email address"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
+                  disabled={isResetting}
+                />
+              </div>
+              <button
+                id="resetPasswordButton"
+                onClick={handlePasswordReset}
+                disabled={isResetting || !resetEmail}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isResetting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Sending Link...</span>
+                  </div>
+                ) : (
+                  "Send Reset Link"
+                )}
+              </button>
+            </div>
+            {resetMessage && (
+              <p
+                id="message"
+                className={`mt-4 text-center text-sm ${
+                  resetMessage.includes("Failed") || resetMessage.includes("No account")
+                    ? "text-red-700"
+                    : "text-green-700"
+                }`}
+              >
+                {resetMessage}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
