@@ -1,11 +1,11 @@
 "use client"
+
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,29 +18,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { use } from "react" // ← Add this import
-
-import {
-  Trophy,
-  Clock,
-  Calendar,
-  Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  MapPin,
-  DollarSign,
-  ChevronDown,
-  Search,
-  Filter,
-  Grid3X3,
-  List,
-  ChevronLeft,
-  ChevronRight,
-  UserPlus,
-  X,
-  Eye,
-} from "lucide-react"
-import { collection, query, orderBy, doc, getDoc, setDoc, serverTimestamp, onSnapshot, updateDoc, increment } from "firebase/firestore"
+import { fetchCompetitions } from "@/lib/api" // Import the new API function
+import { Trophy, Clock, Calendar, Sparkles, ArrowRight, CheckCircle2, MapPin, DollarSign, ChevronDown, Search, Filter, Grid3X3, List, ChevronLeft, ChevronRight, UserPlus, X, Eye } from 'lucide-react'
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment } from "firebase/firestore" // Removed collection, query, orderBy, onSnapshot
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import Image from "next/image"
@@ -176,7 +156,7 @@ export default function CompetitionsPage() {
   const [itemsPerPage] = useState(6) // Number of items per page, changed to 6
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Ref to keep track of active timeouts for cleanup
+  // Ref to keep track of active timeouts for cleanup (kept for potential future use, though not used with fetchCompetitions directly)
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
 
   useEffect(() => {
@@ -185,109 +165,62 @@ export default function CompetitionsPage() {
       return
     }
 
-    setLoadingInitialFetch(true)
-    const competitionsQuery = query(collection(db, "competitions"), orderBy("startDeadline", "desc"))
+    const loadCompetitions = async () => {
+      setLoadingInitialFetch(true)
+      try {
+        const data = await fetchCompetitions() // Use the API to fetch competitions
+        const sortedCompetitions = data.sort((a: any, b: any) => {
+          const dateA = new Date(a.createdAt || 0).getTime()
+          const dateB = new Date(b.createdAt || 0).getTime()
+          return dateB - dateA
+        })
+        setCompetitions(sortedCompetitions)
 
-    const unsubscribe = onSnapshot(
-      competitionsQuery,
-      async (snapshot) => {
-        const addedCompetitions: Competition[] = []
-        const modifiedCompetitions: Competition[] = []
-        const removedCompetitionIds: string[] = []
+        const newParticipantMap: Record<string, boolean> = {}
+        const newLoadingMap: Record<string, boolean> = {}
 
-        snapshot.docChanges().forEach((change) => {
-          const competitionData = { id: change.doc.id, ...change.doc.data() } as Competition
+        // Mark all competitions as loading initially
+        sortedCompetitions.forEach((comp) => {
+          newLoadingMap[comp.id] = true
+        })
+        setLoadingMap({ ...newLoadingMap }) // Optionally show loading state early
 
-          if (change.type === "added") {
-            addedCompetitions.push(competitionData)
-          } else if (change.type === "modified") {
-            modifiedCompetitions.push(competitionData)
-          } else if (change.type === "removed") {
-            removedCompetitionIds.push(competitionData.id)
+        // Fetch all participant statuses in parallel
+        const fetchPromises = sortedCompetitions.map(async (comp) => {
+          try {
+            const participantDoc = await getDoc(
+              doc(db, "competitions", comp.id, "participants", user.uid)
+            )
+            newParticipantMap[comp.id] = participantDoc.exists()
+          } catch (err) {
+            console.error(`Error checking participant status for ${comp.id}:`, err)
+            newParticipantMap[comp.id] = false
+          } finally {
+            newLoadingMap[comp.id] = false
           }
         })
 
-        // Process removals immediately
-        if (removedCompetitionIds.length > 0) {
-          setCompetitions((prev) => prev.filter((comp) => !removedCompetitionIds.includes(comp.id)))
-          setParticipantMap((prev) => {
-            const newState = { ...prev }
-            removedCompetitionIds.forEach((id) => delete newState[id])
-            return newState
-          })
-          setLoadingMap((prev) => {
-            const newState = { ...prev }
-            removedCompetitionIds.forEach((id) => delete newState[id])
-            return newState
-          })
-        }
+        await Promise.all(fetchPromises)
 
-        // Process modifications immediately
-        if (modifiedCompetitions.length > 0) {
-          setCompetitions((prev) =>
-            prev.map((comp) => {
-              const modified = modifiedCompetitions.find((m) => m.id === comp.id)
-              return modified ? modified : comp
-            }),
-          )
-        }
-
-        // Process additions progressively with a slight delay
-        let delay = 0
-        for (const comp of addedCompetitions) {
-          // Only add if it's not already in the current state (prevents duplicates on re-runs or initial load)
-          const timeoutId = setTimeout(() => {
-            setCompetitions((prev) => {
-              // Double-check inside timeout to prevent duplicates if state updates rapidly
-              if (!prev.some((existingComp) => existingComp.id === comp.id)) {
-                return [...prev, comp]
-              }
-              return prev
-            })
-
-            // Check participant status for this newly added competition
-            if (user) {
-              setLoadingMap((prev) => ({ ...prev, [comp.id]: true }))
-              getDoc(doc(db, "competitions", comp.id, "participants", user.uid))
-                .then((participantDoc) => {
-                  setParticipantMap((prev) => ({ ...prev, [comp.id]: participantDoc.exists() }))
-                })
-                .catch((err) => {
-                  console.error(`Error checking participant status for ${comp.id}:`, err)
-                  setParticipantMap((prev) => ({ ...prev, [comp.id]: false }))
-                })
-                .finally(() => {
-                  setLoadingMap((prev) => ({ ...prev, [comp.id]: false }))
-                })
-            }
-          }, delay)
-          timeoutRefs.current.push(timeoutId) // Store timeout ID for cleanup
-          delay += 50 // Small delay for progressive rendering effect
-        }
-
-        // Set initial loading to false after all initial additions are scheduled
-        // Use a final timeout to ensure it happens after the last scheduled item
-        if (addedCompetitions.length > 0) {
-          const finalTimeoutId = setTimeout(() => setLoadingInitialFetch(false), delay)
-          timeoutRefs.current.push(finalTimeoutId)
-        } else {
-          setLoadingInitialFetch(false) // If no additions, set immediately
-        }
-      },
-      (error) => {
+        // Update the maps after all checks are done
+        setParticipantMap(newParticipantMap)
+        setLoadingMap(newLoadingMap)
+      } catch (error) {
         console.error("Error fetching competitions:", error)
-        setLoadingInitialFetch(false)
         toast.error("Failed to load competitions.")
-      },
-    )
+      } finally {
+        setLoadingInitialFetch(false)
+      }
+    }
+
+    loadCompetitions()
 
     return () => {
-      unsubscribe() // Cleanup on unmount
-      // Clear all scheduled timeouts
       timeoutRefs.current.forEach((id) => clearTimeout(id))
-      timeoutRefs.current = [] // Reset the ref
+      timeoutRefs.current = []
     }
   }, [user, router])
+
 
   const handleRegister = async (registerInput: string) => {
     if (!selectedCompetition || !user) return
@@ -304,14 +237,11 @@ export default function CompetitionsPage() {
         registeredAt: serverTimestamp(),
         challengesCompleted: 0,
       })
-
-
       setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
       const competitionDocRef = doc(db, "competitions", selectedCompetition.id)
       // await updateDoc(competitionDocRef, {
       //   RegisteredUserCount: increment(1),
       // })
-
       setShowRegistrationModal(false)
       setSelectedCompetition(null)
       toast.success("Successfully registered for the competition!")
@@ -429,7 +359,6 @@ export default function CompetitionsPage() {
         competitionTitle={selectedCompetition?.title || ""}
         isLoading={selectedCompetition ? loadingMap[selectedCompetition.id] || false : false}
       />
-
       <ViewCompetitionDetailsModal
         isOpen={isViewModalOpen}
         onClose={() => {
@@ -438,7 +367,6 @@ export default function CompetitionsPage() {
         }}
         competition={selectedCompetition}
       />
-
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -497,7 +425,6 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
-
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
@@ -510,7 +437,6 @@ export default function CompetitionsPage() {
             </p>
           </div>
         </div>
-
         <div className="py-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="flex flex-1 gap-4 w-full sm:w-auto">
@@ -557,7 +483,6 @@ export default function CompetitionsPage() {
           </div>
         </div>
       </div>
-
       {/* Main Content with the border */}
       <div className="max-w-7xl mx-auto px-6 pb-12 bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
         <div className="py-8">
@@ -648,9 +573,6 @@ export default function CompetitionsPage() {
                               </Button>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600 line-clamp-1 leading-relaxed">
-                            {competition.description}
-                          </p>
                           <div className="flex items-start gap-3 text-sm text-gray-600">
                             <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                               <Calendar className="w-4 h-4 text-blue-600" />
