@@ -1,4 +1,5 @@
 "use client"
+
 import { useAuth } from "@/components/auth-provider"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -16,12 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ArrowLeft, FileText, Send, AlertCircle, ClipboardList, Target, ChevronDown } from "lucide-react"
+import { ArrowLeft, FileText, Send, AlertCircle, ClipboardList, Target, ChevronDown, CheckCircle } from 'lucide-react'
 import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
-
 import type { Timestamp } from "firebase-admin/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
 
@@ -48,6 +48,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const [loadingPrompt, setLoadingPrompt] = useState<boolean>(false)
   const [loadingChallenge, setLoadingChallenge] = useState<boolean>(true)
   const [compid, setCompid] = useState<string | null>(null)
+  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle'); // New state for submission status
 
   useEffect(() => {
     const getParams = async () => {
@@ -355,34 +356,33 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
           </header>
           <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
             {/* Challenge title, badge, and countdown */}
-          <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">{challenge.title}</h2>
-                <Badge
-                  variant="secondary"
-                  className={`font-medium px-3 py-1 rounded-full text-sm ${
-                    challenge.isCompetitionLocked
-                      ? "bg-red-100 text-red-800 border border-red-200"
-                      : "bg-green-100 text-green-800 border border-green-200"
-                  }`}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full mr-2 ${
-                      challenge.isCompetitionLocked ? "bg-red-500" : "bg-green-500"
+            <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">{challenge.title}</h2>
+                  <Badge
+                    variant="secondary"
+                    className={`font-medium px-3 py-1 rounded-full text-sm ${
+                      challenge.isCompetitionLocked
+                        ? "bg-red-100 text-red-800 border border-red-200"
+                        : "bg-green-100 text-green-800 border border-green-200"
                     }`}
-                  />
-                  {challenge.isCompetitionLocked ? "Locked" : "Active"}
-                </Badge>
-                {challenge.endDeadline && (
-                  <div className="flex items-center gap-3 text-sm mt-2 sm:mt-0 sm:ml-auto bg-white rounded-xl px-4 py-2 border border-gray-200 shadow-sm">
-                    <CountdownDisplay targetDate={challenge.endDeadline.seconds * 1000} />
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-          </Card>
-
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mr-2 ${
+                        challenge.isCompetitionLocked ? "bg-red-500" : "bg-green-500"
+                      }`}
+                    />
+                    {challenge.isCompetitionLocked ? "Locked" : "Active"}
+                  </Badge>
+                  {challenge.endDeadline && (
+                    <div className="flex items-center gap-3 text-sm mt-2 sm:mt-0 sm:ml-auto bg-white rounded-xl px-4 py-2 border border-gray-200 shadow-sm">
+                      <CountdownDisplay targetDate={challenge.endDeadline.seconds * 1000} />
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+            </Card>
             {/* Challenge Details Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
@@ -391,7 +391,6 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                   Challenge Details
                 </CardTitle>
               </CardHeader>
-
               <CardContent className="p-6">
                 <div>
                   <h3 className="font-bold text-gray-900 mb-4 text-lg">Problem Statement</h3>
@@ -401,27 +400,24 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
             </Card>
             {/* Guidelines Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
-              <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
-                <Target className="h-6 w-6 text-emerald-600" />
-                How to Craft Your Prompt
-              </CardTitle>
-            </CardHeader>
-
-
+              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
+                  <Target className="h-6 w-6 text-emerald-600" />
+                  How to Craft Your Prompt
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-6">
                 <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">{challenge.guidelines}</div>
               </CardContent>
             </Card>
             {/* Solution Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
-              <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
-                <Send className="h-6 w-6 text-blue-700" />
-                Your Solution
-              </CardTitle>
-            </CardHeader>
-
+              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
+                  <Send className="h-6 w-6 text-blue-700" />
+                  Your Solution
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {loadingPrompt ? (
                   <div className="space-y-4 animate-pulse">
@@ -481,10 +477,19 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                               className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
                               onClick={async () => {
                                 setLoading(true)
-                                setIsConfirmModalOpen(false)
-                                await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt)
-                                setLoading(false)
-                                await fetchSubmissionPrompt(competitionId, challengeId, user.uid)
+                                setIsConfirmModalOpen(false) // Close confirmation modal immediately
+                                setSubmissionStatus('submitting'); // Indicate submission is in progress
+
+                                try {
+                                  await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt)
+                                  setSubmissionStatus('success') // Set status to success on completion
+                                  await fetchSubmissionPrompt(competitionId, challengeId, user.uid) // Re-fetch to update UI if needed
+                                } catch (error) {
+                                  console.error("Error submitting prompt:", error)
+                                  setSubmissionStatus('error') // Set status to error on failure
+                                } finally {
+                                  setLoading(false) // Stop loading indicator
+                                }
                               }}
                             >
                               {hasPreviousSubmission ? "Update" : "Submit"}
@@ -497,6 +502,42 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                               Cancel
                             </Button>
                           </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Success Modal */}
+                    {submissionStatus === 'success' && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle className="w-8 h-8 text-green-600" />
+                          </div>
+                          <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Successful!</h2>
+                          <p className="text-gray-600 mb-6">Your prompt has been successfully submitted.</p>
+                          <Button
+                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                            onClick={() => setSubmissionStatus('idle')} // Close success modal
+                          >
+                            Done
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Error Modal */}
+                    {submissionStatus === 'error' && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="w-8 h-8 text-red-600" />
+                          </div>
+                          <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Failed</h2>
+                          <p className="text-gray-600 mb-6">There was an error submitting your prompt. Please try again.</p>
+                          <Button
+                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                            onClick={() => setSubmissionStatus('idle')} // Close error modal
+                          >
+                            Close
+                          </Button>
                         </div>
                       </div>
                     )}
