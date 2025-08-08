@@ -7,6 +7,7 @@ console.log("1. Environment loaded first, API key present:", !!process.env.OPENR
 import express from "express";
 import cors from "cors";
 
+//import "./config/email.js"; 
 // Routers
 import evaluateRouter from "./routes/evaluate.js";
 import evaluateAllRouter from "./routes/evaluateAll.js";
