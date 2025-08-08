@@ -2,33 +2,7 @@
 
 import type React from "react"
 import { useEffect, useState, useMemo, useCallback } from "react"
-import {
-  Search,
-  Users,
-  X,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Crown,
-  Shield,
-  Scale,
-  Eye,
-  MoreVertical,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle,
-  Filter,
-  UserPlus,
-  Trash2,
-  TrendingUp,
-  UserCheck,
-  UserX,
-  Zap, 
-  EyeOff
-} from "lucide-react"
-
+import { Search, Users, X, CheckCircle2, XCircle, AlertTriangle, Crown, Shield, Scale, Eye, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, AlertCircle, CheckCircle, Filter, UserPlus, Trash2, TrendingUp, Zap, EyeOff, Trophy, Target, Award } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -67,6 +41,13 @@ export interface User {
   lastSignIn?: string
   emailVerified?: boolean
   disabled?: boolean
+  participations?: {
+    [competitionId: string]: {
+      competitionName: string
+      totalScore: number
+      rank: number
+    }
+  }
 }
 
 export interface Stats {
@@ -92,6 +73,13 @@ interface NotificationState {
   type: "success" | "error" | "warning" | "info"
   title: string
   message: string
+}
+
+interface UsersResponse {
+  users: User[]
+  total: number
+  hasNextPage: boolean
+  nextPageToken: string | null
 }
 
 // --- Constants --------------------------------------------------------------
@@ -137,8 +125,6 @@ export const ROLE_CONFIG = {
 const ITEMS_PER_PAGE = 12
 
 // --- Helper Components ------------------------------------------------------
-
-// Modern Stats Card with enhanced design
 interface StatsCardProps {
   title: string
   count: number
@@ -192,7 +178,6 @@ const StatsCard: React.FC<StatsCardProps> = ({
   </Card>
 )
 
-// Enhanced User Row Component
 interface UserRowProps {
   user: User
   formatDate: (d?: string) => string
@@ -207,7 +192,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onV
 
   return (
     <TableRow className="hover:bg-muted/50 transition-colors">
-      <TableCell>
+      <TableCell className="w-[250px]">
         <div className="flex items-center space-x-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.displayName || user.email}`} />
@@ -224,30 +209,19 @@ const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onV
           </div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="w-[140px]">
         <Badge variant={cfg.badgeVariant} className="gap-1">
           <cfg.icon className="w-3 h-3" />
           {cfg.label}
         </Badge>
       </TableCell>
-      <TableCell>
-        <div className="flex items-center space-x-2">
-          {user.disabled ? (
-            <Badge variant="destructive" className="gap-1">
-              <UserX className="w-3 h-3" />
-              Disabled
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200">
-              <UserCheck className="w-3 h-3" />
-              Active
-            </Badge>
-          )}
-        </div>
+      <TableCell className="w-[160px] text-sm text-muted-foreground">
+        {formatDate(user.createdAt)}
       </TableCell>
-      <TableCell className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">{formatDate(user.lastSignIn)}</TableCell>
-      <TableCell>
+      <TableCell className="w-[160px] text-sm text-muted-foreground">
+        {formatDate(user.lastSignIn)}
+      </TableCell>
+      <TableCell className="w-[100px]">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="sm" onClick={() => onViewDetails(user)} className="h-8 w-8 p-0">
             <Eye className="w-4 h-4" />
@@ -283,7 +257,6 @@ const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onV
   )
 }
 
-// Enhanced Pagination
 interface PaginationProps {
   totalPages: number
   currentPage: number
@@ -314,7 +287,6 @@ const PaginationComponent: React.FC<PaginationProps> = ({
           <ChevronLeft className="w-4 h-4 mr-1" />
           Previous
         </Button>
-
         <div className="flex items-center space-x-1">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum: number
@@ -341,7 +313,6 @@ const PaginationComponent: React.FC<PaginationProps> = ({
             )
           })}
         </div>
-
         <Button
           variant="outline"
           size="sm"
@@ -364,12 +335,21 @@ export default function UserRoleManager() {
   const [selectedRole, setSelectedRole] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  
+  // Server pagination state
+  const [serverPagination, setServerPagination] = useState({
+    nextPageToken: null as string | null,
+    hasNextPage: false,
+    totalUsers: 0,
+    loading: false,
+  })
+
   const [loading, setLoading] = useState({
     stats: true,
     users: true,
-    exactSearch: false,
     action: false,
   })
+
   const [showCreateUser, setShowCreateUser] = useState(false)
   const [showExistingUsers, setShowExistingUsers] = useState(false)
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
@@ -379,8 +359,8 @@ export default function UserRoleManager() {
     displayName: "",
     role: "",
   })
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [selectedExistingUsers, setSelectedExistingUsers] = useState<Set<string>>(new Set())
   const [roleToAssign, setRoleToAssign] = useState("")
@@ -399,9 +379,26 @@ export default function UserRoleManager() {
     setCurrentPage(1)
   }, [selectedRole, searchQuery])
 
+  // Check if we need to load more data when pagination changes
+  useEffect(() => {
+    const filteredUsersCount = filteredUsers.length
+    const currentPageEndIndex = currentPage * ITEMS_PER_PAGE
+    
+    // If we're approaching the end of loaded data and there's more to fetch
+    if (
+      currentPageEndIndex >= filteredUsersCount - ITEMS_PER_PAGE && 
+      serverPagination.hasNextPage && 
+      !serverPagination.loading &&
+      selectedRole === "all" && // Only auto-load for "all" users
+      !searchQuery.trim() // Only auto-load when not searching
+    ) {
+      fetchMoreUsers()
+    }
+  }, [currentPage, selectedRole, searchQuery])
+
   // --- Helper functions ---
   const loadInitialData = useCallback(async () => {
-    await Promise.allSettled([fetchStats(), fetchAllUsers()])
+    await Promise.allSettled([fetchStats(), fetchAllUsers(true)])
   }, [])
 
   // Real-time search filter
@@ -426,7 +423,6 @@ export default function UserRoleManager() {
       const roleOrder = { superadmin: 0, admin: 1, judge: 2, user: 3 }
       const aOrder = roleOrder[a.role as keyof typeof roleOrder] ?? 4
       const bOrder = roleOrder[b.role as keyof typeof roleOrder] ?? 4
-
       if (aOrder !== bOrder) return aOrder - bOrder
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     })
@@ -456,9 +452,7 @@ export default function UserRoleManager() {
   const showNotification = useCallback((type: NotificationState["type"], title: string, message: string) => {
     const id = Date.now().toString()
     const notification: NotificationState = { id, type, title, message }
-
     setNotifications((prev) => [...prev, notification])
-
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== id))
     }, 5000)
@@ -479,6 +473,7 @@ export default function UserRoleManager() {
 
   const getRoleActions = (u: User) => {
     const actions: { label: string; action: () => void; color: string; icon: React.ComponentType<any> }[] = []
+
     if (u.role !== "admin")
       actions.push({
         label: "Make Admin",
@@ -486,6 +481,7 @@ export default function UserRoleManager() {
         color: "text-blue-600 hover:text-blue-700",
         icon: Shield,
       })
+
     if (u.role !== "judge")
       actions.push({
         label: "Make Judge",
@@ -493,6 +489,7 @@ export default function UserRoleManager() {
         color: "text-green-600 hover:text-green-700",
         icon: Scale,
       })
+
     if (u.role !== "superadmin")
       actions.push({
         label: "Make Super Admin",
@@ -500,6 +497,7 @@ export default function UserRoleManager() {
         color: "text-purple-600 hover:text-purple-700",
         icon: Crown,
       })
+
     if (u.role !== "user")
       actions.push({
         label: "Remove Role",
@@ -507,10 +505,11 @@ export default function UserRoleManager() {
         color: "text-gray-600 hover:text-gray-700",
         icon: Users,
       })
+
     return actions
   }
 
-  // --- API calls (keeping original functionality) ---
+  // --- API calls ---
   async function fetchStats() {
     try {
       setLoading((p) => ({ ...p, stats: true }))
@@ -529,24 +528,66 @@ export default function UserRoleManager() {
     }
   }
 
-  async function fetchAllUsers() {
+  async function fetchAllUsers(isInitial = false) {
     try {
-      setLoading((p) => ({ ...p, users: true }))
+      if (isInitial) {
+        setLoading((p) => ({ ...p, users: true }))
+        // Reset pagination state for initial load
+        setServerPagination({
+          nextPageToken: null,
+          hasNextPage: false,
+          totalUsers: 0,
+          loading: false,
+        })
+        setAllUsers([])
+      }
+
       const token = await getIdToken()
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users?limit=1000`, {
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users`)
+      url.searchParams.set('limit', '200')
+      
+      if (!isInitial && serverPagination.nextPageToken) {
+        url.searchParams.set('pageToken', serverPagination.nextPageToken)
+      }
+
+      const res = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${token}` },
       })
+
       if (res.ok) {
-        const data = await res.json()
-        setAllUsers(data.users || [])
+        const data: UsersResponse = await res.json()
+        
+        if (isInitial) {
+          setAllUsers(data.users || [])
+        } else {
+          // Append new users to existing ones
+          setAllUsers(prev => [...prev, ...(data.users || [])])
+        }
+
+        setServerPagination({
+          nextPageToken: data.nextPageToken,
+          hasNextPage: data.hasNextPage,
+          totalUsers: data.total,
+          loading: false,
+        })
       } else {
         showNotification("error", "Data Loading Error", "Failed to load users")
       }
     } catch (error) {
       showNotification("error", "Data Loading Error", "Failed to load users")
+      setServerPagination(prev => ({ ...prev, loading: false }))
     } finally {
-      setLoading((p) => ({ ...p, users: false }))
+      if (isInitial) {
+        setLoading((p) => ({ ...p, users: false }))
+      }
     }
+  }
+
+  async function fetchMoreUsers() {
+    if (serverPagination.loading || !serverPagination.hasNextPage) return
+    
+    setServerPagination(prev => ({ ...prev, loading: true }))
+    await fetchAllUsers(false)
   }
 
   async function updateRole(uid: string, newRole: string) {
@@ -561,7 +602,10 @@ export default function UserRoleManager() {
       const data = await res.json()
       if (res.ok) {
         showNotification("success", "Role Updated", "User role updated successfully")
-        fetchAllUsers()
+        // Update the user in local state
+        setAllUsers(prev => prev.map(user => 
+          user.uid === uid ? { ...user, role: newRole } : user
+        ))
         fetchStats()
       } else {
         showNotification("error", "Update Failed", data.error || "Failed to update role")
@@ -585,7 +629,8 @@ export default function UserRoleManager() {
       const data = await res.json()
       if (res.ok) {
         showNotification("success", "User Deleted", "User deleted successfully")
-        fetchAllUsers()
+        // Remove user from local state
+        setAllUsers(prev => prev.filter(user => user.uid !== uid))
         fetchStats()
       } else {
         showNotification("error", "Delete Failed", data.error || "Failed to delete user")
@@ -604,26 +649,26 @@ export default function UserRoleManager() {
       !createUserForm.role ||
       !allowedRoles.includes(createUserForm.role)
     ) {
-      setFormError("Please fill in all required fields and select a valid role");
-      return;
+      setFormError("Please fill in all required fields and select a valid role")
+      return
     }
-    // Email & password validation
-    const emailError = validateEmail(createUserForm.email);
+
+    const emailError = validateEmail(createUserForm.email)
     if (emailError) {
-      setFormError(emailError);
-      return;
+      setFormError(emailError)
+      return
     }
 
-    const passwordError = validatePassword(createUserForm.password);
+    const passwordError = validatePassword(createUserForm.password)
     if (passwordError) {
-      setFormError(passwordError);
-      return;
-    }
-    if (createUserForm.password !== createUserForm.confirmPassword) {
-      setFormError("Passwords do not match");
-      return;
+      setFormError(passwordError)
+      return
     }
 
+    if (createUserForm.password !== createUserForm.confirmPassword) {
+      setFormError("Passwords do not match")
+      return
+    }
 
     try {
       setLoading((p) => ({ ...p, action: true }))
@@ -635,17 +680,18 @@ export default function UserRoleManager() {
       })
       const data = await res.json()
       if (res.ok) {
-        setFormError(null);
+        setFormError(null)
         showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
-        setCreateUserForm({ email: "", password: "",confirmPassword: "", displayName: "", role: "" })
+        setCreateUserForm({ email: "", password: "", confirmPassword: "", displayName: "", role: "" })
         setShowCreateUser(false)
-        fetchAllUsers()
+        // Refresh data
+        fetchAllUsers(true)
         fetchStats()
       } else {
-        setFormError(data.error || "Failed to create user");
+        setFormError(data.error || "Failed to create user")
       }
     } catch (error) {
-      setFormError("Failed to create user");
+      setFormError("Failed to create user")
     } finally {
       setLoading((p) => ({ ...p, action: false }))
     }
@@ -672,11 +718,14 @@ export default function UserRoleManager() {
 
       if (results.every((r) => r.ok)) {
         showNotification("success", "Roles Updated", `Roles updated for ${selectedExistingUsers.size} user(s)`)
+        // Update users in local state
+        setAllUsers(prev => prev.map(user => 
+          selectedExistingUsers.has(user.uid) ? { ...user, role: roleToAssign } : user
+        ))
         setSelectedExistingUsers(new Set())
         setShowExistingUsers(false)
         setPromoteSearchQuery("")
         setPromoteCurrentPage(1)
-        fetchAllUsers()
         fetchStats()
       } else {
         showNotification("error", "Update Failed", "Some role updates failed")
@@ -696,7 +745,6 @@ export default function UserRoleManager() {
       warning: AlertTriangle,
       info: AlertCircle,
     }
-
     const colors = {
       success: "bg-emerald-50 border-emerald-200 text-emerald-800",
       error: "bg-red-50 border-red-200 text-red-800",
@@ -729,6 +777,17 @@ export default function UserRoleManager() {
     )
   }
 
+  // Calculate role counts from loaded users
+  const roleStats = useMemo(() => {
+    const counts = { superadmin: 0, admin: 0, judge: 0, user: 0 }
+    allUsers.forEach(user => {
+      if (counts.hasOwnProperty(user.role)) {
+        counts[user.role as keyof typeof counts]++
+      }
+    })
+    return counts
+  }, [allUsers])
+
   // --- Render ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -744,20 +803,11 @@ export default function UserRoleManager() {
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
               User Management
             </h1>
-            <p className="text-lg text-muted-foreground">Manage user accounts and permissions across your platform</p>
+            <p className="text-lg text-muted-foreground">
+              Manage user accounts and permissions across your platform
+            </p>
           </div>
-
           <div className="flex items-center space-x-3">
-            <Button
-              variant="outline"
-              onClick={loadInitialData}
-              disabled={loading.stats || loading.users}
-              className="gap-2 bg-transparent"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading.stats || loading.users ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-
             <Button onClick={() => setShowCreateUser(true)} className="gap-2">
               <UserPlus className="w-4 h-4" />
               Add User
@@ -779,12 +829,11 @@ export default function UserRoleManager() {
           </div>
         ) : stats ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            
             {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => (
               <StatsCard
                 key={roleKey}
                 title={config.pluralLabel}
-                count={(stats as any)[roleKey + "s"] || 0}
+                count={stats[`${roleKey}s` as keyof Stats] || 0}
                 icon={config.icon}
                 color={config.color}
                 bgColor={config.bgColor}
@@ -806,7 +855,6 @@ export default function UserRoleManager() {
                   <Filter className="w-4 h-4" />
                   <span>Filter by role:</span>
                 </div>
-
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant={selectedRole === "all" ? "default" : "outline"}
@@ -817,7 +865,7 @@ export default function UserRoleManager() {
                     All Users ({allUsers.length})
                   </Button>
                   {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => {
-                    const count = allUsers.filter((u) => u.role === roleKey).length
+                    const count = roleStats[roleKey as keyof typeof roleStats]
                     return (
                       <Button
                         key={roleKey}
@@ -833,7 +881,6 @@ export default function UserRoleManager() {
                   })}
                 </div>
               </div>
-
               <div className="relative w-full lg:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -862,13 +909,19 @@ export default function UserRoleManager() {
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">Users ({filteredUsers.length})</CardTitle>
+                <CardTitle className="text-xl">
+                  Users ({filteredUsers.length})
+                  {serverPagination.hasNextPage && selectedRole === "all" && !searchQuery && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      (Loading more...)
+                    </span>
+                  )}
+                </CardTitle>
                 <CardDescription>
                   {selectedRole !== "all" &&
                     `Filtered by ${ROLE_CONFIG[selectedRole as keyof typeof ROLE_CONFIG]?.label}`}
                 </CardDescription>
               </div>
-
               {selectedRole !== "all" && (
                 <Button
                   variant="outline"
@@ -884,7 +937,6 @@ export default function UserRoleManager() {
               )}
             </div>
           </CardHeader>
-
           <CardContent className="p-0">
             {loading.users ? (
               <div className="flex items-center justify-center py-12">
@@ -912,14 +964,13 @@ export default function UserRoleManager() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="table-fixed w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Joined</TableHead>
-                      <TableHead>Last Active</TableHead>
+                      <TableHead className="w-[250px]">User</TableHead>
+                      <TableHead className="w-[140px]">Role</TableHead>
+                      <TableHead className="w-[160px]">Joined</TableHead>
+                      <TableHead className="w-[160px]">Last Active</TableHead>
                       <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -938,7 +989,6 @@ export default function UserRoleManager() {
                 </Table>
               </div>
             )}
-
             <PaginationComponent
               totalPages={totalPages}
               currentPage={currentPage}
@@ -962,7 +1012,6 @@ export default function UserRoleManager() {
               Add a new user to your platform with the specified role and permissions.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="role">Role *</Label>
@@ -980,7 +1029,6 @@ export default function UserRoleManager() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="displayName">Display Name *</Label>
               <Input
@@ -990,7 +1038,6 @@ export default function UserRoleManager() {
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, displayName: e.target.value }))}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
               <Input
@@ -1001,49 +1048,46 @@ export default function UserRoleManager() {
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, email: e.target.value }))}
               />
             </div>
-
             <div className="space-y-2">
-            <Label htmlFor="password">Password *</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Minimum 10 characters"
-                value={createUserForm.password}
-                onChange={(e) => setCreateUserForm((f) => ({ ...f, password: e.target.value }))}
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                onClick={() => setShowPassword(prev => !prev)}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              <Label htmlFor="password">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Minimum 10 characters"
+                  value={createUserForm.password}
+                  onChange={(e) => setCreateUserForm((f) => ({ ...f, password: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password *</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Re-enter password"
-                value={createUserForm.confirmPassword}
-                onChange={(e) => setCreateUserForm((f) => ({ ...f, confirmPassword: e.target.value }))}
-              />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                onClick={() => setShowConfirmPassword(prev => !prev)}
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter password"
+                  value={createUserForm.confirmPassword}
+                  onChange={(e) => setCreateUserForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          </div>
-
           </div>
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2">
             <Button
@@ -1055,31 +1099,29 @@ export default function UserRoleManager() {
                   confirmPassword: "",
                   displayName: "",
                   role: ""
-                });
-                setFormError(null);
-                setShowCreateUser(false);
+                })
+                setFormError(null)
+                setShowCreateUser(false)
               }}
               disabled={loading.action}
             >
               Cancel
             </Button>
-
             <div className="flex items-center justify-end gap-2 sm:ml-auto sm:flex-row">
-            <Button
-              onClick={createUser}
-              disabled={loading.action}
-              className="whitespace-nowrap"
-            >
-              {loading.action ? "Creating..." : "Create User"}
-            </Button>
-            {formError && (
-              <p className="text-sm text-red-600 max-w-[200px] whitespace-normal">
-                {formError}
-              </p>
-            )}
-          </div>
+              <Button
+                onClick={createUser}
+                disabled={loading.action}
+                className="whitespace-nowrap"
+              >
+                {loading.action ? "Creating..." : "Create User"}
+              </Button>
+              {formError && (
+                <p className="text-sm text-red-600 max-w-[200px] whitespace-normal">
+                  {formError}
+                </p>
+              )}
+            </div>
           </DialogFooter>
-
         </DialogContent>
       </Dialog>
 
@@ -1095,7 +1137,6 @@ export default function UserRoleManager() {
               Select users to promote to the {ROLE_CONFIG[roleToAssign as keyof typeof ROLE_CONFIG]?.label} role.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1109,7 +1150,6 @@ export default function UserRoleManager() {
                 className="pl-10"
               />
             </div>
-
             <div className="flex-1 overflow-y-auto space-y-2 max-h-96">
               {paginatedPromoteUsers.map((u) => (
                 <div
@@ -1140,13 +1180,11 @@ export default function UserRoleManager() {
                   </div>
                 </div>
               ))}
-
               {hasMorePromoteUsers && (
                 <Button variant="outline" onClick={() => setPromoteCurrentPage((p) => p + 1)} className="w-full">
                   Load More ({promoteUsers.length - promoteEnd} remaining)
                 </Button>
               )}
-
               {!promoteUsers.length && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
@@ -1155,7 +1193,6 @@ export default function UserRoleManager() {
               )}
             </div>
           </div>
-
           <DialogFooter className="border-t pt-4">
             <div className="flex items-center justify-between w-full">
               <p className="text-sm text-muted-foreground">{selectedExistingUsers.size} user(s) selected</p>
@@ -1195,7 +1232,6 @@ export default function UserRoleManager() {
               <span className="text-destructive text-sm">This action cannot be undone.</span>
             </DialogDescription>
           </DialogHeader>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setUserToDelete(null)}>
               Cancel
@@ -1217,14 +1253,13 @@ export default function UserRoleManager() {
 
       {/* User Details Dialog */}
       <Dialog open={!!showUserDetails} onOpenChange={() => setShowUserDetails(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5" />
               User Details
             </DialogTitle>
           </DialogHeader>
-
           {showUserDetails && (
             <div className="space-y-6 py-4">
               <div className="flex items-center space-x-4">
@@ -1254,7 +1289,6 @@ export default function UserRoleManager() {
                     </Label>
                     <p className="text-sm mt-1">{showUserDetails.displayName || "Not set"}</p>
                   </div>
-
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Email Status
@@ -1274,19 +1308,16 @@ export default function UserRoleManager() {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Email Address
                   </Label>
                   <p className="text-sm mt-1 font-mono">{showUserDetails.email}</p>
                 </div>
-
                 <div>
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">User ID</Label>
                   <p className="text-sm mt-1 font-mono text-muted-foreground">{showUserDetails.uid}</p>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -1294,7 +1325,6 @@ export default function UserRoleManager() {
                     </Label>
                     <p className="text-sm mt-1">{formatDate(showUserDetails.createdAt)}</p>
                   </div>
-
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Last Active
@@ -1302,29 +1332,45 @@ export default function UserRoleManager() {
                     <p className="text-sm mt-1">{formatDate(showUserDetails.lastSignIn)}</p>
                   </div>
                 </div>
-
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Account Status
-                  </Label>
-                  <div className="flex items-center space-x-2 mt-1">
-                    {showUserDetails.disabled ? (
-                      <Badge variant="destructive" className="gap-1">
-                        <UserX className="w-3 h-3" />
-                        Disabled
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-200">
-                        <UserCheck className="w-3 h-3" />
-                        Active
-                      </Badge>
-                    )}
-                  </div>
-                </div>
               </div>
+
+              {/* Competition Participations Section */}
+              {showUserDetails.participations && Object.keys(showUserDetails.participations).length > 0 && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-600" />
+                      <Label className="text-sm font-medium text-gray-900">Competition Participations</Label>
+                    </div>
+                    <div className="grid gap-3">
+                      {Object.entries(showUserDetails.participations).map(([competitionId, participation]) => (
+                        <div key={competitionId} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="font-medium text-gray-900 truncate pr-2">
+                              {participation.competitionName}
+                            </h5>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge variant="outline" className="gap-1">
+                                <Award className="w-3 h-3" />
+                                Rank #{participation.rank}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-sm text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Target className="w-4 h-4" />
+                              <span>Score: {participation.totalScore.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
-
           <DialogFooter>
             <Button onClick={() => setShowUserDetails(null)} className="w-full">
               Close
