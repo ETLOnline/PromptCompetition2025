@@ -471,6 +471,7 @@ export default function ModernCompetitionSelector() {
       toast.success("Competition deleted.")
       setSelectedCompetition(null)
       setIsEditModalOpen(false)
+      refetchCompetitions()
     } catch (error) {
       console.error("Error deleting competition:", error)
     } finally {
