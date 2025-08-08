@@ -4,15 +4,17 @@ import { runJudges, MODELS } from "../utils/judgeLlms.js"
 
 const router = express.Router()
 
+type RubricItem = { name: string; description: string; weight: number }
+type ChallengeConfig = { rubric: RubricItem[]; problemStatement?: string | null }
+
 router.post("/start-evaluation", async (req, res) => {
   try {
     const { competitionId } = req.body
-
     if (!competitionId) {
       return res.status(400).json({ error: "Missing competitionId in request body." })
     }
 
-    // Step 1: Fetch all submissions whose finalScore is still null
+    // 1) Fetch submissions that still need a final score
     const submissionsSnapshot = await db
       .collection(`competitions/${competitionId}/submissions`)
       .where("finalScore", "==", null)
@@ -21,64 +23,151 @@ router.post("/start-evaluation", async (req, res) => {
     if (submissionsSnapshot.empty) {
       return res.status(200).json({ message: "No unevaluated submissions found." })
     }
-
     const submissions = submissionsSnapshot.docs
 
-    // Step 2: Load rubrics for each challenge
-    const rubricSnapshot = await db
+    // 2) Load rubric **and** problemStatement for each challenge
+    const challengesSnapshot = await db
       .collection(`competitions/${competitionId}/challenges`)
       .get()
-    const rubricMap: Record<string, string> = {}
-    rubricSnapshot.forEach((doc) => {
-      const rubric = doc.data()?.rubric
-      if (typeof rubric === "string") {
-        rubricMap[doc.id] = rubric
+
+    const challengeConfigMap: Record<string, ChallengeConfig> = {}
+
+    challengesSnapshot.forEach((doc) => {
+      const data = doc.data()
+      const rubric = data?.rubric
+      const problemStatement = typeof data?.problemStatement === "string" ? data.problemStatement : null
+
+      if (Array.isArray(rubric)) {
+        let isValidRubric = true
+        let totalWeight = 0
+        const validatedRubric: RubricItem[] = []
+
+        for (const item of rubric) {
+          if (
+            typeof item?.name === "string" &&
+            typeof item?.description === "string" &&
+            typeof item?.weight === "number" &&
+            item.weight > 0 &&
+            item.weight <= 1
+          ) {
+            validatedRubric.push({
+              name: item.name,
+              description: item.description,
+              weight: item.weight
+            })
+            totalWeight += item.weight
+          } else {
+            isValidRubric = false
+            break
+          }
+        }
+
+        if (isValidRubric && Math.abs(totalWeight - 1.0) < 0.001) {
+          challengeConfigMap[doc.id] = {
+            rubric: validatedRubric,
+            problemStatement
+          }
+          console.log(
+            `✅ Valid rubric loaded for challenge ${doc.id} with ${validatedRubric.length} criteria` +
+              (problemStatement ? " and problemStatement" : " (no problemStatement)")
+          )
+        } else {
+          console.warn(`⚠️ Invalid rubric for challenge ${doc.id}: weights sum to ${totalWeight}, expected 1.0`)
+        }
+      } else {
+        console.warn(`⚠️ Challenge ${doc.id} has invalid rubric format - only array-based weighted rubrics are supported`)
       }
     })
 
-    // Step 3: Evaluate each submission
+    console.log(`Loaded configs for ${Object.keys(challengeConfigMap).length} challenges`)
+
+    // 3) Evaluate each submission
+    let evaluatedCount = 0
+    let skippedCount = 0
+
     for (const docSnap of submissions) {
       const submission = docSnap.data()
       const { promptText, challengeId } = submission
 
-      if (!promptText || !challengeId) continue
+      if (!promptText || !challengeId) {
+        console.warn(`⚠️ Skipping submission ${docSnap.id}: missing promptText or challengeId`)
+        skippedCount++
+        continue
+      }
 
-      const rubricText = rubricMap[challengeId]
-      if (!rubricText) continue
+      const cfg = challengeConfigMap[challengeId]
+      if (!cfg || !Array.isArray(cfg.rubric) || cfg.rubric.length === 0) {
+        console.warn(`⚠️ Skipping submission ${docSnap.id}: no valid weighted rubric for challenge ${challengeId}`)
+        skippedCount++
+        continue
+      }
+
+      const rubricData = cfg.rubric
+      const problemStatement = cfg.problemStatement ?? undefined
+      if (!problemStatement) {
+        console.warn(`ℹ️ Submission ${docSnap.id}: challenge ${challengeId} has no problemStatement; proceeding without it`)
+      }
 
       try {
-        const result = await runJudges(promptText, { rubric: rubricText })
-        const { scores, average } = result
+        console.log(`🔄 Evaluating submission ${docSnap.id} for challenge ${challengeId}`)
 
-        if (!Array.isArray(scores) || scores.length === 0) continue
+        // ➜ Pass problemStatement to the judge LLM
+        const result = await runJudges(promptText, rubricData, problemStatement)
+        const { scores, average } = result || {}
 
-        const modelScores: Record<string, number> = {}
-        MODELS.forEach(({ model }, idx) => {
-          const score = scores[idx]
-          if (typeof score === "number" && score >= 0 && score <= 10) {
-            modelScores[model] = score
-          }
-        })
-        if (typeof average === "number") {
-          modelScores.average = average
+        if (!scores || Object.keys(scores).length === 0) {
+          console.warn(`⚠️ No valid scores returned for submission ${docSnap.id}`)
+          skippedCount++
+          continue
         }
 
-        // Step 4: Update submission doc with llmScores map
+        const updateData: any = {
+          llmScores: scores,
+          status: "evaluated"
+        }
+        if (typeof average === "number") {
+          updateData.finalScore = average
+        }
+
         await db
           .collection(`competitions/${competitionId}/submissions`)
           .doc(docSnap.id)
-          .update({
-            llmScores: modelScores,
-            finalScore: average ?? null,
-            status: "evaluated",
-          })
-      } catch {
-        // handle errors if needed
+          .update(updateData)
+
+        evaluatedCount++
+        console.log(`✅ Successfully evaluated submission ${docSnap.id} with average score: ${average}`)
+
+        // small delay to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      } catch (error) {
+        console.error(`❌ Failed to evaluate submission ${docSnap.id}:`, error)
+        skippedCount++
+
+        try {
+          await db
+            .collection(`competitions/${competitionId}/submissions`)
+            .doc(docSnap.id)
+            .update({
+              status: "failed",
+              error: error instanceof Error ? error.message : "Unknown evaluation error"
+            })
+        } catch (updateError) {
+          console.error(`Failed to update error status for submission ${docSnap.id}:`, updateError)
+        }
       }
     }
 
-    return res.status(200).json({ message: "✅ Evaluation completed for all applicable submissions." })
+    return res.status(200).json({
+      message: `✅ Evaluation completed`,
+      summary: {
+        total: submissions.length,
+        evaluated: evaluatedCount,
+        skipped: skippedCount,
+        rubricChallenges: Object.keys(challengeConfigMap).length
+      }
+    })
   } catch (err: unknown) {
+    console.error("❌ Bulk evaluation error:", err)
     return res.status(500).json({
       error: "❌ Bulk Evaluation Failed",
       detail: err instanceof Error ? err.message : String(err)
