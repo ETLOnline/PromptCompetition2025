@@ -9,7 +9,6 @@ import cors from "cors";
 
 //import "./config/email.js"; 
 // Routers
-import evaluateRouter from "./routes/evaluate.js";
 import evaluateAllRouter from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
@@ -34,7 +33,6 @@ app.get("/test", (req, res) => {
 });
 
 // ✅ Main app routes
-app.use("/evaluate", evaluateRouter);
 app.use("/bulk-evaluate", evaluateAllRouter); 
 app.use("/leaderboard", leaderboardRouter);
 app.use("/superadmin", superadminRouter);
