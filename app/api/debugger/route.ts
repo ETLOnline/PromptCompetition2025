@@ -19,6 +19,6 @@ export async function POST(req: NextRequest) {
 //     method: "POST",
 //     body: JSON.stringify({ message: `user object: ${JSON.stringify(Variable)}` }),
 //     headers: {
-//       "Content-Type": "application/json",
+//         "Content-Type": "application/json",
 //     },
-//   })
+// })
