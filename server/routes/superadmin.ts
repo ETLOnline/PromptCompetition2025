@@ -2,7 +2,7 @@ import express, { Response, NextFunction } from "express";
 import { admin, auth, db } from "../config/firebase-admin.js";
 import { Request } from "express";
 // import { sendEmailVerification } from "firebase/auth"
-import { transporter } from "../utils/email.js";
+import { transporter } from "../config/email.js";
 
 const router = express.Router();
 
@@ -75,7 +75,7 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
 
     // Finally, apply the new role
     await auth.setCustomUserClaims(uid, { role });
-
+    await auth.revokeRefreshTokens(uid);
   
     return res.status(200).json({
       message: `Role '${role}' assigned to user ${userRecord.email || uid}`,
@@ -127,6 +127,8 @@ router.post(
 
       // Demote to "user"
       await auth.setCustomUserClaims(uid, { role: "user" });
+      await auth.revokeRefreshTokens(uid);
+
       return res.status(200).json({
         message: `Role revoked for user ${userRecord.email || uid}`,
         user: {
@@ -229,7 +231,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       email,
       password,
       displayName: displayName || email.split('@')[0],
-      emailVerified: false
+      emailVerified: true
     });
 
     // Assign custom role claim
@@ -244,22 +246,33 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       isVerified: true,          // Boolean flag
     });
     
-    const verificationLink = await auth.generateEmailVerificationLink(email);
+    // 4) Generate reset link
+    let resetLink: string | null = null;
+    try {
+      const origin = process.env.APP_ORIGIN || "http://localhost:3000";
+      if (!origin) console.warn("⚠️ APP_ORIGIN is not set. Using firebase default link.");
+      const actionCodeSettings = origin ? {
+        url: `${origin}/auth/login/admin`,
+        handleCodeInApp: true,
+      } : undefined;
 
-    console.log(`Verification link: ${verificationLink}`);
-    console.log("EMAIL_SENDER:", process.env.EMAIL_SENDER);
-    console.log("EMAIL_APP_PASSWORD:", process.env.EMAIL_APP_PASSWORD);
+      resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings as any);
+    } catch (e: any) {
+      console.error("Reset link generation failed:", e?.code, e?.message);
+      // If this fails, you'll still return 201 below, with resetLink null
+    }
 
 try {
   await transporter.sendMail({
-    from: process.env.EMAIL_SENDER,
+    from: "enlightechy@gmail.com",
     to: email,
-    subject: "Verify your email",
+    subject: "Your account is ready - set your password",
     html: `
       <p>Hi ${displayName},</p>
-      <p>Thanks for signing up! Please verify your email by clicking the link below:</p>
-      <a href="${verificationLink}">Verify Email</a>
-      <p>If you did not sign up, you can ignore this email.</p>
+      <p>An administrator created an account for you.</p>
+      <p><strong>Username:</strong> ${email}</p>
+      <p>Please set your password using this secure link:</p>
+      <p><a href="${resetLink}">Set Password</a></p>
     `,
   });
 } catch (emailErr: any) {
@@ -296,50 +309,75 @@ try {
 });
 
 
-
-// GET /superadmin/users — all users with pagination and filtering
-router.get("/users", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
+// GET /superadmin/users — include Firestore profile, auto-paginate
+router.get("/users", verifySuperAdmin, async (req, res) => {
   try {
-    const { role, limit = "50" } = req.query;
-    const maxResults = parseInt(limit as string, 10);
+    const { role, limit = "50" } = req.query
+    const maxResults = Math.min(parseInt(limit as string, 10) || 50, 1000)
 
-    const listUsersResult = await auth.listUsers(Math.min(maxResults, 1000));
-    let users = listUsersResult.users.map((userRecord) => ({
-      uid: userRecord.uid,
-      email: userRecord.email || "",
-      displayName: userRecord.displayName || "",
-      role: userRecord.customClaims?.role || "user",
-      createdAt: userRecord.metadata.creationTime,
-      lastSignIn: userRecord.metadata.lastSignInTime,
-      emailVerified: userRecord.emailVerified,
-      disabled: userRecord.disabled
-    }));
+    let users: any[] = []
+    let pageToken: string | undefined = undefined
 
-    // Filter by role if specified
+    // Keep fetching until we reach the requested limit or run out of users
+    do {
+      const list = await auth.listUsers(maxResults, pageToken)
+      users.push(...list.users.map(u => ({
+        uid: u.uid,
+        email: u.email || "",
+        displayName: u.displayName || "",
+        role: (u.customClaims as any)?.role || "user",
+        createdAt: u.metadata.creationTime,
+        lastSignIn: u.metadata.lastSignInTime,
+        emailVerified: u.emailVerified,
+      })))
+
+      pageToken = list.pageToken
+
+      // Stop if we already have enough users
+      if (users.length >= maxResults) break
+    } while (pageToken)
+
+    // Filter by role early if provided
     if (role && role !== "all") {
-      users = users.filter(user => user.role === role);
+      users = users.filter(u => u.role === role)
     }
 
-    // Sort by role priority and creation date
-    const rolePriority = { superadmin: 0, admin: 1, judge: 2, user: 3 };
-    users.sort((a, b) => {
-      const aPriority = rolePriority[a.role as keyof typeof rolePriority] ?? 4;
-      const bPriority = rolePriority[b.role as keyof typeof rolePriority] ?? 4;
-      
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    // Merge Firestore profile for these users
+    const docs = await Promise.all(users.map(u =>
+      db.collection("users").doc(u.uid).get()
+    ))
+    const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]))
 
-    return res.status(200).json({ 
-      users,
+    users = users.map(u => {
+      const p = profileByUid.get(u.uid) || {}
+      return {
+        ...u,
+        displayName: u.displayName || (p.fullName ?? ""),
+        participations: p.participations ?? {},
+      }
+    })
+
+    // Sort
+    const rolePriority = { superadmin: 0, admin: 1, judge: 2, user: 3 }
+    users.sort((a, b) => {
+      const ap = rolePriority[a.role as keyof typeof rolePriority] ?? 4
+      const bp = rolePriority[b.role as keyof typeof rolePriority] ?? 4
+      if (ap !== bp) return ap - bp
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    })
+
+    res.json({
+      users: users.slice(0, maxResults), // in case we fetched more than needed
       total: users.length,
-      hasNextPage: listUsersResult.pageToken ? true : false
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ error: "❌ Failed to fetch users", detail: message });
+      hasNextPage: Boolean(pageToken),
+      nextPageToken: pageToken || null
+    })
+  } catch (err: any) {
+    res.status(500).json({ error: "❌ Failed to fetch users", detail: err.message || String(err) })
   }
-});
+})
+
+
 
 // GET /superadmin/user-by-email?q=email@example.com
 router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
