@@ -16,6 +16,7 @@ export interface Competition {
 
 export interface Challenge {
   id: string
+  title: string
 }
 
 export interface Submission {
