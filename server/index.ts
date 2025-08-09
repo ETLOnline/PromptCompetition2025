@@ -14,7 +14,6 @@ import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
 import competitionsRouter from "./routes/competitions.js";
 
-import { auth } from "./config/firebase-admin.js"; // ✅ Import Firebase Admin Auth
 
 console.log("2. Starting server setup...");
 console.log("3. Routers imported successfully");
