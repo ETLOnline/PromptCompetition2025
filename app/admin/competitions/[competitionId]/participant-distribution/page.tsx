@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { distributeJudges } from "@/lib/challengeAssignment"
+import { distributeJudges, updateSubmissionsStatus } from "@/lib/challengeAssignment"
 // import { distributeJudgesManually } from "@/lib/manualDistribution"
 import {
   fetchCompetitionData,
@@ -326,6 +326,13 @@ export default function ParticipantDistributionPage() {
         judges: data.judges,
         topParticipants: data.topParticipants,
       })
+
+      // Collect all assigned submissions from all assignments
+      const allAssignedSubmissions = assignmentResult.assignments.flatMap(a => a.submissions)
+
+      // Update status for all these submissions
+      await updateSubmissionsStatus(competitionId, allAssignedSubmissions, 'selected_for_manual_review')
+
       
       const transformedResult = {
         success: true,

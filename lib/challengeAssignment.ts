@@ -1,5 +1,5 @@
 import { db } from './firebase'
-import { collection, doc, setDoc, updateDoc, getDoc, getDocs, query, where } from 'firebase/firestore'
+import { collection,  writeBatch, doc, setDoc, updateDoc, getDoc, getDocs, query, where } from 'firebase/firestore'
 import type {
   Challenge,
   Submission,
@@ -215,3 +215,26 @@ export async function getJudgeAssignments(
   }
 }
 
+// changes the status of submissions of top N participant to selected_for_manual_review
+export async function updateSubmissionsStatus(
+  competitionId: string,
+  submissions: Submission[],
+  status: string = 'selected_for_manual_review'
+): Promise<void> {
+  if (!submissions.length) return
+
+  const batch = writeBatch(db)
+
+  submissions.forEach(submission => {
+    const submissionRef = doc(db, `competitions/${competitionId}/submissions`, submission.id)
+    batch.update(submissionRef, { status })
+  })
+
+  try {
+    await batch.commit()
+    console.log(`Updated status for ${submissions.length} submissions to "${status}"`)
+  } catch (error) {
+    console.error('Failed to update submissions status:', error)
+    throw new Error(`Failed to update submissions status to "${status}"`)
+  }
+}
