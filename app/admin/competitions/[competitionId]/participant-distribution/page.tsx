@@ -321,6 +321,18 @@ export default function ParticipantDistributionTable() {
     [state.existingAssignments],
   )
 
+  const topNValidation = useMemo(() => {
+    const max = state.totalParticipants;
+    const n = state.selectedTopN;
+
+    if (!n || Number.isNaN(n)) return { ok: false, msg: "Enter a number greater than 0." };
+    if (n < 1) return { ok: false, msg: "Minimum is 1 participant." };
+    if (n > max) return { ok: false, msg: `Cannot exceed ${max} participant${max === 1 ? "" : "s"}.` };
+
+    return { ok: true, msg: `You can pick up to ${max}.` };
+  }, [state.selectedTopN, state.totalParticipants]);
+
+
   // Optimized notification system
   const showNotification = useCallback((type: NotificationState["type"], title: string, message: string) => {
     const id = Date.now().toString()
@@ -499,18 +511,6 @@ export default function ParticipantDistributionTable() {
     return () => unsubscribe()
   }, [auth, router, initializeData])
 
-  // Optimized handlers
-  const handleSaveConfig = useCallback(async () => {
-    if (!state.currentUser) return
-
-    if (state.savedConfig && state.savedConfig.selectedTopN !== state.selectedTopN) {
-      dispatch({ type: "SET_DIALOG", payload: { dialog: "confirm", open: true } })
-      return
-    }
-
-    await saveConfigToFirestore(state.currentUser.uid)
-  }, [state.currentUser, state.savedConfig, state.selectedTopN])
-
   const saveConfigToFirestore = useCallback(
     async (uid: string) => {
       try {
@@ -545,6 +545,23 @@ export default function ParticipantDistributionTable() {
     },
     [competitionId, state.selectedTopN, showNotification],
   )
+
+  // Optimized handlers
+  const handleSaveConfig = useCallback(async () => {
+    if (!state.currentUser) return;
+
+    if (!topNValidation.ok) {
+      showNotification("warning", "Invalid number", topNValidation.msg);
+      return;
+    }
+
+    if (state.savedConfig && state.savedConfig.selectedTopN !== state.selectedTopN) {
+      dispatch({ type: "SET_DIALOG", payload: { dialog: "confirm", open: true } });
+      return;
+    }
+
+    await saveConfigToFirestore(state.currentUser.uid);
+  }, [state.currentUser, state.savedConfig, state.selectedTopN, topNValidation, saveConfigToFirestore, showNotification]);
 
   const handleDistributeParticipants = useCallback(async () => {
     dispatch({ type: "SET_LOADING", payload: { key: "isDistributing", value: true } })
@@ -911,13 +928,16 @@ export default function ParticipantDistributionTable() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
-            onClick={() => dispatch({ type: "SET_DIALOG", payload: { dialog: "config", open: true } })}
-            className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800"
-            disabled={state.isLoadingConfig}
-          >
-            {state.isLoadingConfig ? <Loader className="w-4 h-4 animate-spin" /> : <Hash className="w-4 h-4" />}
-            Configure Participants ({state.selectedTopN})
-          </Button>
+          onClick={() => dispatch({ type: "SET_DIALOG", payload: { dialog: "config", open: true } })}
+          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800"
+          disabled={state.isLoadingConfig}
+        >
+          {state.isLoadingConfig ? (
+            <Loader className="w-4 h-4 animate-spin" />
+          ) : null}
+          Set Participant Distribution ({state.selectedTopN})
+        </Button>
+
 
           <Button
             onClick={() => dispatch({ type: "SET_DIALOG", payload: { dialog: "distribute", open: true } })}
@@ -1200,7 +1220,6 @@ export default function ParticipantDistributionTable() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-gray-900">
-              <Hash className="w-5 h-5" />
               Configure Participants
             </DialogTitle>
             <DialogDescription className="text-gray-600">
@@ -1215,22 +1234,32 @@ export default function ParticipantDistributionTable() {
               <Input
                 id="topN"
                 type="number"
-                min="1"
+                min={1}
                 max={state.totalParticipants}
                 value={state.selectedTopN || ""}
                 onChange={(e) =>
-                  dispatch({ type: "SET_SELECTED_TOP_N", payload: Number.parseInt(e.target.value) || 0 })
+                  dispatch({
+                    type: "SET_SELECTED_TOP_N",
+                    payload: Math.max(0, Number.parseInt(e.target.value) || 0),
+                  })
                 }
                 placeholder={`Enter number (max: ${state.totalParticipants})`}
-                className="border-gray-300 focus:border-gray-900 focus:ring-gray-900/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                  ${topNValidation.ok
+                    ? "border-gray-300 focus:border-gray-900 focus:ring-gray-900/20"
+                    : "border-red-300 focus:border-red-500 focus:ring-red-500/20"}
+                `}
                 style={{ MozAppearance: "textfield" }}
               />
+              <p className={`text-sm ${topNValidation.ok ? "text-gray-500" : "text-red-600"}`}>
+                {topNValidation.msg}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {[10, 20, 50, 100].map((n) => (
                 <Button
                   key={n}
-                  onClick={() => dispatch({ type: "SET_SELECTED_TOP_N", payload: n })}
+                  onClick={() => dispatch({ type: "SET_SELECTED_TOP_N", payload: Math.min(n, state.totalParticipants) })}
                   variant={state.selectedTopN === n ? "default" : "outline"}
                   size="sm"
                   disabled={n > state.totalParticipants}
@@ -1255,8 +1284,8 @@ export default function ParticipantDistributionTable() {
             </Button>
             <Button
               onClick={handleSaveConfig}
-              disabled={state.selectedTopN === 0 || state.isSavingConfig}
-              className="bg-gray-900 hover:bg-gray-800"
+              disabled={!topNValidation.ok || state.isSavingConfig}
+              className="bg-gray-900 hover:bg-gray-800 disabled:opacity-60"
             >
               {state.isSavingConfig ? (
                 <>

@@ -858,7 +858,7 @@ export default function UserRoleManager() {
                         className="gap-1"
                       >
                         <config.icon className="w-3 h-3" />
-                        {config.label} ({count})
+                        {config.label}
                       </Button>
                     )
                   })}
