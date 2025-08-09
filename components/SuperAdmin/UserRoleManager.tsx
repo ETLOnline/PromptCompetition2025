@@ -6,7 +6,7 @@ import { Search, Users, X, CheckCircle2, XCircle, AlertTriangle, Crown, Shield, 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { validateEmail, validatePassword } from "@/lib/utils";
+import { validateEmail} from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -62,8 +62,6 @@ export interface Stats {
 
 export interface CreateUserForm {
   email: string
-  password: string
-  confirmPassword: string
   displayName: string
   role: string
 }
@@ -354,13 +352,9 @@ export default function UserRoleManager() {
   const [showExistingUsers, setShowExistingUsers] = useState(false)
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     email: "",
-    password: "",
-    confirmPassword: "",
     displayName: "",
     role: "",
   })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [selectedExistingUsers, setSelectedExistingUsers] = useState<Set<string>>(new Set())
   const [roleToAssign, setRoleToAssign] = useState("")
@@ -659,17 +653,6 @@ export default function UserRoleManager() {
       return
     }
 
-    const passwordError = validatePassword(createUserForm.password)
-    if (passwordError) {
-      setFormError(passwordError)
-      return
-    }
-
-    if (createUserForm.password !== createUserForm.confirmPassword) {
-      setFormError("Passwords do not match")
-      return
-    }
-
     try {
       setLoading((p) => ({ ...p, action: true }))
       const token = await getIdToken()
@@ -682,7 +665,7 @@ export default function UserRoleManager() {
       if (res.ok) {
         setFormError(null)
         showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
-        setCreateUserForm({ email: "", password: "", confirmPassword: "", displayName: "", role: "" })
+        setCreateUserForm({ email: "", displayName: "", role: "" })
         setShowCreateUser(false)
         // Refresh data
         fetchAllUsers(true)
@@ -1009,7 +992,7 @@ export default function UserRoleManager() {
               Create New User
             </DialogTitle>
             <DialogDescription>
-              Add a new user to your platform with the specified role and permissions.
+              Add a new user with specified role and send them a secure link to set their password.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1048,46 +1031,6 @@ export default function UserRoleManager() {
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, email: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Minimum 10 characters"
-                  value={createUserForm.password}
-                  onChange={(e) => setCreateUserForm((f) => ({ ...f, password: e.target.value }))}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                  onClick={() => setShowPassword(prev => !prev)}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Re-enter password"
-                  value={createUserForm.confirmPassword}
-                  onChange={(e) => setCreateUserForm((f) => ({ ...f, confirmPassword: e.target.value }))}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                  onClick={() => setShowConfirmPassword(prev => !prev)}
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
           </div>
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2">
             <Button
@@ -1095,8 +1038,6 @@ export default function UserRoleManager() {
               onClick={() => {
                 setCreateUserForm({
                   email: "",
-                  password: "",
-                  confirmPassword: "",
                   displayName: "",
                   role: ""
                 })

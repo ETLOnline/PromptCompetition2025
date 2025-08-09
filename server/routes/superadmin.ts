@@ -191,33 +191,19 @@ router.delete(
 
 // POST /superadmin/create-user
 router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
-  const { email, password, displayName, role } = req.body;
+  const { email, displayName, role } = req.body;
 
   const allowedRoles = ["superadmin", "admin", "judge"];
 
-  // Basic presence check
-  if (!email || !password || !displayName || !role) {
-    return res.status(400).json({ error: "All fields are required: email, password, displayName, role" });
+  // Basic presence check (no password now)
+  if (!email || !displayName || !role) {
+    return res.status(400).json({ error: "Required: email, displayName, role" });
   }
 
-  // Email format validation
+  // Email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: "Invalid email format" });
-  }
-
-  // Password validation
-  const validatePassword = (pw: string): string | null => {
-    if (pw.length <= 10) return "Password must be longer than 10 characters.";
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return "Password must include at least one special character.";
-    if (!/\d/.test(pw)) return "Password must include at least one number.";
-    if (!/[A-Z]/.test(pw)) return "Password must include at least one capital letter.";
-    return null;
-  };
-
-  const passwordError = validatePassword(password);
-  if (passwordError) {
-    return res.status(400).json({ error: passwordError });
   }
 
   // Role validation
@@ -226,87 +212,85 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
   }
 
   try {
-    // Create user in Firebase Auth
+    // 1) Create user WITHOUT password
     const userRecord = await auth.createUser({
       email,
-      password,
-      displayName: displayName || email.split('@')[0],
-      emailVerified: true
+      displayName: displayName || email.split("@")[0],
+      emailVerified: true,
+      disabled: false,
     });
 
-    // Assign custom role claim
+    // 2) Assign custom role claim
     await auth.setCustomUserClaims(userRecord.uid, { role });
-    const institution = ""; // An empty string is valid, though may not be useful
-    // console.log(`Creating user in Firestore: ${userRecord.uid}`);
+
+    // 3) Create Firestore profile
     await db.collection("users").doc(userRecord.uid).set({
-      displayName,                  // Must be a defined string
-      email,                     // Must be a defined string
-      institution,               // Empty string is fine if intentional
-      createdAt: new Date().toISOString(), // ISO string timestamp
-      isVerified: true,          // Boolean flag
+      displayName,
+      email,
+      institution: "",
+      createdAt: new Date().toISOString(),
+      isVerified: true, // flip to true after separate email verification if you use it
+      role,
     });
-    
-    // 4) Generate reset link
+
+    // 4) Generate one-time password reset link (acts as "set initial password")
     let resetLink: string | null = null;
     try {
       const origin = process.env.APP_ORIGIN || "http://localhost:3000";
-      if (!origin) console.warn("⚠️ APP_ORIGIN is not set. Using firebase default link.");
-      const actionCodeSettings = origin ? {
-        url: `${origin}/auth/login/admin`,
-        handleCodeInApp: true,
-      } : undefined;
-
+      const actionCodeSettings = {
+        url: `${origin}/auth/login/admin`,   // or your post-completion route
+        handleCodeInApp: false,     // use Firebase hosted page; set true if you handle link in-app
+      };
       resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings as any);
     } catch (e: any) {
       console.error("Reset link generation failed:", e?.code, e?.message);
-      // If this fails, you'll still return 201 below, with resetLink null
     }
 
-try {
-  await transporter.sendMail({
-    from: "enlightechy@gmail.com",
-    to: email,
-    subject: "Your account is ready - set your password",
-    html: `
-      <p>Hi ${displayName},</p>
-      <p>An administrator created an account for you.</p>
-      <p><strong>Username:</strong> ${email}</p>
-      <p>Please set your password using this secure link:</p>
-      <p><a href="${resetLink}">Set Password</a></p>
-    `,
-  });
-} catch (emailErr: any) {
-  console.error("❌ Failed to send verification email:", emailErr);
-}
+    // (Optional but recommended) also send an email verification link
+    // const verifyLink = await auth.generateEmailVerificationLink(email, { url: `${origin}/verify-complete` });
 
-    // await sendEmailVerification(user);
+    // 5) Send invite email
+    try {
+      await transporter.sendMail({
+        from: "enlightechy@gmail.com",
+        to: email,
+        subject: "Your account is ready — set your password",
+        html: `
+          <p>Hi ${displayName},</p>
+          <p>An administrator has created a <strong>${role}</strong> account for you on our platform.</p>
+          <p><strong>Username:</strong> ${email}</p>
+          <p>To activate your account, please click the link below to set your password:</p>
+          <p><a href="${resetLink}" style="color: #2563eb; text-decoration: underline;">Set Your Password</a></p>
+          <p>Once your password is set, you can log in via the admin portal.</p>
+          <p>If you did not expect this invitation, you can safely ignore this email.</p>
+        `,
+      });
+    } catch (emailErr: any) {
+      console.error("❌ Failed to send invite email:", emailErr);
+    }
 
     return res.status(201).json({
-      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created and invite sent to ${email}`,
       user: {
         uid: userRecord.uid,
         email: userRecord.email || "",
         displayName: userRecord.displayName || "",
-        role
-      }
+        role,
+        inviteSent: Boolean(resetLink),
+      },
     });
   } catch (err: any) {
-    let errorMessage = "Failed to create user account";
-
+    // If the email already exists, you can optionally "re-invite" by generating a reset link
     if (err.code === "auth/email-already-exists") {
-      errorMessage = "Email already exists";
-    } else if (err.code === "auth/invalid-email") {
-      errorMessage = "Invalid email format";
-    } else if (err.code === "auth/weak-password") {
-      errorMessage = "Password is too weak";
+      return res.status(409).json({ error: "Email already exists" });
     }
-
-    return res.status(400).json({
-      error: `❌ ${errorMessage}`,
-      detail: err.message
-    });
+    if (err.code === "auth/invalid-email") {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+    return res.status(400).json({ error: "Failed to create user account", detail: err.message });
   }
 });
+
 
 
 // GET /superadmin/users — include Firestore profile, auto-paginate
