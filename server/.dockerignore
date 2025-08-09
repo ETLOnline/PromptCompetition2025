@@ -1,0 +1,11 @@
+# Backend .dockerignore
+node_modules
+dist
+coverage
+*.log
+.env.local
+.env.development
+.env.test
+.env.production
+.vscode
+.DS_Store

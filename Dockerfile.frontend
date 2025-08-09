@@ -1,0 +1,66 @@
+# syntax=docker/dockerfile:1
+
+############################
+# Frontend (Next.js) build #
+############################
+# Choose a Node LTS base image
+FROM node:20-alpine AS base
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# ---- deps ----
+FROM base AS deps
+# Copy only lockfiles + package.json to leverage Docker layer caching
+COPY package.json ./
+# Copy whichever lockfile you actually use (pnpm, npm, or yarn)
+# Keep all COPY lines; ones without files will be ignored.
+COPY pnpm-lock.yaml* ./
+COPY package-lock.json* ./
+COPY yarn.lock* ./
+
+# Install deps using the detected package manager
+# (prefers pnpm if lockfile present)
+RUN set -eux; \
+    if [ -f pnpm-lock.yaml ]; then \
+        npm i -g pnpm && pnpm i --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then \
+        corepack enable && yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then \
+        npm ci; \
+    else \
+        npm i; \
+    fi
+
+# ---- builder ----
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the repo because your Next.js app reads files from the root
+COPY . .
+# If you use pnpm, this will be `pnpm build`; otherwise npm/yarn works too.
+# We try pnpm first, fall back to npm/yarn.
+RUN set -eux; \
+    if command -v pnpm >/dev/null 2>&1 && [ -f pnpm-lock.yaml ]; then \
+        pnpm run build; \
+    elif [ -f yarn.lock ]; then \
+        yarn build; \
+    else \
+        npm run build; \
+    fi
+
+# ---- runner (standalone) ----
+# Ensure next.config.mjs has:  export default { output: 'standalone' }
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+# Create and use non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+USER nextjs
+
+# Copy the minimal standalone bundle
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+EXPOSE 3000
+CMD ["node","server.js"]

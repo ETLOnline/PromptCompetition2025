@@ -22,7 +22,7 @@ import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
-import type { Timestamp } from "firebase-admin/firestore"
+import type { Timestamp } from "firebase/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
 
 interface Challenge {

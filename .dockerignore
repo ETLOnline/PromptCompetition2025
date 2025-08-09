@@ -1,0 +1,19 @@
+# Root .dockerignore (frontend build context)
+node_modules
+.next
+.out
+.git
+.github
+.idea
+.next/cache
+pnpm-store
+dist
+coverage
+*.log
+.env.local
+.env.development
+.env.test
+.env.production
+# Ignore local editor and OS clutter
+.vscode
+.DS_Store

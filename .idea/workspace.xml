@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="7f56305b-fae1-480b-aade-54f76fbb5d99" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/app/admin/competitions/[competitionId]/challenges/new/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/admin/competitions/[competitionId]/challenges/new/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/SuperAdmin/UserRoleManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/SuperAdmin/UserRoleManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/routes/generateLeaderboard.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes/generateLeaderboard.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/routes/superadmin.ts" beforeDir="false" afterPath="$PROJECT_DIR$/server/routes/superadmin.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 5
+}]]></component>
+  <component name="ProjectId" id="310g8Y37zUEEI8v94AE2Kif0YrR" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="7f56305b-fae1-480b-aade-54f76fbb5d99" name="Changes" comment="" />
+      <created>1754666248845</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1754666248845</updated>
+    </task>
+    <servers />
+  </component>
+</project>
