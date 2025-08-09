@@ -36,16 +36,17 @@ export default function JudgeSubmissionPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all")
 
 
-  const filteredSubmissions = useMemo(() => {
-    if (filterStatus === "all") return submissions
-    return submissions.filter((sub) => sub.status === filterStatus)
-  }, [submissions, filterStatus])
+    const filteredSubmissions = useMemo(() =>
+         {
+        if (filterStatus === "all") return submissions
+        return submissions.filter((sub) => sub.status === filterStatus)
+    }, [submissions, filterStatus])
 
-  const progress = useMemo(() => {
-    const total = submissions.length
-    const evaluated = submissions.filter((sub) => sub.status === "evaluated").length
-    return { total, evaluated, percentage: total > 0 ? Math.round((evaluated / total) * 100) : 0 }
-  }, [submissions])
+    const progress = useMemo(() => {
+        const total = submissions.length
+        const evaluated = submissions.filter((sub) => sub.status === "evaluated").length
+        return { total, evaluated, percentage: total > 0 ? Math.round((evaluated / total) * 100) : 0 }
+    }, [submissions])
 
   function toggleSubmission(submissionId: string) {
     setExpandedSubmissions((prev) => {
