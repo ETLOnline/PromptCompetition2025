@@ -17,26 +17,22 @@ interface ManualAssignment {
 }
 
 interface DistributionTableProps {
+  competitionId: string  // new
   challenges: Challenge[]
   judges: User[]
   submissionsByChallenge: Record<string, Submission[]>
   onManualDistribute: (assignments: ManualAssignment[]) => Promise<void>
   onEqualDistribute: () => Promise<void>
   loading: boolean
-  // New: Prefill grid with existing assignment counts if provided
   prefillAssignments?: Record<string, Record<string, number>>
   disableEqual?: boolean
 }
 
+
 export default function DistributionTable({
-  challenges,
-  judges,
-  submissionsByChallenge,
-  onManualDistribute,
-  onEqualDistribute,
-  loading,
-  prefillAssignments,
-  disableEqual
+  competitionId, challenges, judges, submissionsByChallenge, 
+  onManualDistribute, onEqualDistribute, loading,
+  prefillAssignments, disableEqual
 }: DistributionTableProps) {
   const [assignments, setAssignments] = useState<Record<string, Record<string, number>>>({})
   const [isApplying, setIsApplying] = useState(false)
@@ -47,12 +43,31 @@ export default function DistributionTable({
     challenges.forEach(challenge => {
       initial[challenge.id] = {}
       judges.forEach(judge => {
-        const pre = prefillAssignments?.[challenge.id]?.[judge.id]
-        initial[challenge.id][judge.id] = typeof pre === 'number' ? pre : 0
+        initial[challenge.id][judge.id] = 0
       })
     })
+
+    if (prefillAssignments) {
+      judges.forEach(judge => {
+        const judgeId = judge.id
+        const competitionCounts = prefillAssignments[judgeId] || {}
+        const totalCount = competitionCounts[competitionId] || 0
+
+        const challengeCount = challenges.length
+        if (challengeCount > 0 && totalCount > 0) {
+          const perChallengeCount = Math.floor(totalCount / challengeCount)
+          const remainder = totalCount % challengeCount
+
+          challenges.forEach((challenge, index) => {
+            initial[challenge.id][judgeId] = perChallengeCount + (index < remainder ? 1 : 0)
+          })
+        }
+      })
+    }
+
     setAssignments(initial)
-  }, [challenges, judges, prefillAssignments])
+  }, [challenges, judges, prefillAssignments, competitionId])
+
 
   // Calculate totals and validation
   const calculations = useMemo(() => {
