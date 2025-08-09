@@ -70,6 +70,7 @@ export const fetchChallengesData = async (competitionId: string) => {
         snapshot.forEach((doc) => {
             challengesList.push({
                 id: doc.id,
+                title: doc.title || "Unknown",
             })
         })
         
