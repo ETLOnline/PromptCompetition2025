@@ -473,7 +473,7 @@ export default function ParticipantDistributionTable() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        router.push("/auth/login/admin")
+        router.push("/")
         return
       }
 

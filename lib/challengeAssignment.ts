@@ -176,26 +176,32 @@ export async function getJudgeAssignments(
     const assignments: Assignment[] = []
 
     for (const challengeDoc of challengesSnapshot.docs) {
-      const judgeRef = doc(db, `competitions/${competitionId}/challenges/${challengeDoc.id}/judges/${judgeId}`)
+      const challengeId = challengeDoc.id
+      const judgeRef = doc(db, `competitions/${competitionId}/challenges/${challengeId}/judges/${judgeId}`)
       const judgeDoc = await getDoc(judgeRef)
 
       if (judgeDoc.exists()) {
         const judgeData = judgeDoc.data() as Judge
-        const submissionsRef = collection(db, `competitions/${competitionId}/submissions`)
-        const submissionsQuery = query(submissionsRef, where('challengeId', '==', challengeDoc.id))
-        const submissionsSnapshot = await getDocs(submissionsQuery)
 
-        const submissions: Submission[] = []
-        submissionsSnapshot.forEach(doc => {
-          if (judgeData.assignedSubmissions.includes(doc.id)) {
-            submissions.push({ id: doc.id, ...doc.data() } as Submission)
-          }
+        // Filter assigned submissions that belong to this challenge
+        const relevantSubmissionIds = judgeData.assignedSubmissions.filter(id =>
+          id.endsWith(`_${challengeId}`)
+        )
+
+        // Fetch these submissions directly
+        const submissionFetches = relevantSubmissionIds.map(async (submissionId) => {
+          const submissionRef = doc(db, `competitions/${competitionId}/submissions/${submissionId}`)
+          const submissionSnap = await getDoc(submissionRef)
+          return submissionSnap.exists() ? { id: submissionSnap.id, ...submissionSnap.data() } as Submission : null
         })
+
+        const fetchedSubmissions = await Promise.all(submissionFetches)
+        const submissions = fetchedSubmissions.filter(Boolean) as Submission[]
 
         assignments.push({
           judgeId: judgeData.id,
           judgeName: judgeData.fullName,
-          challengeId: challengeDoc.id,
+          challengeId,
           submissions,
           submissionCount: submissions.length
         })
@@ -208,3 +214,4 @@ export async function getJudgeAssignments(
     return []
   }
 }
+
