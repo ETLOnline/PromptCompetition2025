@@ -167,7 +167,7 @@ const initialState: AppState = {
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case "SET_AUTH":
-      return { ...state, ...action.payload }
+      return { ...state, currentUser: action.payload.user,isAuthenticated: action.payload.isAuthenticated}
     case "SET_PARTICIPANTS":
       return { ...state, totalParticipants: action.payload, isLoadingParticipants: false }
     case "SET_JUDGES":
@@ -209,7 +209,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
   }
 }
 
-const ITEMS_PER_PAGE = 10
+const ITEMS_PER_PAGE = 12
 
 // Avatar color generator - memoized
 const getAvatarColor = (name: string) => {
