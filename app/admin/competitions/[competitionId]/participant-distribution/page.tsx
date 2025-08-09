@@ -435,18 +435,22 @@ export default function ParticipantDistributionTable() {
 
       if (configSnapshot.exists()) {
         const data = configSnapshot.data()
-        if (data[userId]?.selectedTopN) {
-          dispatch({ type: "SET_SELECTED_TOP_N", payload: data[userId].selectedTopN })
-          dispatch({
-            type: "SET_SAVED_CONFIG",
-            payload: {
-              selectedTopN: data[userId].selectedTopN,
-              timestamp: data[userId].timestamp,
-            },
-          })
-        } else {
-          dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
+        if (data[userId] && data[userId].selectedTopN != null) {
+          const topN = Number(data[userId].selectedTopN);
+          if (!Number.isNaN(topN)) {
+            dispatch({ type: "SET_SELECTED_TOP_N", payload: topN });
+            dispatch({
+              type: "SET_SAVED_CONFIG",
+              payload: {
+                selectedTopN: topN,
+                timestamp: data[userId].timestamp, // may be FieldValue; OK for now
+              },
+            });
+          }
         }
+      // in all cases, stop the loading spinner
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } });
+
       } else {
         dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
       }
@@ -689,19 +693,6 @@ export default function ParticipantDistributionTable() {
         return "bg-gray-100 text-gray-600 border-gray-200"
       default:
         return "bg-gray-100 text-gray-600 border-gray-200"
-    }
-  }, [])
-
-  const getStatusDot = useCallback((status: string) => {
-    switch (status) {
-      case "available":
-        return "bg-emerald-500"
-      case "busy":
-        return "bg-amber-500"
-      case "offline":
-        return "bg-red-500"
-      default:
-        return "bg-gray-400"
     }
   }, [])
 
@@ -1090,11 +1081,6 @@ export default function ParticipantDistributionTable() {
                                     .toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                              <div
-                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${getStatusDot(
-                                  judge.status || "available",
-                                )}`}
-                              ></div>
                             </div>
                             <div className="space-y-1">
                               <p className="font-medium leading-none text-gray-900">{judge.name}</p>
@@ -1105,7 +1091,7 @@ export default function ParticipantDistributionTable() {
                         </TableCell>
 
                         <TableCell>
-                          <Badge className={`${getStatusColor(judge.status || "available")} border font-medium`}>
+                          <Badge className={`${getStatusColor(judge.status || "available")} border font-medium cursor-default pointer-events-none`}>
                             {judge.status || "available"}
                           </Badge>
                         </TableCell>
