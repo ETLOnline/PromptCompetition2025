@@ -58,10 +58,26 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   }, [params])
 
   useEffect(() => {
-    if (!user) {
-      router.push("/")
-      return
+    const run = async () => {
+      if (!user) {
+        router.push("/");
+        return;
+      }
+
+      const { id } = await params
+      
+      const participantRef = doc(db, "competitions", id,
+        "participants", user.uid );
+      const participantSnap = await getDoc(participantRef);
+      if (!participantSnap.exists()) {
+        router.push("/participants");
+        return;
+      }
     }
+
+    run();
+
+
     Promise.all([
       fetchChallengeData(competitionId, challengeId),
       fetchSubmissionPrompt(competitionId, challengeId, user.uid),

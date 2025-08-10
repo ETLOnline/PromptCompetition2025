@@ -114,11 +114,34 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
     }
   }, [submissions, challengeCount, setStoreValues])
 
+  const checkParticipant = async () => {
+    try {
+      const participantRef = doc(
+        db,
+        "competitions",
+        id, // use `id` directly, not state
+        "participants",
+        user.uid
+      );
+      const participantSnap = await getDoc(participantRef);
+
+      if (!participantSnap.exists()) {
+        router.push("/participants");
+      } else {
+        setCurrentCompetitionId(id);
+      }
+    } catch (err) {
+      console.error("Error checking participant:", err);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       router.push("/")
       return
     }
+
+    checkParticipant();
 
     const loadCompetitionMetadata = async () => {
       try {
