@@ -77,7 +77,6 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
 
     run();
 
-
     Promise.all([
       fetchChallengeData(competitionId, challengeId),
       fetchSubmissionPrompt(competitionId, challengeId, user.uid),
@@ -132,7 +131,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const fetchSubmissionPrompt = async (competitionId: string, challengeId: string, participantId: string) => {
     try {
       setLoadingPrompt(true)
-      // console.log("competitionId", competitionId)
+      
       const submissionId = `${participantId}_${challengeId}`
       const submissionRef = doc(db, "competitions", competitionId, "submissions", submissionId)
       const submissionSnap = await getDoc(submissionRef)
@@ -413,6 +412,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                 </div>
               </CardHeader>
             </Card>
+
             {/* Challenge Details Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
