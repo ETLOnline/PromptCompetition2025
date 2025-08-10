@@ -99,7 +99,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const [challenges, setChallenges] = useState<any[]>([])
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
   // const { id } = params
-    const { id } = use(params) // ← Unwrap the promise using `use`
+  const { id } = use(params) // ← Unwrap the promise using `use`
 
   // Filtering and View Mode States
   const [searchTerm, setSearchTerm] = useState("")

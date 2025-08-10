@@ -24,8 +24,8 @@ export default function NewCompetitionPage() {
   const params = useParams()
   const competitionId = params?.competitionId as string
   const { toast } = useToast()
-  const [startDeadline, setStartDeadline] = useState<string | null>(null)
-  const [endDeadline, setEndDeadline] = useState<string | null>(null)
+  // const [startDeadline, setStartDeadline] = useState<string | null>(null)
+  // const [endDeadline, setEndDeadline] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [formData, setFormData] = useState({
@@ -42,10 +42,10 @@ export default function NewCompetitionPage() {
         const competitionDoc = await getDoc(doc(db, "competitions", competitionId))
         if (competitionDoc.exists()) {
           const data = competitionDoc.data()
-          const start = data.startDeadline?.toDate?.() ?? new Date(data.startDeadline)
-          const end = data.endDeadline?.toDate?.() ?? new Date(data.endDeadline)
-          setStartDeadline(start.toISOString().slice(0, 16))
-          setEndDeadline(end.toISOString().slice(0, 16))
+          // const start = data.startDeadline?.toDate?.() ?? new Date(data.startDeadline)
+          // const end = data.endDeadline?.toDate?.() ?? new Date(data.endDeadline)
+          // setStartDeadline(start.toISOString().slice(0, 16))
+          // setEndDeadline(end.toISOString().slice(0, 16))
         }
       } catch (error) {
         console.error("Error fetching competition data:", error)
@@ -100,8 +100,8 @@ export default function NewCompetitionPage() {
         problemStatement: formData.problemStatement,
         rubric: formData.rubric,
         guidelines: formData.guidelines,
-        startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-        endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
+        // startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
+        // endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),

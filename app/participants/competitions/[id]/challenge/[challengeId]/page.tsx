@@ -30,7 +30,6 @@ interface Challenge {
   title: string
   problemStatement: string
   guidelines: string
-  startDeadline: Timestamp
   endDeadline: Timestamp
   isCompetitionLocked: boolean
 }
@@ -74,23 +73,38 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const fetchChallengeData = async (competitionId: string, challengeId: string) => {
     try {
       setLoadingChallenge(true)
+
+      // Fetch challenge basic data
       const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId)
       const challengeSnap = await getDoc(challengeRef)
-      // console.log("competitionId", competitionId, "challengeId", challengeId)
       if (!challengeSnap.exists()) {
         console.warn("Challenge document not found.")
         return
       }
-      const data = challengeSnap.data()
-      const isCompetitionLocked = data?.endDeadline && new Date() > new Date(data.endDeadline.seconds * 1000)
-      const challengeData: Challenge = {
-        id: challengeId,
-        title: data.title,
-        problemStatement: data.problemStatement,
-        guidelines: data.guidelines,
-        isCompetitionLocked: isCompetitionLocked,
-        endDeadline: data.endDeadline,
+      const challengeDataRaw = challengeSnap.data()
+
+      // Fetch competition deadlines
+      const competitionRef = doc(db, "competitions", competitionId)
+      const competitionSnap = await getDoc(competitionRef)
+      if (!competitionSnap.exists()) {
+        console.warn("Competition document not found.")
+        return
       }
+      const competitionData = competitionSnap.data()
+
+      const isCompetitionLocked =
+        competitionData?.endDeadline &&
+        new Date() > new Date(competitionData.endDeadline.seconds * 1000)
+
+      const challengeData: Challenge & { endDeadline?: Timestamp } = {
+        id: challengeId,
+        title: challengeDataRaw.title,
+        problemStatement: challengeDataRaw.problemStatement,
+        guidelines: challengeDataRaw.guidelines,
+        isCompetitionLocked: isCompetitionLocked,
+        endDeadline: competitionData.endDeadline, // from competition, not challenge
+      }
+
       setChallenge(challengeData)
     } catch (error) {
       console.error("Error fetching challenge data:", error)

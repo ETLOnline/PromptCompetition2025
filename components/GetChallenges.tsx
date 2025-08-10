@@ -71,7 +71,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
 
         setChallenges(fetched)
       } catch (error) {
-        console.error("Error fetching challenges or user role:", error)
+        console.error("Error fetching challenges:", error)
       }
     }
 
