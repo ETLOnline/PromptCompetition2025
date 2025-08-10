@@ -45,6 +45,7 @@ import {
 } from "lucide-react"
 import {
   writeBatch,
+  deleteField,
   doc,
   collection,
   query,
@@ -61,6 +62,7 @@ import { db } from "@/lib/firebase"
 import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
 import { getIdTokenResult } from "firebase/auth"
 import { getIdToken } from "@/lib/firebaseAuth"
+
 
 interface Judge {
   id: string
@@ -590,23 +592,60 @@ export default function ParticipantDistributionTable() {
         submissionsByChallenge[challengeId].sort()
       })
 
-      // Create challenges array
+      // Pull existing assignments and exclude those ids from buckets
+      const { matrix, alreadyAssigned } = await fetchExistingAssignments()
+
+      // Build the final challenges list (only once)
       const challenges: Challenge[] = Object.entries(submissionsByChallenge).map(([challengeId, submissionIds]) => ({
         id: challengeId,
-        name: `Challenge ${challengeId}`, // You can enhance this by fetching actual challenge names
-        bucketSize: submissionIds.length,
+        name: `Challenge ${challengeId}`,
+        bucketSize: submissionIds.length, // remaining to assign
         submissionIds,
       }))
 
       dispatch({ type: "SET_CHALLENGES", payload: challenges })
+      dispatch({ type: "SET_ASSIGNMENT_MATRIX", payload: matrix })
       dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: submissionsByChallenge })
-    } catch (error) {
-      console.error("Error fetching challenges and submissions:", error)
-      showNotification("error", "Data Loading Error", "Failed to load challenges and submissions")
-      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: false } })
-      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: false } })
-    }
-  }, [competitionId, state.selectedTopN, showNotification])
+
+      } catch (error) {
+        console.error("Error fetching challenges and submissions:", error)
+        showNotification("error", "Data Loading Error", "Failed to load challenges and submissions")
+        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: false } })
+        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: false } })
+      }
+    }, [competitionId, state.selectedTopN, showNotification])
+
+
+    const fetchExistingAssignments = useCallback(async () => {
+      const assignmentsByJudge: Record<string, Record<string, string[]>> = {}
+      const qSnap = await getDocs(collection(db, "competitions", competitionId, "judges"))
+
+      qSnap.forEach((d) => {
+        const data = d.data() as {
+          submissionsByChallenge?: Record<string, string[]>
+        }
+        if (data?.submissionsByChallenge) {
+          assignmentsByJudge[d.id] = data.submissionsByChallenge
+        }
+      })
+
+      // Build matrix and a set of already-assigned ids per challenge
+      const matrix: AssignmentMatrix = {}
+      const alreadyAssigned: Record<string, Set<string>> = {}
+
+      Object.entries(assignmentsByJudge).forEach(([judgeId, byChallenge]) => {
+        Object.entries(byChallenge).forEach(([challengeId, ids]) => {
+          if (!matrix[challengeId]) matrix[challengeId] = {}
+          matrix[challengeId][judgeId] = (matrix[challengeId][judgeId] || 0) + ids.length
+
+          if (!alreadyAssigned[challengeId]) alreadyAssigned[challengeId] = new Set()
+          ids.forEach((sid) => alreadyAssigned[challengeId].add(sid))
+        })
+      })
+
+      return { matrix, alreadyAssigned }
+    }, [competitionId])
+
 
   const fetchTopNFromGlobalConfig = useCallback(async () => {
     try {
@@ -794,23 +833,43 @@ export default function ParticipantDistributionTable() {
         const judgeDocRef = doc(db, "competitions", competitionId, "judges", judgeId)
 
         if (state.distributionMode === "overwrite") {
-          // build only non-empty challenge slices
+          // Only challenges with > 0 new assignments for this judge
           const nonEmpty = Object.entries(challengeAssignments).filter(([, ids]) => ids.length > 0)
-          if (nonEmpty.length === 0) {
-            return // ⬅️ skip creating/updating this judge doc
+
+          const assignedCountTotal = nonEmpty.reduce((sum, [, ids]) => sum + ids.length, 0)
+
+          // If this judge ends up with nothing, delete the entire doc
+          if (assignedCountTotal === 0) {
+            batch.delete(judgeDocRef)
+            return
           }
 
+          // New state to upsert
           const submissionsByChallenge = Object.fromEntries(nonEmpty)
           const assignedCountsByChallenge = Object.fromEntries(
             nonEmpty.map(([challengeId, ids]) => [challengeId, ids.length]),
           )
-          const assignedCountTotal = nonEmpty.reduce((sum, [, ids]) => sum + ids.length, 0)
 
+          // Upsert the new maps/totals
           batch.set(
             judgeDocRef,
             { submissionsByChallenge, assignedCountsByChallenge, assignedCountTotal },
-            { merge: true }
+            { merge: true },
           )
+
+          // Remove any challenge keys for this judge that now have 0 count
+          const zeroChallengeIds = state.challenges
+            .map((c) => c.id)
+            .filter((cid) => (state.assignmentMatrix[cid]?.[judgeId] || 0) === 0)
+
+          if (zeroChallengeIds.length > 0) {
+            const deletions: Record<string, any> = {}
+            zeroChallengeIds.forEach((cid) => {
+              deletions[`submissionsByChallenge.${cid}`] = deleteField()
+              deletions[`assignedCountsByChallenge.${cid}`] = deleteField()
+            })
+            batch.update(judgeDocRef, deletions)
+          }
         } else {
           showNotification("warning", "Append Mode", "Append mode not yet implemented, using overwrite")
         }
