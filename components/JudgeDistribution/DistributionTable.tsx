@@ -7,83 +7,80 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Loader2, AlertTriangle, CheckCircle, RotateCcw, Zap } from 'lucide-react'
+import { Loader2, AlertTriangle, RotateCcw, Zap } from "lucide-react"
 import type { Challenge, User, Submission } from "@/types/judging"
 
-interface ManualAssignment {
-  challengeId: string
-  judgeId: string
-  count: number
-}
+import { resetDistributionForCompetition } from "@/lib/judgingApi" // adjust path as needed
+import { distributeJudges } from '@/lib/challengeAssignment'
+
 
 interface DistributionTableProps {
-  competitionId: string  // new
+  competitionId: string
   challenges: Challenge[]
   judges: User[]
   submissionsByChallenge: Record<string, Submission[]>
-  onManualDistribute: (assignments: ManualAssignment[]) => Promise<void>
-  onEqualDistribute: () => Promise<void>
   loading: boolean
-  prefillAssignments?: Record<string, Record<string, number>>
+  prefillAssignments?: Record<string, Record<string, number>> // judgeId -> challengeId -> assigned submission count
   disableEqual?: boolean
 }
 
-
 export default function DistributionTable({
-  competitionId, challenges, judges, submissionsByChallenge, 
-  onManualDistribute, onEqualDistribute, loading,
-  prefillAssignments, disableEqual
+  competitionId,
+  challenges,
+  judges,
+  submissionsByChallenge,
+  loading,
+  prefillAssignments,
+  disableEqual,
 }: DistributionTableProps) {
+  // State to hold assignments counts: challengeId -> judgeId -> number (0 or 1)
   const [assignments, setAssignments] = useState<Record<string, Record<string, number>>>({})
-  const [isApplying, setIsApplying] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  // Initialize assignments grid, using prefill if provided
+  // Initialize assignments based on prefillAssignments
   useEffect(() => {
     const initial: Record<string, Record<string, number>> = {}
-    challenges.forEach(challenge => {
+
+    challenges.forEach((challenge) => {
       initial[challenge.id] = {}
-      judges.forEach(judge => {
+      judges.forEach((judge) => {
         initial[challenge.id][judge.id] = 0
       })
     })
 
     if (prefillAssignments) {
-      judges.forEach(judge => {
-        const judgeId = judge.id
-        const competitionCounts = prefillAssignments[judgeId] || {}
-        const totalCount = competitionCounts[competitionId] || 0
-
-        const challengeCount = challenges.length
-        if (challengeCount > 0 && totalCount > 0) {
-          const perChallengeCount = Math.floor(totalCount / challengeCount)
-          const remainder = totalCount % challengeCount
-
-          challenges.forEach((challenge, index) => {
-            initial[challenge.id][judgeId] = perChallengeCount + (index < remainder ? 1 : 0)
-          })
-        }
+      judges.forEach((judge) => {
+        const assignedChallenges = prefillAssignments[judge.id] || {}
+        Object.entries(assignedChallenges).forEach(([challengeId, assignedCount]) => {
+          if (initial[challengeId] && initial[challengeId][judge.id] !== undefined) {
+            initial[challengeId][judge.id] = assignedCount
+          }
+        })
       })
     }
 
+
+
     setAssignments(initial)
-  }, [challenges, judges, prefillAssignments, competitionId])
+  }, [challenges, judges, prefillAssignments])
 
-
-  // Calculate totals and validation
+  // Calculate totals and errors
   const calculations = useMemo(() => {
     const challengeTotals: Record<string, number> = {}
     const judgeTotals: Record<string, number> = {}
     const errors: Record<string, string> = {}
 
-    challenges.forEach(challenge => {
+    challenges.forEach((challenge) => {
       challengeTotals[challenge.id] = 0
-      judges.forEach(judge => {
+      judges.forEach((judge) => {
         const count = assignments[challenge.id]?.[judge.id] || 0
         challengeTotals[challenge.id] += count
         judgeTotals[judge.id] = (judgeTotals[judge.id] || 0) + count
       })
+
       const available = submissionsByChallenge[challenge.id]?.length || 0
       const assigned = challengeTotals[challenge.id]
+
       if (assigned > available) {
         errors[challenge.id] = `Assigned ${assigned} but only ${available} submissions available`
       }
@@ -98,69 +95,92 @@ export default function DistributionTable({
       errors,
       totalAssigned,
       totalAvailable,
-      isValid: Object.keys(errors).length === 0 && totalAssigned <= totalAvailable
+      isValid: Object.keys(errors).length === 0 && totalAssigned <= totalAvailable,
     }
   }, [assignments, challenges, judges, submissionsByChallenge])
 
-  const updateAssignment = (challengeId: string, judgeId: string, value: string) => {
-    const count = Math.max(0, parseInt(value) || 0)
-    setAssignments(prev => ({
-      ...prev,
-      [challengeId]: {
-        ...prev[challengeId],
-        [judgeId]: count
-      }
-    }))
-  }
-
-  const handleManualApply = async () => {
-    if (!calculations.isValid) return
-    setIsApplying(true)
-    try {
-      const manualAssignments: ManualAssignment[] = []
-      Object.entries(assignments).forEach(([challengeId, judgeAssignments]) => {
-        Object.entries(judgeAssignments).forEach(([judgeId, count]) => {
-          if (count > 0) {
-            manualAssignments.push({ challengeId, judgeId, count })
-          }
-        })
-      })
-      await onManualDistribute(manualAssignments)
-    } catch (error) {
-      console.error('Manual distribution failed:', error)
-    } finally {
-      setIsApplying(false)
-    }
-  }
-
+  // Equal distribution handler calling backend
   const handleEqualDistribute = async () => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
     try {
-      await onEqualDistribute()
-      // Reset manual assignments after equal distribution
-      const reset: Record<string, Record<string, number>> = {}
+
+      fetch("/api/debugger", {
+          method: "POST",
+          body: JSON.stringify({ message: `submissionsByChallenge object: ${JSON.stringify(submissionsByChallenge)}` }),
+          headers: {
+              "Content-Type": "application/json",
+          },
+      })
+
+      // Define topParticipants — you may get this from props or state as needed.
+      // For now, let's assume all participants are "top participants" (can be refined).
+      // Collect all participant IDs from submissions:
+      const allParticipantsSet = new Set<string>()
+      Object.values(submissionsByChallenge).forEach(submissions => {
+        submissions.forEach(sub => allParticipantsSet.add(sub.participantId))
+      })
+      const topParticipants = Array.from(allParticipantsSet)
+
+      // Call distributeJudges with required parameters
+      const distributionResult = await distributeJudges({
+        competitionId,
+        challenges,
+        submissionsByChallenge,
+        judges,
+        topParticipants,
+        marginPercentage: 20, // optional, default is 20%
+      })
+
+      // distributionResult.assignments contains assignments made by distributeJudges
+      // Now update the local assignments state to reflect this
+
+      // assignments: Record<challengeId, Record<judgeId, number>>
+      // We need to build this from distributionResult.assignments array
+
+      const newAssignments: Record<string, Record<string, number>> = {}
+
+      // Initialize all to 0 first
       challenges.forEach(challenge => {
-        reset[challenge.id] = {}
+        newAssignments[challenge.id] = {}
         judges.forEach(judge => {
-          reset[challenge.id][judge.id] = 0
+          newAssignments[challenge.id][judge.id] = 0
         })
       })
-      setAssignments(reset)
+
+      // Fill in assigned counts (for your UI)
+      distributionResult.assignments.forEach(assignment => {
+        if (!newAssignments[assignment.challengeId]) return
+        newAssignments[assignment.challengeId][assignment.judgeId] = assignment.submissionCount
+      })
+
+
+      setAssignments(newAssignments)
+
     } catch (error) {
-      console.error('Equal distribution failed:', error)
+      console.error("Equal distribution failed:", error)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+  // Reset distribution handler calling backend
+  const handleResetDistribution = async () => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+    try {
+      await resetDistributionForCompetition(competitionId, judges, challenges)
+      setAssignments({})
+    } catch (error) {
+      console.error("Reset distribution failed:", error)
+    } finally {
+      setIsProcessing(false)
     }
   }
 
-  const resetAssignments = () => {
-    const reset: Record<string, Record<string, number>> = {}
-    challenges.forEach(challenge => {
-      reset[challenge.id] = {}
-      judges.forEach(judge => {
-        reset[challenge.id][judge.id] = 0
-      })
-    })
-    setAssignments(reset)
-  }
-
+  // Early return for empty data
   if (challenges.length === 0 || judges.length === 0) {
     return (
       <Card>
@@ -168,7 +188,7 @@ export default function DistributionTable({
           <div className="text-center">
             <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground">
-              {challenges.length === 0 ? 'No challenges available' : 'No judges available'}
+              {challenges.length === 0 ? "No challenges available" : "No judges available"}
             </p>
           </div>
         </CardContent>
@@ -195,48 +215,32 @@ export default function DistributionTable({
             <div className="flex flex-wrap gap-3">
               <Button
                 onClick={handleEqualDistribute}
-                disabled={loading || !!disableEqual}
+                disabled={loading || disableEqual || isProcessing}
                 variant="default"
                 className="flex items-center gap-2"
-                title={disableEqual ? 'Existing distribution detected for this competition' : undefined}
+                title={disableEqual ? "Existing distribution detected for this competition" : undefined}
               >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Zap className="h-4 w-4" />
-                )}
+                {(loading || isProcessing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                 Equal Distribution
               </Button>
-              {disableEqual ? (
-                <Badge variant="secondary" className="self-center">
-                  Existing distribution detected
-                </Badge>
-              ) : null}
 
               <Button
-                onClick={handleManualApply}
-                disabled={!calculations.isValid || calculations.totalAssigned === 0 || isApplying || true}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                {isApplying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                Apply Manual Assignment
-              </Button>
-
-              <Button
-                onClick={resetAssignments}
+                onClick={handleResetDistribution}
                 variant="ghost"
                 size="sm"
                 className="flex items-center gap-2"
+                disabled={loading || isProcessing}
               >
                 <RotateCcw className="h-4 w-4" />
-                Reset
+                Reset Distribution
               </Button>
             </div>
+
+            {disableEqual && (
+              <Badge variant="secondary" className="mt-2">
+                Existing distribution detected
+              </Badge>
+            )}
 
             {Object.keys(calculations.errors).length > 0 && (
               <Alert variant="destructive" className="mt-4">
@@ -244,7 +248,7 @@ export default function DistributionTable({
                 <AlertDescription>
                   <div className="space-y-1">
                     {Object.entries(calculations.errors).map(([challengeId, error]) => {
-                      const challenge = challenges.find(c => c.id === challengeId)
+                      const challenge = challenges.find((c) => c.id === challengeId)
                       return (
                         <div key={challengeId}>
                           <strong>C{challenges.indexOf(challenge!) + 1}</strong>: {error}
@@ -320,21 +324,18 @@ export default function DistributionTable({
                             </TooltipContent>
                           </Tooltip>
                         </td>
-
                         {judges.map((judge) => (
                           <td key={judge.id} className="p-4 text-center">
                             <Input
                               type="number"
-                              min="0"
+                              min={0}
                               max={available}
                               value={assignments[challenge.id]?.[judge.id] || 0}
-                              onChange={(e) => updateAssignment(challenge.id, judge.id, e.target.value)}
+                              disabled // manual editing disabled
                               className="w-16 text-center mx-auto"
-                              disabled={loading || isApplying}
                             />
                           </td>
                         ))}
-
                         <td className="p-4 text-center">
                           <Badge
                             variant={hasError ? "destructive" : assigned === available ? "default" : "secondary"}
@@ -352,9 +353,7 @@ export default function DistributionTable({
                     <td className="p-4">Judge Totals</td>
                     {judges.map((judge) => (
                       <td key={judge.id} className="p-4 text-center">
-                        <Badge variant="outline">
-                          {calculations.judgeTotals[judge.id] || 0}
-                        </Badge>
+                        <Badge variant="outline">{calculations.judgeTotals[judge.id] || 0}</Badge>
                       </td>
                     ))}
                     <td className="p-4 text-center">
@@ -388,7 +387,8 @@ export default function DistributionTable({
               <div className="text-2xl font-bold">
                 {calculations.totalAvailable > 0
                   ? Math.round((calculations.totalAssigned / calculations.totalAvailable) * 100)
-                  : 0}%
+                  : 0}
+                %
               </div>
               <p className="text-xs text-muted-foreground">Coverage</p>
             </CardContent>

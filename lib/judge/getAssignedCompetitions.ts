@@ -1,7 +1,8 @@
 import "@/lib/firebase" // ensure Firebase is initialized (side-effect import)
 import { getFirestore, doc, getDoc } from "firebase/firestore"
 
-export type AssignedMap = Record<string, string[]>
+// Updated type: competitionId maps to an object where each challengeId maps to number of assigned submissions
+export type AssignedMap = Record<string, Record<string, number>>
 
 interface UserIndexDoc {
   judgeId?: string
@@ -27,7 +28,6 @@ export async function getAssignedCompetitions(judgeId: string): Promise<Assigned
     const data = snap.data() as UserIndexDoc
     return (data?.competitionIds ?? {}) as AssignedMap
   } catch (err) {
-    // Surface a consistent error upward; let caller decide how to handle
     console.error("getAssignedCompetitions error:", err)
     throw err
   }

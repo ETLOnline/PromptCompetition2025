@@ -127,7 +127,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
                     <Badge variant="outline" className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${isExpired ? "bg-red-50 border-red-200 text-red-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
-                      {isExpired ? <><AlertCircle className="w-3 h-3 mr-1" /> Expired</> : <><CheckCircle className="w-3 h-3 mr-1" /> Active</>}
+                      {isExpired ? <><AlertCircle className="w-3 h-3 mr-1" /> Live Now</> : <><CheckCircle className="w-3 h-3 mr-1" /> Active</>}
                     </Badge>
                   </div>
                 </CardHeader>

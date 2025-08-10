@@ -19,12 +19,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, CheckCircle, Circle } from 'lucide-react'
+import { Loader2, CheckCircle, Circle, AlertTriangle, Users, Target, Gavel, FileText } from 'lucide-react'
 import DistributionTable from "@/components/JudgeDistribution/DistributionTable"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
-
 import { getAssignedCompetitions } from "@/lib/judge/getAssignedCompetitions"
+import type { Challenge, Submission, User, Assignment, DistributionResult } from '@/types/judging'
 
 interface LoadingState {
   competition: boolean
@@ -37,14 +37,28 @@ interface LoadingState {
 }
 
 interface LoadedData {
-  topParticipants: any[]
+  topParticipants: string[]
   leaderboardEntries: any[]
-  challenges: any[]
-  submissionsByChallenge: Record<string, any[]>
-  judges: any[]
+  challenges: Challenge[]
+  submissionsByChallenge: Record<string, Submission[]>
+  judges: User[]
   competition: any | null
 }
 
+interface TransformedResult {
+  success: boolean
+  assignments: Array<{
+    judgeId: string
+    judgeName: string
+    challengeId: string
+    challengeTitle: string
+    submissionCount: number
+  }>
+  totalAssigned: number
+  totalChallenges: number
+  totalJudges: number
+  unassignedChallenges: string[]
+}
 
 export default function ParticipantDistributionPage() {
   const { competitionId } = useParams() as { competitionId: string }
@@ -72,23 +86,26 @@ export default function ParticipantDistributionPage() {
     savingConfig: false
   })
   
-  // Other states
-  const [result, setResult] = useState<any>(null)
-  const [resultType, setResultType] = useState<'manual' | 'equal'>('equal')
+  // Configuration states
   const [topN, setTopN] = useState(0)
+  const [marginPercentage, setMarginPercentage] = useState(20)
+  const [totalParticipants, setTotalParticipants] = useState(0)
+  
+  // UI states
+  const [result, setResult] = useState<TransformedResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [configSaved, setConfigSaved] = useState(false)
-  const [totalParticipants, setTotalParticipants] = useState(0)
   const [isInitialized, setIsInitialized] = useState(false)
-    
-  // Add this state near your other state declarations 
-  const [existingAssignments, setExistingAssignments] = useState< Record<string, Record<string, number>> >({}) 
+  
+  // Judge assignment states
+  const [existingAssignments, setExistingAssignments] = useState<Record<string, Record<string, number>>>({})
                                                                 
   // Utility function to update loading state
   const updateLoadingState = (key: keyof LoadingState, value: boolean) => {
     setLoading(prev => ({ ...prev, [key]: value }))
   }
 
+  
   // Save configuration to Firestore
   const saveConfiguration = async (selectedTopN: number) => {
     if (!competitionId || selectedTopN <= 0) return false
@@ -101,6 +118,7 @@ export default function ParticipantDistributionPage() {
       const configData = {
         configurations: {
           selectedTopN,
+          marginPercentage: 20, // Fixed at 20%
           timestamp: serverTimestamp(),
           userId: user?.uid || 'id not found'
         }
@@ -111,7 +129,11 @@ export default function ParticipantDistributionPage() {
         ...prev,
         competition: prev.competition ? {
           ...prev.competition,
-          configurations: { ...prev.competition.configurations, selectedTopN }
+          configurations: { 
+            ...prev.competition.configurations, 
+            selectedTopN,
+            marginPercentage: 20
+          }
         } : null
       }))
       
@@ -119,14 +141,11 @@ export default function ParticipantDistributionPage() {
       setTimeout(() => setConfigSaved(false), 3000)
       return true
     } 
-    catch (err) 
-    {
-      console.error('Error saving configuration:', err)
-      setError(`Failed to save configuration: ${err}`)
+    catch (err) {
+      setError(`Failed to save configuration: ${err instanceof Error ? err.message : String(err)}`)
       return false
     } 
-    finally 
-    {
+    finally {
       updateLoadingState('savingConfig', false)
     }
   }
@@ -144,6 +163,7 @@ export default function ParticipantDistributionPage() {
     updateLoadingState("submissions", isFullLoad)
 
     try {
+      
       const [challengesResult, judgesResult] = await Promise.all([
         fetchChallengesData(competitionId),
         fetchJudgesData()
@@ -160,7 +180,7 @@ export default function ParticipantDistributionPage() {
       updateLoadingState("challenges", false)
       updateLoadingState("judges", false)
 
-      // 🔹 Fetch existing assignments for ALL judges in parallel
+      // Fetch existing assignments for ALL judges in parallel
       const assignmentsArray = await Promise.all(
         judgesResult.map(judge =>
           getAssignedCompetitions(judge.id).then(assignments => ({
@@ -170,34 +190,33 @@ export default function ParticipantDistributionPage() {
         )
       )
 
-      // Store raw string[] assignments in state
-      const existingAssignmentsData = assignmentsArray.reduce((acc, { judgeId, assignments }) => {
-        acc[judgeId] = Object.fromEntries(
-          Object.entries(assignments).map(([challengeId, submissionIds]) => [
-            challengeId,
-            submissionIds.length
-          ])
-        )
-        return acc
-      }, {} as Record<string, Record<string, number>>)
+      // Now `assignments[competitionId]` is an object: challengeId -> submissionCount
+      // So to keep compatibility with existing code that expects string[],
+      // you can extract keys (challengeIds) or adjust the UI to handle counts.
 
-      fetch("/api/debugger", {
-          method: "POST",
-          body: JSON.stringify({ message: `Data recieved: ${JSON.stringify(existingAssignmentsData)}` }),
-          headers: {
-              "Content-Type": "application/json",
-          },
-      })
+      const existingAssignmentsData = assignmentsArray.reduce((acc, { judgeId, assignments }) => {
+        const challengesForCompetition = assignments[competitionId] || {}
+
+        // If you still want an array of challenge IDs:
+        // const challengeIds = Object.keys(challengesForCompetition)
+
+        // Or keep the full map with counts:
+        acc[judgeId] = challengesForCompetition
+
+        return acc
+      }, {} as Record<string, Record<string, number>>) // Updated type
 
       setExistingAssignments(existingAssignmentsData)
 
       if (isFullLoad) {
+        
         const participantsResult = await fetchTopParticipantsData(competitionId, topNValue)
         if (!participantsResult.participantIds.length) {
           throw new Error("No participants found")
         }
 
         const { entries, participantIds } = participantsResult
+        
         setData(prev => ({
           ...prev,
           topParticipants: participantIds,
@@ -206,6 +225,7 @@ export default function ParticipantDistributionPage() {
         updateLoadingState("participants", false)
 
         const submissionsResult = await fetchSubmissionsData(competitionId, participantIds)
+        
         setData(prev => ({
           ...prev,
           submissionsByChallenge: submissionsResult
@@ -215,8 +235,7 @@ export default function ParticipantDistributionPage() {
 
       return true
     } catch (err) {
-      console.error("Error loading data:", err)
-      setError(`Failed to load data: ${err}`)
+      setError(`Failed to load data: ${err instanceof Error ? err.message : String(err)}`)
       setLoading(prev => ({
         ...prev,
         participants: false,
@@ -227,8 +246,6 @@ export default function ParticipantDistributionPage() {
       return false
     }
   }
-
-
 
   // Initialize component data
   useEffect(() => {
@@ -242,6 +259,7 @@ export default function ParticipantDistributionPage() {
       updateLoadingState('participants', true)
       
       try {
+        
         // Load competition data
         const competition = await fetchCompetitionData(competitionId)
         if (!competition) throw new Error('Competition not found')
@@ -257,21 +275,19 @@ export default function ParticipantDistributionPage() {
         
         // Auto-configure if saved config exists
         const savedTopN = competition?.configurations?.selectedTopN
-        if (savedTopN) 
-        {
+        
+        if (savedTopN) {
           const validTopN = Math.min(savedTopN, totalCount)
           setTopN(validTopN)
+          
           await loadData(validTopN, true)
-        } 
-        else 
-        {
+        } else {
           await loadData(1, false)
         }
         
         setIsInitialized(true)
       } catch (err) {
-        console.error('Initialization failed:', err)
-        setError(`Failed to initialize: ${err}`)
+        setError(`Failed to initialize: ${err instanceof Error ? err.message : String(err)}`)
         updateLoadingState('competition', false)
         updateLoadingState('participants', false)
       }
@@ -293,69 +309,6 @@ export default function ParticipantDistributionPage() {
     }
   }
 
-  // Handle manual distribution
-  // const handleManualDistribute = async (assignments: ManualAssignment[]) => {
-  //   if (!competitionId) throw new Error('Competition ID is required')
-
-  //   const result = await distributeJudgesManually({
-  //     competitionId,
-  //     assignments,
-  //     challenges: data.challenges,
-  //     submissionsByChallenge: data.submissionsByChallenge,
-  //     judges: data.judges,
-  //     topParticipants: data.topParticipants,
-  //   })
-
-  //   setResult(result)
-  //   setResultType('manual')
-  //   return result
-  // }
-
-  // Handle equal distribution
-  const handleEqualDistribute = async () => {
-    if (!competitionId) return
-    
-    setError(null)
-    updateLoadingState('distribution', true)
-    
-    try {
-      const assignmentResult = await distributeJudges({
-        competitionId,
-        challenges: data.challenges,
-        submissionsByChallenge: data.submissionsByChallenge,
-        judges: data.judges,
-        topParticipants: data.topParticipants,
-      })
-
-      // Collect all assigned submissions from all assignments
-      const allAssignedSubmissions = assignmentResult.assignments.flatMap(a => a.submissions)
-
-      // Update status for all these submissions
-      await updateSubmissionsStatus(competitionId, allAssignedSubmissions, 'selected_for_manual_review')
-
-      
-      const transformedResult = {
-        success: true,
-        assignments: assignmentResult.assignments.map(a => ({
-          judgeId: a.judgeId,
-          judgeName: a.judgeName,
-          challengeId: a.challengeId,
-          challengeTitle: a.challengeTitle,
-          submissionCount: a.submissionCount
-        })),
-        totalAssigned: assignmentResult.totalSubmissionsAssigned
-      }
-      
-      setResult(transformedResult)
-      setResultType('equal')
-    } catch (err) {
-      console.error("Distribution failed", err)
-      setError(`Distribution failed: ${err}`)
-    } finally {
-      updateLoadingState('distribution', false)
-    }
-  }
-
   // Computed states
   const isLoadingAny = Object.values(loading).some(Boolean)
   const hasFullData = data.leaderboardEntries.length > 0 && 
@@ -363,6 +316,9 @@ export default function ParticipantDistributionPage() {
                     data.judges.length > 0 && 
                     Object.keys(data.submissionsByChallenge).length > 0
   const canLoadData = isInitialized && topN > 0 && topN <= totalParticipants && !isLoadingAny
+  const hasExistingAssignments = Object.values(existingAssignments).some(challengeAssignments => 
+    challengeAssignments.length > 0
+  )
 
   const StepIndicator = ({
     title,
@@ -410,8 +366,11 @@ export default function ParticipantDistributionPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Judge Distribution</h1>
+          <p className="text-muted-foreground mt-1">
+            Configure and distribute challenges among judges for fair evaluation
+          </p>
           {loading.competition && (
-            <p className="text-sm text-blue-600 flex items-center mt-1">
+            <p className="text-sm text-blue-600 flex items-center mt-2">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Loading competition data...
             </p>
@@ -438,6 +397,7 @@ export default function ParticipantDistributionPage() {
           {/* Alerts */}
           {error && (
             <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -449,14 +409,23 @@ export default function ParticipantDistributionPage() {
             </Alert>
           )}
 
+          {hasExistingAssignments && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Some judges already have assignments for this competition. Automatic distribution is disabled to prevent conflicts.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Configuration */}
           <Card>
             <CardHeader>
-              <CardTitle>Configuration</CardTitle>
+              <CardTitle>Distribution Configuration</CardTitle>
               <CardDescription>
-                Set the number of top participants for judge distribution
+                Configure the number of top participants and load balancing settings
                 {data.competition?.configurations?.selectedTopN && 
-                  ` (Current: ${data.competition.configurations.selectedTopN})`
+                  ` (Current: ${data.competition.configurations.selectedTopN} participants)`
                 }
                 <br />
                 <span className="text-sm font-medium">
@@ -464,9 +433,9 @@ export default function ParticipantDistributionPage() {
                 </span>
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 max-w-xs">
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="topN">Top N Participants</Label>
                   <Input
                     id="topN"
@@ -483,28 +452,31 @@ export default function ParticipantDistributionPage() {
                     placeholder="Enter number"
                     disabled={isLoadingAny}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground">
                     Must be between 1 and {totalParticipants}
                   </p>
                 </div>
-                
-                <Button
-                  onClick={handleLoadData}
-                  disabled={!canLoadData}
-                  size="lg"
-                >
-                  {isLoadingAny ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    'Load Data'
-                  )}
-                </Button>
+
+                <div className="flex items-end">
+                  <Button
+                    onClick={handleLoadData}
+                    disabled={!canLoadData}
+                    size="lg"
+                    className="w-full"
+                  >
+                    {isLoadingAny ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load Data'
+                    )}
+                  </Button>
+                </div>
               </div>
               
-              {(topN < 1 || topN > totalParticipants) && topN !== 0 && (
+              {((topN < 1 || topN > totalParticipants) && topN !== 0) && (
                 <Alert variant="destructive">
                   <AlertDescription>
                     Please enter a number between 1 and {totalParticipants}
@@ -552,23 +524,24 @@ export default function ParticipantDistributionPage() {
           {/* Data Summary */}
           {(data.challenges.length > 0 || data.judges.length > 0) && !isLoadingAny && (
             <Card>
-              <CardHeader>
-                <CardTitle>Data Summary</CardTitle>
-              </CardHeader>
               <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <Target className="h-8 w-8 mx-auto mb-2 text-blue-600" />
                   <div className="text-2xl font-bold text-blue-600">{data.challenges.length}</div>
                   <div className="text-sm text-muted-foreground">Challenges</div>
                 </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <Gavel className="h-8 w-8 mx-auto mb-2 text-green-600" />
                   <div className="text-2xl font-bold text-green-600">{data.judges.length}</div>
                   <div className="text-sm text-muted-foreground">Judges</div>
                 </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-purple-600" />
                   <div className="text-2xl font-bold text-purple-600">{data.leaderboardEntries.length}</div>
                   <div className="text-sm text-muted-foreground">Selected</div>
                 </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-orange-600" />
                   <div className="text-2xl font-bold text-orange-600">
                     {Object.values(data.submissionsByChallenge).flat().length}
                   </div>
@@ -591,7 +564,7 @@ export default function ParticipantDistributionPage() {
                   <CardHeader>
                     <CardTitle>Judge Distribution</CardTitle>
                     <CardDescription>
-                      Choose between manual assignment or automatic equal distribution for {data.leaderboardEntries.length} participants
+                      Choose between manual assignment or automatic equal distribution for {data.leaderboardEntries.length} participants across {data.challenges.length} challenges
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -600,17 +573,87 @@ export default function ParticipantDistributionPage() {
                       challenges={data.challenges}
                       judges={data.judges}
                       submissionsByChallenge={data.submissionsByChallenge}
-                      onManualDistribute={async () => {}}
-                      onEqualDistribute={handleEqualDistribute}
                       loading={loading.distribution}
                       prefillAssignments={existingAssignments}
-                      disableEqual={Object.values(existingAssignments).some(challengeAssignments => 
-                        Object.values(challengeAssignments).some(count => count > 0)
-                      )}
+                      disableEqual={hasExistingAssignments}
                     />
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {result && (
+                <TabsContent value="results">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Distribution Results</CardTitle>
+                      <CardDescription>
+                        {result.success ? (
+                          `Successfully distributed ${result.totalAssigned} submissions across ${result.assignments.length} assignments`
+                        ) : (
+                          'Distribution failed'
+                        )}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {result.success && (
+                        <div className="space-y-4">
+                          {/* Summary Stats */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center p-3 bg-green-50 rounded-lg">
+                              <div className="text-2xl font-bold text-green-600">{result.totalAssigned}</div>
+                              <div className="text-sm text-muted-foreground">Submissions Assigned</div>
+                            </div>
+                            <div className="text-center p-3 bg-blue-50 rounded-lg">
+                              <div className="text-2xl font-bold text-blue-600">{result.assignments.length}</div>
+                              <div className="text-sm text-muted-foreground">Total Assignments</div>
+                            </div>
+                            <div className="text-center p-3 bg-purple-50 rounded-lg">
+                              <div className="text-2xl font-bold text-purple-600">{result.totalJudges}</div>
+                              <div className="text-sm text-muted-foreground">Judges Used</div>
+                            </div>
+                            <div className="text-center p-3 bg-orange-50 rounded-lg">
+                              <div className="text-2xl font-bold text-orange-600">{result.unassignedChallenges.length}</div>
+                              <div className="text-sm text-muted-foreground">Unassigned</div>
+                            </div>
+                          </div>
+
+                          {/* Assignments Table */}
+                          <div className="border rounded-lg overflow-hidden">
+                            <table className="w-full">
+                              <thead className="bg-muted">
+                                <tr>
+                                  <th className="text-left p-3">Judge</th>
+                                  <th className="text-left p-3">Challenge</th>
+                                  <th className="text-right p-3">Submissions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {result.assignments.map((assignment, index) => (
+                                  <tr key={index} className="border-t">
+                                    <td className="p-3">{assignment.judgeName}</td>
+                                    <td className="p-3">{assignment.challengeTitle}</td>
+                                    <td className="p-3 text-right">{assignment.submissionCount}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Unassigned Challenges Warning */}
+                          {result.unassignedChallenges.length > 0 && (
+                            <Alert variant="destructive">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertDescription>
+                                {result.unassignedChallenges.length} challenge(s) could not be assigned: {result.unassignedChallenges.join(', ')}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
             </Tabs>
           )}
 
@@ -620,17 +663,57 @@ export default function ParticipantDistributionPage() {
               <CardHeader>
                 <CardTitle>Ready for Distribution Setup</CardTitle>
                 <CardDescription>
-                  Challenges and judges are loaded. Configure participants to proceed.
+                  Challenges and judges are loaded. Configure participants to proceed with distribution.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-4">
+                <div className="text-center py-8">
+                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <Target className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                      <div className="text-lg font-bold text-blue-600">{data.challenges.length}</div>
+                      <div className="text-sm text-muted-foreground">Challenges Ready</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <Gavel className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                      <div className="text-lg font-bold text-green-600">{data.judges.length}</div>
+                      <div className="text-sm text-muted-foreground">Judges Available</div>
+                    </div>
+                  </div>
                   <p className="text-muted-foreground mb-2">
-                    {data.challenges.length} challenges and {data.judges.length} judges are ready
+                    Enter the number of participants above and click "Load Data" to proceed
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Enter the number of participants above and click "Load Data"
+                    This will load participant submissions and enable distribution features
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Data State */}
+          {!data.challenges.length && !data.judges.length && !isLoadingAny && (
+            <Card>
+              <CardHeader>
+                <CardTitle>No Data Available</CardTitle>
+                <CardDescription>
+                  Unable to find challenges or judges for this competition
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground mb-4">
+                    Please ensure this competition has challenges and that judges are registered in the system.
+                  </p>
+                  <Button 
+                    onClick={() => loadData(1, false)} 
+                    variant="outline"
+                    disabled={isLoadingAny}
+                  >
+                    <Loader2 className={`h-4 w-4 mr-2 ${isLoadingAny ? 'animate-spin' : ''}`} />
+                    Retry Loading
+                  </Button>
                 </div>
               </CardContent>
             </Card>
