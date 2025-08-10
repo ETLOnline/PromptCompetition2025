@@ -1,6 +1,4 @@
 "use client"
-
-import type React from "react"
 import { toast } from "react-hot-toast"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
@@ -19,48 +17,29 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition } from "@/lib/api"
 import {
   Plus,
   Trophy,
   Calendar,
   MapPin,
-  Users,
+  DollarSign,
   Search,
   Filter,
   Grid3X3,
   List,
-  Clock,
-  DollarSign,
   Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Edit,
   Eye,
-  Save,
-  X,
   Info,
-  Trash2,
 } from "lucide-react"
 
-interface Competition {
-  id: string
-  title: string
-  description: string
-  prizeMoney: string
-  startDeadline: string
-  endDeadline: string
-  location: string
-  isActive: boolean
-  isLocked: boolean
-  createdAt?: string
-}
+// Import our new components
+import CompetitionGrid from "@/components/competition/CompetitionGrid"
+import CreateCompetitionModal from "@/components/competition/CreateCompetitionModal"
+import EditCompetitionModal from "@/components/competition/EditCompetitionModal"
+import type { Competition, CreateCompetitionData, EditCompetitionData } from "@/types/competition"
 
 // Modern Competition Card Skeleton
 const CompetitionSkeleton = () => (
@@ -115,28 +94,9 @@ export default function ModernCompetitionSelector() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(9)
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    prizeMoney: "",
-    startTime: "",
-    endTime: "",
-    location: "online",
-  })
-  const [editFormData, setEditFormData] = useState({
-    title: "",
-    description: "",
-    startDeadline: "",
-    endDeadline: "",
-    location: "",
-    prizeMoney: "",
-    isActive: false,
-    isLocked: false,
-  })
-  const [formError, setFormError] = useState<string | null>(null)
   const [editLoading, setEditLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
 
   const refetchCompetitions = async () => {
     try {
@@ -169,56 +129,21 @@ export default function ModernCompetitionSelector() {
     const endDate = new Date(competition.endDeadline)
 
     if (competition.isLocked) {
-      return {
-        label: "Locked",
-        color: "bg-gray-100 text-gray-700 border-gray-200",
-        icon: XCircle,
-        dotColor: "bg-gray-400",
-      }
+      return { label: "Locked", color: "bg-gray-100 text-gray-700 border-gray-200" }
     }
-
     if (!competition.isActive) {
-      return {
-        label: "Inactive",
-        color: "bg-red-50 text-red-700 border-red-200",
-        icon: XCircle,
-        dotColor: "bg-red-400",
-      }
+      return { label: "Inactive", color: "bg-red-50 text-red-700 border-red-200" }
     }
-
     if (now < startDate) {
-      return {
-        label: "Upcoming",
-        color: "bg-blue-50 text-blue-700 border-blue-200",
-        icon: Clock,
-        dotColor: "bg-blue-400",
-      }
+      return { label: "Upcoming", color: "bg-blue-50 text-blue-700 border-blue-200" }
     }
-
     if (now >= startDate && now <= endDate && competition.isActive && !competition.isLocked) {
-      return {
-        label: "Active",
-        color: "bg-green-50 text-green-700 border-green-200",
-        icon: CheckCircle2,
-        dotColor: "bg-green-400",
-      }
+      return { label: "Active", color: "bg-green-50 text-green-700 border-green-200" }
     }
-
     if (now > endDate) {
-      return {
-        label: "Ended",
-        color: "bg-gray-50 text-gray-600 border-gray-200",
-        icon: CheckCircle2,
-        dotColor: "bg-gray-400",
-      }
+      return { label: "Ended", color: "bg-gray-50 text-gray-600 border-gray-200" }
     }
-
-    return {
-      label: "Active",
-      color: "bg-green-50 text-green-700 border-green-200",
-      icon: CheckCircle2,
-      dotColor: "bg-green-400",
-    }
+    return { label: "Active", color: "bg-green-50 text-green-700 border-green-200" }
   }
 
   const formatDateTime = (dateString: string) => {
@@ -254,23 +179,6 @@ export default function ModernCompetitionSelector() {
     }
   }
 
-  const formatForDatetimeLocal = (utcIsoString: string): string => {
-  if (!utcIsoString) return ""
-  
-  // Parse UTC time and convert to local
-  const utcDate = new Date(utcIsoString)
-  
-  // Get local time components
-  const year = utcDate.getFullYear()
-  const month = String(utcDate.getMonth() + 1).padStart(2, '0')
-  const day = String(utcDate.getDate()).padStart(2, '0')
-  const hours = String(utcDate.getHours()).padStart(2, '0')
-  const minutes = String(utcDate.getMinutes()).padStart(2, '0')
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
-
   const handleManageClick = (competitionId: string) => {
     router.push(`/admin/competitions/${competitionId}/dashboard`)
   }
@@ -291,16 +199,6 @@ export default function ModernCompetitionSelector() {
     }
 
     setSelectedCompetition(competition)
-    setEditFormData({
-      title: competition.title || "",
-      description: competition.description || "",
-      startDeadline: formatForDatetimeLocal(competition.startDeadline || ""),
-      endDeadline: formatForDatetimeLocal(competition.endDeadline || ""),
-      location: competition.location || "",
-      prizeMoney: competition.prizeMoney || "",
-      isActive: competition.isActive ?? false,
-      isLocked: competition.isLocked ?? false,
-    })
     setIsEditModalOpen(true)
   }
 
@@ -325,155 +223,61 @@ export default function ModernCompetitionSelector() {
     setCurrentPage(1)
   }, [searchTerm, filterStatus])
 
-  const handleFormChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    setFormError(null)
-  }
-
-  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement
-    setEditFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }))
-  }
-
-  const handleEditCheckboxChange = (name: string, checked: boolean) => {
-    setEditFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }))
-  }
-
-      const handleFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setFormError(null)
-
-        const { title, description, prizeMoney, startTime, endTime, location } = formData
-
-        if (!title || !description || !prizeMoney || !startTime || !endTime || !location) {
-          setFormError("All fields are required.")
-          return
-        }
-
-        const startDateTime = new Date(startTime)
-        const endDateTime = new Date(endTime)
-
-        if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-          setFormError("Invalid start or end date/time.")
-          return
-        }
-
-        if (endDateTime <= startDateTime) {
-          setFormError("End time must be after start time.")
-          return
-        }
-
-        try {
-          if (!user) {
-            setFormError("User not authenticated.")
-            return
-          }
-
-        const token = await user.getIdToken()
-
-        await createCompetition(
-          {
-            title,
-            description,
-            prizeMoney,
-            startDeadline: startDateTime.toISOString(),
-            endDeadline: endDateTime.toISOString(),
-            createdAt: new Date().toISOString(),
-            location,
-            ChallengeCount: 0, // ← Add this line
-          },
-          token,
-        )
-
-          setIsCreateModalOpen(false)
-          toast.success("Competition created successfully!")
-          refetchCompetitions()
-          setFormData({
-            title: "",
-            description: "",
-            prizeMoney: "",
-            startTime: "",
-            endTime: "",
-            location: "online",
-          })
-        } catch (error) {
-          console.error("Error creating competition:", error)
-          setFormError("Failed to create competition. Please try again.")
-        }
-      }
-
-
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Handler functions for the modals
+  const handleCreateSubmit = async (data: CreateCompetitionData) => {
     if (!user) {
-      setFormError("User not authenticated.")
-      return
+      throw new Error("User not authenticated.")
     }
-    const token = await user.getIdToken()
 
-    if (!selectedCompetition) return
+    setCreateLoading(true)
+    try {
+      const token = await user.getIdToken()
+      await createCompetition(data, token)
+      toast.success("Competition created successfully!")
+      refetchCompetitions()
+    } catch (error) {
+      console.error("Error creating competition:", error)
+      throw error
+    } finally {
+      setCreateLoading(false)
+    }
+  }
 
-    const startDate = new Date(selectedCompetition.startDeadline)
-    const endDate = new Date(selectedCompetition.endDeadline)
-    const now = new Date()
-
-    if (now > endDate) {
-      setShowCompetitionEndedDialog(true)
-      return
+  const handleEditSubmit = async (data: EditCompetitionData) => {
+    if (!user || !selectedCompetition) {
+      throw new Error("User not authenticated or no competition selected.")
     }
 
     setEditLoading(true)
     try {
-      const startDateTime = new Date(editFormData.startDeadline)
-      const endDateTime = new Date(editFormData.endDeadline)
-      await updateCompetition(
-        selectedCompetition.id,
-        {
-          ...editFormData,
-          startDeadline: startDateTime.toISOString(),
-          endDeadline: endDateTime.toISOString(),
-        },
-        token,
-      )
-
-      setIsEditModalOpen(false)
+      const token = await user.getIdToken()
+      await updateCompetition(selectedCompetition.id, data, token)
       toast.success("Competition updated successfully!")
       setSelectedCompetition(null)
       refetchCompetitions()
     } catch (error) {
       console.error("Error updating competition:", error)
+      throw error
     } finally {
       setEditLoading(false)
     }
   }
 
   const handleDeleteCompetition = async () => {
-    if (!user) {
-      setFormError("User not authenticated.")
-      return
+    if (!user || !selectedCompetition) {
+      throw new Error("User not authenticated or no competition selected.")
     }
-    const token = await user.getIdToken()
-
-    if (!selectedCompetition) return
 
     setDeleteLoading(true)
     try {
+      const token = await user.getIdToken()
       await deleteCompetition(selectedCompetition.id, token)
-      setIsEditModalOpen(false)
-      setShowDeleteDialog(false)
       toast.success("Competition deleted.")
       setSelectedCompetition(null)
-      setIsEditModalOpen(false)
       refetchCompetitions()
     } catch (error) {
       console.error("Error deleting competition:", error)
+      throw error
     } finally {
       setDeleteLoading(false)
     }
@@ -631,102 +435,14 @@ export default function ModernCompetitionSelector() {
         ) : (
           <>
             {/* Competition Grid */}
-            <div
-              className={
-                viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" : "space-y-4 mb-8"
-              }
-            >
-              {currentCompetitions.map((competition) => {
-                const status = getCompetitionStatus(competition)
-                const startDateTime = formatDateTime(competition.startDeadline)
-                const endDateTime = formatDateTime(competition.endDeadline)
-
-                return (
-                  <Card
-                    key={competition.id}
-                    className="group relative overflow-hidden bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit"
-                  >
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        {/* Header with consistent height */}
-                        <div className="flex items-start justify-between min-h-[40px]">
-                          <div className="flex-1 min-w-0 pr-4">
-                            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
-                              {competition.title}
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewClick(competition)}
-                              className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {role === "superadmin" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditClick(competition)}
-                                className="h-8 w-8 p-0 hover:bg-gray-100 hover:text-gray-900"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Badge className={`${status.color} border font-medium whitespace-nowrap`}>
-                              <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
-                              {status.label}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* Details with consistent spacing */}
-                        <div className="flex items-start gap-3 text-sm text-gray-600">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Calendar className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-gray-900 text-sm">
-                              {startDateTime.date === endDateTime.date
-                                ? startDateTime.date
-                                : `${startDateTime.date} - ${endDateTime.date}`}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {startDateTime.time} → {endDateTime.time}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-4 h-4 text-green-600" />
-                          </div>
-                          <span className="font-medium capitalize">{competition.location}</span>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-sm text-gray-600">
-                          <div className="w-8 h-8 bg-yellow-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <DollarSign className="w-4 h-4 text-yellow-600" />
-                          </div>
-                          <span className="font-medium">{competition.prizeMoney}</span>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <Button
-                        onClick={() => handleManageClick(competition.id)}
-                        className="w-full mt-4 bg-gray-900 hover:from-gray-900 hover:to-gray-600 text-white border-0 transition-all duration-300"
-                      >
-                        <Users className="w-4 h-4 mr-2" />
-                        Manage Competition
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
+            <CompetitionGrid
+              competitions={currentCompetitions}
+              onEdit={handleEditClick}
+              onView={handleViewClick}
+              onManage={handleManageClick}
+              role={role}
+              viewMode={viewMode}
+            />
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -893,317 +609,24 @@ export default function ModernCompetitionSelector() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Competition Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-white border-0 shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-                <Edit className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Edit Competition</DialogTitle>
-                <p className="text-gray-600 text-sm">Update competition details and settings</p>
-              </div>
-            </div>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Info className="w-5 h-5 text-gray-600" />
-                <h3 className="text-lg font-semibold">Basic Information</h3>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="edit-title" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Competition Title
-                  </Label>
-                  <Input
-                    id="edit-title"
-                    name="title"
-                    value={editFormData.title}
-                    onChange={handleEditFormChange}
-                    required
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-description" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="edit-description"
-                    name="description"
-                    value={editFormData.description}
-                    onChange={handleEditFormChange}
-                    rows={4}
-                    required
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-location" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Location
-                    </Label>
-                    <Input
-                      id="edit-location"
-                      name="location"
-                      value={editFormData.location}
-                      onChange={handleEditFormChange}
-                      required
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-prizeMoney" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Prize Money
-                    </Label>
-                    <Input
-                      id="edit-prizeMoney"
-                      name="prizeMoney"
-                      value={editFormData.prizeMoney}
-                      onChange={handleEditFormChange}
-                      required
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Schedule */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Info className="w-5 h-5 text-gray-600" />
-                <h3 className="text-lg font-semibold">Schedule</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-startDeadline" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Start Date & Time 
-                  </Label>
-                  <Input
-                    id="edit-startDeadline"
-                    name="startDeadline"
-                    type="datetime-local"
-                    value={editFormData.startDeadline}
-                    onChange={handleEditFormChange}
-                    required
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-endDeadline" className="text-sm font-medium text-gray-700 mb-2 block">
-                    End Date & Time 
-                  </Label>
-                  <Input
-                    id="edit-endDeadline"
-                    name="endDeadline"
-                    type="datetime-local"
-                    value={editFormData.endDeadline}
-                    onChange={handleEditFormChange}
-                    required
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Info className="w-5 h-5 text-gray-600" />
-                <h3 className="text-lg font-semibold">Competition Settings</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
-                  <Checkbox
-                    id="edit-isActive"
-                    checked={editFormData.isActive}
-                    onCheckedChange={(checked) => handleEditCheckboxChange("isActive", checked as boolean)}
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="edit-isActive" className="text-sm font-medium cursor-pointer">
-                      Active Competition
-                    </Label>
-                    <p className="text-xs text-gray-600">Enable this competition for public participation</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
-                  <Checkbox
-                    id="edit-isLocked"
-                    checked={editFormData.isLocked}
-                    onCheckedChange={(checked) => handleEditCheckboxChange("isLocked", checked as boolean)}
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="edit-isLocked" className="text-sm font-medium cursor-pointer">
-                      Lock Competition
-                    </Label>
-                    <p className="text-xs text-gray-600">Prevent further modifications to this competition</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="gap-3 pt-6 border-t">
-              <div className="flex justify-between w-full">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Competition
-                </Button>
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditModalOpen(false)}
-                    className="border-gray-200 text-gray-700 hover:bg-gray-50"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={editLoading}
-                    className="bg-gray-900 hover:bg-gray-800 text-white border-0"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {editLoading ? "Saving Changes..." : "Save Changes"}
-                  </Button>
-                </div>
-              </div>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Create Competition Modal */}
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="bg-white border-0 shadow-2xl max-w-2xl">
-          <DialogHeader className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Create New Competition</DialogTitle>
-                <p className="text-gray-600 text-sm">Set up a new competition for participants to join</p>
-              </div>
-            </div>
-          </DialogHeader>
-          <form onSubmit={handleFormSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
-              <div>
-                <Label htmlFor="title" className="text-sm font-medium text-gray-700 mb-2 block">
-                  Competition Title
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleFormChange("title", e.target.value)}
-                  className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  placeholder="e.g., AI Prompt Engineering Challenge 2024"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700 mb-2 block">
-                  Description
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleFormChange("description", e.target.value)}
-                  className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 min-h-[100px]"
-                  placeholder="Describe what this competition is about, its goals, and what participants can expect..."
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="prizeMoney" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Prize Money
-                  </Label>
-                  <Input
-                    id="prizeMoney"
-                    value={formData.prizeMoney}
-                    onChange={(e) => handleFormChange("prizeMoney", e.target.value)}
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                    placeholder="e.g., $5,000"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="location" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Location
-                  </Label>
-                  <Select value={formData.location} onValueChange={(value) => handleFormChange("location", value)}>
-                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20">
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="online">🌐 Online</SelectItem>
-                      <SelectItem value="offsite">🏢 Offsite</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startTime" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Start Date & Time
-                  </Label>
-                  <Input
-                    id="startTime"
-                    type="datetime-local"
-                    value={formData.startTime}
-                    onChange={(e) => handleFormChange("startTime", e.target.value)}
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endTime" className="text-sm font-medium text-gray-700 mb-2 block">
-                    End Date & Time
-                  </Label>
-                  <Input
-                    id="endTime"
-                    type="datetime-local"
-                    value={formData.endTime}
-                    onChange={(e) => handleFormChange("endTime", e.target.value)}
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  />
-                </div>
-              </div>
-            </div>
-            {formError && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <p className="text-red-700 text-sm">{formError}</p>
-              </div>
-            )}
-            <DialogFooter className="gap-3 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="border-gray-200 text-gray-700 hover:bg-gray-50 bg-transparent"
-                onClick={() => setIsCreateModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gray-900 hover:bg-gray-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Competition
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateCompetitionModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateSubmit}
+        loading={createLoading}
+      />
+
+      {/* Edit Competition Modal */}
+      <EditCompetitionModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSubmit={handleEditSubmit}
+        onDelete={handleDeleteCompetition}
+        competition={selectedCompetition}
+        loading={editLoading}
+        deleteLoading={deleteLoading}
+      />
 
       {/* Competition Ended Dialog */}
       <Dialog open={showCompetitionEndedDialog} onOpenChange={setShowCompetitionEndedDialog}>
@@ -1220,40 +643,6 @@ export default function ModernCompetitionSelector() {
           <DialogFooter className="flex justify-center pt-4">
             <Button onClick={() => setShowCompetitionEndedDialog(false)} className="w-full sm:w-auto">
               Got It
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[425px] p-6">
-          <DialogHeader className="flex flex-col items-center text-center">
-            <div className="p-3 rounded-full bg-red-100 text-red-600 mb-4">
-              <Trash2 className="w-8 h-8" />
-            </div>
-            <DialogTitle className="text-2xl font-bold text-gray-900">Delete Competition</DialogTitle>
-            <DialogDescription className="text-base text-gray-600 mt-2">
-              Are you sure you want to delete this competition? This action cannot be undone and all associated data
-              will be permanently removed.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={deleteLoading}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteCompetition}
-              disabled={deleteLoading}
-              className="flex-1 bg-red-600 hover:bg-red-700"
-            >
-              {deleteLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
