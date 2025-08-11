@@ -230,7 +230,6 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       institution: "",
       createdAt: new Date().toISOString(),
       isVerified: true, // flip to true after separate email verification if you use it
-      role,
     });
 
     // 4) Generate one-time password reset link (acts as "set initial password")
