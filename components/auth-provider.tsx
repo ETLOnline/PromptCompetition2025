@@ -44,11 +44,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (currentUser) {
         const tokenResult = await currentUser.getIdTokenResult(true)
         const tokenRole = tokenResult.claims.role
-        console.log("🧠 Token claims:", tokenResult.claims);
 
         setRole(typeof tokenRole === "string" ? (tokenRole as Role) : null)
-
-        // console.log("🎯 Logged in with role:", tokenRole)
       } else {
         setRole(null)
       }
