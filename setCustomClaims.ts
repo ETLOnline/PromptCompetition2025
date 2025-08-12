@@ -6,7 +6,15 @@ import * as path from "path";
 // Load Firebase Admin credentials
 const admin = require("firebase-admin");
 
-const serviceAccount = require("./serviceAccountKey.json"); // path to your downloaded JSON
+// const serviceAccount = require("./serviceAccountKey.json"); // path to your downloaded JSON
+const serviceAccountKey = process.env.NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY;
+
+if (!serviceAccountKey) {
+  throw new Error("NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY is not set in .env");
+}
+
+// Parse JSON string from environment variable
+const serviceAccount = JSON.parse(serviceAccountKey);
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });

@@ -13,6 +13,7 @@ import type { Submission, Competition } from "@/types/auth"
 import { ArrowLeft, Save } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
+
 export default function AdminSubmissionDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth()
   const router = useRouter()
