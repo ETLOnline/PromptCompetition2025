@@ -16,39 +16,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
 import {
   Shuffle,
   Search,
   X,
   CheckCircle2,
   AlertCircle,
-  Hash,
   Info,
   Loader,
   Users,
   Target,
-  Zap,
-  ChevronRight,
   Award,
-  MoreVertical,
-  ChevronLeft,
   Scale,
-  Eye,
   Minus,
   Plus,
   AlertTriangle,
+  Grid3X3,
+  List,
+  RotateCcw,
+  Save,
+  TrendingUp,
+  Layers,
+  Settings,
 } from "lucide-react"
 import {
   writeBatch,
+  deleteField,
   doc,
   collection,
   query,
@@ -57,6 +54,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  where,
   type Timestamp,
   serverTimestamp,
 } from "firebase/firestore"
@@ -65,21 +63,42 @@ import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
 import { getIdTokenResult } from "firebase/auth"
 import { getIdToken } from "@/lib/firebaseAuth"
 
+
 interface Judge {
   id: string
   name: string
   email: string
-  institution?: string
   totalAssigned?: number
   status?: "available" | "busy" | "offline"
 }
 
-interface JudgeCapacity {
-  judgeId: string
-  capacity: number
+interface Challenge {
+  id: string
+  name: string
+  bucketSize: number
+  submissionIds: string[]
 }
 
-type AssignmentMethod = "Round-Robin" | "Weighted" | "Automatic"
+interface AssignmentMatrix {
+  [challengeId: string]: {
+    [judgeId: string]: number
+  }
+}
+
+interface ChallengeBuckets {
+  [challengeId: string]: string[]
+}
+
+interface DistributionSnapshot {
+  matrix: AssignmentMatrix
+  topN: number
+  strategy: "auto" | "equal" | "manual"
+  mode: "overwrite" | "append"
+  timestamp: Timestamp
+}
+
+type DistributionMode = "overwrite" | "append"
+type ViewMode = "cards" | "matrix"
 
 interface NotificationState {
   id: string
@@ -90,24 +109,29 @@ interface NotificationState {
 
 interface AppState {
   // Data state
+  competitionTitle: string
+  isLoadingCompetitionMeta: boolean
   totalParticipants: number
   judges: Judge[]
-  judgeAssignments: { [key: string]: number }
-  existingAssignments: { [key: string]: number }
+  challenges: Challenge[]
+  challengeBuckets: ChallengeBuckets
+  assignmentMatrix: AssignmentMatrix
   selectedTopN: number
   savedConfig: { selectedTopN: number; timestamp: Timestamp } | null
 
   // UI state
-  currentPage: number
-  judgeSearch: string
-  assignmentMethod: AssignmentMethod | null
+  challengeSearch: string
+  viewMode: ViewMode
+  distributionMode: DistributionMode
+  showOnlyRemaining: boolean
+  selectedChallengeId: string | null
   notifications: NotificationState[]
 
   // Loading states
-  isInitializing: boolean
   isLoadingParticipants: boolean
   isLoadingJudges: boolean
-  isLoadingAssignments: boolean
+  isLoadingChallenges: boolean
+  isLoadingSubmissions: boolean
   isLoadingConfig: boolean
   isDistributing: boolean
   isSavingConfig: boolean
@@ -116,6 +140,7 @@ interface AppState {
   showConfigDialog: boolean
   showDistributeDialog: boolean
   showConfirmDialog: boolean
+  showChallengeDrawer: boolean
 
   // Auth state
   currentUser: User | null
@@ -126,40 +151,55 @@ type AppAction =
   | { type: "SET_AUTH"; payload: { user: User | null; isAuthenticated: boolean } }
   | { type: "SET_PARTICIPANTS"; payload: number }
   | { type: "SET_JUDGES"; payload: Judge[] }
-  | { type: "SET_ASSIGNMENTS"; payload: { [key: string]: number } }
-  | { type: "SET_EXISTING_ASSIGNMENTS"; payload: { [key: string]: number } }
+  | { type: "SET_CHALLENGES"; payload: Challenge[] }
+  | { type: "SET_CHALLENGE_BUCKETS"; payload: ChallengeBuckets }
+  | { type: "SET_ASSIGNMENT_MATRIX"; payload: AssignmentMatrix }
   | { type: "SET_SELECTED_TOP_N"; payload: number }
   | { type: "SET_SAVED_CONFIG"; payload: { selectedTopN: number; timestamp: Timestamp } | null }
   | { type: "SET_CURRENT_PAGE"; payload: number }
   | { type: "SET_JUDGE_SEARCH"; payload: string }
-  | { type: "SET_ASSIGNMENT_METHOD"; payload: AssignmentMethod | null }
+  | { type: "SET_CHALLENGE_SEARCH"; payload: string }
+  | { type: "SET_VIEW_MODE"; payload: ViewMode }
+  | { type: "SET_DISTRIBUTION_MODE"; payload: DistributionMode }
+  | { type: "SET_SHOW_ONLY_REMAINING"; payload: boolean }
+  | { type: "SET_SELECTED_CHALLENGE"; payload: string | null }
   | { type: "ADD_NOTIFICATION"; payload: NotificationState }
   | { type: "REMOVE_NOTIFICATION"; payload: string }
+  | { type: "SET_COMPETITION_TITLE"; payload: string }
   | { type: "SET_LOADING"; payload: { key: keyof AppState; value: boolean } }
-  | { type: "SET_DIALOG"; payload: { dialog: "config" | "distribute" | "confirm"; open: boolean } }
-  | { type: "UPDATE_JUDGE_ASSIGNMENT"; payload: { judgeId: string; value: number } }
+  | { type: "SET_DIALOG"; payload: { dialog: "config" | "distribute" | "confirm" | "challengeDrawer"; open: boolean } }
+  | { type: "UPDATE_MATRIX_CELL"; payload: { challengeId: string; judgeId: string; value: number } }
+  | { type: "CLEAR_CHALLENGE_ASSIGNMENTS"; payload: string }
+  | { type: "APPLY_EQUAL_DISTRIBUTION"; payload: string }
+  | { type: "APPLY_AUTO_DISTRIBUTION"; payload: string }
 
 const initialState: AppState = {
+  competitionTitle: "",
+  isLoadingCompetitionMeta: false,
   totalParticipants: 0,
   judges: [],
-  judgeAssignments: {},
-  existingAssignments: {},
+  challenges: [],
+  challengeBuckets: {},
+  assignmentMatrix: {},
   selectedTopN: 0,
   savedConfig: null,
-  currentPage: 1,
-  judgeSearch: "",
-  assignmentMethod: null,
+  challengeSearch: "",
+  viewMode: "cards",
+  distributionMode: "overwrite",
+  showOnlyRemaining: false,
+  selectedChallengeId: null,
   notifications: [],
-  isInitializing: true,
   isLoadingParticipants: false,
   isLoadingJudges: false,
-  isLoadingAssignments: false,
+  isLoadingChallenges: false,
+  isLoadingSubmissions: false,
   isLoadingConfig: false,
   isDistributing: false,
   isSavingConfig: false,
   showConfigDialog: false,
   showDistributeDialog: false,
   showConfirmDialog: false,
+  showChallengeDrawer: false,
   currentUser: null,
   isAuthenticated: false,
 }
@@ -167,25 +207,33 @@ const initialState: AppState = {
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case "SET_AUTH":
-      return { ...state, ...action.payload }
+      return { ...state, currentUser: action.payload.user, isAuthenticated: action.payload.isAuthenticated }
     case "SET_PARTICIPANTS":
       return { ...state, totalParticipants: action.payload, isLoadingParticipants: false }
     case "SET_JUDGES":
       return { ...state, judges: action.payload, isLoadingJudges: false }
-    case "SET_ASSIGNMENTS":
-      return { ...state, judgeAssignments: action.payload }
-    case "SET_EXISTING_ASSIGNMENTS":
-      return { ...state, existingAssignments: action.payload, isLoadingAssignments: false }
+    case "SET_CHALLENGES":
+      return { ...state, challenges: action.payload, isLoadingChallenges: false }
+    case "SET_CHALLENGE_BUCKETS":
+      return { ...state, challengeBuckets: action.payload, isLoadingSubmissions: false }
+    case "SET_ASSIGNMENT_MATRIX":
+      return { ...state, assignmentMatrix: action.payload }
     case "SET_SELECTED_TOP_N":
       return { ...state, selectedTopN: action.payload }
     case "SET_SAVED_CONFIG":
       return { ...state, savedConfig: action.payload, isLoadingConfig: false }
-    case "SET_CURRENT_PAGE":
-      return { ...state, currentPage: action.payload }
-    case "SET_JUDGE_SEARCH":
-      return { ...state, judgeSearch: action.payload, currentPage: 1 }
-    case "SET_ASSIGNMENT_METHOD":
-      return { ...state, assignmentMethod: action.payload }
+    case "SET_CHALLENGE_SEARCH":
+      return { ...state, challengeSearch: action.payload }
+    case "SET_VIEW_MODE":
+      return { ...state, viewMode: action.payload }
+    case "SET_DISTRIBUTION_MODE":
+      return { ...state, distributionMode: action.payload }
+    case "SET_SHOW_ONLY_REMAINING":
+      return { ...state, showOnlyRemaining: action.payload }
+    case "SET_SELECTED_CHALLENGE":
+      return { ...state, selectedChallengeId: action.payload }
+    case "SET_COMPETITION_TITLE":
+      return { ...state, competitionTitle: action.payload, isLoadingCompetitionMeta: false }  
     case "ADD_NOTIFICATION":
       return { ...state, notifications: [...state.notifications, action.payload] }
     case "REMOVE_NOTIFICATION":
@@ -194,22 +242,102 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, [action.payload.key]: action.payload.value }
     case "SET_DIALOG":
       const dialogKey =
-        `show${action.payload.dialog.charAt(0).toUpperCase() + action.payload.dialog.slice(1)}Dialog` as keyof AppState
+        action.payload.dialog === "challengeDrawer"
+          ? "showChallengeDrawer"
+          : (`show${action.payload.dialog.charAt(0).toUpperCase() + action.payload.dialog.slice(1)}Dialog` as keyof AppState)
       return { ...state, [dialogKey]: action.payload.open }
-    case "UPDATE_JUDGE_ASSIGNMENT":
+    case "UPDATE_MATRIX_CELL":
       return {
         ...state,
-        judgeAssignments: {
-          ...state.judgeAssignments,
-          [action.payload.judgeId]: action.payload.value,
+        assignmentMatrix: {
+          ...state.assignmentMatrix,
+          [action.payload.challengeId]: {
+            ...state.assignmentMatrix[action.payload.challengeId],
+            [action.payload.judgeId]: action.payload.value,
+          },
         },
       }
+    case "CLEAR_CHALLENGE_ASSIGNMENTS":
+      return {
+        ...state,
+        assignmentMatrix: {
+          ...state.assignmentMatrix,
+          [action.payload]: {},
+        },
+      }
+    case "APPLY_EQUAL_DISTRIBUTION": {
+      const challengeId = action.payload
+      const bucketSize = state.challengeBuckets[challengeId]?.length || 0
+      const judgeCount = state.judges.length
+      if (judgeCount === 0 || bucketSize === 0) return state
+
+      const perJudge = Math.floor(bucketSize / judgeCount)
+      const remainder = bucketSize % judgeCount
+      const newAssignments: { [judgeId: string]: number } = {}
+
+      state.judges.forEach((judge, index) => {
+        newAssignments[judge.id] = perJudge + (index < remainder ? 1 : 0)
+      })
+
+      return {
+        ...state,
+        assignmentMatrix: {
+          ...state.assignmentMatrix,
+          [challengeId]: newAssignments,
+        },
+      }
+    }
+    case "APPLY_AUTO_DISTRIBUTION": {
+      const challengeId = action.payload
+      const bucketSize = state.challengeBuckets[challengeId]?.length || 0
+      if (bucketSize === 0) return state
+
+      // Auto strategy: prefer same-challenge assignment
+      // Find judges with least total load and assign entire challenge if possible
+      const judgeLoads = state.judges
+        .map((judge) => ({
+          id: judge.id,
+          totalLoad: Object.values(state.assignmentMatrix).reduce(
+            (sum, challengeAssignments) => sum + (challengeAssignments[judge.id] || 0),
+            0,
+          ),
+          challengeCount: Object.keys(state.assignmentMatrix).filter(
+            (cId) => state.assignmentMatrix[cId]?.[judge.id] > 0,
+          ).length,
+        }))
+        .sort((a, b) => a.totalLoad - b.totalLoad || a.challengeCount - b.challengeCount)
+
+      const newAssignments: { [judgeId: string]: number } = {}
+
+      // Try to assign to single judge first
+      if (judgeLoads.length > 0) {
+        const leastLoadedJudge = judgeLoads[0]
+        if (leastLoadedJudge.totalLoad + bucketSize <= Math.ceil(state.selectedTopN / state.judges.length) * 1.5) {
+          newAssignments[leastLoadedJudge.id] = bucketSize
+        } else {
+          // Split among 2-3 least loaded judges
+          const targetJudges = judgeLoads.slice(0, Math.min(3, judgeLoads.length))
+          const perJudge = Math.floor(bucketSize / targetJudges.length)
+          const remainder = bucketSize % targetJudges.length
+
+          targetJudges.forEach((judge, index) => {
+            newAssignments[judge.id] = perJudge + (index < remainder ? 1 : 0)
+          })
+        }
+      }
+
+      return {
+        ...state,
+        assignmentMatrix: {
+          ...state.assignmentMatrix,
+          [challengeId]: newAssignments,
+        },
+      }
+    }
     default:
       return state
   }
 }
-
-const ITEMS_PER_PAGE = 10
 
 // Avatar color generator - memoized
 const getAvatarColor = (name: string) => {
@@ -232,16 +360,14 @@ const getAvatarColor = (name: string) => {
     "bg-pink-500",
     "bg-rose-500",
   ]
-
   let hash = 0
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash)
   }
-
   return colors[Math.abs(hash) % colors.length]
 }
 
-// Skeleton components for progressive loading
+// Skeleton components
 const StatCardSkeleton = () => (
   <Card>
     <CardContent className="p-6">
@@ -256,34 +382,32 @@ const StatCardSkeleton = () => (
   </Card>
 )
 
-const JudgeRowSkeleton = () => (
-  <TableRow>
-    <TableCell>
-      <div className="flex items-center space-x-3">
-        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+const ChallengeCardSkeleton = () => (
+  <Card>
+    <CardHeader className="pb-4">
+      <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
-          <div className="h-3 bg-gray-200 rounded animate-pulse w-48"></div>
+          <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse"></div>
+          <div className="h-6 w-16 bg-gray-200 rounded-full animate-pulse"></div>
         </div>
       </div>
-    </TableCell>
-    <TableCell>
-      <div className="h-6 bg-gray-200 rounded-full animate-pulse w-20"></div>
-    </TableCell>
-    <TableCell>
-      <div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
-    </TableCell>
-    <TableCell>
-      <div className="flex items-center space-x-2">
-        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
-        <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-      </div>
-    </TableCell>
-    <TableCell>
-      <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-    </TableCell>
-  </TableRow>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+          </div>
+          <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      ))}
+    </CardContent>
+  </Card>
 )
 
 export default function ParticipantDistributionTable() {
@@ -291,37 +415,76 @@ export default function ParticipantDistributionTable() {
   const params = useParams()
   const competitionId = params?.competitionId as string
 
-  // Memoized auth instance
   const auth = useMemo(() => getAuth(), [])
-
-  // State management with useReducer
   const [state, dispatch] = useReducer(appReducer, initialState)
 
   // Memoized calculations
-  const filteredJudges = useMemo(() => {
-    return state.judges.filter(
-      (j) =>
-        j.name.toLowerCase().includes(state.judgeSearch.toLowerCase()) ||
-        j.email.toLowerCase().includes(state.judgeSearch.toLowerCase()),
+  const filteredChallenges = useMemo(() => {
+    let filtered = state.challenges.filter(
+      (challenge) =>
+        challenge.name.toLowerCase().includes(state.challengeSearch.toLowerCase()) ||
+        challenge.id.toLowerCase().includes(state.challengeSearch.toLowerCase()),
     )
-  }, [state.judges, state.judgeSearch])
 
-  const totalPages = Math.ceil(filteredJudges.length / ITEMS_PER_PAGE)
-  const startIndex = (state.currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedJudges = filteredJudges.slice(startIndex, endIndex)
+    if (state.showOnlyRemaining) {
+      filtered = filtered.filter((challenge) => {
+        const assigned = Object.values(state.assignmentMatrix[challenge.id] || {}).reduce(
+          (sum, count) => sum + count,
+          0,
+        )
+        return challenge.bucketSize > assigned
+      })
+    }
 
-  const totalAssigned = useMemo(
-    () => Object.values(state.judgeAssignments).reduce((sum, val) => sum + val, 0),
-    [state.judgeAssignments],
-  )
+    return filtered
+  }, [state.challenges, state.challengeSearch, state.showOnlyRemaining, state.assignmentMatrix])
 
-  const totalExistingAssignments = useMemo(
-    () => Object.values(state.existingAssignments).reduce((sum, val) => sum + val, 0),
-    [state.existingAssignments],
-  )
+  const globalSummary = useMemo(() => {
+    const judgeToTotals: { [judgeId: string]: number } = {}
+    let totalAssigned = 0
+    let totalRemaining = 0
+    let hasOverflow = false
 
-  // Optimized notification system
+    state.judges.forEach((judge) => {
+      judgeToTotals[judge.id] = 0
+    })
+
+    state.challenges.forEach((challenge) => {
+      const challengeAssignments = state.assignmentMatrix[challenge.id] || {}
+      const challengeAssigned = Object.values(challengeAssignments).reduce((sum, count) => sum + count, 0)
+      const challengeRemaining = challenge.bucketSize - challengeAssigned
+
+      totalAssigned += challengeAssigned
+      totalRemaining += Math.max(0, challengeRemaining)
+
+      if (challengeAssigned > challenge.bucketSize) {
+        hasOverflow = true
+      }
+
+      Object.entries(challengeAssignments).forEach(([judgeId, count]) => {
+        judgeToTotals[judgeId] += count
+      })
+    })
+
+    return {
+      judgeToTotals,
+      totalAssigned,
+      totalRemaining,
+      hasOverflow,
+      totalAvailable: state.challenges.reduce((sum, c) => sum + c.bucketSize, 0),
+    }
+  }, [state.challenges, state.assignmentMatrix, state.judges])
+
+  const topNValidation = useMemo(() => {
+    const max = state.totalParticipants
+    const n = state.selectedTopN
+    if (!n || Number.isNaN(n)) return { ok: false, msg: "Enter a number greater than 0." }
+    if (n < 1) return { ok: false, msg: "Minimum is 1 participant." }
+    if (n > max) return { ok: false, msg: `Cannot exceed ${max} participant${max === 1 ? "" : "s"}.` }
+    return { ok: true, msg: `You can pick up to ${max}.` }
+  }, [state.selectedTopN, state.totalParticipants])
+
+  // Notification system
   const showNotification = useCallback((type: NotificationState["type"], title: string, message: string) => {
     const id = Date.now().toString()
     const notification: NotificationState = { id, type, title, message }
@@ -335,7 +498,27 @@ export default function ParticipantDistributionTable() {
     dispatch({ type: "REMOVE_NOTIFICATION", payload: id })
   }, [])
 
-  // Parallel data fetching functions
+
+  const fetchCompetitionMeta = useCallback(async () => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: true } })
+      const snap = await getDoc(doc(db, "competitions", competitionId))
+      if (snap.exists()) {
+        const data = snap.data()
+        dispatch({ type: "SET_COMPETITION_TITLE", payload: (data?.title as string) ?? "" })
+        return (data?.title as string) ?? ""
+      }
+      dispatch({ type: "SET_COMPETITION_TITLE", payload: "" })
+      return ""
+    } catch (err) {
+      console.error("Error fetching competition meta:", err)
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: false } })
+      return ""
+    }
+  }, [competitionId])
+
+
+  // Data fetching functions
   const fetchParticipantsCount = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingParticipants", value: true } })
@@ -355,19 +538,15 @@ export default function ParticipantDistributionTable() {
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       })
-
       if (!res.ok) {
         throw new Error(`Failed to fetch judges: ${res.status}`)
       }
-
       const data = await res.json()
       const judgeUsers = data.users || []
-
       if (!Array.isArray(judgeUsers)) {
         showNotification("error", "Invalid Data", "Invalid judge data received")
         return
       }
-
       const judgesData: Judge[] = judgeUsers.map((user: any) => ({
         id: user.uid,
         name: user.displayName || user.email.split("@")[0] || "Unknown Judge",
@@ -375,7 +554,6 @@ export default function ParticipantDistributionTable() {
         totalAssigned: 0,
         status: "available",
       }))
-
       dispatch({ type: "SET_JUDGES", payload: judgesData })
       return judgesData
     } catch (error) {
@@ -386,51 +564,130 @@ export default function ParticipantDistributionTable() {
     }
   }, [competitionId, showNotification])
 
-  const fetchExistingAssignments = useCallback(
-    async (judgesData: Judge[]) => {
-      try {
-        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingAssignments", value: true } })
+  const fetchChallengesAndSubmissions = useCallback(async () => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: true } })
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: true } })
 
-        // Parallel fetch of all judge documents
-        const judgeDocRefs = judgesData.map((j) => doc(db, "competitions", competitionId, "judges", j.id))
-        const judgeDocs = await Promise.all(judgeDocRefs.map(getDoc))
+      // First get top N participants
+      if (state.selectedTopN === 0) {
+        dispatch({ type: "SET_CHALLENGES", payload: [] })
+        dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: {} })
+        return
+      }
 
-        const assignments: { [key: string]: number } = {}
-        judgeDocs.forEach((doc, i) => {
-          if (doc.exists()) {
-            const data = doc.data()
-            if (data.assignedCount && data.assignedCount > 0) {
-              assignments[judgesData[i].id] = data.assignedCount
+      const leaderboardQuery = query(
+        collection(db, "competitions", competitionId, "leaderboard"),
+        orderBy("totalScore", "desc"),
+        limit(state.selectedTopN),
+      )
+      const leaderboardSnapshot = await getDocs(leaderboardQuery)
+      const topParticipantIds = leaderboardSnapshot.docs.map((doc) => doc.id)
+
+      if (topParticipantIds.length === 0) {
+        dispatch({ type: "SET_CHALLENGES", payload: [] })
+        dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: {} })
+        return
+      }
+
+      // Fetch submissions for top N participants (batched by 10 due to Firestore 'in' limit)
+      const submissionsByChallenge: { [challengeId: string]: string[] } = {}
+      const batchSize = 10
+
+      for (let i = 0; i < topParticipantIds.length; i += batchSize) {
+        const batch = topParticipantIds.slice(i, i + batchSize)
+        const submissionsQuery = query(
+          collection(db, "competitions", competitionId, "submissions"),
+          where("participantId", "in", batch),
+        )
+        const submissionsSnapshot = await getDocs(submissionsQuery)
+
+        submissionsSnapshot.docs.forEach((doc) => {
+          const data = doc.data()
+          const challengeId = data.challengeId
+          if (challengeId) {
+            if (!submissionsByChallenge[challengeId]) {
+              submissionsByChallenge[challengeId] = []
             }
+            submissionsByChallenge[challengeId].push(doc.id)
           }
         })
-
-        dispatch({ type: "SET_EXISTING_ASSIGNMENTS", payload: assignments })
-        dispatch({ type: "SET_ASSIGNMENTS", payload: assignments })
-      } catch (error) {
-        console.error("Error fetching existing assignments:", error)
-        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingAssignments", value: false } })
       }
-    },
-    [competitionId],
-  )
 
-  const fetchSavedConfig = useCallback(async (userId: string) => {
+      // Sort submissions within each challenge for deterministic behavior
+      Object.keys(submissionsByChallenge).forEach((challengeId) => {
+        submissionsByChallenge[challengeId].sort()
+      })
+
+      // Pull existing assignments and exclude those ids from buckets
+      const { matrix, alreadyAssigned } = await fetchExistingAssignments()
+
+      // Build the final challenges list (only once)
+      const challenges: Challenge[] = Object.entries(submissionsByChallenge).map(([challengeId, submissionIds]) => ({
+        id: challengeId,
+        name: `Challenge ${challengeId}`,
+        bucketSize: submissionIds.length, // remaining to assign
+        submissionIds,
+      }))
+
+      dispatch({ type: "SET_CHALLENGES", payload: challenges })
+      dispatch({ type: "SET_ASSIGNMENT_MATRIX", payload: matrix })
+      dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: submissionsByChallenge })
+
+      } catch (error) {
+        console.error("Error fetching challenges and submissions:", error)
+        showNotification("error", "Data Loading Error", "Failed to load challenges and submissions")
+        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: false } })
+        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: false } })
+      }
+    }, [competitionId, state.selectedTopN, showNotification])
+
+
+    const fetchExistingAssignments = useCallback(async () => {
+      const assignmentsByJudge: Record<string, Record<string, string[]>> = {}
+      const qSnap = await getDocs(collection(db, "competitions", competitionId, "judges"))
+
+      qSnap.forEach((d) => {
+        const data = d.data() as {
+          submissionsByChallenge?: Record<string, string[]>
+        }
+        if (data?.submissionsByChallenge) {
+          assignmentsByJudge[d.id] = data.submissionsByChallenge
+        }
+      })
+
+      // Build matrix and a set of already-assigned ids per challenge
+      const matrix: AssignmentMatrix = {}
+      const alreadyAssigned: Record<string, Set<string>> = {}
+
+      Object.entries(assignmentsByJudge).forEach(([judgeId, byChallenge]) => {
+        Object.entries(byChallenge).forEach(([challengeId, ids]) => {
+          if (!matrix[challengeId]) matrix[challengeId] = {}
+          matrix[challengeId][judgeId] = (matrix[challengeId][judgeId] || 0) + ids.length
+
+          if (!alreadyAssigned[challengeId]) alreadyAssigned[challengeId] = new Set()
+          ids.forEach((sid) => alreadyAssigned[challengeId].add(sid))
+        })
+      })
+
+      return { matrix, alreadyAssigned }
+    }, [competitionId])
+
+
+  const fetchTopNFromGlobalConfig = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: true } })
-      const configDocRef = doc(db, "competitions", competitionId, "leaderboard", "configurations")
-      const configSnapshot = await getDoc(configDocRef)
 
-      if (configSnapshot.exists()) {
-        const data = configSnapshot.data()
-        if (data[userId]?.selectedTopN) {
-          dispatch({ type: "SET_SELECTED_TOP_N", payload: data[userId].selectedTopN })
+      const cfgRef = doc(db, "competitions", competitionId, "distributionConfigs", "current")
+      const snap = await getDoc(cfgRef)
+
+      if (snap.exists()) {
+        const data = snap.data() as { topN?: number; timestamp?: Timestamp }
+        if (typeof data.topN === "number") {
+          dispatch({ type: "SET_SELECTED_TOP_N", payload: data.topN })
           dispatch({
             type: "SET_SAVED_CONFIG",
-            payload: {
-              selectedTopN: data[userId].selectedTopN,
-              timestamp: data[userId].timestamp,
-            },
+            payload: { selectedTopN: data.topN, timestamp: (data.timestamp as Timestamp) ?? (serverTimestamp() as any) },
           })
         } else {
           dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
@@ -438,255 +695,261 @@ export default function ParticipantDistributionTable() {
       } else {
         dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
       }
-    } catch (error) {
-      console.error("Error fetching saved config:", error)
+    } catch (e) {
+      console.error("Error fetching global config:", e)
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
     }
-  }, [])
+  }, [competitionId])
 
-  // Progressive data loading strategy
+
+  // Progressive data loading
   const initializeData = useCallback(
     async (user: User) => {
-      // Phase 1: Critical data (participants count and judges) - parallel
-      const criticalDataPromises = [fetchParticipantsCount(), fetchJudges()]
-
+      const criticalDataPromises = [fetchParticipantsCount(), fetchJudges(), fetchCompetitionMeta()]
       try {
         const [, judgesData] = await Promise.allSettled(criticalDataPromises)
-
-        // Phase 2: Secondary data (assignments and config) - parallel, but after judges are loaded
-        if (judgesData.status === "fulfilled" && judgesData.value) {
-          const secondaryDataPromises = [fetchExistingAssignments(judgesData.value), fetchSavedConfig(user.uid)]
-
-          await Promise.allSettled(secondaryDataPromises)
+        if (judgesData.status === "fulfilled") {
+          await fetchTopNFromGlobalConfig()
         }
       } catch (error) {
         console.error("Error in progressive data loading:", error)
         showNotification("error", "Loading Error", "Some data failed to load")
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: { key: "isInitializing", value: false } })
-      }
+      } 
     },
-    [fetchParticipantsCount, fetchJudges, fetchExistingAssignments, fetchSavedConfig, showNotification],
+    [fetchParticipantsCount, fetchJudges,fetchCompetitionMeta, fetchTopNFromGlobalConfig, showNotification],
   )
 
-  // Non-blocking authentication
+  // Auth effect
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        router.push("/auth/login/admin")
+        router.push("/")
         return
       }
-
       try {
         const idTokenResult = await getIdTokenResult(user, true)
         const role = idTokenResult.claims.role
-
         if (role !== "superadmin") {
           router.push("/")
           return
         }
-
         dispatch({ type: "SET_AUTH", payload: { user, isAuthenticated: true } })
-
-        // Start progressive data loading immediately after auth
         initializeData(user)
       } catch (error) {
         console.error("Auth error:", error)
         router.push("/auth/login/admin")
       }
     })
-
     return () => unsubscribe()
   }, [auth, router, initializeData])
 
-  // Optimized handlers
+  // Fetch challenges when selectedTopN changes
+  useEffect(() => {
+    if (state.selectedTopN > 0 && state.isAuthenticated) {
+      fetchChallengesAndSubmissions()
+    }
+  }, [state.selectedTopN, state.isAuthenticated, fetchChallengesAndSubmissions])
+
+  // Config save handler
+  // REPLACE the entire function body + signature
+  const saveConfigToFirestore = useCallback(async () => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: true } })
+      const cfgRef = doc(db, "competitions", competitionId, "distributionConfigs", "current")
+      await setDoc(cfgRef, {
+        topN: state.selectedTopN,
+        timestamp: serverTimestamp(),
+        updatedBy: state.currentUser?.uid ?? null,
+      }, { merge: true })
+
+      showNotification("success", "Configuration Saved", "Top N saved for this competition")
+      dispatch({
+        type: "SET_SAVED_CONFIG",
+        payload: { selectedTopN: state.selectedTopN, timestamp: serverTimestamp() as any },
+      })
+      dispatch({ type: "SET_DIALOG", payload: { dialog: "config", open: false } })
+    } catch (err) {
+      console.error("Save config error:", err)
+      showNotification("error", "Save Failed", "Could not save configuration")
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: false } })
+    }
+  }, [competitionId, state.selectedTopN, state.currentUser?.uid, showNotification])
+
+
   const handleSaveConfig = useCallback(async () => {
     if (!state.currentUser) return
-
+    if (!topNValidation.ok) {
+      showNotification("warning", "Invalid number", topNValidation.msg)
+      return
+    }
     if (state.savedConfig && state.savedConfig.selectedTopN !== state.selectedTopN) {
       dispatch({ type: "SET_DIALOG", payload: { dialog: "confirm", open: true } })
       return
     }
+    await saveConfigToFirestore()
+  }, [
+    state.currentUser,
+    state.savedConfig,
+    state.selectedTopN,
+    topNValidation,
+    saveConfigToFirestore,
+    showNotification,
+  ])
 
-    await saveConfigToFirestore(state.currentUser.uid)
-  }, [state.currentUser, state.savedConfig, state.selectedTopN])
+  // Distribution handlers
+  const handleEqualAllDistribution = useCallback(() => {
+    state.challenges.forEach((challenge) => {
+      dispatch({ type: "APPLY_EQUAL_DISTRIBUTION", payload: challenge.id })
+    })
+    showNotification("success", "Equal Distribution Applied", "All challenges distributed equally among judges")
+  }, [state.challenges, showNotification])
 
-  const saveConfigToFirestore = useCallback(
-    async (uid: string) => {
-      try {
-        dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: true } })
-        const cfgRef = doc(db, "competitions", competitionId, "leaderboard", "configurations")
-        await setDoc(
-          cfgRef,
-          {
-            [uid]: {
-              userId: uid,
-              timestamp: serverTimestamp(),
-              selectedTopN: state.selectedTopN,
-            },
-          },
-          { merge: true },
-        )
-        showNotification("success", "Configuration Saved", "Configuration saved successfully")
-        dispatch({
-          type: "SET_SAVED_CONFIG",
-          payload: {
-            selectedTopN: state.selectedTopN,
-            timestamp: serverTimestamp() as any,
-          },
-        })
-        dispatch({ type: "SET_DIALOG", payload: { dialog: "config", open: false } })
-      } catch (err) {
-        console.error("Save config error:", err)
-        showNotification("error", "Save Failed", "Could not save configuration")
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: false } })
-      }
-    },
-    [competitionId, state.selectedTopN, showNotification],
-  )
+  const handleAutoAllDistribution = useCallback(() => {
+    state.challenges.forEach((challenge) => {
+      dispatch({ type: "APPLY_AUTO_DISTRIBUTION", payload: challenge.id })
+    })
+    showNotification(
+      "success",
+      "Auto Distribution Applied",
+      "All challenges distributed with same-challenge preference",
+    )
+  }, [state.challenges, showNotification])
 
-  const handleDistributeParticipants = useCallback(async () => {
+  const handleDistributeSubmissions = useCallback(async () => {
+    if (globalSummary.hasOverflow) {
+      showNotification("error", "Cannot Distribute", "Some challenges have more assignments than available submissions")
+      return
+    }
+
     dispatch({ type: "SET_LOADING", payload: { key: "isDistributing", value: true } })
+
     try {
-      // Fetch top N participants
-      const leaderboardQuery = query(
-        collection(db, "competitions", competitionId, "leaderboard"),
-        orderBy("totalScore", "desc"),
-        limit(state.selectedTopN),
-      )
-      const leaderboardSnapshot = await getDocs(leaderboardQuery)
-      const participants = leaderboardSnapshot.docs.map((doc) => doc.id)
-
-      if (!participants || participants.length === 0) {
-        throw new Error("No participants found")
-      }
-
-      // Get available judges
-      let availableJudges: string[] = []
-      if (state.assignmentMethod === "Round-Robin") {
-        availableJudges = state.judges.map((j) => j.id)
-      } else if (state.assignmentMethod === "Weighted") {
-        availableJudges = Object.entries(state.judgeAssignments)
-          .filter(([_, capacity]) => capacity > 0)
-          .map(([judgeId, _]) => judgeId)
-      }
-
-      if (availableJudges.length === 0) {
-        throw new Error("No judges available for assignment")
-      }
-
-      // Distribute participants
-      const assignments: { [key: string]: string[] } = {}
-      if (state.assignmentMethod === "Round-Robin") {
-        participants.forEach((pid, index) => {
-          const judgeId = availableJudges[index % availableJudges.length]
-          if (!assignments[judgeId]) assignments[judgeId] = []
-          assignments[judgeId].push(pid)
-        })
-      } else if (state.assignmentMethod === "Weighted") {
-        let remainingParticipants = [...participants]
-        for (const judgeId of availableJudges) {
-          const capacity = state.judgeAssignments[judgeId] || 0
-          if (capacity > 0 && remainingParticipants.length > 0) {
-            const assignCount = Math.min(capacity, remainingParticipants.length)
-            assignments[judgeId] = remainingParticipants.slice(0, assignCount)
-            remainingParticipants = remainingParticipants.slice(assignCount)
-          }
-        }
-      }
-
-      // Save to Firestore
       const batch = writeBatch(db)
-      Object.entries(assignments).forEach(([judgeId, pids]) => {
-        const ref = doc(db, "competitions", competitionId, "judges", judgeId)
-        batch.set(
-          ref,
-          {
-            participants: pids,
-            assignedCount: pids.length,
-          },
-          { merge: true },
-        )
+      const distributionSnapshot: DistributionSnapshot = {
+        matrix: state.assignmentMatrix,
+        topN: state.selectedTopN,
+        strategy: "manual",
+        mode: state.distributionMode,
+        timestamp: serverTimestamp() as any,
+      }
+
+      // Build judge slices
+      const judgeSlices: { [judgeId: string]: { [challengeId: string]: string[] } } = {}
+
+      state.judges.forEach((judge) => {
+        judgeSlices[judge.id] = {}
       })
+
+      // Slice submissions according to matrix
+      Object.entries(state.assignmentMatrix).forEach(([challengeId, judgeAssignments]) => {
+        const submissionIds = state.challengeBuckets[challengeId] || []
+        let currentIndex = 0
+
+        Object.entries(judgeAssignments).forEach(([judgeId, count]) => {
+          if (count > 0) {
+            const slice = submissionIds.slice(currentIndex, currentIndex + count)
+            judgeSlices[judgeId][challengeId] = slice
+            currentIndex += count
+          }
+        })
+      })
+
+      // Write to Firestore
+      Object.entries(judgeSlices).forEach(([judgeId, challengeAssignments]) => {
+        const judgeDocRef = doc(db, "competitions", competitionId, "judges", judgeId)
+
+        if (state.distributionMode === "overwrite") {
+          // Only challenges with > 0 new assignments for this judge
+          const nonEmpty = Object.entries(challengeAssignments).filter(([, ids]) => ids.length > 0)
+
+          const assignedCountTotal = nonEmpty.reduce((sum, [, ids]) => sum + ids.length, 0)
+
+          // If this judge ends up with nothing, delete the entire doc
+          if (assignedCountTotal === 0) {
+            batch.delete(judgeDocRef)
+            return
+          }
+
+          // New state to upsert
+          const submissionsByChallenge = Object.fromEntries(nonEmpty)
+          const assignedCountsByChallenge = Object.fromEntries(
+            nonEmpty.map(([challengeId, ids]) => [challengeId, ids.length]),
+          )
+
+          // Upsert the new maps/totals
+          batch.set(
+            judgeDocRef,
+            { judgeId, competitionId,competitionTitle: state.competitionTitle, updatedAt: serverTimestamp(),
+              submissionsByChallenge, assignedCountsByChallenge, assignedCountTotal },
+            { merge: true },
+          )
+
+          // Remove any challenge keys for this judge that now have 0 count
+          const zeroChallengeIds = state.challenges
+            .map((c) => c.id)
+            .filter((cid) => (state.assignmentMatrix[cid]?.[judgeId] || 0) === 0)
+
+          if (zeroChallengeIds.length > 0) {
+            const deletions: Record<string, any> = {}
+            zeroChallengeIds.forEach((cid) => {
+              deletions[`submissionsByChallenge.${cid}`] = deleteField()
+              deletions[`assignedCountsByChallenge.${cid}`] = deleteField()
+            })
+            batch.update(judgeDocRef, deletions)
+          }
+        } else {
+          showNotification("warning", "Append Mode", "Append mode not yet implemented, using overwrite")
+        }
+      })
+
+
+      // Save distribution snapshot
+      const snapshotRef = doc(db, "competitions", competitionId, "distributionConfigs", "current")
+      batch.set(snapshotRef, distributionSnapshot,{ merge: true })
 
       await batch.commit()
 
-      const assignedCount = Object.values(assignments).reduce((sum, pids) => sum + pids.length, 0)
-      showNotification("success", "Distribution Complete", `${assignedCount} participants distributed successfully!`)
+      const totalDistributed = Object.values(judgeSlices).reduce(
+        (sum, judgeAssignments) =>
+          sum + Object.values(judgeAssignments).reduce((judgeSum, submissions) => judgeSum + submissions.length, 0),
+        0,
+      )
 
-      // Update existing assignments
-      const newAssignments: { [key: string]: number } = {}
-      Object.entries(assignments).forEach(([judgeId, pids]) => {
-        newAssignments[judgeId] = pids.length
-      })
-      dispatch({ type: "SET_EXISTING_ASSIGNMENTS", payload: newAssignments })
+      showNotification("success", "Distribution Complete", `${totalDistributed} submissions distributed successfully!`)
       dispatch({ type: "SET_DIALOG", payload: { dialog: "distribute", open: false } })
-    } catch (err) {
-      console.error("Distribution error:", err)
+    } catch (error) {
+      console.error("Distribution error:", error)
       showNotification(
         "error",
         "Distribution Failed",
-        `Failed to distribute participants: ${err instanceof Error ? err.message : "Unknown error"}`,
+        `Failed to distribute submissions: ${error instanceof Error ? error.message : "Unknown error"}`,
       )
     } finally {
       dispatch({ type: "SET_LOADING", payload: { key: "isDistributing", value: false } })
     }
   }, [
     competitionId,
-    state.selectedTopN,
-    state.assignmentMethod,
+    state.assignmentMatrix,
+    state.challengeBuckets,
     state.judges,
-    state.judgeAssignments,
+    state.selectedTopN,
+    state.distributionMode,
+    globalSummary.hasOverflow,
     showNotification,
   ])
 
-  const handleEqualDistribution = useCallback(() => {
-    const participantsPerJudge = Math.floor(state.selectedTopN / state.judges.length)
-    const remainder = state.selectedTopN % state.judges.length
+  // Matrix cell update handler
+  const updateMatrixCell = useCallback(
+    (challengeId: string, judgeId: string, value: number) => {
+      const challenge = state.challenges.find((c) => c.id === challengeId)
+      if (!challenge) return
 
-    const newAssignments: { [key: string]: number } = {}
-    state.judges.forEach((judge, index) => {
-      newAssignments[judge.id] = participantsPerJudge + (index < remainder ? 1 : 0)
-    })
-
-    dispatch({ type: "SET_ASSIGNMENTS", payload: newAssignments })
-    showNotification("success", "Equal Distribution", "Participants distributed equally among all judges")
-  }, [state.selectedTopN, state.judges, showNotification])
-
-  const updateJudgeAssignment = useCallback(
-    (judgeId: string, value: number) => {
-      const newValue = Math.max(0, Math.min(value, state.selectedTopN))
-      dispatch({ type: "UPDATE_JUDGE_ASSIGNMENT", payload: { judgeId, value: newValue } })
+      const newValue = Math.max(0, Math.min(value, challenge.bucketSize))
+      dispatch({ type: "UPDATE_MATRIX_CELL", payload: { challengeId, judgeId, value: newValue } })
     },
-    [state.selectedTopN],
+    [state.challenges],
   )
-
-  const getStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case "available":
-        return "bg-emerald-50 text-emerald-800 border-emerald-200"
-      case "busy":
-        return "bg-amber-50 text-amber-800 border-amber-200"
-      case "offline":
-        return "bg-gray-100 text-gray-600 border-gray-200"
-      default:
-        return "bg-gray-100 text-gray-600 border-gray-200"
-    }
-  }, [])
-
-  const getStatusDot = useCallback((status: string) => {
-    switch (status) {
-      case "available":
-        return "bg-emerald-500"
-      case "busy":
-        return "bg-amber-500"
-      case "offline":
-        return "bg-red-500"
-      default:
-        return "bg-gray-400"
-    }
-  }, [])
 
   // Render notification
   const renderNotification = useCallback(
@@ -729,66 +992,215 @@ export default function ParticipantDistributionTable() {
     [removeNotification],
   )
 
-  // Pagination component
-  const PaginationComponent = useCallback(() => {
-    if (totalPages <= 1) return null
+  // Challenge Card Component
+  const ChallengeCard = useCallback(
+    ({ challenge }: { challenge: Challenge }) => {
+      const challengeAssignments = state.assignmentMatrix[challenge.id] || {}
+      const assigned = Object.values(challengeAssignments).reduce((sum, count) => sum + count, 0)
+      const remaining = challenge.bucketSize - assigned
+      const hasOverflow = assigned > challenge.bucketSize
 
-    const startItem = (state.currentPage - 1) * ITEMS_PER_PAGE + 1
-    const endItem = Math.min(state.currentPage * ITEMS_PER_PAGE, filteredJudges.length)
-
-    return (
-      <div className="flex items-center justify-between px-6 py-4 border-t">
-        <div className="text-sm text-muted-foreground">
-          Showing {startItem} to {endItem} of {filteredJudges.length} judges
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => dispatch({ type: "SET_CURRENT_PAGE", payload: state.currentPage - 1 })}
-            disabled={state.currentPage === 1}
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Previous
-          </Button>
-          <div className="flex items-center space-x-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum: number
-              if (totalPages <= 5) {
-                pageNum = i + 1
-              } else if (state.currentPage <= 3) {
-                pageNum = i + 1
-              } else if (state.currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i
-              } else {
-                pageNum = state.currentPage - 2 + i
-              }
-              return (
-                <Button
-                  key={pageNum}
-                  variant={state.currentPage === pageNum ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => dispatch({ type: "SET_CURRENT_PAGE", payload: pageNum })}
-                  className="w-8 h-8 p-0"
+      return (
+        <Card className={`${hasOverflow ? "border-red-300 bg-red-50/30" : ""}`}>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg text-gray-900">{challenge.name}</CardTitle>
+                <CardDescription className="text-gray-600">ID: {challenge.id}</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="gap-1">
+                  <Layers className="w-3 h-3" />
+                  {challenge.bucketSize} Available
+                </Badge>
+                <Badge
+                  variant={hasOverflow ? "destructive" : assigned === challenge.bucketSize ? "default" : "secondary"}
+                  className="gap-1"
                 >
-                  {pageNum}
-                </Button>
-              )
-            })}
+                  <Target className="w-3 h-3" />
+                  {assigned} Assigned
+                </Badge>
+                
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2 mb-4">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => dispatch({ type: "APPLY_EQUAL_DISTRIBUTION", payload: challenge.id })}
+                className="flex items-center gap-1"
+              >
+                <Scale className="w-3 h-3" />
+                Equal
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => dispatch({ type: "APPLY_AUTO_DISTRIBUTION", payload: challenge.id })}
+                className="flex items-center gap-1"
+              >
+                <TrendingUp className="w-3 h-3" />
+                Auto
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => dispatch({ type: "CLEAR_CHALLENGE_ASSIGNMENTS", payload: challenge.id })}
+                className="flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Clear
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {state.judges.map((judge) => {
+                const assignedCount = challengeAssignments[judge.id] || 0
+                return (
+                  <div key={judge.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className={`${getAvatarColor(judge.name)} text-white text-xs font-semibold`}>
+                          {judge.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-gray-900">{judge.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateMatrixCell(challenge.id, judge.id, assignedCount - 1)}
+                        disabled={assignedCount <= 0}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min="0"
+                        max={challenge.bucketSize}
+                        value={assignedCount}
+                        onChange={(e) => updateMatrixCell(challenge.id, judge.id, Number.parseInt(e.target.value) || 0)}
+                        className="w-16 text-center h-7 text-sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateMatrixCell(challenge.id, judge.id, assignedCount + 1)}
+                        disabled={assignedCount >= challenge.bucketSize}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )
+    },
+    [state.assignmentMatrix, state.judges, updateMatrixCell],
+  )
+
+  // Matrix View Component
+  const MatrixView = useCallback(() => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Grid3X3 className="w-5 h-5" />
+            Assignment Matrix Overview
+          </CardTitle>
+          <CardDescription>Click any cell to edit assignments for that challenge-judge combination</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 bg-white z-10 min-w-[200px]">Challenge</TableHead>
+                  {state.judges.map((judge) => (
+                    <TableHead key={judge.id} className="text-center min-w-[100px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className={`${getAvatarColor(judge.name)} text-white text-xs`}>
+                            {judge.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs">{judge.name.split(" ")[0]}</span>
+                      </div>
+                    </TableHead>
+                  ))}
+                  <TableHead className="text-center">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {state.challenges.map((challenge) => {
+                  const challengeAssignments = state.assignmentMatrix[challenge.id] || {}
+                  const assigned = Object.values(challengeAssignments).reduce((sum, count) => sum + count, 0)
+                  const hasOverflow = assigned > challenge.bucketSize
+
+                  return (
+                    <TableRow key={challenge.id} className={hasOverflow ? "bg-red-50" : ""}>
+                      <TableCell className="sticky left-0 bg-white z-10 font-medium">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{challenge.name}</div>
+                            <div className="text-xs text-gray-500">{challenge.bucketSize} available</div>
+                          </div>
+                          <Badge
+                            variant={
+                              hasOverflow ? "destructive" : assigned === challenge.bucketSize ? "default" : "secondary"
+                            }
+                          >
+                            {assigned}/{challenge.bucketSize}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      {state.judges.map((judge) => {
+                        const count = challengeAssignments[judge.id] || 0
+                        return (
+                          <TableCell key={judge.id} className="text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                dispatch({ type: "SET_SELECTED_CHALLENGE", payload: challenge.id })
+                                dispatch({ type: "SET_DIALOG", payload: { dialog: "challengeDrawer", open: true } })
+                              }}
+                              className={`w-12 h-8 ${count > 0 ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-100"}`}
+                            >
+                              {count || "-"}
+                            </Button>
+                          </TableCell>
+                        )
+                      })}
+                      <TableCell className="text-center font-medium">
+                        <Badge variant={hasOverflow ? "destructive" : "outline"}>{assigned}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => dispatch({ type: "SET_CURRENT_PAGE", payload: state.currentPage + 1 })}
-            disabled={state.currentPage === totalPages}
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     )
-  }, [totalPages, state.currentPage, filteredJudges.length])
+  }, [state.challenges, state.judges, state.assignmentMatrix])
 
   // Early return for unauthenticated users
   if (!state.isAuthenticated) {
@@ -818,15 +1230,15 @@ export default function ParticipantDistributionTable() {
             <Shuffle className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-gray-900">Participant Distribution</h2>
+            <h2 className="font-bold text-gray-900">Challenge-wise Distribution</h2>
             <p className="text-xs text-gray-600">Intelligent Assignment System</p>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto p-6 space-y-8">
-        {/* Stats Overview with Progressive Loading */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           {state.isLoadingParticipants ? (
             <StatCardSkeleton />
           ) : (
@@ -874,7 +1286,7 @@ export default function ParticipantDistributionTable() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Selected for Review</p>
+                    <p className="text-sm font-medium text-muted-foreground">Selected Top N</p>
                     <p className="text-3xl font-bold tracking-tight text-gray-900">
                       {state.selectedTopN.toLocaleString()}
                     </p>
@@ -887,25 +1299,41 @@ export default function ParticipantDistributionTable() {
             </Card>
           )}
 
-          {state.isLoadingAssignments ? (
+          {state.isLoadingChallenges ? (
             <StatCardSkeleton />
           ) : (
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Currently Assigned</p>
+                    <p className="text-sm font-medium text-muted-foreground">Challenges</p>
                     <p className="text-3xl font-bold tracking-tight text-gray-900">
-                      {totalExistingAssignments.toLocaleString()}
+                      {state.challenges.length.toLocaleString()}
                     </p>
                   </div>
                   <div className="p-3 rounded-xl bg-purple-50">
-                    <Award className="w-6 h-6 text-purple-600" />
+                    <Layers className="w-6 h-6 text-purple-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Available Submissions</p>
+                  <p className="text-3xl font-bold tracking-tight text-gray-900">
+                    {globalSummary.totalAvailable.toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-indigo-50">
+                  <Award className="w-6 h-6 text-indigo-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Action Buttons */}
@@ -915,281 +1343,211 @@ export default function ParticipantDistributionTable() {
             className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800"
             disabled={state.isLoadingConfig}
           >
-            {state.isLoadingConfig ? <Loader className="w-4 h-4 animate-spin" /> : <Hash className="w-4 h-4" />}
-            Configure Participants ({state.selectedTopN})
+           {state.isLoadingConfig && <Loader className="w-4 h-4 animate-spin" />}
+            Select Top N ({state.selectedTopN})
           </Button>
 
           <Button
-            onClick={() => dispatch({ type: "SET_DIALOG", payload: { dialog: "distribute", open: true } })}
-            disabled={state.selectedTopN === 0 || state.isLoadingJudges}
-            className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800"
-          >
-            <Shuffle className="w-4 h-4" />
-            Distribution Settings
-          </Button>
-
-          <Button
-            onClick={handleEqualDistribution}
-            disabled={state.selectedTopN === 0 || state.judges.length === 0 || state.isLoadingJudges}
+            onClick={handleEqualAllDistribution}
+            disabled={state.challenges.length === 0 || state.judges.length === 0}
             variant="outline"
-            className="flex items-center gap-2 border-gray-300 text-gray-900 hover:bg-gray-50 bg-transparent"
+            className="flex items-center gap-2 bg-transparent"
           >
-            <Zap className="w-4 h-4" />
-            Equal Distribution
+            <Scale className="w-4 h-4" />
+            Equal All
+          </Button>
+
+          <Button
+            onClick={handleAutoAllDistribution}
+            disabled={state.challenges.length === 0 || state.judges.length === 0}
+            variant="outline"
+            className="flex items-center gap-2 bg-transparent"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Auto All (Prefer Same-Challenge)
           </Button>
         </div>
 
-        {/* Judges Table with Progressive Loading */}
+        {/* Global Toolbar */}
         <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl text-gray-900">
-                  Judge Management {!state.isLoadingJudges && `(${filteredJudges.length})`}
-                  {state.isLoadingJudges && (
-                    <span className="inline-flex items-center ml-2">
-                      <Loader className="w-4 h-4 animate-spin" />
-                    </span>
-                  )}
-                </CardTitle>
-                <CardDescription className="text-gray-600">
-                  Assign participants to judges and manage distribution settings
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-4">
-                {state.selectedTopN > 0 && !state.isLoadingAssignments && (
-                  <div className="text-sm text-muted-foreground">
-                    <span
-                      className={`font-semibold ${
-                        totalAssigned > state.selectedTopN
-                          ? "text-red-600"
-                          : totalAssigned === state.selectedTopN
-                            ? "text-green-600"
-                            : "text-amber-600"
-                      }`}
-                    >
-                      {totalAssigned}
-                    </span>
-                    <span> / {state.selectedTopN} assigned</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            {/* Search */}
-            <div className="p-6 border-b">
-              <div className="relative w-full max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search judges..."
-                  value={state.judgeSearch}
-                  onChange={(e) => dispatch({ type: "SET_JUDGE_SEARCH", payload: e.target.value })}
-                  className="pl-10 pr-10 border-gray-300 focus:border-gray-900 focus:ring-gray-900/20"
-                  disabled={state.isLoadingJudges}
-                />
-                {state.judgeSearch && (
+          <CardContent className="p-4">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-2">
                   <Button
-                    variant="ghost"
+                    variant={state.viewMode === "cards" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => dispatch({ type: "SET_JUDGE_SEARCH", payload: "" })}
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => dispatch({ type: "SET_VIEW_MODE", payload: "cards" })}
+                    className="flex items-center gap-2"
                   >
-                    <X className="w-4 h-4" />
+                    <List className="w-4 h-4" />
+                    Challenge Cards
                   </Button>
+                  <Button
+                    variant={state.viewMode === "matrix" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => dispatch({ type: "SET_VIEW_MODE", payload: "matrix" })}
+                    className="flex items-center gap-2"
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                    Matrix Overview
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="distribution-mode" className="text-sm font-medium">
+                    Mode:
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="distribution-mode"
+                      checked={state.distributionMode === "append"}
+                      onCheckedChange={(checked) =>
+                        dispatch({ type: "SET_DISTRIBUTION_MODE", payload: checked ? "append" : "overwrite" })
+                      }
+                    />
+                    <span className="text-sm text-gray-600">
+                      {state.distributionMode === "overwrite" ? "Overwrite" : "Append"}
+                    </span>
+                  </div>
+                </div>
+
+                {state.viewMode === "cards" && (
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search challenges..."
+                        value={state.challengeSearch}
+                        onChange={(e) => dispatch({ type: "SET_CHALLENGE_SEARCH", payload: e.target.value })}
+                        className="pl-10 w-64"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="show-remaining"
+                        checked={state.showOnlyRemaining}
+                        onCheckedChange={(checked) => dispatch({ type: "SET_SHOW_ONLY_REMAINING", payload: checked })}
+                      />
+                      <Label htmlFor="show-remaining" className="text-sm">
+                        Show only with remaining {">"} 0
+                      </Label>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Table with Progressive Loading */}
-            {state.isLoadingJudges ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-gray-900 font-semibold">Judge</TableHead>
-                      <TableHead className="text-gray-900 font-semibold">Status</TableHead>
-                      <TableHead className="text-gray-900 font-semibold">Current Assignments</TableHead>
-                      <TableHead className="text-gray-900 font-semibold">New Assignment</TableHead>
-                      <TableHead className="w-[100px] text-gray-900 font-semibold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <JudgeRowSkeleton key={i} />
-                    ))}
-                  </TableBody>
-                </Table>
+        {/* Main Content */}
+        {state.selectedTopN === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Configure Participant Selection</h3>
+              <p className="text-gray-600 mb-6">
+                Select the number of top-ranked participants to distribute among judges
+              </p>
+              <Button
+                onClick={() => dispatch({ type: "SET_DIALOG", payload: { dialog: "config", open: true } })}
+                className="bg-gray-900 hover:bg-gray-800"
+              >
+                Select Top N
+              </Button>
+            </CardContent>
+          </Card>
+        ) : state.isLoadingChallenges || state.isLoadingSubmissions ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }, (_, i) => (
+              <ChallengeCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : state.challenges.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Layers className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Challenges Found</h3>
+              <p className="text-gray-600">
+                No submissions found for the selected top {state.selectedTopN} participants
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {state.viewMode === "cards" ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredChallenges.map((challenge) => (
+                  <ChallengeCard key={challenge.id} challenge={challenge} />
+                ))}
               </div>
-            ) : paginatedJudges.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center space-y-4">
-                  <Scale className="w-12 h-12 text-muted-foreground mx-auto" />
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-900">No judges found</h3>
-                    <p className="text-muted-foreground">
-                      {state.judgeSearch ? "Try adjusting your search criteria" : "No judges are available"}
-                    </p>
+            ) : (
+              <MatrixView />
+            )}
+          </>
+        )}
+
+        {/* Sticky Summary Bar */}
+        {state.challenges.length > 0 && (
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="text-sm">
+                  <span className="font-medium text-gray-900">Judge Totals:</span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {state.judges.map((judge) => (
+                      <Badge key={judge.id} variant="outline" className="text-xs">
+                        {judge.name.split(" ")[0]}: {globalSummary.judgeToTotals[judge.id] || 0}
+                      </Badge>
+                    ))}
                   </div>
-                  {state.judgeSearch && (
-                    <Button
-                      variant="outline"
-                      onClick={() => dispatch({ type: "SET_JUDGE_SEARCH", payload: "" })}
-                      className="border-gray-300 text-gray-900 hover:bg-gray-50"
-                    >
-                      Clear search
-                    </Button>
+                </div>
+                <Separator orientation="vertical" className="h-8" />
+                <div className="text-sm space-y-1">
+                  <div>
+                    <span className="font-medium text-gray-900">Global: </span>
+                    <Badge variant="outline" className="ml-1">
+                      {globalSummary.totalAssigned}/{globalSummary.totalAvailable} assigned
+                    </Badge>
+                  </div>
+                  {globalSummary.totalRemaining > 0 && (
+                    <div>
+                      <Badge variant="outline" className="text-amber-600 border-amber-300">
+                        {globalSummary.totalRemaining} remaining
+                      </Badge>
+                    </div>
+                  )}
+                  {globalSummary.hasOverflow && (
+                    <div>
+                      <Badge variant="destructive">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        Overflow detected
+                      </Badge>
+                    </div>
                   )}
                 </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-gray-900 font-semibold">Judge</TableHead>
-                      <TableHead className="text-gray-900 font-semibold">Status</TableHead>
-                      <TableHead className="text-gray-900 font-semibold">Current Assignments</TableHead>
-                      <TableHead className="text-gray-900 font-semibold">New Assignment</TableHead>
-                      <TableHead className="w-[100px] text-gray-900 font-semibold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedJudges.map((judge) => (
-                      <TableRow key={judge.id} className="hover:bg-muted/50 transition-colors">
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="relative">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback className={`${getAvatarColor(judge.name)} text-white font-semibold`}>
-                                  {judge.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div
-                                className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${getStatusDot(
-                                  judge.status || "available",
-                                )}`}
-                              ></div>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="font-medium leading-none text-gray-900">{judge.name}</p>
-                              <p className="text-sm text-gray-600">{judge.email}</p>
-                              {judge.institution && <p className="text-xs text-gray-500">{judge.institution}</p>}
-                            </div>
-                          </div>
-                        </TableCell>
 
-                        <TableCell>
-                          <Badge className={`${getStatusColor(judge.status || "available")} border font-medium`}>
-                            {judge.status || "available"}
-                          </Badge>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            {state.isLoadingAssignments ? (
-                              <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
-                            ) : (
-                              <>
-                                <Badge variant="outline" className="gap-1 border-gray-300">
-                                  <Users className="w-3 h-3" />
-                                  {state.existingAssignments[judge.id] || 0}
-                                </Badge>
-                                {state.existingAssignments[judge.id] > 0 && (
-                                  <span className="text-xs text-gray-500">participants</span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                updateJudgeAssignment(judge.id, (state.judgeAssignments[judge.id] || 0) - 1)
-                              }
-                              disabled={
-                                !state.judgeAssignments[judge.id] ||
-                                state.judgeAssignments[judge.id] <= 0 ||
-                                state.isLoadingAssignments
-                              }
-                              className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-50"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <Input
-                              type="number"
-                              min="0"
-                              max={state.selectedTopN}
-                              value={state.judgeAssignments[judge.id] || 0}
-                              onChange={(e) => {
-                                const value = Math.max(0, Number.parseInt(e.target.value) || 0)
-                                updateJudgeAssignment(judge.id, value)
-                              }}
-                              className="w-16 text-center h-8 border-gray-300 focus:border-gray-900 focus:ring-gray-900/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              style={{ MozAppearance: "textfield" }}
-                              disabled={state.isLoadingAssignments}
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                updateJudgeAssignment(judge.id, (state.judgeAssignments[judge.id] || 0) + 1)
-                              }
-                              disabled={
-                                state.selectedTopN === 0 ||
-                                (state.judgeAssignments[judge.id] || 0) >= state.selectedTopN ||
-                                state.isLoadingAssignments
-                              }
-                              className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-50"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuLabel className="text-gray-900">Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="gap-2 text-gray-700 hover:bg-gray-50">
-                                <Eye className="w-4 h-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => updateJudgeAssignment(judge.id, 0)}
-                                className="gap-2 text-gray-700 hover:bg-gray-50"
-                              >
-                                <X className="w-4 h-4" />
-                                Clear Assignment
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            {!state.isLoadingJudges && <PaginationComponent />}
-          </CardContent>
-        </Card>
+              <Button
+                onClick={() => dispatch({ type: "SET_DIALOG", payload: { dialog: "distribute", open: true } })}
+                disabled={globalSummary.hasOverflow || globalSummary.totalAssigned === 0 || state.isDistributing}
+                className="bg-gray-900 hover:bg-gray-800"
+              >
+                {state.isDistributing ? (
+                  <>
+                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    Distributing...
+                  </>
+                ) : (
+                  <>
+                    <Shuffle className="w-4 h-4 mr-2" />
+                    Distribute ({globalSummary.totalAssigned} submissions)
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Configure Participants Dialog */}
@@ -1200,11 +1558,11 @@ export default function ParticipantDistributionTable() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-gray-900">
-              <Hash className="w-5 h-5" />
+              <Settings className="w-5 h-5" />
               Configure Participants
             </DialogTitle>
             <DialogDescription className="text-gray-600">
-              Select how many top-ranked participants should be distributed to judges.
+              Select how many top-ranked participants should be included in the distribution pool.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1215,22 +1573,34 @@ export default function ParticipantDistributionTable() {
               <Input
                 id="topN"
                 type="number"
-                min="1"
+                min={1}
                 max={state.totalParticipants}
                 value={state.selectedTopN || ""}
                 onChange={(e) =>
-                  dispatch({ type: "SET_SELECTED_TOP_N", payload: Number.parseInt(e.target.value) || 0 })
+                  dispatch({
+                    type: "SET_SELECTED_TOP_N",
+                    payload: Math.max(0, Number.parseInt(e.target.value) || 0),
+                  })
                 }
                 placeholder={`Enter number (max: ${state.totalParticipants})`}
-                className="border-gray-300 focus:border-gray-900 focus:ring-gray-900/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                  ${
+                    topNValidation.ok
+                      ? "border-gray-300 focus:border-gray-900 focus:ring-gray-900/20"
+                      : "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+                  }
+                `}
                 style={{ MozAppearance: "textfield" }}
               />
+              <p className={`text-sm ${topNValidation.ok ? "text-gray-500" : "text-red-600"}`}>{topNValidation.msg}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {[10, 20, 50, 100].map((n) => (
                 <Button
                   key={n}
-                  onClick={() => dispatch({ type: "SET_SELECTED_TOP_N", payload: n })}
+                  onClick={() =>
+                    dispatch({ type: "SET_SELECTED_TOP_N", payload: Math.min(n, state.totalParticipants) })
+                  }
                   variant={state.selectedTopN === n ? "default" : "outline"}
                   size="sm"
                   disabled={n > state.totalParticipants}
@@ -1255,8 +1625,8 @@ export default function ParticipantDistributionTable() {
             </Button>
             <Button
               onClick={handleSaveConfig}
-              disabled={state.selectedTopN === 0 || state.isSavingConfig}
-              className="bg-gray-900 hover:bg-gray-800"
+              disabled={!topNValidation.ok || state.isSavingConfig}
+              className="bg-gray-900 hover:bg-gray-800 disabled:opacity-60"
             >
               {state.isSavingConfig ? (
                 <>
@@ -1264,14 +1634,17 @@ export default function ParticipantDistributionTable() {
                   Saving...
                 </>
               ) : (
-                "Save Configuration"
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Configuration
+                </>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Distribution Settings Dialog */}
+      {/* Distribution Confirmation Dialog */}
       <Dialog
         open={state.showDistributeDialog}
         onOpenChange={(open) => dispatch({ type: "SET_DIALOG", payload: { dialog: "distribute", open } })}
@@ -1280,76 +1653,52 @@ export default function ParticipantDistributionTable() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-gray-900">
               <Shuffle className="w-5 h-5" />
-              Distribution Settings
+              Confirm Distribution
             </DialogTitle>
             <DialogDescription className="text-gray-600">
-              Choose how participants should be distributed among judges.
+              Review the distribution summary before applying changes.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-4">
-              <label className="flex items-start gap-4 p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  name="assignmentMethod"
-                  value="Round-Robin"
-                  checked={state.assignmentMethod === "Round-Robin"}
-                  onChange={(e) =>
-                    dispatch({ type: "SET_ASSIGNMENT_METHOD", payload: e.target.value as AssignmentMethod })
-                  }
-                  className="w-4 h-4 mt-1 accent-gray-900"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-gray-900">Round-Robin Distribution</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    Automatically distribute participants evenly across all judges
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-4 p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="radio"
-                  name="assignmentMethod"
-                  value="Weighted"
-                  checked={state.assignmentMethod === "Weighted"}
-                  onChange={(e) =>
-                    dispatch({ type: "SET_ASSIGNMENT_METHOD", payload: e.target.value as AssignmentMethod })
-                  }
-                  className="w-4 h-4 mt-1 accent-gray-900"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-gray-900">Weighted Distribution</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    Distribute based on individual judge capacity settings
-                  </div>
-                </div>
-              </label>
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{globalSummary.totalAssigned}</div>
+                <div className="text-sm text-gray-600">Submissions to Distribute</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">{state.challenges.length}</div>
+                <div className="text-sm text-gray-600">Challenges Involved</div>
+              </div>
             </div>
 
-            {state.assignmentMethod === "Weighted" && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="text-sm font-medium mb-2 text-gray-900">Assignment Summary</div>
-                <div className="grid grid-cols-3 gap-4 text-center text-sm">
-                  <div>
-                    <div className="font-semibold text-gray-900">{state.selectedTopN}</div>
-                    <div className="text-gray-600">To Assign</div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Distribution Mode</Label>
+              <div className="flex items-center gap-2 p-3 border rounded-lg">
+                <div
+                  className={`w-3 h-3 rounded-full ${state.distributionMode === "overwrite" ? "bg-red-500" : "bg-green-500"}`}
+                ></div>
+                <div>
+                  <div className="font-medium text-sm">
+                    {state.distributionMode === "overwrite" ? "Overwrite Mode" : "Append Mode"}
                   </div>
-                  <div>
-                    <div
-                      className={`font-semibold ${
-                        totalAssigned > state.selectedTopN ? "text-red-600" : "text-green-600"
-                      }`}
-                    >
-                      {totalAssigned}
-                    </div>
-                    <div className="text-gray-600">Assigned</div>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-amber-600">{state.selectedTopN - totalAssigned}</div>
-                    <div className="text-gray-600">Remaining</div>
+                  <div className="text-xs text-gray-600">
+                    {state.distributionMode === "overwrite"
+                      ? "Replace existing judge assignments completely"
+                      : "Add to existing judge assignments (avoiding duplicates)"}
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {globalSummary.hasOverflow && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-medium text-sm">Assignment Overflow Detected</span>
+                </div>
+                <p className="text-xs text-red-700 mt-1">
+                  Some challenges have more assignments than available submissions. Please adjust before distributing.
+                </p>
               </div>
             )}
           </div>
@@ -1362,8 +1711,8 @@ export default function ParticipantDistributionTable() {
               Cancel
             </Button>
             <Button
-              onClick={handleDistributeParticipants}
-              disabled={state.isDistributing || !state.assignmentMethod || state.selectedTopN === 0}
+              onClick={handleDistributeSubmissions}
+              disabled={state.isDistributing || globalSummary.hasOverflow || globalSummary.totalAssigned === 0}
               className="bg-gray-900 hover:bg-gray-800"
             >
               {state.isDistributing ? (
@@ -1372,14 +1721,17 @@ export default function ParticipantDistributionTable() {
                   Distributing...
                 </>
               ) : (
-                "Distribute Participants"
+                <>
+                  <Shuffle className="w-4 h-4 mr-2" />
+                  Confirm Distribution
+                </>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog */}
+      {/* Configuration Confirmation Dialog */}
       <Dialog
         open={state.showConfirmDialog}
         onOpenChange={(open) => dispatch({ type: "SET_DIALOG", payload: { dialog: "confirm", open } })}
@@ -1406,7 +1758,7 @@ export default function ParticipantDistributionTable() {
             <Button
               onClick={async () => {
                 if (state.currentUser) {
-                  await saveConfigToFirestore(state.currentUser.uid)
+                  await saveConfigToFirestore()
                   dispatch({ type: "SET_DIALOG", payload: { dialog: "confirm", open: false } })
                 }
               }}
@@ -1425,6 +1777,30 @@ export default function ParticipantDistributionTable() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Challenge Detail Drawer */}
+      <Sheet
+        open={state.showChallengeDrawer}
+        onOpenChange={(open) => dispatch({ type: "SET_DIALOG", payload: { dialog: "challengeDrawer", open } })}
+      >
+        <SheetContent className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Challenge Assignment Details
+            </SheetTitle>
+            <SheetDescription>Edit assignments for the selected challenge</SheetDescription>
+          </SheetHeader>
+          {state.selectedChallengeId && (
+            <div className="mt-6">
+              {(() => {
+                const challenge = state.challenges.find((c) => c.id === state.selectedChallengeId)
+                return challenge ? <ChallengeCard challenge={challenge} /> : null
+              })()}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

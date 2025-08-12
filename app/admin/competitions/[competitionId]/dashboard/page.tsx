@@ -127,19 +127,22 @@ export default function AdminDashboard() {
                     <p className="text-gray-600">Manage roles and judges</p>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => router.push("/admin/superadmin")}
-                    className="w-full py-3 bg-gray-900 text-white rounded-lg"
-                  >
-                    <UserCog className="h-4 w-4 mr-2" /> Manage Roles
-                  </Button>
-                  <Button
+      
+                <Button
                     onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
                     className="w-full py-3 bg-gray-900 text-white rounded-lg"
                   >
                     <Users className="h-4 w-4 mr-2" /> Manage Judges
                   </Button>
+                  
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => router.push(`/admin/competitions/${competitionId}/participants`)}
+                    className="w-full py-3 bg-gray-900 text-white rounded-lg"
+                  >
+                    <Users className="h-4 w-4 mr-2" /> Registered Participants
+                  </Button>
+
                 </div>
               </div>
             </Card>

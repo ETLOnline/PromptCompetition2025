@@ -76,14 +76,13 @@ console.log("1. Environment loaded first, API key present:", !!process.env.OPENR
 import express from "express";
 import cors from "cors";
 
+//import "./config/email.js"; 
 // Routers
-import evaluateRouter from "./routes/evaluate.js";
 import evaluateAllRouter from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
 import competitionsRouter from "./routes/competitions.js";
 
-import { auth } from "./config/firebase-admin.js"; // ✅ Import Firebase Admin Auth
 
 console.log("2. Starting server setup...");
 console.log("3. Routers imported successfully");
@@ -102,7 +101,6 @@ app.get("/test", (req, res) => {
 });
 
 // ✅ Main app routes
-app.use("/evaluate", evaluateRouter);
 app.use("/bulk-evaluate", evaluateAllRouter); 
 app.use("/leaderboard", leaderboardRouter);
 app.use("/superadmin", superadminRouter);

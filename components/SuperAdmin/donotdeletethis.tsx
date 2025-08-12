@@ -2,11 +2,11 @@
 
 import type React from "react"
 import { useEffect, useState, useMemo, useCallback } from "react"
-import { Search, Users, X, CheckCircle2, XCircle, AlertTriangle, Crown, Shield, Scale, Eye, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, AlertCircle, CheckCircle, Filter, UserPlus, Trash2, TrendingUp, Zap, EyeOff, Trophy, Target, Award } from 'lucide-react'
+import { Search, Users, X, CheckCircle2, XCircle, AlertTriangle, Crown, Shield, Scale, Eye, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, AlertCircle, CheckCircle, Filter, UserPlus, Trash2, TrendingUp, UserCheck, UserX, Zap, EyeOff, Trophy, Target, Award } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { validateEmail} from "@/lib/utils";
+import { validateEmail, validatePassword } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -62,6 +62,8 @@ export interface Stats {
 
 export interface CreateUserForm {
   email: string
+  password: string
+  confirmPassword: string
   displayName: string
   role: string
 }
@@ -71,13 +73,6 @@ interface NotificationState {
   type: "success" | "error" | "warning" | "info"
   title: string
   message: string
-}
-
-interface UsersResponse {
-  users: User[]
-  total: number
-  hasNextPage: boolean
-  nextPageToken: string | null
 }
 
 // --- Constants --------------------------------------------------------------
@@ -123,6 +118,7 @@ export const ROLE_CONFIG = {
 const ITEMS_PER_PAGE = 12
 
 // --- Helper Components ------------------------------------------------------
+// Modern Stats Card with enhanced design
 interface StatsCardProps {
   title: string
   count: number
@@ -176,6 +172,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
   </Card>
 )
 
+// Enhanced User Row Component
 interface UserRowProps {
   user: User
   formatDate: (d?: string) => string
@@ -255,6 +252,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onV
   )
 }
 
+// Enhanced Pagination
 interface PaginationProps {
   totalPages: number
   currentPage: number
@@ -333,28 +331,23 @@ export default function UserRoleManager() {
   const [selectedRole, setSelectedRole] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  
-  // Server pagination state
-  const [serverPagination, setServerPagination] = useState({
-    nextPageToken: null as string | null,
-    hasNextPage: false,
-    totalUsers: 0,
-    loading: false,
-  })
-
   const [loading, setLoading] = useState({
     stats: true,
     users: true,
+    exactSearch: false,
     action: false,
   })
-
   const [showCreateUser, setShowCreateUser] = useState(false)
   const [showExistingUsers, setShowExistingUsers] = useState(false)
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     email: "",
+    password: "",
+    confirmPassword: "",
     displayName: "",
     role: "",
   })
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null)
   const [selectedExistingUsers, setSelectedExistingUsers] = useState<Set<string>>(new Set())
   const [roleToAssign, setRoleToAssign] = useState("")
@@ -373,26 +366,9 @@ export default function UserRoleManager() {
     setCurrentPage(1)
   }, [selectedRole, searchQuery])
 
-  // Check if we need to load more data when pagination changes
-  useEffect(() => {
-    const filteredUsersCount = filteredUsers.length
-    const currentPageEndIndex = currentPage * ITEMS_PER_PAGE
-    
-    // If we're approaching the end of loaded data and there's more to fetch
-    if (
-      currentPageEndIndex >= filteredUsersCount - ITEMS_PER_PAGE && 
-      serverPagination.hasNextPage && 
-      !serverPagination.loading &&
-      selectedRole === "all" && // Only auto-load for "all" users
-      !searchQuery.trim() // Only auto-load when not searching
-    ) {
-      fetchMoreUsers()
-    }
-  }, [currentPage, selectedRole, searchQuery])
-
   // --- Helper functions ---
   const loadInitialData = useCallback(async () => {
-    await Promise.allSettled([fetchStats(), fetchAllUsers(true)])
+    await Promise.allSettled([fetchStats(), fetchAllUsers()])
   }, [])
 
   // Real-time search filter
@@ -503,7 +479,7 @@ export default function UserRoleManager() {
     return actions
   }
 
-  // --- API calls ---
+  // --- API calls (keeping original functionality) ---
   async function fetchStats() {
     try {
       setLoading((p) => ({ ...p, stats: true }))
@@ -522,66 +498,24 @@ export default function UserRoleManager() {
     }
   }
 
-  async function fetchAllUsers(isInitial = false) {
+  async function fetchAllUsers() {
     try {
-      if (isInitial) {
-        setLoading((p) => ({ ...p, users: true }))
-        // Reset pagination state for initial load
-        setServerPagination({
-          nextPageToken: null,
-          hasNextPage: false,
-          totalUsers: 0,
-          loading: false,
-        })
-        setAllUsers([])
-      }
-
+      setLoading((p) => ({ ...p, users: true }))
       const token = await getIdToken()
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users`)
-      url.searchParams.set('limit', '200')
-      
-      if (!isInitial && serverPagination.nextPageToken) {
-        url.searchParams.set('pageToken', serverPagination.nextPageToken)
-      }
-
-      const res = await fetch(url.toString(), {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users?limit=1000`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-
       if (res.ok) {
-        const data: UsersResponse = await res.json()
-        
-        if (isInitial) {
-          setAllUsers(data.users || [])
-        } else {
-          // Append new users to existing ones
-          setAllUsers(prev => [...prev, ...(data.users || [])])
-        }
-
-        setServerPagination({
-          nextPageToken: data.nextPageToken,
-          hasNextPage: data.hasNextPage,
-          totalUsers: data.total,
-          loading: false,
-        })
+        const data = await res.json()
+        setAllUsers(data.users || [])
       } else {
         showNotification("error", "Data Loading Error", "Failed to load users")
       }
     } catch (error) {
       showNotification("error", "Data Loading Error", "Failed to load users")
-      setServerPagination(prev => ({ ...prev, loading: false }))
     } finally {
-      if (isInitial) {
-        setLoading((p) => ({ ...p, users: false }))
-      }
+      setLoading((p) => ({ ...p, users: false }))
     }
-  }
-
-  async function fetchMoreUsers() {
-    if (serverPagination.loading || !serverPagination.hasNextPage) return
-    
-    setServerPagination(prev => ({ ...prev, loading: true }))
-    await fetchAllUsers(false)
   }
 
   async function updateRole(uid: string, newRole: string) {
@@ -596,10 +530,7 @@ export default function UserRoleManager() {
       const data = await res.json()
       if (res.ok) {
         showNotification("success", "Role Updated", "User role updated successfully")
-        // Update the user in local state
-        setAllUsers(prev => prev.map(user => 
-          user.uid === uid ? { ...user, role: newRole } : user
-        ))
+        fetchAllUsers()
         fetchStats()
       } else {
         showNotification("error", "Update Failed", data.error || "Failed to update role")
@@ -623,8 +554,7 @@ export default function UserRoleManager() {
       const data = await res.json()
       if (res.ok) {
         showNotification("success", "User Deleted", "User deleted successfully")
-        // Remove user from local state
-        setAllUsers(prev => prev.filter(user => user.uid !== uid))
+        fetchAllUsers()
         fetchStats()
       } else {
         showNotification("error", "Delete Failed", data.error || "Failed to delete user")
@@ -643,14 +573,26 @@ export default function UserRoleManager() {
       !createUserForm.role ||
       !allowedRoles.includes(createUserForm.role)
     ) {
-      setFormError("Please fill in all required fields and select a valid role")
-      return
+      setFormError("Please fill in all required fields and select a valid role");
+      return;
     }
 
-    const emailError = validateEmail(createUserForm.email)
+    // Email & password validation
+    const emailError = validateEmail(createUserForm.email);
     if (emailError) {
-      setFormError(emailError)
-      return
+      setFormError(emailError);
+      return;
+    }
+
+    const passwordError = validatePassword(createUserForm.password);
+    if (passwordError) {
+      setFormError(passwordError);
+      return;
+    }
+
+    if (createUserForm.password !== createUserForm.confirmPassword) {
+      setFormError("Passwords do not match");
+      return;
     }
 
     try {
@@ -663,18 +605,17 @@ export default function UserRoleManager() {
       })
       const data = await res.json()
       if (res.ok) {
-        setFormError(null)
+        setFormError(null);
         showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
-        setCreateUserForm({ email: "", displayName: "", role: "" })
+        setCreateUserForm({ email: "", password: "", confirmPassword: "", displayName: "", role: "" })
         setShowCreateUser(false)
-        // Refresh data
-        fetchAllUsers(true)
+        fetchAllUsers()
         fetchStats()
       } else {
-        setFormError(data.error || "Failed to create user")
+        setFormError(data.error || "Failed to create user");
       }
     } catch (error) {
-      setFormError("Failed to create user")
+      setFormError("Failed to create user");
     } finally {
       setLoading((p) => ({ ...p, action: false }))
     }
@@ -701,14 +642,11 @@ export default function UserRoleManager() {
 
       if (results.every((r) => r.ok)) {
         showNotification("success", "Roles Updated", `Roles updated for ${selectedExistingUsers.size} user(s)`)
-        // Update users in local state
-        setAllUsers(prev => prev.map(user => 
-          selectedExistingUsers.has(user.uid) ? { ...user, role: roleToAssign } : user
-        ))
         setSelectedExistingUsers(new Set())
         setShowExistingUsers(false)
         setPromoteSearchQuery("")
         setPromoteCurrentPage(1)
+        fetchAllUsers()
         fetchStats()
       } else {
         showNotification("error", "Update Failed", "Some role updates failed")
@@ -760,17 +698,6 @@ export default function UserRoleManager() {
     )
   }
 
-  // Calculate role counts from loaded users
-  const roleStats = useMemo(() => {
-    const counts = { superadmin: 0, admin: 0, judge: 0, user: 0 }
-    allUsers.forEach(user => {
-      if (counts.hasOwnProperty(user.role)) {
-        counts[user.role as keyof typeof counts]++
-      }
-    })
-    return counts
-  }, [allUsers])
-
   // --- Render ---
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -786,9 +713,7 @@ export default function UserRoleManager() {
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
               User Management
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Manage user accounts and permissions across your platform
-            </p>
+            <p className="text-lg text-muted-foreground">Manage user accounts and permissions across your platform</p>
           </div>
           <div className="flex items-center space-x-3">
             <Button onClick={() => setShowCreateUser(true)} className="gap-2">
@@ -816,7 +741,7 @@ export default function UserRoleManager() {
               <StatsCard
                 key={roleKey}
                 title={config.pluralLabel}
-                count={stats[`${roleKey}s` as keyof Stats] || 0}
+                count={(stats as any)[roleKey + "s"] || 0}
                 icon={config.icon}
                 color={config.color}
                 bgColor={config.bgColor}
@@ -848,7 +773,7 @@ export default function UserRoleManager() {
                     All Users ({allUsers.length})
                   </Button>
                   {Object.entries(ROLE_CONFIG).map(([roleKey, config]) => {
-                    const count = roleStats[roleKey as keyof typeof roleStats]
+                    const count = allUsers.filter((u) => u.role === roleKey).length
                     return (
                       <Button
                         key={roleKey}
@@ -858,7 +783,7 @@ export default function UserRoleManager() {
                         className="gap-1"
                       >
                         <config.icon className="w-3 h-3" />
-                        {config.label}
+                        {config.label} ({count})
                       </Button>
                     )
                   })}
@@ -892,14 +817,7 @@ export default function UserRoleManager() {
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">
-                  Users ({filteredUsers.length})
-                  {serverPagination.hasNextPage && selectedRole === "all" && !searchQuery && (
-                    <span className="text-sm font-normal text-muted-foreground ml-2">
-                      (Loading more...)
-                    </span>
-                  )}
-                </CardTitle>
+                <CardTitle className="text-xl">Users ({filteredUsers.length})</CardTitle>
                 <CardDescription>
                   {selectedRole !== "all" &&
                     `Filtered by ${ROLE_CONFIG[selectedRole as keyof typeof ROLE_CONFIG]?.label}`}
@@ -992,7 +910,7 @@ export default function UserRoleManager() {
               Create New User
             </DialogTitle>
             <DialogDescription>
-              Add a new user with specified role and send them a secure link to set their password.
+              Add a new user to your platform with the specified role and permissions.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1031,6 +949,46 @@ export default function UserRoleManager() {
                 onChange={(e) => setCreateUserForm((f) => ({ ...f, email: e.target.value }))}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Minimum 10 characters"
+                  value={createUserForm.password}
+                  onChange={(e) => setCreateUserForm((f) => ({ ...f, password: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter password"
+                  value={createUserForm.confirmPassword}
+                  onChange={(e) => setCreateUserForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
           </div>
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2">
             <Button
@@ -1038,11 +996,13 @@ export default function UserRoleManager() {
               onClick={() => {
                 setCreateUserForm({
                   email: "",
+                  password: "",
+                  confirmPassword: "",
                   displayName: "",
                   role: ""
-                })
-                setFormError(null)
-                setShowCreateUser(false)
+                });
+                setFormError(null);
+                setShowCreateUser(false);
               }}
               disabled={loading.action}
             >

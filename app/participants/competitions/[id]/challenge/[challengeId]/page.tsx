@@ -22,7 +22,7 @@ import { use } from "react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
-import type { Timestamp } from "firebase-admin/firestore"
+import type { Timestamp } from "firebase/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
 
 interface Challenge {
@@ -30,7 +30,6 @@ interface Challenge {
   title: string
   problemStatement: string
   guidelines: string
-  startDeadline: Timestamp
   endDeadline: Timestamp
   isCompetitionLocked: boolean
 }
@@ -59,10 +58,25 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   }, [params])
 
   useEffect(() => {
-    if (!user) {
-      router.push("/")
-      return
+    const run = async () => {
+      if (!user) {
+        router.push("/");
+        return;
+      }
+
+      const { id } = await params
+      
+      const participantRef = doc(db, "competitions", id,
+        "participants", user.uid );
+      const participantSnap = await getDoc(participantRef);
+      if (!participantSnap.exists()) {
+        router.push("/participants");
+        return;
+      }
     }
+
+    run();
+
     Promise.all([
       fetchChallengeData(competitionId, challengeId),
       fetchSubmissionPrompt(competitionId, challengeId, user.uid),
@@ -74,23 +88,38 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const fetchChallengeData = async (competitionId: string, challengeId: string) => {
     try {
       setLoadingChallenge(true)
+
+      // Fetch challenge basic data
       const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId)
       const challengeSnap = await getDoc(challengeRef)
-      // console.log("competitionId", competitionId, "challengeId", challengeId)
       if (!challengeSnap.exists()) {
         console.warn("Challenge document not found.")
         return
       }
-      const data = challengeSnap.data()
-      const isCompetitionLocked = data?.endDeadline && new Date() > new Date(data.endDeadline.seconds * 1000)
-      const challengeData: Challenge = {
-        id: challengeId,
-        title: data.title,
-        problemStatement: data.problemStatement,
-        guidelines: data.guidelines,
-        isCompetitionLocked: isCompetitionLocked,
-        endDeadline: data.endDeadline,
+      const challengeDataRaw = challengeSnap.data()
+
+      // Fetch competition deadlines
+      const competitionRef = doc(db, "competitions", competitionId)
+      const competitionSnap = await getDoc(competitionRef)
+      if (!competitionSnap.exists()) {
+        console.warn("Competition document not found.")
+        return
       }
+      const competitionData = competitionSnap.data()
+
+      const isCompetitionLocked =
+        competitionData?.endDeadline &&
+        new Date() > new Date(competitionData.endDeadline.seconds * 1000)
+
+      const challengeData: Challenge & { endDeadline?: Timestamp } = {
+        id: challengeId,
+        title: challengeDataRaw.title,
+        problemStatement: challengeDataRaw.problemStatement,
+        guidelines: challengeDataRaw.guidelines,
+        isCompetitionLocked: isCompetitionLocked,
+        endDeadline: competitionData.endDeadline, // from competition, not challenge
+      }
+
       setChallenge(challengeData)
     } catch (error) {
       console.error("Error fetching challenge data:", error)
@@ -102,7 +131,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const fetchSubmissionPrompt = async (competitionId: string, challengeId: string, participantId: string) => {
     try {
       setLoadingPrompt(true)
-      // console.log("competitionId", competitionId)
+      
       const submissionId = `${participantId}_${challengeId}`
       const submissionRef = doc(db, "competitions", competitionId, "submissions", submissionId)
       const submissionSnap = await getDoc(submissionRef)
@@ -383,6 +412,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                 </div>
               </CardHeader>
             </Card>
+
             {/* Challenge Details Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">

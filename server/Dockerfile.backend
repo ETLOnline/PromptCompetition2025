@@ -1,22 +1,37 @@
-# server/Dockerfile.backend
-FROM node:18-alpine
+# ---------- Build Stage ----------
+FROM node:18-alpine AS builder
 
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package files
+# Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies, including TypeScript
 RUN npm install
 
-# Copy server code and config
+# Copy the rest of the application code
 COPY . .
 
-# Build TypeScript to JavaScript (if needed)
-RUN npm run build || npm run tsc || npx tsc
+# Compile TypeScript files into JavaScript
+RUN npm run build
 
-# Expose port (matching your dev setup)
+# ---------- Runtime Stage ----------
+FROM node:18-alpine AS runner
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy only the compiled JavaScript files and package.json from the builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+
+# Install only runtime dependencies (exclude development dependencies)
+RUN npm install --production
+
+# Set environment variables
+ENV PORT=8080
 EXPOSE 8080
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Run the compiled JavaScript file
+CMD ["node", "dist/index.js"]

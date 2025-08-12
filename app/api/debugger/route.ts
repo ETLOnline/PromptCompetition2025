@@ -14,11 +14,11 @@
 //   }
 // }
 
-// // ------------------- Use Case ----------------
-// // fetch("/api/debugger", {
-// //     method: "POST",
-// //     body: JSON.stringify({ message: `user object: ${JSON.stringify(Variable)}` }),
-// //     headers: {
-// //       "Content-Type": "application/json",
-// //     },
-// //   })
+// ------------------- Use Case ----------------
+// fetch("/api/debugger", {
+//     method: "POST",
+//     body: JSON.stringify({ message: `user object: ${JSON.stringify(Variable)}` }),
+//     headers: {
+//         "Content-Type": "application/json",
+//     },
+// })

@@ -2,7 +2,7 @@ import express, { Response, NextFunction } from "express";
 import { admin, auth, db } from "../config/firebase-admin.js";
 import { Request } from "express";
 // import { sendEmailVerification } from "firebase/auth"
-import { transporter } from "../utils/email.js";
+import { transporter } from "../config/email.js";
 
 const router = express.Router();
 
@@ -75,7 +75,7 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
 
     // Finally, apply the new role
     await auth.setCustomUserClaims(uid, { role });
-
+    await auth.revokeRefreshTokens(uid);
   
     return res.status(200).json({
       message: `Role '${role}' assigned to user ${userRecord.email || uid}`,
@@ -127,6 +127,8 @@ router.post(
 
       // Demote to "user"
       await auth.setCustomUserClaims(uid, { role: "user" });
+      await auth.revokeRefreshTokens(uid);
+
       return res.status(200).json({
         message: `Role revoked for user ${userRecord.email || uid}`,
         user: {
@@ -189,33 +191,19 @@ router.delete(
 
 // POST /superadmin/create-user
 router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
-  const { email, password, displayName, role } = req.body;
+  const { email, displayName, role } = req.body;
 
   const allowedRoles = ["superadmin", "admin", "judge"];
 
-  // Basic presence check
-  if (!email || !password || !displayName || !role) {
-    return res.status(400).json({ error: "All fields are required: email, password, displayName, role" });
+  // Basic presence check (no password now)
+  if (!email || !displayName || !role) {
+    return res.status(400).json({ error: "Required: email, displayName, role" });
   }
 
-  // Email format validation
+  // Email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: "Invalid email format" });
-  }
-
-  // Password validation
-  const validatePassword = (pw: string): string | null => {
-    if (pw.length <= 10) return "Password must be longer than 10 characters.";
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return "Password must include at least one special character.";
-    if (!/\d/.test(pw)) return "Password must include at least one number.";
-    if (!/[A-Z]/.test(pw)) return "Password must include at least one capital letter.";
-    return null;
-  };
-
-  const passwordError = validatePassword(password);
-  if (passwordError) {
-    return res.status(400).json({ error: passwordError });
   }
 
   // Role validation
@@ -224,122 +212,155 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
   }
 
   try {
-    // Create user in Firebase Auth
+    // 1) Create user WITHOUT password
     const userRecord = await auth.createUser({
       email,
-      password,
-      displayName: displayName || email.split('@')[0],
-      emailVerified: false
+      displayName: displayName || email.split("@")[0],
+      emailVerified: true,
+      disabled: false,
     });
 
-    // Assign custom role claim
+    // 2) Assign custom role claim
     await auth.setCustomUserClaims(userRecord.uid, { role });
-    const institution = ""; // An empty string is valid, though may not be useful
-    // console.log(`Creating user in Firestore: ${userRecord.uid}`);
+
+    // 3) Create Firestore profile
     await db.collection("users").doc(userRecord.uid).set({
-      displayName,                  // Must be a defined string
-      email,                     // Must be a defined string
-      institution,               // Empty string is fine if intentional
-      createdAt: new Date().toISOString(), // ISO string timestamp
-      isVerified: true,          // Boolean flag
+      displayName,
+      email,
+      institution: "",
+      createdAt: new Date().toISOString(),
+      isVerified: true, // flip to true after separate email verification if you use it
     });
-    
-    const verificationLink = await auth.generateEmailVerificationLink(email);
 
-    console.log(`Verification link: ${verificationLink}`);
-    console.log("EMAIL_SENDER:", process.env.EMAIL_SENDER);
-    console.log("EMAIL_APP_PASSWORD:", process.env.EMAIL_APP_PASSWORD);
+    // 4) Generate one-time password reset link (acts as "set initial password")
+    let resetLink: string | null = null;
+    try {
+      const origin = process.env.APP_ORIGIN || "http://localhost:3000";
+      const actionCodeSettings = {
+        url: `${origin}/auth/login/admin`,   // or your post-completion route
+        handleCodeInApp: false,     // use Firebase hosted page; set true if you handle link in-app
+      };
+      resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings as any);
+    } catch (e: any) {
+      console.error("Reset link generation failed:", e?.code, e?.message);
+    }
 
-try {
-  await transporter.sendMail({
-    from: process.env.EMAIL_SENDER,
-    to: email,
-    subject: "Verify your email",
-    html: `
-      <p>Hi ${displayName},</p>
-      <p>Thanks for signing up! Please verify your email by clicking the link below:</p>
-      <a href="${verificationLink}">Verify Email</a>
-      <p>If you did not sign up, you can ignore this email.</p>
-    `,
-  });
-} catch (emailErr: any) {
-  console.error("❌ Failed to send verification email:", emailErr);
-}
+    // (Optional but recommended) also send an email verification link
+    // const verifyLink = await auth.generateEmailVerificationLink(email, { url: `${origin}/verify-complete` });
 
-    // await sendEmailVerification(user);
+    // 5) Send invite email
+    try {
+      await transporter.sendMail({
+        from: "enlightechy@gmail.com",
+        to: email,
+        subject: "Your account is ready — set your password",
+        html: `
+          <p>Hi ${displayName},</p>
+          <p>An administrator has created a <strong>${role}</strong> account for you on our platform.</p>
+          <p><strong>Username:</strong> ${email}</p>
+          <p>To activate your account, please click the link below to set your password:</p>
+          <p><a href="${resetLink}" style="color: #2563eb; text-decoration: underline;">Set Your Password</a></p>
+          <p>Once your password is set, you can log in via the admin portal.</p>
+          <p>If you did not expect this invitation, you can safely ignore this email.</p>
+        `,
+      });
+    } catch (emailErr: any) {
+      console.error("❌ Failed to send invite email:", emailErr);
+    }
 
     return res.status(201).json({
-      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully for ${email}`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created and invite sent to ${email}`,
       user: {
         uid: userRecord.uid,
         email: userRecord.email || "",
         displayName: userRecord.displayName || "",
-        role
-      }
+        role,
+        inviteSent: Boolean(resetLink),
+      },
     });
   } catch (err: any) {
-    let errorMessage = "Failed to create user account";
-
+    // If the email already exists, you can optionally "re-invite" by generating a reset link
     if (err.code === "auth/email-already-exists") {
-      errorMessage = "Email already exists";
-    } else if (err.code === "auth/invalid-email") {
-      errorMessage = "Invalid email format";
-    } else if (err.code === "auth/weak-password") {
-      errorMessage = "Password is too weak";
+      return res.status(409).json({ error: "Email already exists" });
     }
-
-    return res.status(400).json({
-      error: `❌ ${errorMessage}`,
-      detail: err.message
-    });
+    if (err.code === "auth/invalid-email") {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+    return res.status(400).json({ error: "Failed to create user account", detail: err.message });
   }
 });
 
 
 
-// GET /superadmin/users — all users with pagination and filtering
-router.get("/users", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
+// GET /superadmin/users — include Firestore profile, auto-paginate
+router.get("/users", verifySuperAdmin, async (req, res) => {
   try {
-    const { role, limit = "50" } = req.query;
-    const maxResults = parseInt(limit as string, 10);
+    const { role, limit = "50" } = req.query
+    const maxResults = Math.min(parseInt(limit as string, 10) || 50, 1000)
 
-    const listUsersResult = await auth.listUsers(Math.min(maxResults, 1000));
-    let users = listUsersResult.users.map((userRecord) => ({
-      uid: userRecord.uid,
-      email: userRecord.email || "",
-      displayName: userRecord.displayName || "",
-      role: userRecord.customClaims?.role || "user",
-      createdAt: userRecord.metadata.creationTime,
-      lastSignIn: userRecord.metadata.lastSignInTime,
-      emailVerified: userRecord.emailVerified,
-      disabled: userRecord.disabled
-    }));
+    let users: any[] = []
+    let pageToken: string | undefined = undefined
 
-    // Filter by role if specified
+    // Keep fetching until we reach the requested limit or run out of users
+    do {
+      const list = await auth.listUsers(maxResults, pageToken)
+      users.push(...list.users.map(u => ({
+        uid: u.uid,
+        email: u.email || "",
+        displayName: u.displayName || "",
+        role: (u.customClaims as any)?.role || "user",
+        createdAt: u.metadata.creationTime,
+        lastSignIn: u.metadata.lastSignInTime,
+        emailVerified: u.emailVerified,
+      })))
+
+      pageToken = list.pageToken
+
+      // Stop if we already have enough users
+      if (users.length >= maxResults) break
+    } while (pageToken)
+
+    // Filter by role early if provided
     if (role && role !== "all") {
-      users = users.filter(user => user.role === role);
+      users = users.filter(u => u.role === role)
     }
 
-    // Sort by role priority and creation date
-    const rolePriority = { superadmin: 0, admin: 1, judge: 2, user: 3 };
-    users.sort((a, b) => {
-      const aPriority = rolePriority[a.role as keyof typeof rolePriority] ?? 4;
-      const bPriority = rolePriority[b.role as keyof typeof rolePriority] ?? 4;
-      
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    // Merge Firestore profile for these users
+    const docs = await Promise.all(users.map(u =>
+      db.collection("users").doc(u.uid).get()
+    ))
+    const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]))
 
-    return res.status(200).json({ 
-      users,
+    users = users.map(u => {
+      const p = profileByUid.get(u.uid) || {}
+      return {
+        ...u,
+        displayName: u.displayName || (p.fullName ?? ""),
+        participations: p.participations ?? {},
+      }
+    })
+
+    // Sort
+    const rolePriority = { superadmin: 0, admin: 1, judge: 2, user: 3 }
+    users.sort((a, b) => {
+      const ap = rolePriority[a.role as keyof typeof rolePriority] ?? 4
+      const bp = rolePriority[b.role as keyof typeof rolePriority] ?? 4
+      if (ap !== bp) return ap - bp
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    })
+
+    res.json({
+      users: users.slice(0, maxResults), // in case we fetched more than needed
       total: users.length,
-      hasNextPage: listUsersResult.pageToken ? true : false
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ error: "❌ Failed to fetch users", detail: message });
+      hasNextPage: Boolean(pageToken),
+      nextPageToken: pageToken || null
+    })
+  } catch (err: any) {
+    res.status(500).json({ error: "❌ Failed to fetch users", detail: err.message || String(err) })
   }
-});
+})
+
+
 
 // GET /superadmin/user-by-email?q=email@example.com
 router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {

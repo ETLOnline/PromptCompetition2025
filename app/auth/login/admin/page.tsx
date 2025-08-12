@@ -43,7 +43,10 @@ export default function AdminLoginPage() {
         await auth.signOut()
         return
       }
-      router.push("/admin/select-competition")
+      else if (role == "admin" || role == "superadmin")
+        router.push("/admin/select-competition")
+      else
+        router.push("/judge")
     } catch (err: any) {
       console.error("Login error:", err)
       setError(err.message || "Failed to login. Please check your credentials.")

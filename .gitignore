@@ -22,6 +22,11 @@ yarn-error.log*
 # env files
 .env*
 
+/.github/
+
+/.idea/
+
+
 
 # vercel
 .vercel

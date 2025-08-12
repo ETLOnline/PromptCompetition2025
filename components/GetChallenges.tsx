@@ -25,8 +25,6 @@ type Challenge = {
   problemStatement: string
   guidelines: string
   rubric: string
-  startDeadline: Timestamp
-  competitionid: string
   lastupdatetime: Timestamp
   nameOfLatestUpdate: string
   emailoflatestupdate: string
@@ -53,19 +51,11 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         const compDocRef = doc(db, "competitions", competitionId)
         const compSnap = await getDoc(compDocRef)
         if (compSnap.exists()) {
-
-          // const startTimestamp = compSnap.data()?.startDeadline
-          // if (startTimestamp?.toDate) {
-          //   setCompetitionStartTime(startTimestamp.toDate())
-          // }
           const startTimestamp = compSnap.data()?.startDeadline
           if (startTimestamp) {
             const startDate = new Date(startTimestamp)  // ← simple conversion
             setCompetitionStartTime(startDate)
-            console.log("Competition Start:", startDate)
           }
-
-
         }
 
         const challengesQuery = query(
@@ -81,7 +71,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
 
         setChallenges(fetched)
       } catch (error) {
-        console.error("Error fetching challenges or user role:", error)
+        console.error("Error fetching challenges:", error)
       }
     }
 
@@ -128,9 +118,8 @@ export default function GetChallenges({ competitionId }: { competitionId: string
       <CardContent className="p-6">
         <div className="grid gap-6">
           {challenges.map((challenge) => {
-            const startDate = challenge.startDeadline.toDate()
             const updateDate = challenge.lastupdatetime?.toDate()
-            const isExpired = startDate < new Date()
+            const isExpired = competitionStartTime < new Date()
 
             return (
               <Card key={challenge.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
@@ -138,7 +127,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
                     <Badge variant="outline" className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${isExpired ? "bg-red-50 border-red-200 text-red-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
-                      {isExpired ? <><AlertCircle className="w-3 h-3 mr-1" /> Expired</> : <><CheckCircle className="w-3 h-3 mr-1" /> Active</>}
+                      {isExpired ? <><AlertCircle className="w-3 h-3 mr-1" /> Live Now</> : <><CheckCircle className="w-3 h-3 mr-1" /> Active</>}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -151,7 +140,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                       </div>
                       <div>
                         <span className="text-gray-700 font-medium">Start:</span>
-                        <div className="font-bold text-gray-900">{startDate.toLocaleString()}</div>
+                        <div className="font-bold text-gray-900">{competitionStartTime.toLocaleString()}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
