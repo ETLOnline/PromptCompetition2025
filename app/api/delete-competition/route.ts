@@ -3,7 +3,14 @@
 import { NextResponse } from "next/server"
 import { getApps, initializeApp, cert } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
-import serviceAccount from "@/serviceAccountKey.json" // adjust path as needed
+const serviceAccountKey = process.env.NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY;
+
+if (!serviceAccountKey) {
+  throw new Error("NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY is not set in .env");
+}
+
+// Parse JSON string from environment variable
+const serviceAccount = JSON.parse(serviceAccountKey);
 
 // Initialize admin SDK if not already initialized
 if (!getApps().length) {

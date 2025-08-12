@@ -2,20 +2,23 @@ import admin from "firebase-admin"
 import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // ✅ ESM-compatible __dirname
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // ✅ Resolve service account path
-const serviceAccountPath = path.resolve(
-  __dirname,
-  "../enlightentech-a2046-firebase-adminsdk-fbsvc-8b4473f821.json"
-)
+const serviceAccountKey = process.env.NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY;
 
-// ✅ Load service account JSON
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"))
+if (!serviceAccountKey) {
+  throw new Error("NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY is not set in .env");
+}
 
+// Parse JSON string from environment variable
+const serviceAccount = JSON.parse(serviceAccountKey);
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),

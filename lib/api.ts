@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://backend:8080"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+console.log("API URL:", API_URL);
 
 export const fetchCompetitions = async () => {
   const res = await fetch(`${API_URL}/competition`)

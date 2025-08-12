@@ -1,0 +1,22 @@
+# server/Dockerfile.backend
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy server code and config
+COPY . .
+
+# Build TypeScript to JavaScript (if needed)
+RUN npm run build || npm run tsc || npx tsc
+
+# Expose port (matching your dev setup)
+EXPOSE 8080
+
+# Start the application
+CMD ["npm", "run", "start"]

@@ -41,8 +41,16 @@ app.use("/competition", competitionsRouter);
 
 console.log("4. Routes configured");
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`5. Server running on port ${PORT}`);
-  console.log("6. All files loaded successfully!");
-});
+// ensure PORT is a number
+// const PORT: number = parseInt(process.env.PORT ?? "8080", 10);
+// const HOST = process.env.HOST ?? "0.0.0.0";
+
+// app.listen(PORT, HOST, () => {
+//   console.log(`5. Server running on ${HOST}:${PORT}`);
+//   console.log("6. All files loaded successfully!");
+// });
+
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
