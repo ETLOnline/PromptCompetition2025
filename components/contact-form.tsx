@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { CheckCircle2 } from "lucide-react"
+import { submitContactForm } from "@/lib/api";
+
+
 
 export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,18 +34,23 @@ export default function ContactForm() {
     email: "",
     company: "",
     role: "",
-    size: "",
     message: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setIsSubmitted(true)
-    }, 1500)
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await submitContactForm(formData);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      alert("Failed to submit form. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -127,7 +135,7 @@ export default function ContactForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company" className="text-black">Company/Organization</Label>
+            <Label htmlFor="company" className="text-black">Company/Educational Organization</Label>
             <Input
               id="company"
               name="company"
@@ -152,7 +160,7 @@ export default function ContactForm() {
             />
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="size" className="text-black">Organization Size</Label>
             <Select value={formData.size} onValueChange={(value) =>
               setFormData((prev) => ({ ...prev, size: value }))
@@ -169,7 +177,7 @@ export default function ContactForm() {
                 <SelectItem value="government">Government Agency</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           <div className="space-y-2">
             <Label htmlFor="message" className="text-black">How can we help?</Label>

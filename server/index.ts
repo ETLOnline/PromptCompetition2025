@@ -13,6 +13,8 @@
 // import leaderboardRouter from "./routes/generateLeaderboard.js";
 // import superadminRouter from "./routes/superadmin.js";
 // import competitionsRouter from "./routes/competitions.js";
+// import contactRouter from "./routes/contact.js";
+
 
 // import { auth } from "./config/firebase-admin.js"; // ✅ Import Firebase Admin Auth
 
@@ -44,6 +46,8 @@
 // app.use("/leaderboard", leaderboardRouter);
 // app.use("/superadmin", superadminRouter);
 // app.use("/competition", competitionsRouter);
+// app.use("/contact", contactRouter);
+
 
 // console.log("4. Routes configured");
 
@@ -82,7 +86,7 @@ import evaluateAllRouter from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
 import competitionsRouter from "./routes/competitions.js";
-
+import contactRouter from "./routes/contact.js";
 import authRoutes from "./routes/auth.js";
 
 
@@ -108,6 +112,8 @@ app.use("/leaderboard", leaderboardRouter);
 app.use("/superadmin", superadminRouter);
 app.use("/competition", competitionsRouter);
 
+app.use("/contact", contactRouter);
+
 
 app.use("/auth", authRoutes);
 
@@ -115,6 +121,7 @@ console.log("4. Routes configured");
 
 // ensure PORT is a number
 const PORT: number = parseInt(process.env.PORT ?? "8080", 10);
+
 // const HOST = process.env.HOST ?? "0.0.0.0";
 app.listen(PORT, () => {
   console.log(`5. Server running on:${PORT}`);
