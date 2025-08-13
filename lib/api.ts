@@ -64,3 +64,18 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   return response.json();
 }
 
+
+export const submitContactForm = async (formData: any) => {
+  const res = await fetch(`${API_URL}/contact`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(formData),
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return res.json();
+};
