@@ -235,7 +235,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     // 4) Generate one-time password reset link (acts as "set initial password")
     let resetLink: string | null = null;
     try {
-      const origin = process.env.APP_ORIGIN || "http://localhost:3000";
+      const origin = process.env.APP_ORIGIN;
       const actionCodeSettings = {
         url: `${origin}/auth/login/admin`,   // or your post-completion route
         handleCodeInApp: false,     // use Firebase hosted page; set true if you handle link in-app
