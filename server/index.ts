@@ -14,6 +14,8 @@ import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
 import competitionsRouter from "./routes/competitions.js";
 
+import authRoutes from "./routes/auth.js";
+
 
 console.log("2. Starting server setup...");
 console.log("3. Routers imported successfully");
@@ -37,9 +39,12 @@ app.use("/leaderboard", leaderboardRouter);
 app.use("/superadmin", superadminRouter);
 app.use("/competition", competitionsRouter);
 
+
+app.use("/auth", authRoutes);
+
 console.log("4. Routes configured");
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`5. Server running on port ${PORT}`);
   console.log("6. All files loaded successfully!");
