@@ -128,7 +128,7 @@ app.listen(PORT, () => {
   console.log("6. All files loaded successfully!");
 });
 
-// app.use(cors({
-//   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-//   credentials: true
-// }));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
