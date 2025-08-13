@@ -1,47 +1,67 @@
-# syntax=docker/dockerfile:1
+# Dockerfile.frontend
+FROM node:18-alpine AS builder
 
-############################
-# 1) Install dependencies  #
-############################
-FROM node:22-bookworm-slim AS deps
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy only package files for caching
-COPY package.json package-lock.json ./
-RUN npm ci
+# Copy package files
+COPY package*.json ./
 
-############################
-# 2) Build Next.js (prod)  #
-############################
-FROM node:22-bookworm-slim AS builder
-WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
+# Install dependencies
+RUN npm install
 
-# Reuse deps
-COPY --from=deps /app/node_modules ./node_modules
-# Copy all files except those excluded in .dockerignore
-COPY . .
+# Copy frontend code
+COPY app/ ./app/
+COPY components/ ./components/
+COPY lib/ ./lib/
+COPY hooks/ ./hooks/
+COPY public/ ./public/
+COPY styles/ ./styles/
+COPY next.config.mjs ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY tsconfig.json ./
+COPY next-env.d.ts ./
+COPY components.json ./
 
-# Make sure next.config.mjs has: output: 'standalone'
+# Set environment variable for build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+ARG NEXT_PUBLIC_FIREBASE_API_KEY
+ENV NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
+
+ARG NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+
+ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
+ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+
+ARG NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
+
+ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
+
+ARG NEXT_PUBLIC_FIREBASE_APP_ID
+ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
+
+
+# Build the application
 RUN npm run build
 
-#################################
-# 3) Minimal runtime container  #
-#################################
-FROM node:22-bookworm-slim AS runner
+# Production image
+FROM node:18-alpine AS runner
+
 WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=3000
 
-# Create a non-root user for security
-RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nextjs
-USER nextjs
-
-# Copy standalone output
+# Copy built application
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
+# Expose port
 EXPOSE 3000
-CMD ["node", "server.js"]
+
+# Start the application
+CMD ["npm", "start"]

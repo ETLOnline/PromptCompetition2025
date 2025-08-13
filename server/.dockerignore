@@ -1,10 +1,10 @@
 node_modules
 dist
+*.log
+.env*
+enlightentech-a2046-firebase-adminsdk-fbsvc-8b4473f821.json
 .env*
 *.log
 .vscode
 .DS_Store
-# Very important: service account & secrets
 *.json
-!package.json
-!package-lock.json
