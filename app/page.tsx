@@ -9,7 +9,6 @@ import { fetchCompetitions } from "@/lib/api" // Import your API utility
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, Users, Award, Target, Shield, User, Calendar, Clock, MapPin, ChevronLeft, ChevronRight, Mail, Phone, Loader, Sparkles, Zap, Star } from 'lucide-react'
-import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import StructuredData from "@/components/structured-data"
@@ -347,32 +346,6 @@ export default function HomePage() {
                 className="w-full max-w-2xl"
               >
                 <TypingPromptInput />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="flex flex-wrap justify-center gap-6 mt-12"
-              >
-                <Button
-                  variant="outline"
-                  className="gap-2 px-8 py-4 h-14 text-lg rounded-xl border-2 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm"
-                  asChild
-                >
-                  <Link href="/auth/login/admin">
-                    <Shield className="h-5 w-5" />
-                    <span className="font-semibold">Admin Login</span>
-                  </Link>
-                </Button>
-                <Button
-                  className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                  asChild
-                >
-                  <Link href="/auth/login">
-                    <User className="h-5 w-5" />
-                    <span className="font-semibold">Participant Login</span>
-                  </Link>
-                </Button>
               </motion.div>
             </div>
           </div>

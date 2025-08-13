@@ -6,8 +6,6 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, LogIn, UserPlus } from "lucide-react"
-// Assuming useAuth is available from "@/components/auth-provider"
-import { useAuth } from "@/components/auth-provider"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)

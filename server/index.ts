@@ -86,8 +86,10 @@ import evaluateAllRouter from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
 import competitionsRouter from "./routes/competitions.js";
+
+import roleRoutes from "./routes/roles.js";
+import authRoutes from "./routes/auth.js" 
 import contactRouter from "./routes/contact.js";
-import authRoutes from "./routes/auth.js";
 
 
 console.log("2. Starting server setup...");
@@ -115,7 +117,8 @@ app.use("/competition", competitionsRouter);
 app.use("/contact", contactRouter);
 
 
-app.use("/auth", authRoutes);
+app.use("/auth", authRoutes)
+app.use("/role", roleRoutes);
 
 console.log("4. Routes configured");
 
