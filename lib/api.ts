@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+import { getAuth } from "firebase/auth";
+
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export const fetchCompetitions = async () => {
   const res = await fetch(`${API_URL}/competition`)
@@ -6,36 +9,59 @@ export const fetchCompetitions = async () => {
   return res.json()
 }
 
-export const createCompetition = async (data: any, token: string) => {
-  const res = await fetch(`${API_URL}/competition`, {
+export const createCompetition = async (data: any) => {
+  return await fetchWithAuth(`${API_URL}/competition`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(data),
-  })
-  return res.json()
-}
+  });
+};
 
-export const updateCompetition = async (id: string, data: any, token: string) => {
-  const res = await fetch(`${API_URL}/competition/${id}`, {
+export const updateCompetition = async (id: string, data: any) => {
+  return await fetchWithAuth(`${API_URL}/competition/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(data),
+  });
+};
+
+export const deleteCompetition = async (id: string) => {
+  return await fetchWithAuth(`${API_URL}/competition/${id}`, {
+    method: "DELETE",
   })
-  return res.json()
+};
+
+
+// sends JWT token to backend And waits for approval
+export async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (!user) 
+    throw new Error("User not authenticated");
+
+  const token = await user.getIdToken();
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+
+  const response = await fetch(url, { ...options, headers });
+  
+  if (response.status === 302) {
+    window.location.href = "/"; // force full redirect
+    return; // stop further execution
+  }
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  return response.json();
 }
 
-export const deleteCompetition = async (id: string, token: string) => {
-  const res = await fetch(`${API_URL}/competition/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-  return res.json()
-}

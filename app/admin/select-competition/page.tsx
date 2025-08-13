@@ -1,6 +1,5 @@
 "use client"
 import { toast } from "react-hot-toast"
-import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,7 +16,11 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition } from "@/lib/api"
+
+import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition, 
+  fetchWithAuth
+  } from "@/lib/api"
+  
 import {
   Plus,
   Trophy,
@@ -80,7 +83,7 @@ const SearchFilterSkeleton = () => (
 )
 
 export default function ModernCompetitionSelector() {
-  const { user, role } = useAuth()
+  // const { user, role } = useAuth()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [isInitialLoading, setIsInitialLoading] = useState(true)
@@ -97,6 +100,31 @@ export default function ModernCompetitionSelector() {
   const [editLoading, setEditLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
+  
+  const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState(null);
+
+  
+  useEffect(() => {
+    checkAuth();
+    refetchCompetitions()
+  }, [router])
+
+  const checkAuth = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      setRole(profile.role)
+    } 
+    catch (error) 
+    {
+      router.push("/");
+    } 
+    finally 
+    {
+      setLoading(false);
+    }
+  };
+
 
   const refetchCompetitions = async () => {
     try {
@@ -114,14 +142,6 @@ export default function ModernCompetitionSelector() {
       setIsInitialLoading(false)
     }
   }
-
-  useEffect(() => {
-    if (!user) {
-      router.push("/")
-      return
-    }
-    refetchCompetitions()
-  }, [user, router])
 
   const getCompetitionStatus = (competition: Competition) => {
     const now = new Date()
@@ -225,14 +245,9 @@ export default function ModernCompetitionSelector() {
 
   // Handler functions for the modals
   const handleCreateSubmit = async (data: CreateCompetitionData) => {
-    if (!user) {
-      throw new Error("User not authenticated.")
-    }
-
     setCreateLoading(true)
     try {
-      const token = await user.getIdToken()
-      await createCompetition(data, token)
+      await createCompetition(data)
       toast.success("Competition created successfully!")
       refetchCompetitions()
     } catch (error) {
@@ -244,14 +259,13 @@ export default function ModernCompetitionSelector() {
   }
 
   const handleEditSubmit = async (data: EditCompetitionData) => {
-    if (!user || !selectedCompetition) {
+    if (!selectedCompetition) {
       throw new Error("User not authenticated or no competition selected.")
     }
 
     setEditLoading(true)
     try {
-      const token = await user.getIdToken()
-      await updateCompetition(selectedCompetition.id, data, token)
+      await updateCompetition(selectedCompetition.id, data)
       toast.success("Competition updated successfully!")
       setSelectedCompetition(null)
       refetchCompetitions()
@@ -264,14 +278,13 @@ export default function ModernCompetitionSelector() {
   }
 
   const handleDeleteCompetition = async () => {
-    if (!user || !selectedCompetition) {
+    if (!selectedCompetition) {
       throw new Error("User not authenticated or no competition selected.")
     }
 
     setDeleteLoading(true)
     try {
-      const token = await user.getIdToken()
-      await deleteCompetition(selectedCompetition.id, token)
+      await deleteCompetition(selectedCompetition.id)
       toast.success("Competition deleted.")
       setSelectedCompetition(null)
       refetchCompetitions()
@@ -283,7 +296,7 @@ export default function ModernCompetitionSelector() {
     }
   }
 
-  if (!user || (role !== "admin" && role !== "superadmin")) {
+  if ((role !== "admin" && role !== "superadmin")) {
     return null
   }
 
