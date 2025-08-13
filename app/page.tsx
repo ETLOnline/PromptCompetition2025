@@ -59,7 +59,6 @@ function CompetitionEventsSection() {
             return {
               id: comp.id,
               title: comp.title,
-              // description: comp.description, // Removed as requested
               location: comp.location,
               prize: comp.prizeMoney,
               participants: 0, // Assuming participants are not returned by API or always 0 for now
