@@ -5,8 +5,8 @@ import type React from "react"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { fetchWithAuth } from "@/lib/api"
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/lib/firebase"; // your client SDK instance
+import { GoogleAuthProvider, signInWithPopup, getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase"; 
 
 
 interface LoginProps {
@@ -24,28 +24,31 @@ export default function Login({ onForgotPassword }: LoginProps) {
 
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+  
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setError(null)
+        setLoading(true)
 
-    try {
-        const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        try {
+            const auth = getAuth()
+            // First authenticate user and get currentUser
+            await signInWithEmailAndPassword(auth, email, password)
+
+            // Now currentUser exists → send token to backend
+            const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             method: "POST",
-            body: JSON.stringify({ email, password }),
-            headers: { "Content-Type": "application/json" }, // merge with fetchWithAuth headers
-        });
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }), // backend only needs email if token is verified
+            })
 
-        router.push(data.redirectUrl);
-    } 
-    catch (err: any) 
-    {
-        setError(err.message)
-    } 
-    finally {
-        setLoading(false)
+            router.push(data.redirectUrl)
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
     }
-  }
 
   const handleGoogleSignIn = async () => {
     setError(null)

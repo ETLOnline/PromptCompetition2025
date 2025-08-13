@@ -74,5 +74,26 @@ router.post("/reset-password", async (req, res) => {
     }
 });
 
+router.post("/login", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+        const user = req.user
+        if (!user) return res.status(401).json({ error: "Unauthorized" })
+
+        // Determine redirect URL based on role
+        const role = user.role || "participant"
+        const redirectUrl =
+        role === "admin" || role === "superadmin"
+            ? "/admin/select-competition"
+            : role === "judge"
+            ? "/judge"
+            : "/participants"
+
+        res.json({ role, redirectUrl })
+    } catch (err: any) {
+        console.error("Login error:", err)
+        res.status(500).json({ error: "Failed to login" })
+    }
+})
+
 
 export default router

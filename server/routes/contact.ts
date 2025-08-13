@@ -4,7 +4,7 @@ import { transporter } from "../config/email.js";
 const router = express.Router();
 
 router.post("/", async (req: Request, res: Response) => {
-  const { firstName, lastName, email, company, size, message } = req.body;
+  const { firstName, lastName, email, company, message } = req.body;
 
   try {
     // Build email HTML
@@ -14,10 +14,8 @@ router.post("/", async (req: Request, res: Response) => {
       <p><strong>Last Name:</strong> ${lastName}</p>
       <p><strong>Email:</strong> ${email}</p>
       <p><strong>Company:</strong> ${company}</p>
-      <p><strong>Organization Size:</strong> ${size}</p>
       <p><strong>Message:</strong> ${message}</p>
     `;
-
     // Send email to you
     await transporter.sendMail({
       from: process.env.EMAIL_SENDER,
