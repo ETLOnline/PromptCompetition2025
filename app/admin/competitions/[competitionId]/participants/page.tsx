@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useAuth } from "@/components/auth-provider"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, query } from "firebase/firestore"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -11,6 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Users, ChevronLeft, RefreshCw, Search, X, ChevronRight, Target } from 'lucide-react'
+
+import { fetchWithAuth } from "@/lib/api";
 
 const ITEMS_PER_PAGE = 12
 
@@ -44,15 +45,30 @@ export default function ParticipantsPage() {
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string
-  const { user, role } = useAuth()
-  
   const [participants, setParticipants] = useState<Participant[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  
+  const checkAuth = async () => {
+    try {
+      setLoading(true)
+      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+    } 
+    catch (error) 
+    {
+      router.push("/");
+    } 
+    finally 
+    {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!user || !(role === "admin" || role === "superadmin")) return
+
+    checkAuth();
+
     if (!competitionId) return
 
     setLoading(true)
@@ -79,9 +95,7 @@ export default function ParticipantsPage() {
     )
 
     return () => unsub()
-  }, [user, role, competitionId])
-
-  if (!user || !(role === "admin" || role === "superadmin")) return null
+  }, [competitionId])
 
   const formatDate = (v: any) => {
     if (!v) return "Never"

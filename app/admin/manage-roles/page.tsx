@@ -1,33 +1,42 @@
 "use client"
 
-import { useAuth } from "@/components/auth-provider"
+
+import { fetchWithAuth } from "@/lib/api";
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import UserRoleManager from "@/components/SuperAdmin/UserRoleManager"
 
 export default function SuperAdminPage() {
-  const { user, role, loading } = useAuth()
   const router = useRouter()
+  const [loading, setLoading] = useState(true);
 
-  // If not logged in → go to admin login
+  const checkAuth = async () => {
+      try {
+        await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_SUPER_AUTH}`);
+      } 
+      catch (error) 
+      {
+        router.push("/");
+      } 
+      finally 
+      {
+        setLoading(false);
+      }
+    };
+
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/auth/login/admin")
-    }
-  }, [loading, user, router])
+    checkAuth(); 
+  })
 
-  // If logged in but not superadmin → go home
-  useEffect(() => {
-    if (!loading && role !== null && role !== "superadmin") {
-      router.replace("/")
-    }
-  }, [loading, role, router])
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
 
-  // Wait until auth resolves to avoid flicker
-  if (loading) return null
-
-  // Guard: only render for superadmin
-  if (!user || role !== "superadmin") return null
 
   return <UserRoleManager />
 }

@@ -3,7 +3,6 @@
 import type React from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { getAuth } from "firebase/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +12,8 @@ import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
 import { doc, setDoc, getDocs, Timestamp, collection, getDoc, updateDoc, increment } from "firebase/firestore"
 
+import { fetchWithAuth } from "@/lib/api";
+  
 type RubricItem = {
   name: string
   description: string
@@ -24,37 +25,36 @@ export default function NewCompetitionPage() {
   const params = useParams()
   const competitionId = params?.competitionId as string
   const { toast } = useToast()
-  // const [startDeadline, setStartDeadline] = useState<string | null>(null)
-  // const [endDeadline, setEndDeadline] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [pageLoading, setPageLoading] = useState(true)
+  const [pageLoading, setPageLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: "",
     problemStatement: "",
     rubric: [{ name: "", description: "", weight: 1.0 }] as RubricItem[],
     guidelines: "",
   })
+  
+  const [userUID, setUserID] = useState(null);
+    
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setPageLoading(true)
-        const competitionDoc = await getDoc(doc(db, "competitions", competitionId))
-        if (competitionDoc.exists()) {
-          const data = competitionDoc.data()
-          // const start = data.startDeadline?.toDate?.() ?? new Date(data.startDeadline)
-          // const end = data.endDeadline?.toDate?.() ?? new Date(data.endDeadline)
-          // setStartDeadline(start.toISOString().slice(0, 16))
-          // setEndDeadline(end.toISOString().slice(0, 16))
-        }
-      } catch (error) {
-        console.error("Error fetching competition data:", error)
-      } finally {
-        setPageLoading(false)
-      }
-    }
-    fetchData()
+    setPageLoading(true)
+    checkAuthAndLoad();
+    setPageLoading(false)
+    
   }, [competitionId])
+  
+  const checkAuthAndLoad = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      setUserID(profile.uid)
+    } catch (error) {
+      router.push("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
   const calculateTotalWeight = (): number => {
     return formData.rubric.reduce((sum, item) => sum + item.weight, 0)
@@ -79,20 +79,20 @@ export default function NewCompetitionPage() {
   }
 
   const uploadToFirestore = async () => {
-    const ID = await getLatestCustomID(competitionId)
-    const auth = getAuth()
-    const user = auth.currentUser
-    if (!user) throw new Error("User not authenticated")
+    if (!userUID) 
+      throw new Error("User not authenticated")
 
-    const userUID = user.uid
     const userDocRef = doc(db, "users", userUID)
     const userDocSnap = await getDoc(userDocRef)
-    if (!userDocSnap.exists()) throw new Error("User document not found")
+    if (!userDocSnap.exists()) 
+      throw new Error("User document not found")
 
     const userData = userDocSnap.data()
-    const email = userData.email ?? ""
+    const email = userData.email ?? "Not Found"
     const fullName = userData.fullName ?? ""
 
+    
+    const ID = await getLatestCustomID(competitionId)
     await setDoc(
       doc(db, "competitions", competitionId, "challenges", ID),
       {
@@ -100,8 +100,6 @@ export default function NewCompetitionPage() {
         problemStatement: formData.problemStatement,
         rubric: formData.rubric,
         guidelines: formData.guidelines,
-        // startDeadline: Timestamp.fromDate(new Date(startDeadline!)),
-        // endDeadline: Timestamp.fromDate(new Date(endDeadline!)),
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),

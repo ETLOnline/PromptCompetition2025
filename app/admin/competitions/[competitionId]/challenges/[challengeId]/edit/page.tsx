@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { getDoc, doc, updateDoc, Timestamp } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
 import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, FileText, Plus, X, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Plus, X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
+
+import { fetchWithAuth } from "@/lib/api";
 
 type RubricItem = {
   name: string
@@ -32,38 +33,59 @@ export default function EditChallengePage() {
     rubric: [{ name: "", description: "", weight: 1.0 }] as RubricItem[],
     guidelines: "",
   })
+  const [userUID, setUserID] = useState(null);
 
   useEffect(() => {
-    const fetchChallenge = async () => {
-      try {
-        setPageLoading(true)
-        const docRef = doc(db, "competitions", competitionId, "challenges", challengeId)
-        const docSnap = await getDoc(docRef)
-        
-        if (docSnap.exists()) {
-          const data = docSnap.data()
-          
-          setFormData({
-            title: data.title || "",
-            problemStatement: data.problemStatement || "",
-            rubric: data.rubric || [{ name: "", description: "", weight: 1.0 }],
-            guidelines: data.guidelines || "",
-          })
-        }
-      } catch (error) {
-        console.error("Error fetching challenge:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load challenge data",
-          variant: "destructive",
-        })
-      } finally {
-        setPageLoading(false)
-      }
-    }
     
-    if (competitionId && challengeId) fetchChallenge()
-  }, [competitionId, challengeId, toast])
+    if (competitionId && challengeId) {
+      checkAuthAndLoad();
+      fetchChallenge();
+    }
+  }, [competitionId, challengeId, toast, router]);
+
+  
+  const checkAuthAndLoad = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      setUserID(profile.uid) 
+    } 
+    catch (error) {
+      router.push("/");
+      return;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  async function fetchChallenge() {
+    try {
+      setPageLoading(true)
+      const docRef = doc(db, "competitions", competitionId, "challenges", challengeId)
+      const docSnap = await getDoc(docRef)
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data()
+        
+        setFormData({
+          title: data.title || "",
+          problemStatement: data.problemStatement || "",
+          rubric: data.rubric || [{ name: "", description: "", weight: 1.0 }],
+          guidelines: data.guidelines || "",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching challenge:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load challenge data",
+        variant: "destructive",
+      })
+    } finally {
+      setPageLoading(false)
+    }
+  }
+
 
   const calculateTotalWeight = (): number => {
     return formData.rubric.reduce((sum, item) => sum + item.weight, 0)
@@ -120,13 +142,13 @@ export default function EditChallengePage() {
 
     setLoading(true)
     try {
-      const auth = getAuth()
-      const user = auth.currentUser
-      if (!user) throw new Error("User not authenticated")
+      if (!userUID) {
+        throw new Error("User ID is missing");
+      }
 
-      const userUID = user.uid
       const userDocSnap = await getDoc(doc(db, "users", userUID))
-      if (!userDocSnap.exists()) throw new Error("User document not found")
+      if (!userDocSnap.exists()) 
+        throw new Error("User document not found")
 
       const { email = "", fullName = "" } = userDocSnap.data()
 
@@ -216,7 +238,7 @@ export default function EditChallengePage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-6 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form  onSubmit={handleSubmit} className="space-y-8">
           
           {/* Basic Information */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.1s_forwards]">

@@ -1,42 +1,33 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { useAuth } from "@/components/auth-provider"
 import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileText, Activity, Users, Trophy, BarChart3, Shield, UserCog } from "lucide-react"
+import { FileText, Activity, Users, Trophy, BarChart3, Shield } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
 import DownloadLeaderboardButton from "@/components/DownloadLeaderboard"
-import AdminHeader from "@/components/AdminHeader"
 import { collection, onSnapshot, doc, getDoc, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
+
+import { fetchWithAuth } from "@/lib/api";
+
+
 export default function AdminDashboard() {
-  const { user, role, logout } = useAuth()
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string
-
-  const [competitionTitle, setCompetitionTitle] = useState<string | null>(null)
   const [totalSubmissions, setSubmissionCount] = useState<number>(0)
   const [stats, setStats] = useState({ totalParticipants: 0, pendingReviews: 0 })
+  
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
-    if (!user || !competitionId) {
-      router.push("/")
-      return
-    }
 
-    ;(async () => {
-      const compRef = doc(db, "competitions", competitionId)
-      const compSnap = await getDoc(compRef)
-      if (compSnap.exists()) {
-        setCompetitionTitle((compSnap.data() as any).title || null)
-      }
-    })()
+    checkAuthAndLoad();
 
     const unsubParts = onSnapshot(
       collection(db, `competitions/${competitionId}/participants`),
@@ -61,9 +52,19 @@ export default function AdminDashboard() {
       unsubSubs()
       unsubPending()
     }
-  }, [user, role, router, competitionId])
-
-  if (!user || (role !== "admin" && role !== "superadmin")) return null
+  }, [router, competitionId])
+  
+  const checkAuthAndLoad = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      setRole(profile.role)
+    } 
+    catch (error) 
+    {
+      router.push("/");
+      return;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
