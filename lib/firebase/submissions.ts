@@ -5,7 +5,7 @@ import {
     setDoc,
     updateDoc,
     serverTimestamp,
-    doc,
+    doc,increment,
 } from "firebase/firestore"
 
 
@@ -24,6 +24,8 @@ export const checkExistingSubmission = async (
             return submissionId;
         }
 
+
+
         return false;
     } 
     catch (error) 
@@ -35,34 +37,61 @@ export const checkExistingSubmission = async (
 
 // 2. Submit or update a submission
 export const submitPrompt = async (
-    competition_ID: string,
-    participant_ID: string,
-    challenge_ID: string,
-    promptText: string
+  competition_ID: string,
+  participant_ID: string,
+  challenge_ID: string,
+  promptText: string
 ) => {
-        const existingSubmission = await checkExistingSubmission(competition_ID, participant_ID, challenge_ID)
+  const existingSubmission = await checkExistingSubmission(
+    competition_ID,
+    participant_ID,
+    challenge_ID
+  );
 
-        const submissionData = {
-            participantId: participant_ID,
-            challengeId: challenge_ID,
-            promptText,
-            submissionTime: serverTimestamp(),
-            finalScore: null,
-            status: "pending" 
-        }
-        
-        if (existingSubmission) 
-        {
-            const submissionDocRef = doc(db, "competitions", competition_ID, "submissions", existingSubmission)
-            await updateDoc(submissionDocRef, submissionData)
-            return true
-        } 
-        else 
-        {
-            const submissionId = `${participant_ID}_${challenge_ID}`;
-            const submissionDocRef = doc(db, "competitions", competition_ID, "submissions", submissionId);
-            await setDoc(submissionDocRef, submissionData);
+  const submissionData = {
+    participantId: participant_ID,
+    challengeId: challenge_ID,
+    promptText,
+    submissionTime: serverTimestamp(),
+    finalScore: null,
+    status: "pending",
+  };
 
-            return false
-        }
-} 
+  if (existingSubmission) {
+    // Update existing submission
+    const submissionDocRef = doc(
+      db,
+      "competitions",
+      competition_ID,
+      "submissions",
+      existingSubmission
+    );
+    await updateDoc(submissionDocRef, submissionData);
+    return true;
+  } else {
+    // Create new submission
+    const submissionId = `${participant_ID}_${challenge_ID}`;
+    const submissionDocRef = doc(
+      db,
+      "competitions",
+      competition_ID,
+      "submissions",
+      submissionId
+    );
+    await setDoc(submissionDocRef, submissionData);
+
+    // Increment challenge count for the participant
+    const participantDocRef = doc(
+      db,
+      "competitions",
+      competition_ID,
+      "participants",
+      participant_ID
+    );
+    await updateDoc(participantDocRef, {
+      challengesCompleted: increment(1),
+    });
+
+    return false;
+  }
+};
