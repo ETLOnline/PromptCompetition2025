@@ -1,18 +1,29 @@
 import express from "express";
 import { AuthenticatedRequest, authenticateToken, authorizeRoles } from "../utils/auth.js";
+import { admin } from "../config/firebase-admin.js";
 
 const router = express.Router();
 
-router.get("/profile", authenticateToken, (req: AuthenticatedRequest, res) => {
+router.get("/profile", authenticateToken, async (req: AuthenticatedRequest, res) => {
     if (!req.user) {
         return res.redirect(302, "/");
     }
 
-    res.json({
-        uid: req.user?.uid,
-        email: req.user?.email,
-        role: req.user?.role || "participant",
-    });
+    try {
+        const userRecord = await admin.auth().getUser(req.user.uid);
+
+        res.json({
+            uid: req.user?.uid,
+            email: req.user?.email,
+            role: req.user?.role,
+            displayName: userRecord.displayName || null,
+            photoURL: userRecord.photoURL || null,
+        });
+    } 
+    catch (err) 
+    {
+        res.status(500).json("Failed to fetch user profile.");
+    }
 });
 
 

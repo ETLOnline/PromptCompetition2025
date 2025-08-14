@@ -3,7 +3,7 @@ export interface User {
   email: string
   name: string
   institution: string
-  role: "participant" | "admin"
+  role: string
   createdAt: string
 }
 

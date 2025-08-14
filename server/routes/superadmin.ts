@@ -251,7 +251,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     // 5) Send invite email
     try {
       await transporter.sendMail({
-        from: "enlightechy@gmail.com",
+        from: process.env.EMAIL_SENDER,
         to: email,
         subject: "Your account is ready — set your password",
         html: `

@@ -16,7 +16,7 @@ router.post("/google-signin", authenticateToken, (req: AuthenticatedRequest, res
     const user = req.user
     if (!user) return res.status(401).json({ error: "Unauthorized" })
 
-    const role = user.role || "participant"
+    const role = user.role
     const redirectUrl = role === "admin" || role === "superadmin" 
         ? "/admin/select-competition"
         : role === "judge"
