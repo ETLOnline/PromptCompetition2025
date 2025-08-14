@@ -18,8 +18,8 @@ import {
 } from "lucide-react"
 import { doc, getDoc, type DocumentData } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
-import { getIdTokenResult } from "firebase/auth"
+
+import { fetchWithAuth } from "@/lib/api";
 
 interface JudgeAssignment {
   judgeId: string
@@ -43,7 +43,7 @@ export default function CompetitionPage() {
   const params = useParams()
   const competitionId = params?.competitionId as string
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [userUID, setUserID] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [assignment, setAssignment] = useState<JudgeAssignment | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -65,30 +65,23 @@ export default function CompetitionPage() {
 
   // Auth effect
   useEffect(() => {
-    const auth = getAuth()
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/auth/login/admin")
-        return
-      }
-
-      try {
-        const idTokenResult = await getIdTokenResult(user, true)
-        const role = idTokenResult.claims.role
-        if (role !== "judge") {
-          router.push("/")
-          return
-        }
-        setCurrentUser(user)
-        setIsAuthenticated(true)
-      } catch (error) {
-        console.error("Auth error:", error)
-        router.push("/auth/login/admin")
-      }
-    })
-
-    return () => unsubscribe()
+    checkAuth();
   }, [router])
+
+  const checkAuth = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_JUDGE_AUTH}`);
+      setUserID(profile.uid)
+    }
+    catch (error) 
+    {
+      router.push("/");
+    } 
+    finally 
+    {
+      setIsAuthenticated(true);
+    }
+  };
 
   // Fetch judge assignment for this competition
   const fetchAssignment = useCallback(
@@ -128,10 +121,10 @@ export default function CompetitionPage() {
 
   // Load assignment when authenticated
   useEffect(() => {
-    if (isAuthenticated && currentUser) {
-      fetchAssignment(currentUser.uid)
+    if (isAuthenticated && userUID) {
+      fetchAssignment(userUID)
     }
-  }, [isAuthenticated, currentUser, fetchAssignment])
+  }, [isAuthenticated, fetchAssignment])
 
   // Avatar color generator
   const getAvatarColor = (name: string) => {

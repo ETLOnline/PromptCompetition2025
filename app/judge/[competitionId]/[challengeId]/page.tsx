@@ -40,8 +40,8 @@ import {
   type DocumentData,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
-import { getIdTokenResult } from "firebase/auth"
+import { fetchWithAuth } from "@/lib/api";
+
 
 interface Challenge {
   id: string
@@ -104,7 +104,8 @@ export default function ChallengePage() {
   const competitionId = params?.competitionId as string
   const challengeId = params?.challengeId as string
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  
+  const [userUID, setUserID] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [assignment, setAssignment] = useState<JudgeAssignment | null>(null)
@@ -145,30 +146,24 @@ export default function ChallengePage() {
 
   // Auth effect
   useEffect(() => {
-    const auth = getAuth()
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/")
-        return
-      }
-
-      try {
-        const idTokenResult = await getIdTokenResult(user, true)
-        const role = idTokenResult.claims.role
-        if (role !== "judge") {
-          router.push("/")
-          return
-        }
-        setCurrentUser(user)
-        setIsAuthenticated(true)
-      } catch (error) {
-        console.error("Auth error:", error)
-        router.push("/")
-      }
-    })
-
-    return () => unsubscribe()
+    checkAuth();
   }, [router])
+
+  
+  const checkAuth = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_JUDGE_AUTH}`);
+      setUserID(profile.uid)
+    }
+    catch (error) 
+    {
+      router.push("/");
+    } 
+    finally 
+    {
+      setIsAuthenticated(true);
+    }
+  };
 
   // Fetch challenge details
   const fetchChallenge = useCallback(async () => {
@@ -283,7 +278,7 @@ export default function ChallengePage() {
           submissionData.push(submission)
 
           // Check if this submission is already graded by current judge
-          if (currentUser && submission.judges?.[currentUser.uid]) {
+          if (userUID && submission.judges?.[userUID]) {
             newGradedSubmissions.add(submission.id)
           }
         })
@@ -305,24 +300,24 @@ export default function ChallengePage() {
         setIsLoadingSubmissions(false)
       }
     },
-    [assignedSubmissionIds, competitionId, currentUser, gradedSubmissions, showNotification],
+    [assignedSubmissionIds, competitionId, userUID, gradedSubmissions, showNotification],
   )
 
   // Load initial data when authenticated
   useEffect(() => {
-    if (isAuthenticated && currentUser) {
+    if (isAuthenticated && userUID) {
       fetchChallenge()
-      fetchAssignment(currentUser.uid)
+      fetchAssignment(userUID)
     }
-  }, [isAuthenticated, currentUser, fetchChallenge, fetchAssignment])
+  }, [isAuthenticated, userUID, fetchChallenge, fetchAssignment])
 
   // Load first batch of submissions when assignment is loaded
   useEffect(() => {
-    if (!currentUser) return;
+    if (!userUID) return;
     if (assignedSubmissionIds.length > 0 && currentPage === 0) {
       fetchSubmissionsBatch(0)
     }
-  }, [currentUser, assignedSubmissionIds, currentPage, fetchSubmissionsBatch])
+  }, [userUID, assignedSubmissionIds, currentPage, fetchSubmissionsBatch])
 
   // Load more submissions
   const loadMoreSubmissions = useCallback(() => {
@@ -356,7 +351,7 @@ export default function ChallengePage() {
 
   // Save submission score
   const saveSubmissionScore = useCallback(async () => {
-    if (!selectedSubmission || !currentUser || !challenge) return
+    if (!selectedSubmission || !userUID || !challenge) return
 
     try {
       setIsSavingScore(true)
@@ -365,7 +360,7 @@ export default function ChallengePage() {
 
       const submissionRef = doc(db, "competitions", competitionId, "submissions", selectedSubmission.id)
       await updateDoc(submissionRef, {
-        [`judges.${currentUser.uid}`]: {
+        [`judges.${userUID}`]: {
           scores: scoreFormData,
           totalScore,
           updatedAt: serverTimestamp(),
@@ -380,7 +375,7 @@ export default function ChallengePage() {
                 ...sub,
                 judges: {
                   ...sub.judges,
-                  [currentUser.uid]: {
+                  [userUID]: {
                     scores: scoreFormData,
                     totalScore,
                     updatedAt: new Date(),
@@ -405,7 +400,7 @@ export default function ChallengePage() {
     }
   }, [
     selectedSubmission,
-    currentUser,
+    userUID,
     challenge,
     scoreFormData,
     calculateWeightedTotal,
@@ -419,15 +414,15 @@ export default function ChallengePage() {
       setSelectedSubmission(submission)
 
       // Pre-populate form with existing scores if any
-      if (currentUser && submission.judges?.[currentUser.uid]) {
-        setScoreFormData(submission.judges[currentUser.uid].scores)
+      if (userUID && submission.judges?.[userUID]) {
+        setScoreFormData(submission.judges[userUID].scores)
       } else {
         setScoreFormData({})
       }
 
       setShowScoreSheet(true)
     },
-    [currentUser],
+    [userUID],
   )
 
   // Toggle functions
@@ -691,7 +686,7 @@ export default function ChallengePage() {
                 const isExpanded = expandedSubmissions.has(submission.id)
                 const showModelInsights = expandedModelInsights.has(submission.id)
                 const isGraded = gradedSubmissions.has(submission.id)
-                const judgeScore = currentUser && submission.judges?.[currentUser.uid]
+                const judgeScore = userUID && submission.judges?.[userUID]
 
                 return (
                   <Card key={submission.id} className={`${isGraded ? "border-green-200 bg-green-50/30" : ""}`}>

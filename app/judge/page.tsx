@@ -9,8 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Scale, Trophy, ChevronRight, Loader, AlertCircle, CheckCircle2, X, Users } from "lucide-react"
 import { collectionGroup, query, where, getDocs, type DocumentData } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
-import { getIdTokenResult } from "firebase/auth"
+  import { fetchWithAuth } from "@/lib/api";
 
 interface JudgeAssignment {
   judgeId: string
@@ -30,7 +29,7 @@ interface NotificationState {
 
 export default function JudgeLandingPage() {
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [userID, setUserID] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [assignments, setAssignments] = useState<JudgeAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -52,30 +51,23 @@ export default function JudgeLandingPage() {
 
   // Auth effect
   useEffect(() => {
-    const auth = getAuth()
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/auth/login/admin")
-        return
-      }
+    checkAuth();
+  }, [router])  
 
-      try {
-        const idTokenResult = await getIdTokenResult(user, true)
-        const role = idTokenResult.claims.role
-        if (role !== "judge") {
-          router.push("/")
-          return
-        }
-        setCurrentUser(user)
-        setIsAuthenticated(true)
-      } catch (error) {
-        console.error("Auth error:", error)
-        router.push("/auth/login/admin")
-      }
-    })
-
-    return () => unsubscribe()
-  }, [router])
+  const checkAuth = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_JUDGE_AUTH}`);
+      setUserID(profile.uid)
+    }
+    catch (error) 
+    {
+      router.push("/");
+    } 
+    finally 
+    {
+      setIsAuthenticated(true);
+    }
+  };
 
   // Fetch judge assignments
   const fetchAssignments = useCallback(
@@ -114,10 +106,10 @@ export default function JudgeLandingPage() {
 
   // Load assignments when authenticated
   useEffect(() => {
-    if (isAuthenticated && currentUser) {
-      fetchAssignments(currentUser.uid)
+    if (isAuthenticated && userID) {
+      fetchAssignments(userID)
     }
-  }, [isAuthenticated, currentUser, fetchAssignments])
+  }, [isAuthenticated, fetchAssignments])
 
   // Avatar color generator
   const getAvatarColor = (name: string) => {
