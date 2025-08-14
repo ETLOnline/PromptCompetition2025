@@ -223,34 +223,42 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
       setLoadingChallengesList(false)
     }
   }
-
   const fetchUserSubmissions = async (profile: UserProfile) => {
     try {
-      setLoadingUserSubmissions(true)
-      const competitionId = id
-      if (!competitionId) return
+      setLoadingUserSubmissions(true);
+      const competitionId = id;
+      if (!competitionId) return;
 
-      const submissionsRef = collection(db, "competitions", competitionId, "submissions")
-      const submissionsSnapshot = await getDocs(submissionsRef)
-      const userSubmissionMap: Record<string, boolean> = {}
+      const participantDocRef = doc(
+        db,
+        "competitions",
+        competitionId,
+        "participants",
+        profile.uid
+      );
 
-      submissionsSnapshot.docs.forEach((doc) => {
-        // Only include submissions of current participant
-        if (doc.id.startsWith(`${profile.uid}_`)) {
-          const challengeId = doc.id.split("_")[1]
-          userSubmissionMap[challengeId] = true
-        }
-      })
+      const participantSnapshot = await getDoc(participantDocRef);
 
-      setUserSubmissions(userSubmissionMap)
-      setSubmissions(Object.keys(userSubmissionMap).length)
+      if (participantSnapshot.exists()) {
+        const data = participantSnapshot.data();
+        const completedCount = data.challengesCompleted || 0;
+
+        // No need for a map of booleans now, unless your UI still expects it
+        setUserSubmissions({});
+        setSubmissions(completedCount);
+      } else {
+        console.warn("Participant document not found for user:", profile.uid);
+        setUserSubmissions({});
+        setSubmissions(0);
+      }
     } catch (error) {
-      console.error("Error fetching user submissions:", error)
-      setUserSubmissions({})
+      console.error("Error fetching user challenge count:", error);
+      setUserSubmissions({});
+      setSubmissions(0);
     } finally {
-      setLoadingUserSubmissions(false)
+      setLoadingUserSubmissions(false);
     }
-  }
+  };
 
 
 
