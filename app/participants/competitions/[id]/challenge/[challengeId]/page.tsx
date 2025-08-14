@@ -25,6 +25,8 @@ import { useRouter } from "next/navigation"
 import type { Timestamp } from "firebase/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
 
+import { fetchWithAuth } from "@/lib/api"
+
 interface Challenge {
   id: string
   title: string
@@ -33,9 +35,16 @@ interface Challenge {
   endDeadline: Timestamp
   isCompetitionLocked: boolean
 }
+interface UserProfile {
+  uid: string;
+  email: string;
+  role: string;
+  displayName?: string | null;
+  photoURL?: string | null;
+}
 
 export default function ChallengePage({ params }: { params: Promise<{ id: string; challengeId: string }> }) {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const router = useRouter()
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [prompt, setPrompt] = useState("")
@@ -49,41 +58,61 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const [compid, setCompid] = useState<string | null>(null)
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle'); // New state for submission status
 
+  
+  const [user, setUser] = useState<UserProfile | null>(null)
+
   useEffect(() => {
-    const getParams = async () => {
+    const init = async () => {
+      // Authenticate user first
+      const profile = await checkAuth()
+      if (!profile) return
+
+      // Get params
       const { id } = await params
       setCompid(id)
-    }
-    getParams()
-  }, [params])
 
-  useEffect(() => {
-    const run = async () => {
-      if (!user) {
-        router.push("/");
-        return;
-      }
-
-      const { id } = await params
-      
-      const participantRef = doc(db, "competitions", id,
-        "participants", user.uid );
-      const participantSnap = await getDoc(participantRef);
+      // Check participant existence
+      const participantRef = doc(db, "competitions", id, "participants", profile.uid)
+      const participantSnap = await getDoc(participantRef)
       if (!participantSnap.exists()) {
-        router.push("/participants");
-        return;
+        router.push("/participants")
+        return
+      }
+
+      // Parallel fetches after checks
+      try {
+        await Promise.all([
+          fetchChallengeData(id, challengeId),
+          fetchSubmissionPrompt(id, challengeId, profile.uid),
+        ])
+      } catch (error) {
+        console.error("Error in parallel fetch:", error)
       }
     }
 
-    run();
+    init()
+  }, [router, params, challengeId])
 
-    Promise.all([
-      fetchChallengeData(competitionId, challengeId),
-      fetchSubmissionPrompt(competitionId, challengeId, user.uid),
-    ]).catch((error) => {
-      console.error("Error in parallel fetch:", error)
-    })
-  }, [user, competitionId, challengeId, router])
+  
+    
+  const checkAuth = async (): Promise<UserProfile | null> => {
+    try {
+      const profile = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`
+      )
+      setUser(profile)
+
+      if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
+        router.push("/")
+        return null
+      }
+
+      return profile
+    } catch (error) {
+      router.push("/")
+      return null
+    }
+  }
 
   const fetchChallengeData = async (competitionId: string, challengeId: string) => {
     try {

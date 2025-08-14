@@ -37,6 +37,8 @@ import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import { Countdown } from "@/components/countdown" // Import the new Countdown component
 
+import { fetchWithAuth } from "@/lib/api"
+
 // Skeleton for Dashboard Summary Cards
 const DashboardCardSkeleton = () => (
   <Card className="bg-white border border-gray-100 rounded-xl shadow-sm animate-pulse">
@@ -83,8 +85,16 @@ const ChallengeCardSkeleton = () => (
   </Card>
 )
 
+interface UserProfile {
+  uid: string;
+  email: string;
+  role: string;
+  displayName?: string | null;
+  photoURL?: string | null;
+}
+
 export default function DashboardPage({ params }: { params: { id: string } }) {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const router = useRouter()
   const [submissions, setSubmissions] = useState<number | null>(null)
   const [challengeCount, setChallengeCount] = useState<number | null>(null)
@@ -107,133 +117,149 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const setStoreValues = useSubmissionStore((state) => state.setValues)
 
-  useEffect(() => {
-    // only set when both values are available
-    if (submissions !== null && challengeCount !== null) {
-      setStoreValues(submissions, challengeCount)
-    }
-  }, [submissions, challengeCount, setStoreValues])
+  const [user, setUser] = useState<UserProfile | null>(null)
 
-  const checkParticipant = async () => {
+  useEffect(() => {
+    const init = async () => {
+      setLoadingCompetitionMetadata(true)
+
+      const profile = await checkAuth()
+      if (!profile) return
+
+      await checkParticipant(profile)
+      await loadAllData(profile);
+    }
+
+    init()
+  }, [router, id])
+
+  
+  const checkAuth = async (): Promise<UserProfile | null> => {
     try {
-      const participantRef = doc(
-        db,
-        "competitions",
-        id, // use `id` directly, not state
-        "participants",
-        user.uid
-      );
-      const participantSnap = await getDoc(participantRef);
+      const profile = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`
+      )
+      setUser(profile)
+
+      if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
+        router.push("/")
+        return null
+      }
+
+      return profile
+    } catch (error) {
+      router.push("/")
+      return null
+    }
+  }
+
+  const checkParticipant = async (profile: UserProfile) => {
+    try {
+      const participantRef = doc(db, "competitions", id, "participants", profile.uid)
+      const participantSnap = await getDoc(participantRef)
 
       if (!participantSnap.exists()) {
-        router.push("/participants");
+        router.push("/participants")
       } else {
-        setCurrentCompetitionId(id);
+        setCurrentCompetitionId(id)
       }
     } catch (err) {
-      console.error("Error checking participant:", err);
+      console.error("Error checking participant:", err)
     }
-  };
+  }
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/")
-      return
-    }
+  const loadCompetitionMetadata = async () => {
+    try {
+      setCurrentCompetitionId(id)
+      const competitionRef = doc(db, "competitions", id)
+      const competitionRefSnap = await getDoc(competitionRef)
+      if (competitionRefSnap.exists()) {
+        const competitionData = competitionRefSnap.data()
+        const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
+        const end = competitionData.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
+        const now = new Date()
+        const extendedEnd = new Date(end.getTime() + 60 * 1000) // end + 1 minutes
+        setStartDeadlineReached(now >= start)
+        setEndDeadlinePassed(now > extendedEnd)
+        setCompetitionStartDeadline(start) // Set the start deadline here
 
-    checkParticipant();
-
-    const loadCompetitionMetadata = async () => {
-      try {
-        setCurrentCompetitionId(id)
-        const competitionRef = doc(db, "competitions", id)
-        const competitionRefSnap = await getDoc(competitionRef)
-        if (competitionRefSnap.exists()) {
-          const competitionData = competitionRefSnap.data()
-          const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
-          const end = competitionData.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
-          const now = new Date()
-          const extendedEnd = new Date(end.getTime() + 60 * 1000) // end + 1 minutes
-          setStartDeadlineReached(now >= start)
-          setEndDeadlinePassed(now > extendedEnd)
-          setCompetitionStartDeadline(start) // Set the start deadline here
-
-          // Use ChallengeCount from competition document if it exists
-          if (competitionData.ChallengeCount !== undefined) {
-            setChallengeCount(competitionData.ChallengeCount)
-          } else {
-            setChallengeCount(null) // Explicitly set to null if key doesn't exist
-          }
+        // Use ChallengeCount from competition document if it exists
+        if (competitionData.ChallengeCount !== undefined) {
+          setChallengeCount(competitionData.ChallengeCount)
         } else {
-          // If competition document doesn't exist, set challengeCount to null
-          setChallengeCount(null)
+          setChallengeCount(null) // Explicitly set to null if key doesn't exist
         }
-      } catch (error) {
-        console.error("Error fetching competition metadata:", error)
-        setChallengeCount(null) // Also set to null on error
-      } finally {
-        setLoadingCompetitionMetadata(false)
+      } else {
+        // If competition document doesn't exist, set challengeCount to null
+        setChallengeCount(null)
       }
+    } catch (error) {
+      console.error("Error fetching competition metadata:", error)
+      setChallengeCount(null) // Also set to null on error
+    } finally {
+      setLoadingCompetitionMetadata(false)
     }
+  }
 
-    const fetchChallenges = async () => {
-      try {
-        setLoadingChallengesList(true)
-        const challengesRef = collection(db, "competitions", id, "challenges")
-        const challengesSnapshot = await getDocs(challengesRef)
-        // Removed: setChallengeCount(challengesSnapshot.size) - now fetched from competition doc
-        if (!challengesSnapshot.empty) {
-          const challengeList = challengesSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          setChallenges(challengeList)
-        } else {
-          setChallenges([]) // Ensure challenges is an empty array if no challenges found
+  const fetchChallenges = async () => {
+    try {
+      setLoadingChallengesList(true)
+      const challengesRef = collection(db, "competitions", id, "challenges")
+      const challengesSnapshot = await getDocs(challengesRef)
+      // Removed: setChallengeCount(challengesSnapshot.size) - now fetched from competition doc
+      if (!challengesSnapshot.empty) {
+        const challengeList = challengesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        setChallenges(challengeList)
+      } else {
+        setChallenges([]) // Ensure challenges is an empty array if no challenges found
+      }
+    } catch (error) {
+      console.error("Error fetching challenges:", error)
+      setChallenges([]) // On error, ensure challenges is empty
+    } finally {
+      setLoadingChallengesList(false)
+    }
+  }
+
+  const fetchUserSubmissions = async (profile: UserProfile) => {
+    try {
+      setLoadingUserSubmissions(true)
+      const competitionId = id
+      if (!competitionId) return
+
+      const submissionsRef = collection(db, "competitions", competitionId, "submissions")
+      const submissionsSnapshot = await getDocs(submissionsRef)
+      const userSubmissionMap: Record<string, boolean> = {}
+
+      submissionsSnapshot.docs.forEach((doc) => {
+        // Only include submissions of current participant
+        if (doc.id.startsWith(`${profile.uid}_`)) {
+          const challengeId = doc.id.split("_")[1]
+          userSubmissionMap[challengeId] = true
         }
-      } catch (error) {
-        console.error("Error fetching challenges:", error)
-        setChallenges([]) // On error, ensure challenges is empty
-      } finally {
-        setLoadingChallengesList(false)
-      }
-    }
+      })
 
-    const fetchUserSubmissions = async (competitionId: string) => {
-      try {
-        setLoadingUserSubmissions(true)
-        if (!competitionId) {
-          console.error("competitionId is null or undefined")
-          return
-        } else {
-          const submissionsRef = collection(db, "competitions", competitionId, "submissions")
-          const q = query(submissionsRef, where("participantId", "==", user.uid))
-          const submissionsSnapshot = await getDocs(q)
-          const userSubmissionMap: Record<string, boolean> = {}
-          if (!submissionsSnapshot.empty) {
-            submissionsSnapshot.docs.forEach((doc) => {
-              const data = doc.data()
-              userSubmissionMap[data.challengeId] = true
-            })
-          }
-          setUserSubmissions(userSubmissionMap)
-          setSubmissions(Object.keys(userSubmissionMap).length)
-        }
-      } catch (error) {
-        console.error("Error fetching user submissions:", error)
-        setUserSubmissions({}) // On error, mark all as unsubmitted
-      } finally {
-        setLoadingUserSubmissions(false)
-      }
+      setUserSubmissions(userSubmissionMap)
+      setSubmissions(Object.keys(userSubmissionMap).length)
+    } catch (error) {
+      console.error("Error fetching user submissions:", error)
+      setUserSubmissions({})
+    } finally {
+      setLoadingUserSubmissions(false)
     }
+  }
 
-    // Orchestrate fetching: Fetch metadata and user submissions in parallel, then fetch challenges
-    const loadAllData = async () => {
-      await Promise.all([loadCompetitionMetadata(), fetchUserSubmissions(id)])
-      await fetchChallenges()
-    }
-    loadAllData()
-  }, [user, router, id]) // Add params.id to dependency array
+
+
+  // Orchestrate fetching: Fetch metadata and user submissions in parallel, then fetch challenges
+  const loadAllData = async (profile: UserProfile) => {
+    await Promise.all([loadCompetitionMetadata(), fetchUserSubmissions(profile)])
+    await fetchChallenges()
+  }
+
 
   // Filtered challenges based on search term and submission status
   const filteredChallenges = challenges.filter((challenge) => {

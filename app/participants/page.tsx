@@ -1,6 +1,5 @@
 "use client"
 
-import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
@@ -17,14 +16,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner"
-import { fetchCompetitions } from "@/lib/api" // Import the new API function
+import { toast } from "sonner" 
+import { fetchCompetitions, fetchWithAuth } from "@/lib/api" // Import the new API function
 import { Trophy, Clock, Calendar, Sparkles, ArrowRight, CheckCircle2, MapPin, DollarSign, ChevronDown, Search, Filter, Grid3X3, List, ChevronLeft, ChevronRight, UserPlus, X, Eye } from 'lucide-react'
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment } from "firebase/firestore" // Removed collection, query, orderBy, onSnapshot
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import Image from "next/image"
 import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal" // Import the new modal
+import { useAuth } from "@/components/auth-provider"
 
 interface Competition {
   id: string
@@ -37,6 +37,14 @@ interface Competition {
   isLocked?: boolean
   location?: string
   prizeMoney?: string
+}
+
+interface UserProfile {
+  uid: string;
+  email: string;
+  role: string;
+  displayName?: string | null;
+  photoURL?: string | null;
 }
 
 // Registration Modal Component
@@ -133,7 +141,7 @@ const CompetitionSkeleton = () => (
 )
 
 export default function CompetitionsPage() {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loadingInitialFetch, setLoadingInitialFetch] = useState(true)
@@ -159,67 +167,95 @@ export default function CompetitionsPage() {
   // Ref to keep track of active timeouts for cleanup (kept for potential future use, though not used with fetchCompetitions directly)
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
 
+
+  const [user, setUser] = useState<UserProfile | null>(null);
+
   useEffect(() => {
-    if (!user) {
-      router.push("/")
-      return
-    }
+    const init  = async () => {
+      setLoadingInitialFetch(true);
+      await checkAuth();
+      
+      const profile = await checkAuth(); 
+      if (!profile) 
+        return; 
 
-    const loadCompetitions = async () => {
-      setLoadingInitialFetch(true)
-      try {
-        const data = await fetchCompetitions() // Use the API to fetch competitions
-        const sortedCompetitions = data.sort((a: any, b: any) => {
-          const dateA = new Date(a.createdAt || 0).getTime()
-          const dateB = new Date(b.createdAt || 0).getTime()
-          return dateB - dateA
-        })
-        setCompetitions(sortedCompetitions)
+      await loadCompetitions(profile);
+    };
 
-        const newParticipantMap: Record<string, boolean> = {}
-        const newLoadingMap: Record<string, boolean> = {}
-
-        // Mark all competitions as loading initially
-        sortedCompetitions.forEach((comp) => {
-          newLoadingMap[comp.id] = true
-        })
-        setLoadingMap({ ...newLoadingMap }) // Optionally show loading state early
-
-        // Fetch all participant statuses in parallel
-        const fetchPromises = sortedCompetitions.map(async (comp) => {
-          try {
-            const participantDoc = await getDoc(
-              doc(db, "competitions", comp.id, "participants", user.uid)
-            )
-            newParticipantMap[comp.id] = participantDoc.exists()
-          } catch (err) {
-            console.error(`Error checking participant status for ${comp.id}:`, err)
-            newParticipantMap[comp.id] = false
-          } finally {
-            newLoadingMap[comp.id] = false
-          }
-        })
-
-        await Promise.all(fetchPromises)
-
-        // Update the maps after all checks are done
-        setParticipantMap(newParticipantMap)
-        setLoadingMap(newLoadingMap)
-      } catch (error) {
-        console.error("Error fetching competitions:", error)
-        toast.error("Failed to load competitions.")
-      } finally {
-        setLoadingInitialFetch(false)
-      }
-    }
-
-    loadCompetitions()
+    init();
 
     return () => {
-      timeoutRefs.current.forEach((id) => clearTimeout(id))
-      timeoutRefs.current = []
+      timeoutRefs.current.forEach((id) => clearTimeout(id));
+      timeoutRefs.current = [];
+    };
+  }, [router]);
+
+  const loadCompetitions = async (user: UserProfile) => {
+    try {
+      const data = await fetchCompetitions();
+      const sortedCompetitions = data.sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+      );
+      setCompetitions(sortedCompetitions);
+
+      const newParticipantMap: Record<string, boolean> = {};
+      const newLoadingMap: Record<string, boolean> = {};
+
+      sortedCompetitions.forEach((comp) => {
+        newLoadingMap[comp.id] = true;
+      });
+      setLoadingMap({ ...newLoadingMap });
+
+      const fetchPromises = sortedCompetitions.map(async (comp) => {
+        try {
+          const participantDoc = await getDoc(
+            doc(db, "competitions", comp.id, "participants", user.uid)
+          );
+          newParticipantMap[comp.id] = participantDoc.exists();
+        } catch (err) {
+          console.error(`Error checking participant status for ${comp.id}:`, err);
+          newParticipantMap[comp.id] = false;
+        } finally {
+          newLoadingMap[comp.id] = false;
+        }
+      });
+
+      await Promise.all(fetchPromises);
+
+      setParticipantMap(newParticipantMap);
+      setLoadingMap(newLoadingMap);
+    } catch (error) {
+      console.error("Error fetching competitions:", error);
+      toast.error("Failed to load competitions.");
+    } finally {
+      setLoadingInitialFetch(false);
     }
-  }, [user, router])
+  };
+
+  const checkAuth = async (): Promise<UserProfile | null> => {
+    try {
+      const profile = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`
+      );
+      setUser(profile);
+
+      // Role validation
+      if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
+          router.push("/");
+          return null;
+      }
+
+
+      return profile;
+    } catch (error) {
+      router.push("/");
+      return null;
+    } finally {
+      setLoadingInitialFetch(false);
+    }
+  };
 
 
   const handleRegister = async (registerInput: string) => {
@@ -238,7 +274,7 @@ export default function CompetitionsPage() {
         challengesCompleted: 0,
       })
       setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
-      const competitionDocRef = doc(db, "competitions", selectedCompetition.id)
+      // const competitionDocRef = doc(db, "competitions", selectedCompetition.id)
       // await updateDoc(competitionDocRef, {
       //   RegisteredUserCount: increment(1),
       // })
