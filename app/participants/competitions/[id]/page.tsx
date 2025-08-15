@@ -36,7 +36,6 @@ import { collection, getDocs, query, doc, getDoc, where } from "firebase/firesto
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import { Countdown } from "@/components/countdown" // Import the new Countdown component
-
 import { fetchWithAuth } from "@/lib/api"
 
 // Skeleton for Dashboard Summary Cards
@@ -223,6 +222,8 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
       setLoadingChallengesList(false)
     }
   }
+
+
 const fetchUserSubmissions = async (profile: UserProfile) => {
   try {
     setLoadingUserSubmissions(true);
@@ -242,10 +243,23 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
     if (participantSnapshot.exists()) {
       const data = participantSnapshot.data();
       const completedCount = data.challengesCompleted || 0;
+      setSubmissions(completedCount);
+
+
+      // Use completedChallenges array directly
+      const completedChallenges: string[] = data.completedChallenges || [];
+
+      // Build the boolean map for UI
+      const submissionMap: Record<string, boolean> = {};
+      completedChallenges.forEach(challengeId => {
+        submissionMap[challengeId] = true;
+      });
+      // console.log("User submissions map:", submissionMap);
+      // Store count and map
+      setUserSubmissions(submissionMap);
 
       // No need for a map of booleans now, unless your UI still expects it
-      setUserSubmissions({});
-      setSubmissions(completedCount);
+      // setUserSubmissions({});
     } else {
       console.warn("Participant document not found for user:", profile.uid);
       setUserSubmissions({});
