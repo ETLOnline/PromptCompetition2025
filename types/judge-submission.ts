@@ -1,48 +1,94 @@
-import type { Timestamp } from "firebase/firestore"
+export interface JudgeAssignment {
+  id: string
+  title: string
+  submissionCount: number
+  competitionId: string
+  assignedDate: string
+  assignedCountsByChallenge: { [challengeId: string]: number }
+}
 
-export type SubmissionStatus = "pending" | "selected_for_manual_review" | "evaluated"
-
-export type JudgeScore = {
+export interface CompetitionAssignment {
   judgeId: string
-  score: number
-  comment: string
-  evaluatedAt: Timestamp
+  competitionId: string
+  competitionTitle: string
+  assignedCountTotal: number
+  assignedCountsByChallenge: { [challengeId: string]: number }
+  submissionsByChallenge: { [challengeId: string]: string[] }
+  updatedAt: any
 }
 
-export type SubmissionContent = {
-  text?: string
-  files?: Array<{ name: string; url: string; type: string }>
-  metadata?: Record<string, any>
+export interface JudgeStats {
+  activeCompetitions: number
+  totalSubmissions: number
+  challenges: number
 }
 
-export type Submission = {
+export interface JudgeProfile {
+  uid: string
+  name: string
+  email: string
+  role: "judge"
+  specializations: string[]
+  experience: string
+}
+
+export interface Submission {
   id: string
   participantId: string
   challengeId: string
-  submittedAt: Timestamp
-  status: SubmissionStatus
-  content?: SubmissionContent
-  judgeScore?: JudgeScore
-}
+  promptText: string
+  submissionTime: any
+  status: "pending" | "evaluated" | "selected_for_manual_review"
+  finalScore?: number
 
-export type Challenge = {
-  id: string
-  title: string
-  description?: string
-  problemStatement?: string
-  rubric?: {
-    criteria: Array<{
-      name: string
+  llmScores?: {
+    [modelName: string]: {
+      finalScore: number
       description: string
-      maxPoints: number
-    }>
-    totalPoints: number
+      scores: Record<string, number>
+    }
+  }
+
+  // Manual judge scoring (map of judgeIds → their scores)
+  judges?: {
+    [judgeId: string]: {
+      totalScore: number
+      updatedAt: any
+      scores: Record<string, number>
+    }
   }
 }
 
-export type CompetitionData = {
+
+export interface Notification {
+  id: string
+  message: string
+  type: "success" | "error" | "info" | "warning"
+  timestamp: string
+  autoDismiss?: boolean
+  timeout?: number
+}
+
+export interface JudgeData {
+  assignments: JudgeAssignment[]
+  stats: JudgeStats
+  profile: JudgeProfile
+}
+
+export interface Challenge {
   id: string
   title: string
-  challenges: Challenge[]
-  submissions: Submission[]
+  description: string
+  problemStatement: string
+  guidelines?: string
+  competitionId: string
+  maxScore: number
+  rubric: {
+    name: string
+    description: string
+    weight: number
+    maxPoints?: number
+  }[]
+  createdAt: any
+  updatedAt: any
 }
