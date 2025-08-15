@@ -90,6 +90,7 @@ import competitionsRouter from "./routes/competitions.js";
 import roleRoutes from "./routes/roles.js";
 import authRoutes from "./routes/auth.js" 
 import contactRouter from "./routes/contact.js";
+import challengeDistributionRouter from "./routes/challenge-distribution.js";
 
 
 console.log("2. Starting server setup...");
@@ -119,6 +120,7 @@ app.use("/contact", contactRouter);
 
 app.use("/auth", authRoutes)
 app.use("/role", roleRoutes);
+app.use("/challenge-distribution", challengeDistributionRouter);
 
 console.log("4. Routes configured");
 
