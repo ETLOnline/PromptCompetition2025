@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
                   Login Portal
                 </h1>
-                <p className="text-muted-foreground mt-2">Secure access for administrators only</p>
+                <p className="text-muted-foreground mt-2">Secure access for all users</p>
               </div>
             </div>
           </div>
@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
 
             {/* Footer */}
             <div className="mt-6 text-center">
-              <p className="text-xs text-slate-500">This portal is restricted to authorized administrators only.</p>
+              <p className="text-xs text-slate-500">This portal is restricted to authorized users</p>
             </div>
           </div>
         </div>

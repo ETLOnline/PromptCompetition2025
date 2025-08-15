@@ -89,7 +89,7 @@ export default function Login({ onForgotPassword }: LoginProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="admin@example.com"
+            placeholder="example@gmail.com"
             className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
             disabled={loading || googleLoading}
           />
