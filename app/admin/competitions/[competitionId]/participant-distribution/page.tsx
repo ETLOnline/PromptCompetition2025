@@ -43,22 +43,7 @@ import {
   Layers,
   Settings,
 } from "lucide-react"
-import {
-  writeBatch,
-  deleteField,
-  doc,
-  collection,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-  getDoc,
-  setDoc,
-  where,
-  type Timestamp,
-  serverTimestamp,
-} from "firebase/firestore"
-import { db } from "@/lib/firebase"
+
 import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
 import { getIdTokenResult } from "firebase/auth"
 import { getIdToken } from "@/lib/firebaseAuth"
@@ -89,15 +74,6 @@ interface ChallengeBuckets {
   [challengeId: string]: string[]
 }
 
-interface DistributionSnapshot {
-  matrix: AssignmentMatrix
-  topN: number
-  strategy: "auto" | "equal" | "manual"
-  mode: "overwrite" | "append"
-  timestamp: Timestamp
-}
-
-type DistributionMode = "overwrite" | "append"
 type ViewMode = "cards" | "matrix"
 
 interface NotificationState {
@@ -117,12 +93,12 @@ interface AppState {
   challengeBuckets: ChallengeBuckets
   assignmentMatrix: AssignmentMatrix
   selectedTopN: number
-  savedConfig: { selectedTopN: number; timestamp: Timestamp } | null
+  savedConfig: { selectedTopN: number; timestamp: Date } | null
+  maxPerJudge: number | null
 
   // UI state
   challengeSearch: string
   viewMode: ViewMode
-  distributionMode: DistributionMode
   showOnlyRemaining: boolean
   selectedChallengeId: string | null
   notifications: NotificationState[]
@@ -155,12 +131,10 @@ type AppAction =
   | { type: "SET_CHALLENGE_BUCKETS"; payload: ChallengeBuckets }
   | { type: "SET_ASSIGNMENT_MATRIX"; payload: AssignmentMatrix }
   | { type: "SET_SELECTED_TOP_N"; payload: number }
-  | { type: "SET_SAVED_CONFIG"; payload: { selectedTopN: number; timestamp: Timestamp } | null }
+  | { type: "SET_SAVED_CONFIG"; payload: { selectedTopN: number; timestamp: Date } | null }
   | { type: "SET_CURRENT_PAGE"; payload: number }
-  | { type: "SET_JUDGE_SEARCH"; payload: string }
   | { type: "SET_CHALLENGE_SEARCH"; payload: string }
   | { type: "SET_VIEW_MODE"; payload: ViewMode }
-  | { type: "SET_DISTRIBUTION_MODE"; payload: DistributionMode }
   | { type: "SET_SHOW_ONLY_REMAINING"; payload: boolean }
   | { type: "SET_SELECTED_CHALLENGE"; payload: string | null }
   | { type: "ADD_NOTIFICATION"; payload: NotificationState }
@@ -172,6 +146,7 @@ type AppAction =
   | { type: "CLEAR_CHALLENGE_ASSIGNMENTS"; payload: string }
   | { type: "APPLY_EQUAL_DISTRIBUTION"; payload: string }
   | { type: "APPLY_AUTO_DISTRIBUTION"; payload: string }
+  | { type: "SET_MAX_PER_JUDGE"; payload: number | null }
 
 const initialState: AppState = {
   competitionTitle: "",
@@ -185,7 +160,6 @@ const initialState: AppState = {
   savedConfig: null,
   challengeSearch: "",
   viewMode: "cards",
-  distributionMode: "overwrite",
   showOnlyRemaining: false,
   selectedChallengeId: null,
   notifications: [],
@@ -202,6 +176,7 @@ const initialState: AppState = {
   showChallengeDrawer: false,
   currentUser: null,
   isAuthenticated: false,
+  maxPerJudge: null
 }
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -212,6 +187,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, totalParticipants: action.payload, isLoadingParticipants: false }
     case "SET_JUDGES":
       return { ...state, judges: action.payload, isLoadingJudges: false }
+    case "SET_MAX_PER_JUDGE":
+      return { ...state, maxPerJudge: action.payload }  
     case "SET_CHALLENGES":
       return { ...state, challenges: action.payload, isLoadingChallenges: false }
     case "SET_CHALLENGE_BUCKETS":
@@ -226,8 +203,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, challengeSearch: action.payload }
     case "SET_VIEW_MODE":
       return { ...state, viewMode: action.payload }
-    case "SET_DISTRIBUTION_MODE":
-      return { ...state, distributionMode: action.payload }
     case "SET_SHOW_ONLY_REMAINING":
       return { ...state, showOnlyRemaining: action.payload }
     case "SET_SELECTED_CHALLENGE":
@@ -292,8 +267,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       const bucketSize = state.challengeBuckets[challengeId]?.length || 0
       if (bucketSize === 0) return state
 
-      // Auto strategy: prefer same-challenge assignment
-      // Find judges with least total load and assign entire challenge if possible
+      // Compute current loads per judge
       const judgeLoads = state.judges
         .map((judge) => ({
           id: judge.id,
@@ -309,22 +283,51 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 
       const newAssignments: { [judgeId: string]: number } = {}
 
-      // Try to assign to single judge first
-      if (judgeLoads.length > 0) {
-        const leastLoadedJudge = judgeLoads[0]
-        if (leastLoadedJudge.totalLoad + bucketSize <= Math.ceil(state.selectedTopN / state.judges.length) * 1.5) {
-          newAssignments[leastLoadedJudge.id] = bucketSize
-        } else {
-          // Split among 2-3 least loaded judges
-          const targetJudges = judgeLoads.slice(0, Math.min(3, judgeLoads.length))
-          const perJudge = Math.floor(bucketSize / targetJudges.length)
-          const remainder = bucketSize % targetJudges.length
+      if (judgeLoads.length === 0) {
+        return state
+      }
 
-          targetJudges.forEach((judge, index) => {
-            newAssignments[judge.id] = perJudge + (index < remainder ? 1 : 0)
-          })
+      // --- Cap calculation (global) ---
+      const totalSubmissions = Object.values(state.challengeBuckets)
+        .reduce((sum, ids) => sum + (ids?.length || 0), 0)
+
+      const evenShare = Math.ceil(totalSubmissions / Math.max(1, state.judges.length))
+      const cap = state.maxPerJudge ?? Math.round(evenShare * 1.2)
+
+      // --- Try to assign entire bucket to the least-loaded judge if under cap ---
+      const least = judgeLoads[0]
+      const leastCurrent = least.totalLoad
+      const leastRemainingCap = Math.max(0, cap - leastCurrent)
+
+      if (leastRemainingCap >= bucketSize) {
+        newAssignments[least.id] = bucketSize
+        return {
+          ...state,
+          assignmentMatrix: {
+            ...state.assignmentMatrix,
+            [challengeId]: newAssignments,
+          },
         }
       }
+
+      // --- Otherwise, distribute greedily across least-loaded judges, respecting cap ---
+      let remaining = bucketSize
+      for (const jl of judgeLoads) {
+        if (remaining <= 0) break
+        const currentLoad = jl.totalLoad
+        const remainingCapForJudge = Math.max(0, cap - currentLoad)
+        if (remainingCapForJudge <= 0) continue
+
+        // Give this judge as much as possible up to their remaining cap
+        const give = Math.min(remaining, remainingCapForJudge)
+        if (give > 0) {
+          newAssignments[jl.id] = give
+          remaining -= give
+        }
+      }
+
+      // If 'remaining' > 0 here, we leave it unassigned to avoid violating the cap.
+      // (User can adjust manually or increase maxPerJudge.)
 
       return {
         ...state,
@@ -334,6 +337,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         },
       }
     }
+
     default:
       return state
   }
@@ -502,30 +506,46 @@ export default function ParticipantDistributionTable() {
   const fetchCompetitionMeta = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: true } })
-      const snap = await getDoc(doc(db, "competitions", competitionId))
-      if (snap.exists()) {
-        const data = snap.data()
-        dispatch({ type: "SET_COMPETITION_TITLE", payload: (data?.title as string) ?? "" })
-        return (data?.title as string) ?? ""
+      const token = await getIdToken()
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/meta`
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch competition meta: ${res.status}`)
       }
-      dispatch({ type: "SET_COMPETITION_TITLE", payload: "" })
-      return ""
+      const data = await res.json()
+      dispatch({ type: "SET_COMPETITION_TITLE", payload: data.title || "" })
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: false } })
+      return data.title || ""
     } catch (err) {
       console.error("Error fetching competition meta:", err)
+      showNotification("error", "Error", err instanceof Error ? err.message : "Failed to fetch competition metadata")
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: false } })
       return ""
     }
-  }, [competitionId])
+  }, [competitionId, showNotification])
 
 
   // Data fetching functions
   const fetchParticipantsCount = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingParticipants", value: true } })
-      const leaderboardSnapshot = await getDocs(collection(db, "competitions", competitionId, "leaderboard"))
-      dispatch({ type: "SET_PARTICIPANTS", payload: leaderboardSnapshot.size })
+      const token = await getIdToken()
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/participants-count`
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch participants count: ${res.status}`)
+      }
+      const data = await res.json()
+      dispatch({ type: "SET_PARTICIPANTS", payload: data.count })
     } catch (error) {
       console.error("Error fetching participants:", error)
+      showNotification("error", "Error", error instanceof Error ? error.message : "Failed to fetch participants count")
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingParticipants", value: false } })
     }
   }, [competitionId])
@@ -576,125 +596,68 @@ export default function ParticipantDistributionTable() {
         return
       }
 
-      const leaderboardQuery = query(
-        collection(db, "competitions", competitionId, "leaderboard"),
-        orderBy("totalScore", "desc"),
-        limit(state.selectedTopN),
-      )
-      const leaderboardSnapshot = await getDocs(leaderboardQuery)
-      const topParticipantIds = leaderboardSnapshot.docs.map((doc) => doc.id)
-
-      if (topParticipantIds.length === 0) {
-        dispatch({ type: "SET_CHALLENGES", payload: [] })
-        dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: {} })
-        return
-      }
-
-      // Fetch submissions for top N participants (batched by 10 due to Firestore 'in' limit)
-      const submissionsByChallenge: { [challengeId: string]: string[] } = {}
-      const batchSize = 10
-
-      for (let i = 0; i < topParticipantIds.length; i += batchSize) {
-        const batch = topParticipantIds.slice(i, i + batchSize)
-        const submissionsQuery = query(
-          collection(db, "competitions", competitionId, "submissions"),
-          where("participantId", "in", batch),
-        )
-        const submissionsSnapshot = await getDocs(submissionsQuery)
-
-        submissionsSnapshot.docs.forEach((doc) => {
-          const data = doc.data()
-          const challengeId = data.challengeId
-          if (challengeId) {
-            if (!submissionsByChallenge[challengeId]) {
-              submissionsByChallenge[challengeId] = []
-            }
-            submissionsByChallenge[challengeId].push(doc.id)
-          }
-        })
-      }
-
-      // Sort submissions within each challenge for deterministic behavior
-      Object.keys(submissionsByChallenge).forEach((challengeId) => {
-        submissionsByChallenge[challengeId].sort()
+      const token = await getIdToken()
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/challenges-submissions?topN=${state.selectedTopN}`
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-
-      // Pull existing assignments and exclude those ids from buckets
-      const { matrix, alreadyAssigned } = await fetchExistingAssignments()
-
-      // Build the final challenges list (only once)
-      const challenges: Challenge[] = Object.entries(submissionsByChallenge).map(([challengeId, submissionIds]) => ({
-        id: challengeId,
-        name: `Challenge ${challengeId}`,
-        bucketSize: submissionIds.length, // remaining to assign
-        submissionIds,
-      }))
-
-      dispatch({ type: "SET_CHALLENGES", payload: challenges })
-      dispatch({ type: "SET_ASSIGNMENT_MATRIX", payload: matrix })
-      dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: submissionsByChallenge })
-
-      } catch (error) {
-        console.error("Error fetching challenges and submissions:", error)
-        showNotification("error", "Data Loading Error", "Failed to load challenges and submissions")
-        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: false } })
-        dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: false } })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch challenges and submissions: ${res.status}`)
       }
-    }, [competitionId, state.selectedTopN, showNotification])
+      const data = await res.json()
+
+      dispatch({ type: "SET_CHALLENGES", payload: data.challenges })
+      dispatch({ type: "SET_ASSIGNMENT_MATRIX", payload: data.assignmentMatrix })
+      dispatch({ type: "SET_CHALLENGE_BUCKETS", payload: data.challengeBuckets })
+
+    } catch (error) {
+      console.error("Error fetching challenges and submissions:", error)
+      showNotification("error", "Data Loading Error", error instanceof Error ? error.message : "Failed to load challenges and submissions")
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: false } })
+      dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: false } })
+    }
+  }, [competitionId, state.selectedTopN, showNotification])
 
 
-    const fetchExistingAssignments = useCallback(async () => {
-      const assignmentsByJudge: Record<string, Record<string, string[]>> = {}
-      const qSnap = await getDocs(collection(db, "competitions", competitionId, "judges"))
 
-      qSnap.forEach((d) => {
-        const data = d.data() as {
-          submissionsByChallenge?: Record<string, string[]>
-        }
-        if (data?.submissionsByChallenge) {
-          assignmentsByJudge[d.id] = data.submissionsByChallenge
-        }
-      })
-
-      // Build matrix and a set of already-assigned ids per challenge
-      const matrix: AssignmentMatrix = {}
-      const alreadyAssigned: Record<string, Set<string>> = {}
-
-      Object.entries(assignmentsByJudge).forEach(([judgeId, byChallenge]) => {
-        Object.entries(byChallenge).forEach(([challengeId, ids]) => {
-          if (!matrix[challengeId]) matrix[challengeId] = {}
-          matrix[challengeId][judgeId] = (matrix[challengeId][judgeId] || 0) + ids.length
-
-          if (!alreadyAssigned[challengeId]) alreadyAssigned[challengeId] = new Set()
-          ids.forEach((sid) => alreadyAssigned[challengeId].add(sid))
-        })
-      })
-
-      return { matrix, alreadyAssigned }
-    }, [competitionId])
 
 
   const fetchTopNFromGlobalConfig = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: true } })
 
-      const cfgRef = doc(db, "competitions", competitionId, "distributionConfigs", "current")
-      const snap = await getDoc(cfgRef)
-
-      if (snap.exists()) {
-        const data = snap.data() as { topN?: number; timestamp?: Timestamp }
-        if (typeof data.topN === "number") {
-          dispatch({ type: "SET_SELECTED_TOP_N", payload: data.topN })
-          dispatch({
-            type: "SET_SAVED_CONFIG",
-            payload: { selectedTopN: data.topN, timestamp: (data.timestamp as Timestamp) ?? (serverTimestamp() as any) },
-          })
-        } else {
-          dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
-        }
+      const token = await getIdToken()
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/config`
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to fetch config: ${res.status}`)
+      }
+      const data = await res.json()
+      
+      if (typeof data.topN === "number") {
+        dispatch({ type: "SET_SELECTED_TOP_N", payload: data.topN })
+        dispatch({
+          type: "SET_MAX_PER_JUDGE",
+          payload: (typeof data.maxPerJudge === "number" ? data.maxPerJudge : 50) // default 50
+        })
+        dispatch({
+          type: "SET_SAVED_CONFIG",
+          payload: { 
+            selectedTopN: data.topN, 
+            timestamp: data.timestamp ? new Date(data.timestamp) : new Date()
+          },
+        })
       } else {
+        dispatch({
+          type: "SET_MAX_PER_JUDGE",
+          payload: (typeof data.maxPerJudge === "number" ? data.maxPerJudge : 50)
+        })
         dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
       }
+
     } catch (e) {
       console.error("Error fetching global config:", e)
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
@@ -755,17 +718,30 @@ export default function ParticipantDistributionTable() {
   const saveConfigToFirestore = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: true } })
-      const cfgRef = doc(db, "competitions", competitionId, "distributionConfigs", "current")
-      await setDoc(cfgRef, {
-        topN: state.selectedTopN,
-        timestamp: serverTimestamp(),
-        updatedBy: state.currentUser?.uid ?? null,
-      }, { merge: true })
+      
+      const token = await getIdToken()
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/config`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          topN: state.selectedTopN,
+          maxPerJudge: state.maxPerJudge ?? undefined // send only if set
+        })
+      })
 
+      if (!res.ok) {
+        throw new Error(`Failed to save config: ${res.status}`)
+      }
+
+      const data = await res.json()
       showNotification("success", "Configuration Saved", "Top N saved for this competition")
       dispatch({
         type: "SET_SAVED_CONFIG",
-        payload: { selectedTopN: state.selectedTopN, timestamp: serverTimestamp() as any },
+        payload: { selectedTopN: state.selectedTopN, timestamp: new Date() },
       })
       dispatch({ type: "SET_DIALOG", payload: { dialog: "config", open: false } })
     } catch (err) {
@@ -774,7 +750,7 @@ export default function ParticipantDistributionTable() {
     } finally {
       dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: false } })
     }
-  }, [competitionId, state.selectedTopN, state.currentUser?.uid, showNotification])
+  }, [competitionId, state.selectedTopN, state.maxPerJudge,state.currentUser?.uid, showNotification])
 
 
   const handleSaveConfig = useCallback(async () => {
@@ -825,98 +801,29 @@ export default function ParticipantDistributionTable() {
     dispatch({ type: "SET_LOADING", payload: { key: "isDistributing", value: true } })
 
     try {
-      const batch = writeBatch(db)
-      const distributionSnapshot: DistributionSnapshot = {
-        matrix: state.assignmentMatrix,
-        topN: state.selectedTopN,
-        strategy: "manual",
-        mode: state.distributionMode,
-        timestamp: serverTimestamp() as any,
-      }
-
-      // Build judge slices
-      const judgeSlices: { [judgeId: string]: { [challengeId: string]: string[] } } = {}
-
-      state.judges.forEach((judge) => {
-        judgeSlices[judge.id] = {}
-      })
-
-      // Slice submissions according to matrix
-      Object.entries(state.assignmentMatrix).forEach(([challengeId, judgeAssignments]) => {
-        const submissionIds = state.challengeBuckets[challengeId] || []
-        let currentIndex = 0
-
-        Object.entries(judgeAssignments).forEach(([judgeId, count]) => {
-          if (count > 0) {
-            const slice = submissionIds.slice(currentIndex, currentIndex + count)
-            judgeSlices[judgeId][challengeId] = slice
-            currentIndex += count
-          }
+      const token = await getIdToken()
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/distribute`
+      
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          assignmentMatrix: state.assignmentMatrix,
+          competitionTitle: state.competitionTitle,
+          topN: state.selectedTopN,
+          challengeBuckets: state.challengeBuckets
         })
       })
 
-      // Write to Firestore
-      Object.entries(judgeSlices).forEach(([judgeId, challengeAssignments]) => {
-        const judgeDocRef = doc(db, "competitions", competitionId, "judges", judgeId)
+      if (!res.ok) {
+        throw new Error(`Failed to distribute submissions: ${res.status}`)
+      }
 
-        if (state.distributionMode === "overwrite") {
-          // Only challenges with > 0 new assignments for this judge
-          const nonEmpty = Object.entries(challengeAssignments).filter(([, ids]) => ids.length > 0)
-
-          const assignedCountTotal = nonEmpty.reduce((sum, [, ids]) => sum + ids.length, 0)
-
-          // If this judge ends up with nothing, delete the entire doc
-          if (assignedCountTotal === 0) {
-            batch.delete(judgeDocRef)
-            return
-          }
-
-          // New state to upsert
-          const submissionsByChallenge = Object.fromEntries(nonEmpty)
-          const assignedCountsByChallenge = Object.fromEntries(
-            nonEmpty.map(([challengeId, ids]) => [challengeId, ids.length]),
-          )
-
-          // Upsert the new maps/totals
-          batch.set(
-            judgeDocRef,
-            { judgeId, competitionId,competitionTitle: state.competitionTitle, updatedAt: serverTimestamp(),
-              submissionsByChallenge, assignedCountsByChallenge, assignedCountTotal },
-            { merge: true },
-          )
-
-          // Remove any challenge keys for this judge that now have 0 count
-          const zeroChallengeIds = state.challenges
-            .map((c) => c.id)
-            .filter((cid) => (state.assignmentMatrix[cid]?.[judgeId] || 0) === 0)
-
-          if (zeroChallengeIds.length > 0) {
-            const deletions: Record<string, any> = {}
-            zeroChallengeIds.forEach((cid) => {
-              deletions[`submissionsByChallenge.${cid}`] = deleteField()
-              deletions[`assignedCountsByChallenge.${cid}`] = deleteField()
-            })
-            batch.update(judgeDocRef, deletions)
-          }
-        } else {
-          showNotification("warning", "Append Mode", "Append mode not yet implemented, using overwrite")
-        }
-      })
-
-
-      // Save distribution snapshot
-      const snapshotRef = doc(db, "competitions", competitionId, "distributionConfigs", "current")
-      batch.set(snapshotRef, distributionSnapshot,{ merge: true })
-
-      await batch.commit()
-
-      const totalDistributed = Object.values(judgeSlices).reduce(
-        (sum, judgeAssignments) =>
-          sum + Object.values(judgeAssignments).reduce((judgeSum, submissions) => judgeSum + submissions.length, 0),
-        0,
-      )
-
-      showNotification("success", "Distribution Complete", `${totalDistributed} submissions distributed successfully!`)
+      const data = await res.json()
+      showNotification("success", "Distribution Complete", `${data.totalDistributed} submissions distributed successfully!`)
       dispatch({ type: "SET_DIALOG", payload: { dialog: "distribute", open: false } })
     } catch (error) {
       console.error("Distribution error:", error)
@@ -934,7 +841,6 @@ export default function ParticipantDistributionTable() {
     state.challengeBuckets,
     state.judges,
     state.selectedTopN,
-    state.distributionMode,
     globalSummary.hasOverflow,
     showNotification,
   ])
@@ -1344,7 +1250,7 @@ export default function ParticipantDistributionTable() {
             disabled={state.isLoadingConfig}
           >
            {state.isLoadingConfig && <Loader className="w-4 h-4 animate-spin" />}
-            Select Top N ({state.selectedTopN})
+            Configurations
           </Button>
 
           <Button
@@ -1393,25 +1299,7 @@ export default function ParticipantDistributionTable() {
                     Matrix Overview
                   </Button>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="distribution-mode" className="text-sm font-medium">
-                    Mode:
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="distribution-mode"
-                      checked={state.distributionMode === "append"}
-                      onCheckedChange={(checked) =>
-                        dispatch({ type: "SET_DISTRIBUTION_MODE", payload: checked ? "append" : "overwrite" })
-                      }
-                    />
-                    <span className="text-sm text-gray-600">
-                      {state.distributionMode === "overwrite" ? "Overwrite" : "Append"}
-                    </span>
-                  </div>
-                </div>
-
+                
                 {state.viewMode === "cards" && (
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -1594,6 +1482,29 @@ export default function ParticipantDistributionTable() {
               />
               <p className={`text-sm ${topNValidation.ok ? "text-gray-500" : "text-red-600"}`}>{topNValidation.msg}</p>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="maxPerJudge" className="text-gray-900 font-medium">
+                Max assignments per judge (optional)
+              </Label>
+              <Input
+                id="maxPerJudge"
+                type="number"
+                min={1}
+                value={state.maxPerJudge ?? ""} // empty string shows placeholder when null
+                onChange={(e) => {
+                  const raw = e.target.value.trim()
+                  const val = raw === "" ? null : Math.max(1, Number.parseInt(raw) || 0)
+                  dispatch({ type: "SET_MAX_PER_JUDGE", payload: val })
+                }}
+                placeholder="Leave empty for automatic"
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                style={{ MozAppearance: "textfield" }}
+              />
+              <p className="text-xs text-gray-500">
+                If left empty, a smart default is computed from total submissions and judge count.
+              </p>
+            </div>
+
             <div className="flex flex-wrap gap-2">
               {[10, 20, 50, 100].map((n) => (
                 <Button
@@ -1668,25 +1579,6 @@ export default function ParticipantDistributionTable() {
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{state.challenges.length}</div>
                 <div className="text-sm text-gray-600">Challenges Involved</div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Distribution Mode</Label>
-              <div className="flex items-center gap-2 p-3 border rounded-lg">
-                <div
-                  className={`w-3 h-3 rounded-full ${state.distributionMode === "overwrite" ? "bg-red-500" : "bg-green-500"}`}
-                ></div>
-                <div>
-                  <div className="font-medium text-sm">
-                    {state.distributionMode === "overwrite" ? "Overwrite Mode" : "Append Mode"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {state.distributionMode === "overwrite"
-                      ? "Replace existing judge assignments completely"
-                      : "Add to existing judge assignments (avoiding duplicates)"}
-                  </div>
-                </div>
               </div>
             </div>
 
