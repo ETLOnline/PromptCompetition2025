@@ -53,6 +53,8 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const resolvedParams = use(params)
   const { id: competitionId, challengeId } = resolvedParams
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const [competitionendDeadline, setCompetitionendDeadline] = useState<Date | null>(null) // New state for start deadline
+  
   const [loadingPrompt, setLoadingPrompt] = useState<boolean>(false)
   const [loadingChallenge, setLoadingChallenge] = useState<boolean>(true)
   const [compid, setCompid] = useState<string | null>(null)
@@ -139,6 +141,11 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
       const isCompetitionLocked =
         competitionData?.endDeadline &&
         new Date() > new Date(competitionData.endDeadline.seconds * 1000)
+      
+      const enddead = competitionData?.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
+      setCompetitionendDeadline(enddead) // Set the start deadline here
+      // console.log("Competition start deadline:", enddead)
+
 
       const challengeData: Challenge & { endDeadline?: Timestamp } = {
         id: challengeId,
@@ -435,7 +442,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                   </Badge>
                   {challenge.endDeadline && (
                     <div className="flex items-center gap-3 text-sm mt-2 sm:mt-0 sm:ml-auto bg-white rounded-xl px-4 py-2 border border-gray-200 shadow-sm">
-                      <CountdownDisplay targetDate={challenge.endDeadline.seconds * 1000} />
+                      <CountdownDisplay targetDate={competitionendDeadline} />
                     </div>
                   )}
                 </div>

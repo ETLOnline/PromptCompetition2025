@@ -114,7 +114,17 @@ export default function NewCompetitionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    // New check: ensure all weights are > 0
+    if (formData.rubric.some(item => item.weight <= 0)) {
+      toast({
+        title: "Invalid Rubric",
+        description: "Each rubric weight must be greater than 0",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (!isWeightValid()) {
       toast({
         title: "Invalid Rubric",

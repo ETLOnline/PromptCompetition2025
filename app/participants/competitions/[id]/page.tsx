@@ -223,42 +223,42 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
       setLoadingChallengesList(false)
     }
   }
-  const fetchUserSubmissions = async (profile: UserProfile) => {
-    try {
-      setLoadingUserSubmissions(true);
-      const competitionId = id;
-      if (!competitionId) return;
+const fetchUserSubmissions = async (profile: UserProfile) => {
+  try {
+    setLoadingUserSubmissions(true);
+    const competitionId = id;
+    if (!competitionId) return;
 
-      const participantDocRef = doc(
-        db,
-        "competitions",
-        competitionId,
-        "participants",
-        profile.uid
-      );
+    const participantDocRef = doc(
+      db,
+      "competitions",
+      competitionId,
+      "participants",
+      profile.uid
+    );
 
-      const participantSnapshot = await getDoc(participantDocRef);
+    const participantSnapshot = await getDoc(participantDocRef);
 
-      if (participantSnapshot.exists()) {
-        const data = participantSnapshot.data();
-        const completedCount = data.challengesCompleted || 0;
+    if (participantSnapshot.exists()) {
+      const data = participantSnapshot.data();
+      const completedCount = data.challengesCompleted || 0;
 
-        // No need for a map of booleans now, unless your UI still expects it
-        setUserSubmissions({});
-        setSubmissions(completedCount);
-      } else {
-        console.warn("Participant document not found for user:", profile.uid);
-        setUserSubmissions({});
-        setSubmissions(0);
-      }
-    } catch (error) {
-      console.error("Error fetching user challenge count:", error);
+      // No need for a map of booleans now, unless your UI still expects it
+      setUserSubmissions({});
+      setSubmissions(completedCount);
+    } else {
+      console.warn("Participant document not found for user:", profile.uid);
       setUserSubmissions({});
       setSubmissions(0);
-    } finally {
-      setLoadingUserSubmissions(false);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching user challenge count:", error);
+    setUserSubmissions({});
+    setSubmissions(0);
+  } finally {
+    setLoadingUserSubmissions(false);
+  }
+};
 
 
 
