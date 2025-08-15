@@ -13,13 +13,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { collection, getDocs } from "firebase/firestore"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner" 
+import { toast } from "sonner"
 import { fetchCompetitions, fetchWithAuth } from "@/lib/api" // Import the new API function
-import { Trophy, Clock, Calendar, Sparkles, ArrowRight, CheckCircle2, MapPin, DollarSign, ChevronDown, Search, Filter, Grid3X3, List, ChevronLeft, ChevronRight, UserPlus, X, Eye } from 'lucide-react'
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment } from "firebase/firestore" // Removed collection, query, orderBy, onSnapshot
+import {
+  Trophy,
+  Clock,
+  Calendar,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+  MapPin,
+  DollarSign,
+  ChevronDown,
+  Search,
+  Filter,
+  Grid3X3,
+  List,
+  ChevronLeft,
+  ChevronRight,
+  UserPlus,
+  X,
+  Eye,
+} from "lucide-react"
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore" // Removed collection, query, orderBy, onSnapshot
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import Image from "next/image"
@@ -40,11 +60,11 @@ interface Competition {
 }
 
 interface UserProfile {
-  uid: string;
-  email: string;
-  role: string;
-  displayName?: string | null;
-  photoURL?: string | null;
+  uid: string
+  email: string
+  role: string
+  displayName?: string | null
+  photoURL?: string | null
 }
 
 // Registration Modal Component
@@ -147,6 +167,7 @@ export default function CompetitionsPage() {
   const [loadingInitialFetch, setLoadingInitialFetch] = useState(true)
   const [participantMap, setParticipantMap] = useState<Record<string, boolean>>({})
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({})
+  const [completionMap, setCompletionMap] = useState<Record<string, boolean>>({}) // Added completion status tracking
 
   // Registration Modal States
   const [showRegistrationModal, setShowRegistrationModal] = useState(false)
@@ -167,96 +188,93 @@ export default function CompetitionsPage() {
   // Ref to keep track of active timeouts for cleanup (kept for potential future use, though not used with fetchCompetitions directly)
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
 
-
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null)
 
   useEffect(() => {
-    const init  = async () => {
-      setLoadingInitialFetch(true);
-      await checkAuth();
-      
-      const profile = await checkAuth(); 
-      if (!profile) 
-        return; 
+    const init = async () => {
+      setLoadingInitialFetch(true)
+      await checkAuth()
 
-      await loadCompetitions(profile);
-    };
+      const profile = await checkAuth()
+      if (!profile) return
 
-    init();
+      await loadCompetitions(profile)
+    }
+
+    init()
 
     return () => {
-      timeoutRefs.current.forEach((id) => clearTimeout(id));
-      timeoutRefs.current = [];
-    };
-  }, [router]);
+      timeoutRefs.current.forEach((id) => clearTimeout(id))
+      timeoutRefs.current = []
+    }
+  }, [router])
 
   const loadCompetitions = async (user: UserProfile) => {
     try {
-      const data = await fetchCompetitions();
+      const data = await fetchCompetitions()
       const sortedCompetitions = data.sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt || 0).getTime() -
-          new Date(a.createdAt || 0).getTime()
-      );
-      setCompetitions(sortedCompetitions);
+        (a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
+      )
+      setCompetitions(sortedCompetitions)
 
-      const newParticipantMap: Record<string, boolean> = {};
-      const newLoadingMap: Record<string, boolean> = {};
+      const newParticipantMap: Record<string, boolean> = {}
+      const newLoadingMap: Record<string, boolean> = {}
 
       sortedCompetitions.forEach((comp) => {
-        newLoadingMap[comp.id] = true;
-      });
-      setLoadingMap({ ...newLoadingMap });
+        newLoadingMap[comp.id] = true
+      })
+      setLoadingMap({ ...newLoadingMap })
 
       const fetchPromises = sortedCompetitions.map(async (comp) => {
         try {
-          const participantDoc = await getDoc(
-            doc(db, "competitions", comp.id, "participants", user.uid)
-          );
-          newParticipantMap[comp.id] = participantDoc.exists();
+          const participantDoc = await getDoc(doc(db, "competitions", comp.id, "participants", user.uid))
+          newParticipantMap[comp.id] = participantDoc.exists()
         } catch (err) {
-          console.error(`Error checking participant status for ${comp.id}:`, err);
-          newParticipantMap[comp.id] = false;
+          console.error(`Error checking participant status for ${comp.id}:`, err)
+          newParticipantMap[comp.id] = false
         } finally {
-          newLoadingMap[comp.id] = false;
+          newLoadingMap[comp.id] = false
         }
-      });
+      })
 
-      await Promise.all(fetchPromises);
+      await Promise.all(fetchPromises)
 
-      setParticipantMap(newParticipantMap);
-      setLoadingMap(newLoadingMap);
+      setParticipantMap(newParticipantMap)
+      setLoadingMap(newLoadingMap)
+
+      try {
+        const completionStatus = await fetchCompetitionCompletionStatus(user.uid)
+        setCompletionMap(completionStatus)
+      } catch (error) {
+        console.error("Error fetching completion status:", error)
+      }
     } catch (error) {
-      console.error("Error fetching competitions:", error);
-      toast.error("Failed to load competitions.");
+      console.error("Error fetching competitions:", error)
+      toast.error("Failed to load competitions.")
     } finally {
-      setLoadingInitialFetch(false);
+      setLoadingInitialFetch(false)
     }
-  };
+  }
 
   const checkAuth = async (): Promise<UserProfile | null> => {
     try {
-      const profile = await fetchWithAuth(
-        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`
-      );
-      setUser(profile);
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`)
+      setUser(profile)
 
       // Role validation
       if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
-          router.push("/");
-          return null;
+        router.push("/")
+        return null
       }
 
-
-      return profile;
+      return profile
     } catch (error) {
-      router.push("/");
-      return null;
+      router.push("/")
+      return null
     } finally {
-      setLoadingInitialFetch(false);
+      setLoadingInitialFetch(false)
     }
-  };
-
+  }
 
   const handleRegister = async (registerInput: string) => {
     if (!selectedCompetition || !user) return
@@ -274,10 +292,6 @@ export default function CompetitionsPage() {
         challengesCompleted: 0,
       })
       setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
-      // const competitionDocRef = doc(db, "competitions", selectedCompetition.id)
-      // await updateDoc(competitionDocRef, {
-      //   RegisteredUserCount: increment(1),
-      // })
       setShowRegistrationModal(false)
       setSelectedCompetition(null)
       toast.success("Successfully registered for the competition!")
@@ -340,6 +354,40 @@ export default function CompetitionsPage() {
       }
     }
   }
+
+const fetchCompetitionCompletionStatus = async (participantId: string) => {
+  const competitionsRef = collection(db, "competitions");
+  const competitionsSnap = await getDocs(competitionsRef);
+
+  const results: Record<string, boolean> = {};
+
+  // Prepare all participant doc fetches in parallel
+  const promises = competitionsSnap.docs.map(async (competitionDoc) => {
+    const competitionId = competitionDoc.id;
+    const competitionData = competitionDoc.data();
+    const challengeCount = competitionData.ChallengeCount || 0;
+
+    // Fetch participant's document for this competition
+    const participantDocRef = doc(
+      db,
+      "competitions",
+      competitionId,
+      "participants",
+      participantId
+    );
+    const participantSnap = await getDoc(participantDocRef);
+    const participantData = participantSnap.data();
+
+    const challengesCompleted = participantData?.challengesCompleted || 0;
+
+    results[competitionId] = challengeCount === challengesCompleted;
+  });
+
+  // Wait for all fetches to finish
+  await Promise.all(promises);
+
+  return results;
+};
 
   const formatDateTime = (dateString: any) => {
     const date = dateString?.toDate?.() ?? new Date(dateString)
@@ -438,8 +486,8 @@ export default function CompetitionsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="hidden md:block text-left">
-                      <p className="text-sm font-medium text-gray-900 leading-none">{user.displayName || "User"}</p>
-                      <p className="text-xs text-gray-600 leading-none mt-0.5">{user.email}</p>
+                      <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-gray-500 ml-1" />
                   </Button>
@@ -570,6 +618,7 @@ export default function CompetitionsPage() {
                   const endDateTime = formatDateTime(competition.endDeadline)
                   const isRegistered = participantMap[competition.id]
                   const isButtonLoading = loadingMap[competition.id]
+                  const isCompleted = completionMap[competition.id] || false // Added completion status check
                   return (
                     <Card
                       key={competition.id}
@@ -589,12 +638,17 @@ export default function CompetitionsPage() {
                                 <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
                                 {status.label}
                               </Badge>
-                              {isRegistered && (
+                              {isCompleted ? (
+                                <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium whitespace-nowrap">
+                                  <Trophy className="w-3 h-3 mr-1" />
+                                  Completed
+                                </Badge>
+                              ) : isRegistered ? (
                                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium whitespace-nowrap">
                                   <CheckCircle2 className="w-3 h-3 mr-1" />
                                   Registered
                                 </Badge>
-                              )}
+                              ) : null}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -662,7 +716,8 @@ export default function CompetitionsPage() {
                             ) : isRegistered ? (
                               <>
                                 <Trophy className="w-4 h-4 mr-2" />
-                                Join Competition
+                                {isCompleted ? "View Results" : "Continue Competition"}{" "}
+                                {/* Updated button text based on completion status */}
                                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                               </>
                             ) : (
