@@ -1,10 +1,13 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { db, admin } from "../config/firebase-admin.js";
 import { authenticateToken, authorizeRoles, AuthenticatedRequest } from "../utils/auth.js";
 
 const router = express.Router();
 
-// GET /challenge-distribution/:competitionId/meta - Get competition metadata
+/**
+ * GET /challenge-distribution/:competitionId/meta
+ * Competition metadata (kept minimal; remove fields here if unused in UI)
+ */
 router.get(
   "/:competitionId/meta",
   authenticateToken,
@@ -22,11 +25,6 @@ router.get(
       const data = competitionDoc.data();
       return res.status(200).json({
         title: data?.title || "",
-        description: data?.description || "",
-        startDeadline: data?.startDeadline || "",
-        endDeadline: data?.endDeadline || "",
-        isActive: data?.isActive || false,
-        isLocked: data?.isLocked || false,
       });
     } catch (err: any) {
       console.error("Error fetching competition meta:", err);
@@ -38,7 +36,10 @@ router.get(
   }
 );
 
-// GET /challenge-distribution/:competitionId/participants-count - Get total participants count
+/**
+ * GET /challenge-distribution/:competitionId/participants-count
+ * Returns leaderboard size for the competition
+ */
 router.get(
   "/:competitionId/participants-count",
   authenticateToken,
@@ -67,7 +68,12 @@ router.get(
   }
 );
 
-// GET /challenge-distribution/:competitionId/challenges-submissions
+/**
+ * GET /challenge-distribution/:competitionId/challenges-submissions
+ * Returns full pool of submissions (for top N participants) grouped by challenge,
+ * plus current assignment matrix (counts only) for UI display.
+ * NOTE: Does NOT exclude already-assigned submissions (to allow reassignment).
+ */
 router.get(
   "/:competitionId/challenges-submissions",
   authenticateToken,
@@ -104,11 +110,10 @@ router.get(
         });
       }
 
-      // We still compute the existing matrix (for UI totals/overflow),
-      // but we DO NOT use it to filter out submissions anymore.
-      const { matrix } = await getExistingAssignments(competitionId);
+      // Current counts per challenge/judge for UI (totals/overflow)
+      const matrix = await getAssignmentMatrix(competitionId);
 
-      // Pull ALL submissions for those top-N participants, grouped by challenge
+      // Pull ALL submissions for those top-N participants, grouped by challenge (allow reassignment)
       const submissionsByChallenge: Record<string, string[]> = {};
 
       // Firestore 'in' clause supports up to 10 values
@@ -126,7 +131,6 @@ router.get(
           const cid = data.challengeId;
           if (!cid) return;
           if (!submissionsByChallenge[cid]) submissionsByChallenge[cid] = [];
-          // NOTE: we do NOT exclude already-assigned IDs; available == total pool
           submissionsByChallenge[cid].push(d.id);
         });
       }
@@ -134,7 +138,7 @@ router.get(
       // Sort deterministically (once)
       Object.keys(submissionsByChallenge).forEach((cid) => submissionsByChallenge[cid].sort());
 
-      // bucketSize now represents TOTAL available in pool (matches original behavior)
+      // bucketSize == TOTAL available in pool
       const challenges = Object.entries(submissionsByChallenge).map(([challengeId, submissionIds]) => ({
         id: challengeId,
         name: `Challenge ${challengeId}`,
@@ -144,7 +148,7 @@ router.get(
 
       return res.status(200).json({
         challenges,
-        challengeBuckets: submissionsByChallenge, // full pool; allows reassignment
+        challengeBuckets: submissionsByChallenge,
         assignmentMatrix: matrix,
         competitionId,
         topN: topNNum,
@@ -159,35 +163,10 @@ router.get(
   }
 );
 
-// GET /challenge-distribution/:competitionId/existing-assignments - Get current judge assignments
-router.get(
-  "/:competitionId/existing-assignments",
-  authenticateToken,
-  authorizeRoles(["superadmin"]),
-  async (req: AuthenticatedRequest, res: Response) => {
-    const { competitionId } = req.params;
-
-    try {
-      const { matrix, alreadyAssigned } = await getExistingAssignments(competitionId);
-
-      return res.status(200).json({
-        assignmentMatrix: matrix,
-        alreadyAssigned: Object.fromEntries(
-          Object.entries(alreadyAssigned).map(([challengeId, set]) => [challengeId, Array.from(set)])
-        ),
-        competitionId,
-      });
-    } catch (err: any) {
-      console.error("Error fetching existing assignments:", err);
-      return res.status(500).json({
-        error: "Failed to fetch existing assignments",
-        detail: err.message,
-      });
-    }
-  }
-);
-
-// GET /challenge-distribution/:competitionId/config - Get saved distribution configuration
+/**
+ * GET /challenge-distribution/:competitionId/config
+ * Returns saved distribution configuration (no matrix stored).
+ */
 router.get(
   "/:competitionId/config",
   authenticateToken,
@@ -206,6 +185,7 @@ router.get(
       if (!configDoc.exists) {
         return res.status(200).json({
           topN: null,
+          maxPerJudge: null,
           timestamp: null,
           updatedBy: null,
         });
@@ -213,9 +193,10 @@ router.get(
 
       const data = configDoc.data();
       return res.status(200).json({
-        topN: data?.topN || null,
-        timestamp: data?.timestamp || null,
-        updatedBy: data?.updatedBy || null,
+        topN: data?.topN ?? null,
+        maxPerJudge: data?.maxPerJudge ?? null,
+        timestamp: data?.timestamp ?? null,
+        updatedBy: data?.updatedBy ?? null,
       });
     } catch (err: any) {
       console.error("Error fetching distribution config:", err);
@@ -227,14 +208,17 @@ router.get(
   }
 );
 
-// POST /challenge-distribution/:competitionId/config - Save distribution configuration
+/**
+ * POST /challenge-distribution/:competitionId/config
+ * Save config (topN and optional maxPerJudge; no matrix persisted).
+ */
 router.post(
   "/:competitionId/config",
   authenticateToken,
   authorizeRoles(["superadmin"]),
   async (req: AuthenticatedRequest, res: Response) => {
     const { competitionId } = req.params;
-    const { topN } = req.body;
+    const { topN, maxPerJudge } = req.body as { topN?: number; maxPerJudge?: number };
 
     if (!topN || isNaN(Number(topN)) || Number(topN) < 1) {
       return res.status(400).json({ error: "Valid topN parameter is required" });
@@ -250,6 +234,7 @@ router.post(
       await configRef.set(
         {
           topN: Number(topN),
+          ...(typeof maxPerJudge === "number" ? { maxPerJudge: Number(maxPerJudge) } : {}),
           timestamp: new Date(),
           updatedBy: req.user?.uid || null,
         },
@@ -259,6 +244,7 @@ router.post(
       return res.status(200).json({
         message: "Configuration saved successfully",
         topN: Number(topN),
+        maxPerJudge: typeof maxPerJudge === "number" ? Number(maxPerJudge) : null,
         timestamp: new Date(),
         updatedBy: req.user?.uid || null,
       });
@@ -272,39 +258,39 @@ router.post(
   }
 );
 
-// POST /challenge-distribution/:competitionId/distribute - Distribute submissions to judges
+/**
+ * POST /challenge-distribution/:competitionId/distribute
+ * Applies the **overwrite** plan from the incoming assignmentMatrix.
+ * Only judges with >0 total after this run are stored; judges that drop to 0 are deleted.
+ * No snapshot/matrix is stored under distributionConfigs.
+ */
 router.post(
   "/:competitionId/distribute",
   authenticateToken,
   authorizeRoles(["superadmin"]),
   async (req: AuthenticatedRequest, res: Response) => {
     const { competitionId } = req.params;
-    const { assignmentMatrix, distributionMode, competitionTitle, topN } = req.body;
+    const { assignmentMatrix, competitionTitle, topN, challengeBuckets } = req.body as {
+      assignmentMatrix?: Record<string, Record<string, number>>;
+      competitionTitle?: string;
+      topN?: number;
+      challengeBuckets?: Record<string, string[]>;
+    };
 
-    if (!assignmentMatrix || !distributionMode || !topN) {
+    if (!assignmentMatrix || !topN) {
       return res.status(400).json({
-        error: "assignmentMatrix, distributionMode, and topN are required",
+        error: "assignmentMatrix and topN are required",
       });
     }
 
     try {
       const batch = db.batch();
 
-      // NOTE: removed `matrix` from snapshot since it's not used anywhere.
-      const distributionSnapshot = {
-        topN: topN,
-        strategy: "manual",
-        mode: distributionMode,
-        timestamp: new Date(),
-      };
-
-      // Build judge slices
+      // Build judge slices from matrix
       const judgeSlices: { [judgeId: string]: { [challengeId: string]: string[] } } = {};
-
-      // Make the incoming matrix concrete for TypeScript
       const assignmentMatrixObj = assignmentMatrix as Record<string, Record<string, number>>;
 
-      // Initialize from BOTH: existing judge docs + any judge IDs present in the incoming assignmentMatrix
+      // Initialize from BOTH: existing judge docs + any judge IDs in matrix
       const judgesSnapshot = await db
         .collection("competitions")
         .doc(competitionId)
@@ -319,16 +305,13 @@ router.post(
       }
       judgesSnapshot.docs.forEach((doc) => judgeIdsInMatrix.add(doc.id));
 
-      // Final init
       judgeIdsInMatrix.forEach((jid) => {
         judgeSlices[jid] = {};
       });
 
-      // Get challenge buckets from the request body (frontend sends this)
-      const challengeBuckets: Record<string, string[]> = req.body.challengeBuckets || {};
-
-      // If challengeBuckets not provided, we need to fetch them
-      if (Object.keys(challengeBuckets).length === 0) {
+      // Buckets (from client or fetch all)
+      const buckets: Record<string, string[]> = challengeBuckets || {};
+      if (Object.keys(buckets).length === 0) {
         const submissionsSnapshot = await db
           .collection("competitions")
           .doc(competitionId)
@@ -339,17 +322,17 @@ router.post(
           const data = doc.data() as { challengeId?: string };
           const challengeId = data.challengeId;
           if (challengeId) {
-            if (!challengeBuckets[challengeId]) {
-              challengeBuckets[challengeId] = [];
+            if (!buckets[challengeId]) {
+              buckets[challengeId] = [];
             }
-            challengeBuckets[challengeId].push(doc.id);
+            buckets[challengeId].push(doc.id);
           }
         });
       }
 
-      // Slice submissions according to matrix
+      // Slice per matrix
       for (const [challengeId, judgeAssignments] of Object.entries(assignmentMatrixObj)) {
-        const submissionIds = challengeBuckets[challengeId] || [];
+        const submissionIds = buckets[challengeId] || [];
         let currentIndex = 0;
 
         for (const [judgeId, count] of Object.entries(judgeAssignments)) {
@@ -362,7 +345,7 @@ router.post(
         }
       }
 
-      // Write to Firestore
+      // Apply overwrite behavior, ensure only judges with >0 remain
       for (const [judgeId, challengeAssignments] of Object.entries(judgeSlices)) {
         const judgeDocRef = db
           .collection("competitions")
@@ -370,66 +353,56 @@ router.post(
           .collection("judges")
           .doc(judgeId);
 
-        if (distributionMode === "overwrite") {
-          // Only challenges with > 0 new assignments for this judge
-          const nonEmpty = Object.entries(challengeAssignments).filter(([, ids]) => ids.length > 0);
-          const assignedCountTotal = nonEmpty.reduce((sum, [, ids]) => sum + ids.length, 0);
+        // Only challenges with > 0 new assignments
+        const nonEmpty = Object.entries(challengeAssignments).filter(([, ids]) => ids.length > 0);
+        const assignedCountTotal = nonEmpty.reduce((sum, [, ids]) => sum + ids.length, 0);
 
-          // If this judge ends up with nothing, delete the entire doc and continue
-          if (assignedCountTotal === 0) {
-            batch.delete(judgeDocRef);
-            continue;
-          }
-
-          // New state to upsert
-          const submissionsByChallenge = Object.fromEntries(nonEmpty);
-          const assignedCountsByChallenge = Object.fromEntries(
-            nonEmpty.map(([challengeId, ids]) => [challengeId, ids.length])
-          );
-
-          // Remove any previously assigned challenges that are now zeroed out
-          const prevSnap = await judgeDocRef.get();
-          const deletions: Record<string, FirebaseFirestore.FieldValue> = {};
-          if (prevSnap.exists) {
-            const prev = prevSnap.data() || {};
-            const prevKeys: string[] = Object.keys(prev.submissionsByChallenge || {});
-            const keepKeys = new Set<string>(Object.keys(submissionsByChallenge));
-            for (const cid of prevKeys) {
-              if (!keepKeys.has(cid)) {
-                deletions[`submissionsByChallenge.${cid}`] = admin.firestore.FieldValue.delete();
-                deletions[`assignedCountsByChallenge.${cid}`] = admin.firestore.FieldValue.delete();
-              }
-            }
-            if (Object.keys(deletions).length) {
-              batch.update(judgeDocRef, deletions);
-            }
-          }
-
-          // Upsert the new maps/totals
-          batch.set(
-            judgeDocRef,
-            {
-              judgeId,
-              competitionId,
-              competitionTitle: competitionTitle || "",
-              updatedAt: new Date(),
-              submissionsByChallenge,
-              assignedCountsByChallenge,
-              assignedCountTotal,
-            },
-            { merge: true }
-          );
+        // If nothing left for this judge => delete their doc
+        if (assignedCountTotal === 0) {
+          batch.delete(judgeDocRef);
+          continue;
         }
+
+        const submissionsByChallenge = Object.fromEntries(nonEmpty);
+        const assignedCountsByChallenge = Object.fromEntries(
+          nonEmpty.map(([challengeId, ids]) => [challengeId, ids.length])
+        );
+
+        // Remove any previously assigned challenges that are now zero
+        const prevSnap = await judgeDocRef.get();
+        const deletions: Record<string, FirebaseFirestore.FieldValue> = {};
+        if (prevSnap.exists) {
+          const prev = prevSnap.data() || {};
+          const prevKeys: string[] = Object.keys(prev.submissionsByChallenge || {});
+          const keepKeys = new Set<string>(Object.keys(submissionsByChallenge));
+          for (const cid of prevKeys) {
+            if (!keepKeys.has(cid)) {
+              deletions[`submissionsByChallenge.${cid}`] = admin.firestore.FieldValue.delete();
+              deletions[`assignedCountsByChallenge.${cid}`] = admin.firestore.FieldValue.delete();
+            }
+          }
+          if (Object.keys(deletions).length) {
+            batch.update(judgeDocRef, deletions);
+          }
+        }
+
+        // Upsert the new maps/totals
+        batch.set(
+          judgeDocRef,
+          {
+            judgeId,
+            competitionId,
+            competitionTitle: competitionTitle || "",
+            updatedAt: new Date(),
+            submissionsByChallenge,
+            assignedCountsByChallenge,
+            assignedCountTotal,
+          },
+          { merge: true }
+        );
       }
 
-      // Save distribution snapshot (without matrix)
-      const snapshotRef = db
-        .collection("competitions")
-        .doc(competitionId)
-        .collection("distributionConfigs")
-        .doc("current");
-
-      batch.set(snapshotRef, distributionSnapshot, { merge: true });
+      // No snapshot/matrix persisted to distributionConfigs
 
       await batch.commit();
 
@@ -443,7 +416,6 @@ router.post(
         message: "Distribution completed successfully",
         totalDistributed,
         competitionId,
-        distributionMode,
       });
     } catch (err: any) {
       console.error("Error distributing submissions:", err);
@@ -455,9 +427,12 @@ router.post(
   }
 );
 
-// Helper function to get existing assignments
-async function getExistingAssignments(competitionId: string) {
-  const assignmentsByJudge: Record<string, Record<string, string[]>> = {};
+/**
+ * Helper: build current assignment matrix (counts only)
+ */
+async function getAssignmentMatrix(competitionId: string) {
+  const matrix: { [challengeId: string]: { [judgeId: string]: number } } = {};
+
   const qSnap = await db
     .collection("competitions")
     .doc(competitionId)
@@ -468,26 +443,15 @@ async function getExistingAssignments(competitionId: string) {
     const data = d.data() as {
       submissionsByChallenge?: Record<string, string[]>;
     };
-    if (data?.submissionsByChallenge) {
-      assignmentsByJudge[d.id] = data.submissionsByChallenge;
-    }
-  });
+    if (!data?.submissionsByChallenge) return;
 
-  // Build matrix and a set of already-assigned ids per challenge
-  const matrix: { [challengeId: string]: { [judgeId: string]: number } } = {};
-  const alreadyAssigned: Record<string, Set<string>> = {};
-
-  Object.entries(assignmentsByJudge).forEach(([judgeId, byChallenge]) => {
-    Object.entries(byChallenge).forEach(([challengeId, ids]) => {
+    Object.entries(data.submissionsByChallenge).forEach(([challengeId, ids]) => {
       if (!matrix[challengeId]) matrix[challengeId] = {};
-      matrix[challengeId][judgeId] = (matrix[challengeId][judgeId] || 0) + ids.length;
-
-      if (!alreadyAssigned[challengeId]) alreadyAssigned[challengeId] = new Set();
-      ids.forEach((sid) => alreadyAssigned[challengeId].add(sid));
+      matrix[challengeId][d.id] = (matrix[challengeId][d.id] || 0) + (ids?.length || 0);
     });
   });
 
-  return { matrix, alreadyAssigned };
+  return matrix;
 }
 
 export default router;

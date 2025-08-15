@@ -74,15 +74,6 @@ interface ChallengeBuckets {
   [challengeId: string]: string[]
 }
 
-interface DistributionSnapshot {
-  matrix: AssignmentMatrix
-  topN: number
-  strategy: "auto" | "equal" | "manual"
-  mode: "overwrite" | "append"
-  timestamp: Date
-}
-
-type DistributionMode = "overwrite" | "append"
 type ViewMode = "cards" | "matrix"
 
 interface NotificationState {
@@ -108,7 +99,6 @@ interface AppState {
   // UI state
   challengeSearch: string
   viewMode: ViewMode
-  distributionMode: DistributionMode
   showOnlyRemaining: boolean
   selectedChallengeId: string | null
   notifications: NotificationState[]
@@ -143,10 +133,8 @@ type AppAction =
   | { type: "SET_SELECTED_TOP_N"; payload: number }
   | { type: "SET_SAVED_CONFIG"; payload: { selectedTopN: number; timestamp: Date } | null }
   | { type: "SET_CURRENT_PAGE"; payload: number }
-  | { type: "SET_JUDGE_SEARCH"; payload: string }
   | { type: "SET_CHALLENGE_SEARCH"; payload: string }
   | { type: "SET_VIEW_MODE"; payload: ViewMode }
-  | { type: "SET_DISTRIBUTION_MODE"; payload: DistributionMode }
   | { type: "SET_SHOW_ONLY_REMAINING"; payload: boolean }
   | { type: "SET_SELECTED_CHALLENGE"; payload: string | null }
   | { type: "ADD_NOTIFICATION"; payload: NotificationState }
@@ -172,7 +160,6 @@ const initialState: AppState = {
   savedConfig: null,
   challengeSearch: "",
   viewMode: "cards",
-  distributionMode: "overwrite",
   showOnlyRemaining: false,
   selectedChallengeId: null,
   notifications: [],
@@ -216,8 +203,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, challengeSearch: action.payload }
     case "SET_VIEW_MODE":
       return { ...state, viewMode: action.payload }
-    case "SET_DISTRIBUTION_MODE":
-      return { ...state, distributionMode: action.payload }
     case "SET_SHOW_ONLY_REMAINING":
       return { ...state, showOnlyRemaining: action.payload }
     case "SET_SELECTED_CHALLENGE":
@@ -765,7 +750,7 @@ export default function ParticipantDistributionTable() {
     } finally {
       dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: false } })
     }
-  }, [competitionId, state.selectedTopN, state.currentUser?.uid, showNotification])
+  }, [competitionId, state.selectedTopN, state.maxPerJudge,state.currentUser?.uid, showNotification])
 
 
   const handleSaveConfig = useCallback(async () => {
@@ -827,7 +812,6 @@ export default function ParticipantDistributionTable() {
         },
         body: JSON.stringify({
           assignmentMatrix: state.assignmentMatrix,
-          distributionMode: state.distributionMode,
           competitionTitle: state.competitionTitle,
           topN: state.selectedTopN,
           challengeBuckets: state.challengeBuckets
@@ -857,7 +841,6 @@ export default function ParticipantDistributionTable() {
     state.challengeBuckets,
     state.judges,
     state.selectedTopN,
-    state.distributionMode,
     globalSummary.hasOverflow,
     showNotification,
   ])
@@ -1316,25 +1299,7 @@ export default function ParticipantDistributionTable() {
                     Matrix Overview
                   </Button>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="distribution-mode" className="text-sm font-medium">
-                    Mode:
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="distribution-mode"
-                      checked={state.distributionMode === "append"}
-                      onCheckedChange={(checked) =>
-                        dispatch({ type: "SET_DISTRIBUTION_MODE", payload: checked ? "append" : "overwrite" })
-                      }
-                    />
-                    <span className="text-sm text-gray-600">
-                      {state.distributionMode === "overwrite" ? "Overwrite" : "Append"}
-                    </span>
-                  </div>
-                </div>
-
+                
                 {state.viewMode === "cards" && (
                   <div className="flex items-center gap-4">
                     <div className="relative">
@@ -1614,25 +1579,6 @@ export default function ParticipantDistributionTable() {
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{state.challenges.length}</div>
                 <div className="text-sm text-gray-600">Challenges Involved</div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Distribution Mode</Label>
-              <div className="flex items-center gap-2 p-3 border rounded-lg">
-                <div
-                  className={`w-3 h-3 rounded-full ${state.distributionMode === "overwrite" ? "bg-red-500" : "bg-green-500"}`}
-                ></div>
-                <div>
-                  <div className="font-medium text-sm">
-                    {state.distributionMode === "overwrite" ? "Overwrite Mode" : "Append Mode"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {state.distributionMode === "overwrite"
-                      ? "Replace existing judge assignments completely"
-                      : "Add to existing judge assignments (avoiding duplicates)"}
-                  </div>
-                </div>
               </div>
             </div>
 
