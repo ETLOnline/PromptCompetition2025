@@ -42,3 +42,23 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2)
 }
+
+
+
+// Calculate weighted total score from rubric scores
+export function calculateWeightedTotal(
+  rubricScores: Record<string, number>,
+  rubric: Array<{ name: string; weight: number }>
+): number {
+  if (!rubric || rubric.length === 0) return 0
+
+  const totalWeight = rubric.reduce((sum, c) => sum + c.weight, 0)
+
+  const weightedSum = rubric.reduce((sum, c) => {
+    const score = rubricScores[c.name] || 0
+    const normalizedWeight = c.weight / totalWeight
+    return sum + score * normalizedWeight
+  }, 0)
+
+  return Math.round(weightedSum * 100) / 100
+}
