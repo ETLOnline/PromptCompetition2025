@@ -183,7 +183,7 @@ export default function RulesPage() {
                 </CardContent>
               </Card>
               {/* Prizes and Recognition */}
-              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              {/* <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
                     <Badge variant="outline" className="text-slate-700 border-slate-300">
@@ -213,7 +213,7 @@ export default function RulesPage() {
                     Top 10 participants will receive certificates of excellence
                   </p>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </section>
