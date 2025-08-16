@@ -92,6 +92,9 @@ import authRoutes from "./routes/auth.js"
 import contactRouter from "./routes/contact.js";
 import challengeDistributionRouter from "./routes/challenge-distribution.js";
 
+// judge dashboard functions
+import judgeRouter from "./routes/judge/index.js";
+
 
 console.log("2. Starting server setup...");
 console.log("3. Routers imported successfully");
@@ -117,10 +120,12 @@ app.use("/competition", competitionsRouter);
 
 app.use("/contact", contactRouter);
 
-
 app.use("/auth", authRoutes)
 app.use("/role", roleRoutes);
+
 app.use("/challenge-distribution", challengeDistributionRouter);
+
+app.use("/judge", judgeRouter);
 
 console.log("4. Routes configured");
 
