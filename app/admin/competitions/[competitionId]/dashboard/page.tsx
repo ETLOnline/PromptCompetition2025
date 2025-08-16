@@ -1,20 +1,19 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import Link from "next/link";
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileText, Activity, Users, Trophy, BarChart3, Shield } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
+import JudgeProgress from "@/components/JudgeProgress"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
-import { collection, onSnapshot, doc, getDoc, query, where } from "firebase/firestore"
+import { collection, onSnapshot, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
-
-import { fetchWithAuth } from "@/lib/api";
-
+import { fetchWithAuth } from "@/lib/api"
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -22,29 +21,24 @@ export default function AdminDashboard() {
   const competitionId = params?.competitionId as string
   const [totalSubmissions, setSubmissionCount] = useState<number>(0)
   const [stats, setStats] = useState({ totalParticipants: 0, pendingReviews: 0 })
-  
-  const [role, setRole] = useState(null);
+  const [activeTab, setActiveTab] = useState<"challenges" | "judges">("challenges")
+
+  const [role, setRole] = useState(null)
 
   useEffect(() => {
+    checkAuthAndLoad()
 
-    checkAuthAndLoad();
-
-    const unsubParts = onSnapshot(
-      collection(db, `competitions/${competitionId}/participants`),
-      snap => setStats(prev => ({ ...prev, totalParticipants: snap.size }))
+    const unsubParts = onSnapshot(collection(db, `competitions/${competitionId}/participants`), (snap) =>
+      setStats((prev) => ({ ...prev, totalParticipants: snap.size })),
     )
 
-    const unsubSubs = onSnapshot(
-      collection(db, `competitions/${competitionId}/submissions`),
-      snap => setSubmissionCount(snap.size)
+    const unsubSubs = onSnapshot(collection(db, `competitions/${competitionId}/submissions`), (snap) =>
+      setSubmissionCount(snap.size),
     )
 
     const unsubPending = onSnapshot(
-      query(
-        collection(db, `competitions/${competitionId}/submissions`),
-        where("status", "==", "scored")
-      ),
-      snap => setStats(prev => ({ ...prev, pendingReviews: snap.size }))
+      query(collection(db, `competitions/${competitionId}/submissions`), where("status", "==", "scored")),
+      (snap) => setStats((prev) => ({ ...prev, pendingReviews: snap.size })),
     )
 
     return () => {
@@ -53,29 +47,25 @@ export default function AdminDashboard() {
       unsubPending()
     }
   }, [router, competitionId])
-  
+
   const checkAuthAndLoad = async () => {
     try {
-      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`)
       setRole(profile.role)
-    } 
-    catch (error) 
-    {
-      router.push("/");
-      return;
+    } catch (error) {
+      router.push("/")
+      return
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      
+
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          
           <Link href={`/admin/competitions/${competitionId}/participants`}>
             <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
               <div className="flex items-start justify-between">
@@ -134,13 +124,13 @@ export default function AdminDashboard() {
                     <p className="text-gray-600">Manage roles and judges</p>
                   </div>
                 </div>
-      
+
                 <Button
-                    onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
-                    className="w-full py-3 bg-gray-900 text-white rounded-lg"
-                  >
-                    <Users className="h-4 w-4 mr-2" /> Manage Judges
-                  </Button>
+                  onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg"
+                >
+                  <Users className="h-4 w-4 mr-2" /> Manage Judges
+                </Button>
               </div>
             </Card>
           )}
@@ -187,11 +177,50 @@ export default function AdminDashboard() {
         </div>
 
         {/* Challenges Section */}
-        <Card className="bg-white rounded-2xl shadow-sm">
-          <CardContent className="p-6">
-            <GetChallenges competitionId={competitionId} />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm p-2">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setActiveTab("challenges")}
+                className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                  activeTab === "challenges"
+                    ? "bg-gray-900 text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <Trophy className="h-4 w-4" />
+                  <span>Challenges</span>
+                </div>
+              </button>
+              {role !== "judge" && (
+                <button
+                  onClick={() => setActiveTab("judges")}
+                  className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+                    activeTab === "judges"
+                      ? "bg-gray-900 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <Shield className="h-4 w-4" />
+                    <span>Judge Progress</span>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {activeTab === "challenges" && (
+            <Card className="bg-white rounded-2xl shadow-sm">
+              <CardContent className="p-6">
+                <GetChallenges competitionId={competitionId} />
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "judges" && <JudgeProgress competitionId={competitionId} />}
+        </div>
       </div>
     </div>
   )
