@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
+import Link from "next/link";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileText, Activity, Users, Trophy, BarChart3, Shield } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
-import DownloadLeaderboardButton from "@/components/DownloadLeaderboard"
 import { collection, onSnapshot, doc, getDoc, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
@@ -42,7 +42,7 @@ export default function AdminDashboard() {
     const unsubPending = onSnapshot(
       query(
         collection(db, `competitions/${competitionId}/submissions`),
-        where("status", "==", "selected_for_manual_review")
+        where("status", "==", "scored")
       ),
       snap => setStats(prev => ({ ...prev, pendingReviews: snap.size }))
     )
@@ -74,18 +74,22 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <h3 className="text-gray-600 font-medium">Total Participants</h3>
-                <div className="text-4xl font-bold text-gray-900">{stats.totalParticipants}</div>
-                <p className="text-gray-500 text-sm">For this competition</p>
+
+          
+          <Link href={`/admin/competitions/${competitionId}/participants`}>
+            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <h3 className="text-gray-600 font-medium">Total Participants</h3>
+                  <div className="text-4xl font-bold text-gray-900">{stats.totalParticipants}</div>
+                  <p className="text-gray-500 text-sm">For this competition</p>
+                </div>
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <Users className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
           <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
             <div className="flex items-start justify-between">
@@ -100,18 +104,20 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-          <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <h3 className="text-gray-600 font-medium">Pending Reviews</h3>
-                <div className="text-4xl font-bold text-gray-900">{stats.pendingReviews}</div>
-                <p className="text-gray-500 text-sm">Flagged for review</p>
+          <Link href={`/admin/competitions/${competitionId}/judge-evaluations`}>
+            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <h3 className="text-gray-600 font-medium">Judge Reviews</h3>
+                  <div className="text-4xl font-bold text-gray-900">{stats.pendingReviews}</div>
+                  <p className="text-gray-500 text-sm">reviews completed by judge</p>
+                </div>
+                <div className="p-3 bg-amber-100 rounded-xl">
+                  <Activity className="h-6 w-6 text-amber-600" />
+                </div>
               </div>
-              <div className="p-3 bg-amber-100 rounded-xl">
-                <Activity className="h-6 w-6 text-amber-600" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
         </div>
 
         {/* Action Cards */}
@@ -135,16 +141,6 @@ export default function AdminDashboard() {
                   >
                     <Users className="h-4 w-4 mr-2" /> Manage Judges
                   </Button>
-                  
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => router.push(`/admin/competitions/${competitionId}/participants`)}
-                    className="w-full py-3 bg-gray-900 text-white rounded-lg"
-                  >
-                    <Users className="h-4 w-4 mr-2" /> Registered Participants
-                  </Button>
-
-                </div>
               </div>
             </Card>
           )}
@@ -185,7 +181,6 @@ export default function AdminDashboard() {
                 >
                   <Trophy className="h-4 w-4 mr-2" /> View Leaderboard
                 </Button>
-                <DownloadLeaderboardButton competitionId={competitionId} />
               </div>
             </div>
           </Card>
