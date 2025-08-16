@@ -6,6 +6,9 @@ import { fetchChallenge } from "./challenges.js";
 import { fetchSubmissions } from "./submissions.js";
 import { submitScore, getSubmissionScore } from "./scoring.js";
 
+// fetch judges for admin
+import { fetchJudgeEvaluations } from "./evaluations.js";
+
 // Auth utilities
 import { authenticateToken, authorizeRoles, AuthenticatedRequest } from "../../utils/auth.js";
 
@@ -131,5 +134,12 @@ judgeRouter.get(
     }
   }
 );
+
+judgeRouter.get(
+  "/judge-evaluations/:competitionId",
+  authenticateToken,
+  fetchJudgeEvaluations
+);
+
 
 export default judgeRouter;

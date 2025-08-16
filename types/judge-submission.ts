@@ -95,6 +95,6 @@ export interface Challenge {
 
 export interface ScoreData {
   score: number
-  feedback: string
+  comment: string
   rubricScores: Record<string, number>
 }

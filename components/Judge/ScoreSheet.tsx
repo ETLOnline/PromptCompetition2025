@@ -86,8 +86,8 @@ export function ScoreSheet({
             <Label>Feedback</Label>
             <Textarea
               placeholder="General feedback..."
-              value={scoreFormData.feedback || ""}
-              onChange={(e) => onScoreChange("feedback", e.target.value)}
+              value={scoreFormData.comment || ""}
+              onChange={(e) => onScoreChange("comment", e.target.value)}
               rows={4}
             />
           </div>

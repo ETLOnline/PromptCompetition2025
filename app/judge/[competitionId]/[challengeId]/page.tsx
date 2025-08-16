@@ -37,7 +37,7 @@ export default function ChallengePage() {
   // Scoring state
   const [showScoreSheet, setShowScoreSheet] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
-  const [scoreFormData, setScoreFormData] = useState<ScoreData>({ score: 0, feedback: "", rubricScores: {} })
+  const [scoreFormData, setScoreFormData] = useState<ScoreData>({ score: 0, comment: "", rubricScores: {} })
   const [isSavingScore, setIsSavingScore] = useState(false)
 
   // Progress stats
@@ -170,7 +170,7 @@ export default function ChallengePage() {
       if (existingScore) {
         setScoreFormData(existingScore)
       } else {
-        setScoreFormData({ score: 0, feedback: "", rubricScores: {} })
+        setScoreFormData({ score: 0, comment: "", rubricScores: {} })
       }
     } catch (error) {
       addNotification("error", "Failed to load existing score")
@@ -181,7 +181,7 @@ export default function ChallengePage() {
   const closeScoreSheet = () => {
     setShowScoreSheet(false)
     setSelectedSubmission(null)
-    setScoreFormData({ score: 0, feedback: "", rubricScores: {} })
+    setScoreFormData({ score: 0, comment: "", rubricScores: {} })
   }
 
   const handleScoreChange = (field: keyof ScoreData, value: any) => {
@@ -196,6 +196,14 @@ export default function ChallengePage() {
         scoreFormData.rubricScores,
         challenge.rubric
       )
+
+      fetch("/api/debugger", {
+          method: "POST",
+          body: JSON.stringify({ message: `scoreFormData object: ${JSON.stringify(scoreFormData)}` }),
+          headers: {
+              "Content-Type": "application/json",
+          },
+      })
 
       await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${selectedSubmission.id}/${userUID}`,
