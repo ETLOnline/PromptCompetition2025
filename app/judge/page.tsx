@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { JudgeStats } from "@/components/Judge/JudgeStats"
 import { JudgeAssignmentsList } from "@/components/Judge/JudgeAssignmentsList"
 import { Notifications } from "@/components/Notifications"
-import { fetchAssignments } from "@/lib/judge/assignments"
 import { fetchWithAuth } from "@/lib/api"
 import type { JudgeAssignment, JudgeStats as JudgeStatsType } from "@/types/judge-submission"
 import { useNotifications } from "@/hooks/useNotifications"
@@ -24,8 +23,9 @@ export default function JudgePage() {
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_JUDGE_AUTH}`)
       setUserID(profile.uid)
 
-      // Fetch assignments for the authenticated user
-      const userAssignments = await fetchAssignments(profile.uid)
+      const userAssignments = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/assignments/${profile.uid}`
+      )
       setAssignments(userAssignments)
     } catch (error) {
       console.error("Authentication failed:", error)

@@ -10,12 +10,9 @@ import { NotificationList } from "@/components/Judge/NotificationList"
 import { ProgressFooter } from "@/components/Judge/ProgressFooter"
 import { LoadingSpinner } from "@/components/Judge/LoadingSpinner"
 import { fetchWithAuth } from "@/lib/api"
-import { fetchChallenge } from "@/lib/judge/challenges"
-import { fetchAssignment } from "@/lib/judge/assignments"
-import { fetchSubmissions } from "@/lib/judge/submissions"
-import { submitScore, getSubmissionScore, calculateWeightedTotal, type ScoreData } from "@/lib/judge/scoring"
+import { calculateWeightedTotal } from "@/lib/judge/utils"
 import { useNotifications } from "@/hooks/useNotifications"
-import type { Challenge, CompetitionAssignment, Submission } from "@/types/judge-submission"
+import type { Challenge, CompetitionAssignment, Submission, ScoreData } from "@/types/judge-submission"
 import type { DocumentSnapshot } from "firebase/firestore"
 
 export default function ChallengePage() {
@@ -56,6 +53,25 @@ export default function ChallengePage() {
 
   const { notifications, addNotification, removeNotification } = useNotifications()
 
+
+  // Effects
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  useEffect(() => {
+    if (isAuthenticated && userUID) {
+      loadChallenge()
+      loadAssignment()
+    }
+  }, [isAuthenticated, userUID])
+
+  useEffect(() => {
+    if (assignment && userUID) {
+      loadSubmissions(true)
+    }
+  }, [assignment, userUID])
+
   // Authentication function
   const checkAuth = async () => {
     try {
@@ -71,7 +87,10 @@ export default function ChallengePage() {
   const loadChallenge = async () => {
     try {
       setIsLoadingChallenge(true)
-      const challengeData = await fetchChallenge(competitionId, challengeId)
+
+      const challengeData = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/challenge/${competitionId}/${challengeId}`
+      )
       setChallenge(challengeData)
     } catch (error) {
       addNotification("error","Failed to load challenge")
@@ -84,7 +103,10 @@ export default function ChallengePage() {
     if (!userUID) return
     try {
       setIsLoadingAssignment(true)
-      const assignmentData = await fetchAssignment(userUID, competitionId)
+
+      const assignmentData = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/assignment/${userUID}/${competitionId}`
+      )
       setAssignment(assignmentData)
     } catch (error) {
       addNotification("error","Failed to load assignment")
@@ -97,11 +119,11 @@ export default function ChallengePage() {
     if (!userUID) return
     try {
       setIsLoadingSubmissions(true)
-      const {
-        submissions: newSubmissions,
-        lastDoc: newLastDoc,
-        hasMore,
-      } = await fetchSubmissions(competitionId, challengeId, 10, reset ? undefined : lastDoc)
+      
+      const { submissions: newSubmissions, lastDoc: newLastDoc, hasMore } =
+      await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/submissions/${competitionId}/${challengeId}`
+      )
 
       if (reset) {
         setSubmissions(newSubmissions)
@@ -142,7 +164,9 @@ export default function ChallengePage() {
   const openScoringSheet = async (submission: Submission) => {
     setSelectedSubmission(submission)
     try {
-      const existingScore = await getSubmissionScore(competitionId, submission.id, userUID)
+      const existingScore = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${submission.id}/${userUID}`
+      )
       if (existingScore) {
         setScoreFormData(existingScore)
       } else {
@@ -173,12 +197,15 @@ export default function ChallengePage() {
         challenge.rubric
       )
 
-      await submitScore(competitionId, selectedSubmission.id, userUID,
+      await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${selectedSubmission.id}/${userUID}`,
         {
-          ...scoreFormData,
-          score: totalScore      
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...scoreFormData, score: totalScore })
         }
-      )
+      );
+
 
       addNotification("success", "Score saved successfully")
       closeScoreSheet()
@@ -189,24 +216,6 @@ export default function ChallengePage() {
       setIsSavingScore(false)
     }
   }
-
-  // Effects
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  useEffect(() => {
-    if (isAuthenticated && userUID) {
-      loadChallenge()
-      loadAssignment()
-    }
-  }, [isAuthenticated, userUID])
-
-  useEffect(() => {
-    if (assignment && userUID) {
-      loadSubmissions(true)
-    }
-  }, [assignment, userUID])
 
   // Early return for unauthenticated users
   if (!isAuthenticated) {

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Loader } from "lucide-react"
 import { fetchWithAuth } from "@/lib/api"
-import { fetchAssignment } from "@/lib/judge/assignments"
 import { useNotifications } from "@/hooks/useNotifications"
 import { CompetitionStats } from "@/components/Judge/CompetitionStats"
 import { ChallengeList } from "@/components/Judge/ChallengeList"
@@ -50,7 +49,9 @@ export default function CompetitionPage() {
   const loadAssignment = async (userId: string) => {
     try {
       setIsLoading(true)
-      const assignmentData = await fetchAssignment(userId, competitionId)
+      const assignmentData = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/assignment/${userId}/${competitionId}`
+      )
 
       if (!assignmentData) {
         addNotification("error", "You are not assigned to this competition")
