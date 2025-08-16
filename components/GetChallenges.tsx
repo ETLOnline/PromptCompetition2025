@@ -9,14 +9,37 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Calendar, User, Clock, AlertCircle, CheckCircle } from "lucide-react"
+import {
+  Plus,
+  Calendar,
+  User,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Target,
+  Scale,
+} from "lucide-react"
 import { db } from "@/lib/firebase"
-import { getDocs, type Timestamp, collection, query, doc, getDoc, deleteDoc ,updateDoc, increment} from "firebase/firestore"
+import {
+  getDocs,
+  type Timestamp,
+  collection,
+  query,
+  doc,
+  getDoc,
+  deleteDoc,
+  updateDoc,
+  increment,
+} from "firebase/firestore"
 import { getAuth } from "firebase/auth"
 
 type Challenge = {
@@ -24,7 +47,13 @@ type Challenge = {
   title: string
   problemStatement: string
   guidelines: string
-  rubric: string
+  rubric: Array<{
+    name: string
+    description: string
+    weight: number
+  }>
+  startDeadline: Timestamp
+  endDeadline: Timestamp
   lastupdatetime: Timestamp
   nameOfLatestUpdate: string
   emailoflatestupdate: string
@@ -38,7 +67,20 @@ export default function GetChallenges({ competitionId }: { competitionId: string
   const [competitionStartTime, setCompetitionStartTime] = useState<Date | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
+  const [expandedChallenges, setExpandedChallenges] = useState<Set<string>>(new Set())
   const router = useRouter()
+
+  const toggleChallengeExpansion = (challengeId: string) => {
+    setExpandedChallenges((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(challengeId)) {
+        newSet.delete(challengeId)
+      } else {
+        newSet.add(challengeId)
+      }
+      return newSet
+    })
+  }
 
   useEffect(() => {
     const fetchUserRoleAndChallenges = async () => {
@@ -53,14 +95,12 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         if (compSnap.exists()) {
           const startTimestamp = compSnap.data()?.startDeadline
           if (startTimestamp) {
-            const startDate = new Date(startTimestamp)  // ← simple conversion
+            const startDate = new Date(startTimestamp) // ← simple conversion
             setCompetitionStartTime(startDate)
           }
         }
 
-        const challengesQuery = query(
-          collection(db, "competitions", competitionId, "challenges")
-        )
+        const challengesQuery = query(collection(db, "competitions", competitionId, "challenges"))
 
         const challengesSnap = await getDocs(challengesQuery)
 
@@ -119,81 +159,190 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         <div className="grid gap-6">
           {challenges.map((challenge) => {
             const updateDate = challenge.lastupdatetime?.toDate()
+            const startDate = challenge.startDeadline?.toDate()
+            const endDate = challenge.endDeadline?.toDate()
             const isExpired = competitionStartTime < new Date()
+            const isExpanded = expandedChallenges.has(challenge.id)
 
             return (
-              <Card key={challenge.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
-                <CardHeader className="bg-gray-50 p-5 rounded-t-xl border-b border-gray-200">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
-                    <Badge variant="outline" className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${isExpired ? "bg-red-50 border-red-200 text-red-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}>
-                      {isExpired ? <><AlertCircle className="w-3 h-3 mr-1" /> Live Now</> : <><CheckCircle className="w-3 h-3 mr-1" /> Active</>}
-                    </Badge>
-                  </div>
-                </CardHeader>
+              <Collapsible
+                key={challenge.id}
+                open={isExpanded}
+                onOpenChange={() => toggleChallengeExpansion(challenge.id)}
+              >
+                <Card className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+                  <CardHeader className="bg-gray-50 p-5 rounded-t-xl border-b border-gray-200">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
+                      <Badge
+                        variant="outline"
+                        className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${isExpired ? "bg-red-50 border-red-200 text-red-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}
+                      >
+                        {isExpired ? (
+                          <>
+                            <AlertCircle className="w-3 h-3 mr-1" /> Live Now
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-3 h-3 mr-1" /> Active
+                          </>
+                        )}
+                      </Badge>
+                    </div>
+                  </CardHeader>
 
-                <CardContent className="p-5 space-y-6">
-                  <div className="grid md:grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1 rounded bg-gray-800">
-                        <Calendar className="w-3 h-3 text-white" />
+                  <CardContent className="p-5 space-y-6">
+                    <div className="grid md:grid-cols-3 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-gray-800">
+                          <Calendar className="w-3 h-3 text-white" />
+                        </div>
+                        <div>
+                          <span className="text-gray-700 font-medium">Start:</span>
+                          <div className="font-bold text-gray-900">{startDate?.toLocaleString()}</div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-700 font-medium">Start:</span>
-                        <div className="font-bold text-gray-900">{competitionStartTime.toLocaleString()}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-gray-800">
+                          <User className="w-3 h-3 text-white" />
+                        </div>
+                        <div>
+                          <span className="text-gray-700 font-medium">Updated By:</span>
+                          <div className="font-bold text-gray-900 truncate">{challenge.emailoflatestupdate}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-gray-800">
+                          <Clock className="w-3 h-3 text-white" />
+                        </div>
+                        <div>
+                          <span className="text-gray-700 font-medium">Last Update:</span>
+                          <div className="font-bold text-gray-900">{updateDate?.toLocaleString()}</div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="p-1 rounded bg-gray-800">
-                        <User className="w-3 h-3 text-white" />
-                      </div>
-                      <div>
-                        <span className="text-gray-700 font-medium">Updated By:</span>
-                        <div className="font-bold text-gray-900 truncate">{challenge.emailoflatestupdate}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="p-1 rounded bg-gray-800">
-                        <Clock className="w-3 h-3 text-white" />
-                      </div>
-                      <div>
-                        <span className="text-gray-700 font-medium">Last Update:</span>
-                        <div className="font-bold text-gray-900">{updateDate?.toLocaleString()}</div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-3 flex-wrap">
-                    <Button
-                      size="sm"
-                      className="bg-gray-900 text-white hover:bg-gray-800 font-semibold px-4 py-2"
-                      onClick={() => {
-                        if (isExpired) setShowModal(true)
-                        else router.push(`/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`)
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    {(userRole === "admin" || userRole === "superadmin") && (
+                    <CollapsibleContent className="space-y-6">
+                      <div className="border-t border-gray-200 pt-6">
+                        <div className="grid gap-6">
+                          {/* Challenge Deadlines */}
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                              <Calendar className="w-4 h-4" />
+                              Challenge Timeline
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">Start Date:</span>
+                                <div className="font-semibold text-gray-900">{startDate?.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">End Date:</span>
+                                <div className="font-semibold text-gray-900">{endDate?.toLocaleString()}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Problem Statement */}
+                          {challenge.problemStatement && (
+                            <div className="bg-blue-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                Problem Statement
+                              </h4>
+                              <p className="text-gray-700 whitespace-pre-wrap">{challenge.problemStatement}</p>
+                            </div>
+                          )}
+
+                          {/* Guidelines */}
+                          {challenge.guidelines && (
+                            <div className="bg-green-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Target className="w-4 h-4" />
+                                Guidelines
+                              </h4>
+                              <p className="text-gray-700 whitespace-pre-wrap">{challenge.guidelines}</p>
+                            </div>
+                          )}
+
+                          {/* Rubric */}
+                          {challenge.rubric && challenge.rubric.length > 0 && (
+                            <div className="bg-purple-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Scale className="w-4 h-4" />
+                                Evaluation Rubric
+                              </h4>
+                              <div className="space-y-3">
+                                {challenge.rubric.map((criterion, index) => (
+                                  <div key={index} className="bg-white rounded-md p-3 border border-purple-200">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h5 className="font-medium text-gray-900">{criterion.name}</h5>
+                                      <Badge variant="secondary" className="text-xs">
+                                        Weight: {criterion.weight}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-gray-600 text-sm">{criterion.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+
+                    <div className="flex gap-3 flex-wrap items-center">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold px-4 py-2 bg-transparent"
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="w-4 h-4 mr-2" />
+                              Hide Details
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4 mr-2" />
+                              Show Details
+                            </>
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+
                       <Button
                         size="sm"
-                        variant="destructive"
-                        className="bg-red-600 text-white hover:bg-red-700 font-semibold px-4 py-2"
+                        className="bg-gray-900 text-white hover:bg-gray-800 font-semibold px-4 py-2"
                         onClick={() => {
-                          if (competitionStartTime && competitionStartTime < new Date()) {
-                            setShowModal(true)
-                          } else {
-                            setChallengeToDelete(challenge.id)
-                            setDeleteConfirmOpen(true)
-                          }
+                          if (isExpired) setShowModal(true)
+                          else router.push(`/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`)
                         }}
                       >
-                        Delete
+                        Edit
                       </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      {(userRole === "admin" || userRole === "superadmin") && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="bg-red-600 text-white hover:bg-red-700 font-semibold px-4 py-2"
+                          onClick={() => {
+                            if (competitionStartTime && competitionStartTime < new Date()) {
+                              setShowModal(true)
+                            } else {
+                              setChallengeToDelete(challenge.id)
+                              setDeleteConfirmOpen(true)
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Collapsible>
             )
           })}
         </div>
@@ -214,16 +363,27 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-end gap-2">
-            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => {
-              setChallengeToDelete(null)
-              setDeleteConfirmOpen(false)
-            }}>Cancel</Button>
-            <Button className="bg-red-600 text-white hover:bg-red-700 font-semibold" onClick={async () => {
-              if (!challengeToDelete) return
-              await handleDelete(challengeToDelete)
-              setChallengeToDelete(null)
-              setDeleteConfirmOpen(false)
-            }}>Delete</Button>
+            <Button
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
+              onClick={() => {
+                setChallengeToDelete(null)
+                setDeleteConfirmOpen(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700 font-semibold"
+              onClick={async () => {
+                if (!challengeToDelete) return
+                await handleDelete(challengeToDelete)
+                setChallengeToDelete(null)
+                setDeleteConfirmOpen(false)
+              }}
+            >
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -243,7 +403,10 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button className="bg-gray-900 text-white hover:bg-gray-800 font-semibold" onClick={() => setShowModal(false)}>
+            <Button
+              className="bg-gray-900 text-white hover:bg-gray-800 font-semibold"
+              onClick={() => setShowModal(false)}
+            >
               Got it
             </Button>
           </DialogFooter>
@@ -265,7 +428,10 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button className="bg-gray-900 text-white hover:bg-gray-800 font-semibold" onClick={() => setShowCreateModal(false)}>
+            <Button
+              className="bg-gray-900 text-white hover:bg-gray-800 font-semibold"
+              onClick={() => setShowCreateModal(false)}
+            >
               Got it
             </Button>
           </DialogFooter>
