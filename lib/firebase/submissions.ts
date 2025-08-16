@@ -31,13 +31,25 @@ export const checkExistingSubmission = async (
   }
 };
 
+const getByteSize = (str: string): number => {
+  return new Blob([str]).size;
+};
+
+
 // 2. Submit or update a submission
 export const submitPrompt = async (
   competition_ID: string,
   participant_ID: string,
   challenge_ID: string,
   promptText: string
-) => {
+): Promise<{ success: boolean; error?: string }> => {
+  const byteSize = getByteSize(promptText);
+  const maxBytes = 1 * 1024 * 1024; // 1MB
+
+  if (byteSize > maxBytes) {
+    return { success: false, error: "Your submission size exceeds the 1MB limit." };
+  }
+
   const existingSubmission = await checkExistingSubmission(
     competition_ID,
     participant_ID,
@@ -54,7 +66,6 @@ export const submitPrompt = async (
   };
 
   if (existingSubmission) {
-    // Update existing submission
     const submissionDocRef = doc(
       db,
       "competitions",
@@ -63,9 +74,8 @@ export const submitPrompt = async (
       existingSubmission
     );
     await updateDoc(submissionDocRef, submissionData);
-    return true;
+    return { success: true };
   } else {
-    // Create new submission
     const submissionId = `${participant_ID}_${challenge_ID}`;
     const submissionDocRef = doc(
       db,
@@ -76,7 +86,6 @@ export const submitPrompt = async (
     );
     await setDoc(submissionDocRef, submissionData);
 
-    // Update participant doc: increment count & add to completedChallenges
     const participantDocRef = doc(
       db,
       "competitions",
@@ -86,9 +95,9 @@ export const submitPrompt = async (
     );
     await updateDoc(participantDocRef, {
       challengesCompleted: increment(1),
-      completedChallenges: arrayUnion(challenge_ID) // Append without duplicates
+      completedChallenges: arrayUnion(challenge_ID),
     });
 
-    return false;
+    return { success: true, error: null };
   }
 };

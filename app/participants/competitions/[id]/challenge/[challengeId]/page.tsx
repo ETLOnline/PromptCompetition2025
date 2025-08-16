@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { submitPrompt } from "@/lib/firebase/submissions"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/components/ui/use-toast"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ interface UserProfile {
 
 export default function ChallengePage({ params }: { params: Promise<{ id: string; challengeId: string }> }) {
   const { logout } = useAuth()
+  const { toast } = useToast()
   const router = useRouter()
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [prompt, setPrompt] = useState("")
@@ -59,6 +61,7 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
   const [loadingChallenge, setLoadingChallenge] = useState<boolean>(true)
   const [compid, setCompid] = useState<string | null>(null)
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle'); // New state for submission status
+  const [submissionError, setSubmissionError] = useState<string>(''); // Add this new state
 
   
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -538,28 +541,47 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                               ? "This will replace your previous submission."
                               : "Are you ready to submit your solution?"}
                           </p>
-                          <div className="flex justify-center gap-3">
+
+                           <div className="flex justify-center gap-3">
                             <Button
                               className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
                               onClick={async () => {
                                 setLoading(true)
-                                setIsConfirmModalOpen(false) // Close confirmation modal immediately
-                                setSubmissionStatus('submitting'); // Indicate submission is in progress
+                                setIsConfirmModalOpen(false)
+                                setSubmissionStatus("submitting")
 
                                 try {
-                                  await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt)
-                                  setSubmissionStatus('success') // Set status to success on completion
-                                  await fetchSubmissionPrompt(competitionId, challengeId, user.uid) // Re-fetch to update UI if needed
+                                  const result = await submitPrompt(resolvedParams.id, user.uid, resolvedParams.challengeId, prompt)
+                                  // console.log("Submission result:", result)
+                                  if (!result.success) {
+                                    setSubmissionError(result.error); // Store the specific error
+                                    setSubmissionStatus("error")
+                                    return
+                                  }
+
+                                  
+                                  setSubmissionStatus("success")
+                                  toast({
+                                    title: "Submission Successful",
+                                    description: hasPreviousSubmission
+                                      ? "Your submission has been updated."
+                                      : "Your submission has been saved.",
+                                  })
+
+                                  await fetchSubmissionPrompt(resolvedParams.id, resolvedParams.challengeId, user.uid)
                                 } catch (error) {
+                                  // console.error("Error submitting prompt:", error)
                                   console.error("Error submitting prompt:", error)
-                                  setSubmissionStatus('error') // Set status to error on failure
+                                  setSubmissionStatus("error") 
+                                  setSubmissionError("Error submitting prompt. Please try again later.");                             
                                 } finally {
-                                  setLoading(false) // Stop loading indicator
+                                  setLoading(false)
                                 }
                               }}
                             >
-                              {hasPreviousSubmission ? "Update" : "Submit"}
+                              {loading ? "Submitting..." : hasPreviousSubmission ? "Update" : "Submit"}
                             </Button>
+
                             <Button
                               variant="outline"
                               onClick={() => setIsConfirmModalOpen(false)}
@@ -591,22 +613,25 @@ export default function ChallengePage({ params }: { params: Promise<{ id: string
                     )}
                     {/* Error Modal */}
                     {submissionStatus === 'error' && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
-                          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <AlertCircle className="w-8 h-8 text-red-600" />
-                          </div>
-                          <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Failed</h2>
-                          <p className="text-gray-600 mb-6">There was an error submitting your prompt. Please try again.</p>
-                          <Button
-                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
-                            onClick={() => setSubmissionStatus('idle')} // Close error modal
-                          >
-                            Close
-                          </Button>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                      <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <AlertCircle className="w-8 h-8 text-red-600" />
                         </div>
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Failed</h2>
+                        <p className="text-gray-600 mb-6">{submissionError}</p> {/* Show specific error */}
+                        <Button
+                          className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                          onClick={() => {
+                            setSubmissionStatus('idle');
+                            setSubmissionError(''); // Clear error when closing
+                          }}
+                        >
+                          Close
+                        </Button>
                       </div>
-                    )}
+                    </div>
+                  )}
                   </>
                 )}
               </CardContent>
