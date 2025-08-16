@@ -92,3 +92,9 @@ export interface Challenge {
   createdAt: any
   updatedAt: any
 }
+
+export interface ScoreData {
+  score: number
+  feedback: string
+  rubricScores: Record<string, number>
+}

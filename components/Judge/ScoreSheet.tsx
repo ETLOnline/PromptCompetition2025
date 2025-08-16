@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { X, Save, FileText } from "lucide-react"
-import type { Submission, Challenge } from "@/types/judge-submission"
-import type { ScoreData } from "@/lib/judge/scoring"
+import type { Submission, Challenge, ScoreData } from "@/types/judge-submission"
 
 interface ScoreSheetProps {
   isOpen: boolean
