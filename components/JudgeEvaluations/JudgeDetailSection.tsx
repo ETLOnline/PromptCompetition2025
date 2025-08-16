@@ -7,24 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { User, FileText, Clock, FileX, Loader2 } from "lucide-react"
 import ChallengeAccordionItem from "./ChallengeAccordionItem"
 import { getAvatarColor } from "@/lib/judge/utils"
-
-interface Evaluation {
-  scores: Record<string, number>
-  totalScore: number
-  comment: string
-  updatedAt: any
-}
-
-interface JudgeDetailSectionProps {
-  judgeIds: string[]
-  groupedEvaluations: {
-    [judgeId: string]: {
-      [challengeId: string]: Evaluation[]
-    }
-  }
-  judgeMapping: Record<string, string>
-  defaultSelectedJudge: string
-}
+import type { Evaluation, JudgeDetailSectionProps, ChallengeAccordionItemProps } from "@/types/judgeEvaluations";
 
 export default function JudgeDetailSection({
   judgeIds,

@@ -8,26 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { AlertCircle, FileX } from "lucide-react"
 import JudgeList from "@/components/JudgeEvaluations/JudgeList"
 import JudgeDetailSection from "@/components/JudgeEvaluations/JudgeDetailSection"
-
-interface Evaluation {
-  judgeId: string
-  challengeId: string
-  scores: Record<string, number>
-  totalScore: number
-  comment: string
-  updatedAt: any
-}
-
-interface GroupedEvaluations {
-  [judgeId: string]: {
-    [challengeId: string]: {
-      scores: Record<string, number>
-      totalScore: number
-      comment: string
-      updatedAt: any
-    }[]
-  }
-}
+import type { Evaluation, GroupedEvaluations } from "@/types/judgeEvaluations";
 
 async function getJudgeEvaluations(competitionId: string) {
   const { evaluations } = await fetchWithAuth(
@@ -41,15 +22,16 @@ function groupEvaluationsByJudge(evaluations: Evaluation[]): GroupedEvaluations 
     (acc, evaluation) => {
       const { judgeId, challengeId, scores, totalScore, comment, updatedAt } = evaluation
 
-      if (!acc[judgeId]) {
-        acc[judgeId] = {}
-      }
+      const id = judgeId!;
+      const challenge = challengeId!;
 
-      if (!acc[judgeId][challengeId]) {
-        acc[judgeId][challengeId] = []
-      }
+      if (!acc[id]) 
+        acc[id] = {};
 
-      acc[judgeId][challengeId].push({ scores, totalScore, comment, updatedAt })
+      if (!acc[id][challenge]) 
+        acc[id][challenge] = [];
+
+      acc[id][challenge].push({ scores, totalScore, comment, updatedAt });
 
       return acc
     },

@@ -4,16 +4,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Trophy, MessageCircle, Target, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
-
-interface ChallengeAccordionItemProps {
-  challengeId: string
-  evaluations: {
-    scores: Record<string, number>
-    totalScore: number
-    comment: string
-    updatedAt: any
-  }[]
-}
+import type { ChallengeAccordionItemProps } from "@/types/judgeEvaluations";
 
 export default function ChallengeAccordionItem({ challengeId, evaluations }: ChallengeAccordionItemProps) {
   const getScoreIcon = (score: number) => {

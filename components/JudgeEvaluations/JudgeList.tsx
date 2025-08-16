@@ -7,12 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Users, Check, CheckCircle2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getAvatarColor } from "@/lib/judge/utils"
+import type { JudgeListProps } from "@/types/judgeEvaluations";
 
-interface JudgeListProps {
-  judgeIds: string[]
-  judgeMapping: Record<string, string>
-  defaultSelectedJudge: string
-}
 
 export default function JudgeList({ judgeIds, judgeMapping, defaultSelectedJudge }: JudgeListProps) {
   const [selectedJudge, setSelectedJudge] = useState(defaultSelectedJudge)
