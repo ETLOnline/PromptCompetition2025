@@ -2,6 +2,9 @@ import { getAuth } from "firebase/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
+//-------------------------------------------------------
+//------------ competitions.ts API's  -------------------
+//-------------------------------------------------------
 export const fetchCompetitions = async () => {
   const res = await fetch(`${API_URL}/competition`)
   if (!res.ok) throw new Error("Failed to fetch competitions")
@@ -35,6 +38,7 @@ export const deleteCompetition = async (id: string) => {
 };
 
 
+
 // sends JWT token to backend And waits for approval
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const auth = getAuth();
@@ -65,6 +69,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
 }
 
 
+//----------------- contact us API  ---------------------
 export const submitContactForm = async (formData: any) => {
   const res = await fetch(`${API_URL}/contact`, {
     method: "POST",
