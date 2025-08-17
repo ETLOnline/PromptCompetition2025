@@ -197,14 +197,6 @@ export default function ChallengePage() {
         challenge.rubric
       )
 
-      fetch("/api/debugger", {
-          method: "POST",
-          body: JSON.stringify({ message: `scoreFormData object: ${JSON.stringify(scoreFormData)}` }),
-          headers: {
-              "Content-Type": "application/json",
-          },
-      })
-
       await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${selectedSubmission.id}/${userUID}`,
         {
