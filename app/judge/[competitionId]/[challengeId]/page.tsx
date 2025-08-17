@@ -135,7 +135,7 @@ export default function ChallengePage() {
       setHasMoreSubmissions(hasMore)
 
       const totalAssigned = assignment?.assignedCountTotal || newSubmissions.length
-      const totalScored = newSubmissions.filter((s) => s.judges?.[userUID]).length
+      const totalScored = newSubmissions.filter((s: Submission) => Boolean(s.judges?.[userUID])).length
       const percentage = totalAssigned > 0 ? Math.round((totalScored / totalAssigned) * 100) : 0
 
       setProgressStats({
@@ -189,14 +189,14 @@ export default function ChallengePage() {
   }
 
   const saveSubmissionScore = async () => {
-    if (!selectedSubmission) return
+    if (!selectedSubmission || !challenge) return
     try {
       setIsSavingScore(true)
       const totalScore = calculateWeightedTotal(
         scoreFormData.rubricScores,
         challenge.rubric
       )
-
+  
       await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${selectedSubmission.id}/${userUID}`,
         {
