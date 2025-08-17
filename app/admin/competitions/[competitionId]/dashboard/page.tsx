@@ -91,18 +91,20 @@ export default function AdminDashboard() {
             </Card>
           </Link>
 
-          <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <h3 className="text-gray-600 font-medium">Total Submissions</h3>
-                <div className="text-4xl font-bold text-gray-900">{totalSubmissions}</div>
-                <p className="text-gray-500 text-sm">For this competition</p>
+          <Link href={`/admin/competitions/${competitionId}/llm-evaluations`}>
+            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <h3 className="text-gray-600 font-medium">Total Submissions</h3>
+                  <div className="text-4xl font-bold text-gray-900">{totalSubmissions}</div>
+                  <p className="text-gray-500 text-sm">For this competition</p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
               </div>
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
           <Link href={`/admin/competitions/${competitionId}/judge-evaluations`}>
             <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
