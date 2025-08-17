@@ -84,3 +84,14 @@ export const submitContactForm = async (formData: any) => {
   }
   return res.json();
 };
+
+// ---------------- competition results ----------------
+export const fetchCompetitionResults = async (competitionId: string) => {
+  if (!competitionId) {
+    throw new Error("Competition ID is required");
+  }
+
+  return await fetchWithAuth(`${API_URL}/results/${competitionId}`, {
+    method: "GET",
+  });
+};

@@ -248,7 +248,7 @@ export default function CompetitionsPage() {
     const status = getCompetitionStatus(competition)
 
     if (status.status === "ENDED" && isRegistered) {
-      router.push(`/participants/competitions/${competition.id}`)
+      router.push(`/participants/competitions/${competition.id}/results`);
     } else if (isRegistered) {
       router.push(`/participants/competitions/${competition.id}`)
     } else {
