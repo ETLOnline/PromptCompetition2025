@@ -1,14 +1,13 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { ChevronDown, MoreHorizontal } from "lucide-react"
+import { ChevronRight, Loader } from "lucide-react"
 
 interface ProgressStats {
   totalAssigned: number
-  totalScored: number
-  currentPage: number
-  totalPages: number
+  graded: number
+  remaining: number
+  percentage: number
 }
 
 interface ProgressFooterProps {
@@ -24,44 +23,50 @@ export function ProgressFooter({
   isLoadingSubmissions,
   onLoadMore,
 }: ProgressFooterProps) {
-  const progressPercentage =
-    progressStats.totalAssigned > 0 ? (progressStats.totalScored / progressStats.totalAssigned) * 100 : 0
+  if (progressStats.totalAssigned <= 0) return null
 
   return (
-    <div className="sticky bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
-      <div className="container mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm text-slate-600">
-            Progress: {progressStats.totalScored} of {progressStats.totalAssigned} submissions scored
+    <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+      <div className="container mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <div className="text-sm">
+            <span className="font-medium text-gray-900">Progress:</span>
+            <span className="ml-2">
+              {progressStats.graded} / {progressStats.totalAssigned} graded
+            </span>
           </div>
-          <div className="text-sm text-slate-600">
-            Page {progressStats.currentPage} of {progressStats.totalPages}
+          <div className="flex items-center gap-2">
+            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 transition-all duration-300"
+                style={{ width: `${progressStats.percentage}%` }}
+              />
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              {progressStats.percentage}%
+            </span>
           </div>
         </div>
 
-        <Progress value={progressPercentage} className="mb-3" />
-
         {hasMoreSubmissions && (
-          <div className="flex justify-center">
-            <Button
-              variant="outline"
-              onClick={onLoadMore}
-              disabled={isLoadingSubmissions}
-              className="flex items-center gap-2 bg-transparent"
-            >
-              {isLoadingSubmissions ? (
-                <>
-                  <MoreHorizontal className="h-4 w-4 animate-pulse" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  Load More Submissions
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={onLoadMore}
+            disabled={isLoadingSubmissions}
+            variant="outline"
+            className="bg-transparent"
+          >
+            {isLoadingSubmissions ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Load More
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </>
+            )}
+          </Button>
         )}
       </div>
     </div>
