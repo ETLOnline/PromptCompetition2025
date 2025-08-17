@@ -31,7 +31,7 @@ interface Competition {
 }
 
 export default function ResultsPage() {
-  const { id } = useParams()
+  const { competitionId } = useParams() // Changed from 'id' to 'competitionId'
   const router = useRouter()
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [competition, setCompetition] = useState<Competition | null>(null)
@@ -63,12 +63,12 @@ export default function ResultsPage() {
         setLoading(true)
         setError(null)
 
-        if (!id || typeof id !== "string") {
+        if (!competitionId || typeof competitionId !== "string") { // Changed from 'id' to 'competitionId'
           throw new Error("Invalid competition ID")
         }
 
         // 🔹 Call backend API instead of Firestore directly
-        const { competition, submissions } = await fetchCompetitionResults(id)
+        const { competition, submissions } = await fetchCompetitionResults(competitionId) // Changed from 'id' to 'competitionId'
 
         setCompetition(competition)
         setSubmissions(submissions)
@@ -81,8 +81,8 @@ export default function ResultsPage() {
     }
 
     fetchData()
-  }, [id, user, authLoading, router])
-
+  }, [competitionId, user, authLoading, router])
+  
   const handleRetry = () => {
     if (!user) return
 

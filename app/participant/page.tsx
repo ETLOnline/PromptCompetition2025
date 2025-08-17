@@ -10,11 +10,12 @@ import { useSubmissionStore } from "@/lib/store"
 import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
 import { useAuth } from "@/components/auth-provider"
 
-import { RegistrationModal } from "@/components/ParticipantCompetitions/registration-modal"
-import { CompetitionSkeleton } from "@/components/ParticipantCompetitions/competition-skeleton"
-import { CompetitionSection } from "@/components/ParticipantCompetitions/competition-section"
-import { SearchAndFilters } from "@/components/ParticipantCompetitions/search-and-filters"
-import { EmptyState } from "@/components/ParticipantCompetitions/empty-state"
+import { RegistrationModal } from "@/components/participantcompetitions/registration-modal"
+import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
+import { CompetitionSection } from "@/components/participantcompetitions/competition-section"
+import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
+import { EmptyState } from "@/components/participantcompetitions/empty-state"
+// import { PageHeader } from "@/components/participantcompetitions/page-header"
 
 interface Competition {
   id: string
@@ -247,7 +248,7 @@ export default function CompetitionsPage() {
     const status = getCompetitionStatus(competition)
 
     if (status.status === "ENDED" && isRegistered) {
-      router.push(`/participant/${competition.id}`)
+      router.push(`/participant/${competition.id}/results`)
     } else if (isRegistered) {
       router.push(`/participant/${competition.id}`)
     } else {
