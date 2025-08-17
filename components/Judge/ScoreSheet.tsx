@@ -83,7 +83,6 @@ export function ScoreSheet({
 
           {/* Overall Feedback */}
           <div>
-            <Label>Feedback</Label>
             <Textarea
               placeholder="General feedback..."
               value={scoreFormData.comment || ""}
