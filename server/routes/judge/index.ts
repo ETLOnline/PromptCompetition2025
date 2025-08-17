@@ -138,6 +138,7 @@ judgeRouter.get(
 judgeRouter.get(
   "/judge-evaluations/:competitionId",
   authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
   fetchJudgeEvaluations
 );
 

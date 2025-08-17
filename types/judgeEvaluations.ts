@@ -29,10 +29,3 @@ export interface ChallengeAccordionItemProps {
   challengeId: string;
   evaluations: Evaluation[];
 }
-
-
-export interface JudgeListProps {
-  judgeIds: string[]
-  judgeMapping: Record<string, string>
-  defaultSelectedJudge: string
-}
