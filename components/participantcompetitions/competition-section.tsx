@@ -25,7 +25,6 @@ interface CompetitionSectionProps {
   participantMap: Record<string, boolean>
   completionMap: Record<string, boolean>
   loadingMap: Record<string, boolean>
-  buttonStatesLoading: Record<string, boolean>
   onCardClick: (competition: Competition) => void
   onButtonClick: (competition: Competition) => void
 }
@@ -41,7 +40,6 @@ export const CompetitionSection = ({
   participantMap,
   completionMap,
   loadingMap,
-  buttonStatesLoading,
   onCardClick,
   onButtonClick,
 }: CompetitionSectionProps) => {
@@ -60,7 +58,7 @@ export const CompetitionSection = ({
           const startDateTime = formatDateTime(competition.startDeadline)
           const endDateTime = formatDateTime(competition.endDeadline)
           const isRegistered = participantMap[competition.id]
-          const isButtonLoading = loadingMap[competition.id] || buttonStatesLoading[competition.id] || false
+          const isButtonLoading = loadingMap[competition.id]
           const isCompleted = completionMap[competition.id] || false
 
           return (

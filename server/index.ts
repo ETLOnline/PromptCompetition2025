@@ -14,6 +14,8 @@
 // import superadminRouter from "./routes/superadmin.js";
 // import competitionsRouter from "./routes/competitions.js";
 // import contactRouter from "./routes/contact.js";
+// import resultRoutes from "./routes/result.js";
+
 
 
 // import { auth } from "./config/firebase-admin.js"; // ✅ Import Firebase Admin Auth
@@ -47,6 +49,8 @@
 // app.use("/superadmin", superadminRouter);
 // app.use("/competition", competitionsRouter);
 // app.use("/contact", contactRouter);
+// app.use("/results", resultRoutes);
+
 
 
 // console.log("4. Routes configured");
@@ -91,6 +95,7 @@ import roleRoutes from "./routes/roles.js";
 import authRoutes from "./routes/auth.js" 
 import contactRouter from "./routes/contact.js";
 import challengeDistributionRouter from "./routes/challenge-distribution.js";
+import resultRoutes from "./routes/result.js";
 
 // judge dashboard functions
 import judgeRouter from "./routes/judge/index.js";
@@ -126,6 +131,7 @@ app.use("/role", roleRoutes);
 app.use("/challenge-distribution", challengeDistributionRouter);
 
 app.use("/judge", judgeRouter);
+app.use("/results", resultRoutes);
 app.use("/llm-evaluations", llmRouter);
 
 

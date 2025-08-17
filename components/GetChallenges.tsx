@@ -159,8 +159,8 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         <div className="grid gap-6">
           {challenges.map((challenge) => {
             const updateDate = challenge.lastupdatetime?.toDate()
-            const startDate = challenge.startDeadline?.toDate()
-            const endDate = challenge.endDeadline?.toDate()
+            // const startDate = challenge.startDeadline?.toDate()
+            // const endDate = challenge.endDeadline?.toDate()
             const isExpired = competitionStartTime < new Date()
             const isExpanded = expandedChallenges.has(challenge.id)
 
@@ -199,7 +199,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                         </div>
                         <div>
                           <span className="text-gray-700 font-medium">Start:</span>
-                          <div className="font-bold text-gray-900">{startDate?.toLocaleString()}</div>
+                          <div className="font-bold text-gray-900">{competitionStartTime?.toLocaleString()}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -234,11 +234,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                             <div className="grid md:grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="text-gray-600">Start Date:</span>
-                                <div className="font-semibold text-gray-900">{startDate?.toLocaleString()}</div>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">End Date:</span>
-                                <div className="font-semibold text-gray-900">{endDate?.toLocaleString()}</div>
+                                <div className="font-semibold text-gray-900">{competitionStartTime?.toLocaleString()}</div>
                               </div>
                             </div>
                           </div>
