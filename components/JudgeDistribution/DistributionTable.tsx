@@ -106,15 +106,6 @@ export default function DistributionTable({
     setIsProcessing(true)
 
     try {
-
-      fetch("/api/debugger", {
-          method: "POST",
-          body: JSON.stringify({ message: `submissionsByChallenge object: ${JSON.stringify(submissionsByChallenge)}` }),
-          headers: {
-              "Content-Type": "application/json",
-          },
-      })
-
       // Define topParticipants — you may get this from props or state as needed.
       // For now, let's assume all participants are "top participants" (can be refined).
       // Collect all participant IDs from submissions:

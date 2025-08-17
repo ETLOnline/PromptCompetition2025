@@ -99,7 +99,7 @@ import resultRoutes from "./routes/result.js";
 
 // judge dashboard functions
 import judgeRouter from "./routes/judge/index.js";
-
+import llmRouter from "./routes/llmevaluations.js";
 
 console.log("2. Starting server setup...");
 console.log("3. Routers imported successfully");
@@ -132,6 +132,8 @@ app.use("/challenge-distribution", challengeDistributionRouter);
 
 app.use("/judge", judgeRouter);
 app.use("/results", resultRoutes);
+app.use("/llm-evaluations", llmRouter);
+
 
 
 console.log("4. Routes configured");
