@@ -24,17 +24,13 @@ import {
   Clock,
   Calendar,
   Sparkles,
-  ArrowRight,
   CheckCircle2,
   MapPin,
-  DollarSign,
   ChevronDown,
   Search,
   Filter,
   Grid3X3,
   List,
-  ChevronLeft,
-  ChevronRight,
   UserPlus,
   X,
   Eye,
@@ -189,6 +185,7 @@ export default function CompetitionsPage() {
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
 
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [completedCompetitions, setCompletedCompetitions] = useState<string[]>([])
 
   useEffect(() => {
     const init = async () => {
@@ -355,39 +352,33 @@ export default function CompetitionsPage() {
     }
   }
 
-const fetchCompetitionCompletionStatus = async (participantId: string) => {
-  const competitionsRef = collection(db, "competitions");
-  const competitionsSnap = await getDocs(competitionsRef);
+  const fetchCompetitionCompletionStatus = async (participantId: string) => {
+    const competitionsRef = collection(db, "competitions")
+    const competitionsSnap = await getDocs(competitionsRef)
 
-  const results: Record<string, boolean> = {};
+    const results: Record<string, boolean> = {}
 
-  // Prepare all participant doc fetches in parallel
-  const promises = competitionsSnap.docs.map(async (competitionDoc) => {
-    const competitionId = competitionDoc.id;
-    const competitionData = competitionDoc.data();
-    const challengeCount = competitionData.ChallengeCount || 0;
+    // Prepare all participant doc fetches in parallel
+    const promises = competitionsSnap.docs.map(async (competitionDoc) => {
+      const competitionId = competitionDoc.id
+      const competitionData = competitionDoc.data()
+      const challengeCount = competitionData.ChallengeCount || 0
 
-    // Fetch participant's document for this competition
-    const participantDocRef = doc(
-      db,
-      "competitions",
-      competitionId,
-      "participants",
-      participantId
-    );
-    const participantSnap = await getDoc(participantDocRef);
-    const participantData = participantSnap.data();
+      // Fetch participant's document for this competition
+      const participantDocRef = doc(db, "competitions", competitionId, "participants", participantId)
+      const participantSnap = await getDoc(participantDocRef)
+      const participantData = participantSnap.data()
 
-    const challengesCompleted = participantData?.challengesCompleted || 0;
+      const challengesCompleted = participantData?.challengesCompleted || 0
 
-    results[competitionId] = challengeCount === challengesCompleted;
-  });
+      results[competitionId] = challengeCount === challengesCompleted
+    })
 
-  // Wait for all fetches to finish
-  await Promise.all(promises);
+    // Wait for all fetches to finish
+    await Promise.all(promises)
 
-  return results;
-};
+    return results
+  }
 
   const formatDateTime = (dateString: any) => {
     const date = dateString?.toDate?.() ?? new Date(dateString)
@@ -410,18 +401,45 @@ const fetchCompetitionCompletionStatus = async (participantId: string) => {
     handleViewDetails(competition)
   }
 
+  const groupCompetitionsByStatus = (competitions: Competition[]) => {
+    const groups = {
+      active: [] as Competition[],
+      upcoming: [] as Competition[],
+      ended: [] as Competition[],
+    }
+
+    competitions.forEach((comp) => {
+      const status = getCompetitionStatus(comp)
+      if (status.status === "ACTIVE") {
+        groups.active.push(comp)
+      } else if (status.status === "UPCOMING") {
+        groups.upcoming.push(comp)
+      } else if (status.status === "ENDED") {
+        const isRegistered = participantMap[comp.id]
+        const isCompleted = completedCompetitions.includes(comp.id)
+        if (isRegistered || isCompleted) {
+          groups.ended.push(comp)
+        }
+      }
+    })
+
+    return groups
+  }
+
   const filteredCompetitions = competitions.filter((comp) => {
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
     const status = getCompetitionStatus(comp)
-    if (filterStatus === "all") return status.status !== "ENDED" && status.status !== "INACTIVE"
+    if (filterStatus === "all") return status.status !== "INACTIVE"
     return status.status.toLowerCase() === filterStatus.toLowerCase()
   })
 
-  const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentCompetitions = filteredCompetitions.slice(startIndex, endIndex)
+  const groupedCompetitions = groupCompetitionsByStatus(filteredCompetitions)
+
+  // const totalPages = Math.ceil(filteredCompetitions.length / itemsPerPage)
+  // const startIndex = (currentPage - 1) * itemsPerPage
+  // const endIndex = startIndex + itemsPerPage
+  // const currentCompetitions = filteredCompetitions.slice(startIndex, endIndex)
 
   useEffect(() => {
     setCurrentPage(1)
@@ -567,8 +585,8 @@ const fetchCompetitionCompletionStatus = async (participantId: string) => {
           </div>
         </div>
       </div>
-      {/* Main Content with the border */}
-      <div className="max-w-7xl mx-auto px-6 pb-12 bg-white border border-gray-200 rounded-xl shadow-sm mb-8">
+      {/* Main Content without the border */}
+      <div className="max-w-7xl mx-auto px-6 pb-12 bg-white rounded-xl shadow-sm mb-8">
         <div className="py-8">
           {" "}
           {/* Added padding inside the bordered area */}
@@ -607,188 +625,479 @@ const fetchCompetitionCompletionStatus = async (participantId: string) => {
             </Card>
           ) : (
             <>
-              <div
-                className={
-                  viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" : "space-y-4 mb-8"
-                }
-              >
-                {currentCompetitions.map((competition) => {
-                  const status = getCompetitionStatus(competition)
-                  const startDateTime = formatDateTime(competition.startDeadline)
-                  const endDateTime = formatDateTime(competition.endDeadline)
-                  const isRegistered = participantMap[competition.id]
-                  const isButtonLoading = loadingMap[competition.id]
-                  const isCompleted = completionMap[competition.id] || false // Added completion status check
-                  return (
-                    <Card
-                      key={competition.id}
-                      className="group relative overflow-hidden bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit cursor-pointer"
-                      onClick={() => handleCompetitionClick(competition)}
+              <div className="space-y-12">
+                {/* Active Competitions Section */}
+                {groupedCompetitions.active.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                      <h3 className="text-xl font-bold text-gray-900">Active Competitions</h3>
+                      <Badge className="bg-green-50 text-green-700 border-green-200 border font-medium">
+                        {groupedCompetitions.active.length}
+                      </Badge>
+                    </div>
+                    <div
+                      className={
+                        viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"
+                      }
                     >
-                      <CardContent className="p-6">
-                        <div className="space-y-4">
-                          <div className="flex items-start justify-between min-h-[40px]">
-                            <div className="flex-1 min-w-0 pr-4">
-                              <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight group-hover:text-gray-700 transition-colors min-h-[45px]">
-                                {competition.title}
-                              </h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge className={`${status.color} border font-medium whitespace-nowrap`}>
-                                <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
-                                {status.label}
-                              </Badge>
-                              {isCompleted ? (
-                                <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium whitespace-nowrap">
-                                  <Trophy className="w-3 h-3 mr-1" />
-                                  Completed
-                                </Badge>
-                              ) : isRegistered ? (
-                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium whitespace-nowrap">
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Registered
-                                </Badge>
-                              ) : null}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-900"
-                                onClick={(e) => {
-                                  e.stopPropagation() // Prevent card click
-                                  handleViewDetails(competition)
-                                }}
-                              >
-                                <Eye className="w-4 h-4" />
-                                <span className="sr-only">View Details</span>
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-3 text-sm text-gray-600">
-                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <Calendar className="w-4 h-4 text-blue-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-gray-900 text-sm">
-                                {startDateTime.date === endDateTime.date
-                                  ? startDateTime.date
-                                  : `${startDateTime.date} - ${endDateTime.date}`}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {startDateTime.time} → {endDateTime.time}
-                              </div>
-                            </div>
-                          </div>
-                          {competition.location && (
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                              <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <MapPin className="w-4 h-4 text-green-600" />
-                              </div>
-                              <span className="font-medium capitalize">{competition.location}</span>
-                            </div>
-                          )}
-                          {competition.prizeMoney && (
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                              <div className="w-8 h-8 bg-yellow-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <DollarSign className="w-4 h-4 text-yellow-600" />
-                              </div>
-                              <span className="font-medium">{competition.prizeMoney}</span>
-                            </div>
-                          )}
-                        </div>
-                        {(status.status === "ACTIVE" || status.status === "UPCOMING") && (
-                          <Button
-                            className="w-full mt-4 bg-gray-900 hover:bg-gray-800 text-white border-0 transition-all duration-300"
-                            disabled={isButtonLoading}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (isRegistered) {
-                                router.push(`/participants/competitions/${competition.id}`)
-                              } else {
-                                showRegistrationConfirmation(competition)
-                              }
-                            }}
+                      {groupedCompetitions.active.map((competition) => {
+                        const status = getCompetitionStatus(competition)
+                        const startDateTime = formatDateTime(competition.startDeadline)
+                        const endDateTime = formatDateTime(competition.endDeadline)
+                        const isRegistered = participantMap[competition.id]
+                        const isButtonLoading = loadingMap[competition.id]
+                        const isCompleted = completionMap[competition.id] || false
+                        return (
+                          <Card
+                            key={competition.id}
+                            className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group cursor-pointer"
+                            onClick={() => handleCompetitionClick(competition)}
                           >
-                            {isButtonLoading ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                Loading...
-                              </>
-                            ) : isRegistered ? (
-                              <>
-                                <Trophy className="w-4 h-4 mr-2" />
-                                {isCompleted ? "View Results" : "Continue Competition"}{" "}
-                                {/* Updated button text based on completion status */}
-                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus className="w-4 h-4 mr-2" />
-                                Register Competition
-                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredCompetitions.length)} of{" "}
-                    {filteredCompetitions.length} competitions
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="border-gray-200"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {[...Array(totalPages)].map((_, i) => {
-                        const page = i + 1
-                        if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
-                          return (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setCurrentPage(page)}
-                              className="w-8 h-8 p-0 border-gray-200"
-                            >
-                              {page}
-                            </Button>
-                          )
-                        } else if (page === currentPage - 2 || page === currentPage + 2) {
-                          return (
-                            <span key={page} className="px-2 text-gray-400">
-                              ...
-                            </span>
-                          )
-                        }
-                        return null
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
+                              <CardContent className="p-8 relative flex flex-col h-full">
+                                <div className="flex justify-between items-start mb-6">
+                                  <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={`${status.color} border font-medium px-3 py-1`}>
+                                        <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+                                        {status.label}
+                                      </Badge>
+                                      {isRegistered && (
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium">
+                                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                                          Registered
+                                        </Badge>
+                                      )}
+                                      {isCompleted && (
+                                        <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium">
+                                          <Trophy className="w-3 h-3 mr-1" />
+                                          Completed
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight line-clamp-2 min-h-[3.5rem]">
+                                      {competition.title}
+                                    </h3>
+                                  </div>
+                                  <div className="ml-4">
+                                    <Eye className="h-5 w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6 flex-1">
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                      <Calendar className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Date
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {startDateTime.date === endDateTime.date
+                                          ? startDateTime.date
+                                          : `${startDateTime.date} - ${endDateTime.date}`}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                      <Clock className="h-4 w-4 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Time
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {startDateTime.time} → {endDateTime.time}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                      <MapPin className="h-4 w-4 text-purple-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Location
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {competition.location || "Online"}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                      <Trophy className="h-4 w-4 text-amber-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Prize
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {competition.prizeMoney || "TBD"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-100">
+                                  {(status.status === "ACTIVE" || status.status === "UPCOMING") && (
+                                    <Button
+                                      className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
+                                      disabled={isButtonLoading}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (isRegistered) {
+                                          router.push(`/participants/competitions/${competition.id}`)
+                                        } else {
+                                          showRegistrationConfirmation(competition)
+                                        }
+                                      }}
+                                    >
+                                      {isButtonLoading ? (
+                                        <>
+                                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                          <span className="font-semibold">Loading...</span>
+                                        </>
+                                      ) : isRegistered ? (
+                                        <>
+                                          <Trophy className="h-5 w-5" />
+                                          <span className="font-semibold">
+                                            {isCompleted ? "View Results" : "Continue"}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserPlus className="h-5 w-5" />
+                                          <span className="font-semibold">Register</span>
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </div>
+                          </Card>
+                        )
                       })}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="border-gray-200"
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Upcoming Competitions Section */}
+                {groupedCompetitions.upcoming.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                      <h3 className="text-xl font-bold text-gray-900">Upcoming Competitions</h3>
+                      <Badge className="bg-blue-50 text-blue-700 border-blue-200 border font-medium">
+                        {groupedCompetitions.upcoming.length}
+                      </Badge>
+                    </div>
+                    <div
+                      className={
+                        viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"
+                      }
+                    >
+                      {groupedCompetitions.upcoming.map((competition) => {
+                        const status = getCompetitionStatus(competition)
+                        const startDateTime = formatDateTime(competition.startDeadline)
+                        const endDateTime = formatDateTime(competition.endDeadline)
+                        const isRegistered = participantMap[competition.id]
+                        const isButtonLoading = loadingMap[competition.id]
+                        const isCompleted = completionMap[competition.id] || false
+                        return (
+                          <Card
+                            key={competition.id}
+                            className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group cursor-pointer"
+                            onClick={() => handleCompetitionClick(competition)}
+                          >
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
+                              <CardContent className="p-8 relative flex flex-col h-full">
+                                <div className="flex justify-between items-start mb-6">
+                                  <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={`${status.color} border font-medium px-3 py-1`}>
+                                        <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+                                        {status.label}
+                                      </Badge>
+                                      {isRegistered && (
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium">
+                                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                                          Registered
+                                        </Badge>
+                                      )}
+                                      {isCompleted && (
+                                        <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium">
+                                          <Trophy className="w-3 h-3 mr-1" />
+                                          Completed
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight line-clamp-2 min-h-[3.5rem]">
+                                      {competition.title}
+                                    </h3>
+                                  </div>
+                                  <div className="ml-4">
+                                    <Eye className="h-5 w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6 flex-1">
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                      <Calendar className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Date
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {startDateTime.date === endDateTime.date
+                                          ? startDateTime.date
+                                          : `${startDateTime.date} - ${endDateTime.date}`}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                      <Clock className="h-4 w-4 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Time
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {startDateTime.time} → {endDateTime.time}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                      <MapPin className="h-4 w-4 text-purple-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Location
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {competition.location || "Online"}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                      <Trophy className="h-4 w-4 text-amber-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Prize
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {competition.prizeMoney || "TBD"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-100">
+                                  {(status.status === "ACTIVE" || status.status === "UPCOMING") && (
+                                    <Button
+                                      className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
+                                      disabled={isButtonLoading}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (isRegistered) {
+                                          router.push(`/participants/competitions/${competition.id}`)
+                                        } else {
+                                          showRegistrationConfirmation(competition)
+                                        }
+                                      }}
+                                    >
+                                      {isButtonLoading ? (
+                                        <>
+                                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                          <span className="font-semibold">Loading...</span>
+                                        </>
+                                      ) : isRegistered ? (
+                                        <>
+                                          <Trophy className="h-5 w-5" />
+                                          <span className="font-semibold">
+                                            {isCompleted ? "View Results" : "Continue"}
+                                          </span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserPlus className="h-5 w-5" />
+                                          <span className="font-semibold">Register</span>
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </div>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Ended Competitions Section */}
+                {groupedCompetitions.ended.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <h3 className="text-xl font-bold text-gray-900">Ended Competitions</h3>
+                      <Badge className="bg-gray-50 text-gray-600 border-gray-200 border font-medium">
+                        {groupedCompetitions.ended.length}
+                      </Badge>
+                    </div>
+                    <div
+                      className={
+                        viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"
+                      }
+                    >
+                      {groupedCompetitions.ended.map((competition) => {
+                        const status = getCompetitionStatus(competition)
+                        const startDateTime = formatDateTime(competition.startDeadline)
+                        const endDateTime = formatDateTime(competition.endDeadline)
+                        const isRegistered = participantMap[competition.id]
+                        const isButtonLoading = loadingMap[competition.id]
+                        const isCompleted = completionMap[competition.id] || false
+                        return (
+                          <Card
+                            key={competition.id}
+                            className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group cursor-pointer"
+                            onClick={() => handleCompetitionClick(competition)}
+                          >
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
+                              <CardContent className="p-8 relative flex flex-col h-full">
+                                <div className="flex justify-between items-start mb-6">
+                                  <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge className={`${status.color} border font-medium px-3 py-1`}>
+                                        <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+                                        {status.label}
+                                      </Badge>
+                                      {isRegistered && (
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium">
+                                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                                          Registered
+                                        </Badge>
+                                      )}
+                                      {isCompleted && (
+                                        <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium">
+                                          <Trophy className="w-3 h-3 mr-1" />
+                                          Completed
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight line-clamp-2 min-h-[3.5rem]">
+                                      {competition.title}
+                                    </h3>
+                                  </div>
+                                  <div className="ml-4">
+                                    <Eye className="h-5 w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6 flex-1">
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                      <Calendar className="h-4 w-4 text-blue-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Date
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {startDateTime.date === endDateTime.date
+                                          ? startDateTime.date
+                                          : `${startDateTime.date} - ${endDateTime.date}`}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                      <Clock className="h-4 w-4 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Time
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {startDateTime.time} → {endDateTime.time}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                      <MapPin className="h-4 w-4 text-purple-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Location
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {competition.location || "Online"}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
+                                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                                      <Trophy className="h-4 w-4 text-amber-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                                        Prize
+                                      </p>
+                                      <p className="text-sm font-semibold text-slate-900">
+                                        {competition.prizeMoney || "TBD"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-100">
+                                  {isRegistered && (
+                                    <Button
+                                      className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
+                                      disabled={isButtonLoading}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        router.push(`/participants/competitions/${competition.id}`)
+                                      }}
+                                    >
+                                      <Trophy className="h-5 w-5" />
+                                      <span className="font-semibold">View Results</span>
+                                    </Button>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </div>
+                          </Card>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
