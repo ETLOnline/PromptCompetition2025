@@ -20,14 +20,6 @@ interface LlmScoreCardProps {
 export function LlmScoreCard({ evaluation, variant = "default", className }: LlmScoreCardProps) {
   const [isExplanationOpen, setIsExplanationOpen] = useState(false)
 
-  // fetch("/api/debugger", {
-  //     method: "POST",
-  //     body: JSON.stringify({ message: `llm evaluation: ${JSON.stringify(evaluation)}` }),
-  //     headers: {
-  //         "Content-Type": "application/json",
-  //     },
-  // })
-
   const criterionEntries = Object.entries(evaluation.criterionScores)
   const hasExplanation = evaluation.description && evaluation.description.trim().length > 0
 
@@ -124,7 +116,7 @@ export function LlmScoreCard({ evaluation, variant = "default", className }: Llm
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3">
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <div className="text-sm text-gray-900 leading-relaxed font-medium">{evaluation.description}</div>
+              <div className="text-sm text-gray-900 leading-relaxed font-medium">{evaluation.descriptiongit }</div>
             </div>
           </CollapsibleContent>
         </Collapsible>
