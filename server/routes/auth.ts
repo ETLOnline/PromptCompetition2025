@@ -21,7 +21,7 @@ router.post("/google-signin", authenticateToken, (req: AuthenticatedRequest, res
         ? "/admin/select-competition"
         : role === "judge"
         ? "/judge"
-        : "/participants"
+        : "/participant"
 
     res.json({ role, redirectUrl })
 })
@@ -86,7 +86,7 @@ router.post("/login", authenticateToken, async (req: AuthenticatedRequest, res) 
             ? "/admin/select-competition"
             : role === "judge"
             ? "/judge"
-            : "/participants"
+            : "/participant"
 
         res.json({ role, redirectUrl })
     } catch (err: any) {

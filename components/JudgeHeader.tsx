@@ -93,7 +93,7 @@ export default function JudgeHeader() {
                     }
                     className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
                     >
-                    Admin Dashboard
+                    Judge Dashboard
                     </h1>
                 ) : (
                     <h1 className="text-xl font-semibold text-gray-900 leading-tight">
