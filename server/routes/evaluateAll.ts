@@ -96,16 +96,16 @@ router.post("/start-evaluation", async (req, res) => {
 
         // ➜ Pass problemStatement to the judge LLM
         const result = await runJudges(promptText, rubricData, problemStatement)
-        const { scores, average } = result || {}
+        const { scores: llmScores, average } = result || {}
 
-        if (!scores || Object.keys(scores).length === 0) {
+        if (!llmScores || Object.keys(llmScores).length === 0) {
           console.warn(`⚠️ No valid scores returned for submission ${docSnap.id}`)
           skippedCount++
           continue
         }
 
         const updateData: any = {
-          llmScores: scores,
+          llmScores,  // This now contains the correct structure
           status: "evaluated"
         }
         if (typeof average === "number") {
