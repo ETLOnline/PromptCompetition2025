@@ -46,7 +46,6 @@ router.post("/start-evaluation", async (req, res) => {
             rubric: cleanedRubric,
             problemStatement
           };
-          console.log(`✅ Challenge ${doc.id}: ${cleanedRubric.length} criteria loaded`);
         } else {
           console.warn(`⚠️ Challenge ${doc.id}: invalid rubric after cleaning`);
         }
@@ -54,8 +53,6 @@ router.post("/start-evaluation", async (req, res) => {
         console.warn(`⚠️ Challenge ${doc.id}: invalid rubric format`);
       }
     }
-
-    console.log(`Loaded configs for ${Object.keys(challengeConfigMap).length} challenges`)
 
     // 3) Evaluate each submission
     let evaluatedCount = 0

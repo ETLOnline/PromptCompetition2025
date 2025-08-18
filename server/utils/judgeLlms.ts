@@ -13,21 +13,16 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
     throw new Error("OPENROUTER_API_KEY environment variable is required");
   }
 
-  if (typeof prompt !== "string" || prompt.trim() === "") {
-    throw new Error("Prompt must be a non-empty string");
-  }
-  if (problemStatement !== undefined && (typeof problemStatement !== "string" || problemStatement.trim() === "")) {
-    throw new Error("Problem statement must be a non-empty string if provided");
-  }
-
   console.log(`🔄 Starting evaluation for prompt (${prompt.length} chars)`);
 
   const rubricArray = rubric;
   const systemPrompt = createSystemPrompt(rubricArray);
 
-  // Run models in parallel
+  // Run all models in parallel with individual configurations
   const results = await Promise.all(
-    MODELS.map(({ model }) => evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, apiKey))
+    MODELS.map(({ model, maxTokens, temperature }) => 
+      evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, apiKey, maxTokens, temperature)
+    )
   );
 
   return processAllResults(results);
@@ -42,21 +37,25 @@ async function evaluateWithRetry(
   systemPrompt: string, 
   rubricArray: any[], 
   problemStatement: string,
-  apiKey: string
+  apiKey: string,
+  maxTokens: number,
+  temperature: number
 ): Promise<ModelEvaluationResult | null> {
+  
   for (let attempt = 1; attempt <= LLM_CONFIG.retryAttempts; attempt++) {
     try {
       if (attempt > 1) {
         await new Promise(res => setTimeout(res, LLM_CONFIG.retryDelay));
       }
 
-      const response = await callLLM(model, systemPrompt, prompt, problemStatement, apiKey, rubricArray);
+      const response = await callLLM(model, systemPrompt, prompt, problemStatement, apiKey, rubricArray, maxTokens, temperature);
+      
       const parsedResponse = parseLLMResponse(response);
+      
       const evaluation = processEvaluationResults(parsedResponse, rubricArray);
       
       if (evaluation.isValid) {
         const finalScore = calculateFinalScore(evaluation.scores, rubricArray);
-        console.log(`✅ ${model}: ${finalScore.toFixed(1)}/100`);
         return {
           model,
           scores: evaluation.scores,
@@ -70,11 +69,22 @@ async function evaluateWithRetry(
       }
       
     } catch (error: any) {
-      console.error(`❌ ${model} failed (attempt ${attempt}):`, error.message);
+      if (error.response) {
+        if (error.response.status === 400) {
+          throw new Error(`Bad request for ${model}: ${error.response.data?.error?.message || 'Invalid request format'}`);
+        } else if (error.response.status === 401) {
+          throw new Error(`Authentication failed for ${model}: Check your API key`);
+        } else if (error.response.status === 429) {
+          throw new Error(`Rate limit exceeded for ${model}: Try again later`);
+        } else if (error.response.status === 500) {
+          throw new Error(`Server error for ${model}: ${error.response.data?.error || 'Internal server error'}`);
+        }
+      } else if (error.code === 'ECONNABORTED') {
+        throw new Error(`Request timeout for ${model}: ${LLM_CONFIG.requestTimeout}ms exceeded`);
+      }
     }
   }
   
-  console.error(`❌ ${model} failed after ${LLM_CONFIG.retryAttempts} attempts`);
   return null;
 }
 
@@ -85,7 +95,9 @@ async function callLLM(
   prompt: string, 
   problemStatement: string,
   apiKey: string,
-  rubricArray: any[]
+  rubricArray: any[],
+  maxTokens: number,
+  temperature: number
 ): Promise<any> {
   const input = `
 Evaluate the following student's prompt according to the PROBLEM STATEMENT and the rubric below.
@@ -112,15 +124,16 @@ Return only the JSON object with scores for each criterion and a brief descripti
           { role: "system", content: systemPrompt },
           { role: "user", content: input }
         ],
-        max_tokens: LLM_CONFIG.maxTokens,
-        temperature: LLM_CONFIG.temperature
+        max_tokens: maxTokens,
+        temperature: temperature
       },
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
           ...LLM_CONFIG.headers
-        }
+        },
+        timeout: LLM_CONFIG.requestTimeout
       }
     );
 
@@ -132,17 +145,6 @@ Return only the JSON object with scores for each criterion and a brief descripti
     return content;
     
   } catch (error: any) {
-    if (error.response) {
-      if (error.response.status === 400) {
-        throw new Error(`Bad request for ${model}: ${error.response.data?.error?.message || 'Invalid request format'}`);
-      } else if (error.response.status === 401) {
-        throw new Error(`Authentication failed for ${model}: Check your API key`);
-      } else if (error.response.status === 429) {
-        throw new Error(`Rate limit exceeded for ${model}: Try again later`);
-      } else if (error.response.status === 500) {
-        throw new Error(`Server error for ${model}: ${error.response.data?.error || 'Internal server error'}`);
-      }
-    }
     throw error;
   }
 }
@@ -266,7 +268,9 @@ function logEvaluationFailure(
 }
 
 function processAllResults(results: (ModelEvaluationResult | null)[]): EvaluationResult {
+  
   const valid = results.filter((s): s is ModelEvaluationResult => s !== null);
+  
   const scores: Record<string, { description: string; finalScore: number; scores: Record<string, number> }> = {};
 
   MODELS.forEach(({ model }, idx) => {
@@ -284,7 +288,6 @@ function processAllResults(results: (ModelEvaluationResult | null)[]): Evaluatio
   const finalScores = valid.map(result => result.finalScore);
   const avg = finalScores.length ? finalScores.reduce((a, b) => a + b, 0) / finalScores.length : null;
 
-  console.log(`📊 Evaluation complete: ${valid.length}/${MODELS.length} models successful, average: ${avg?.toFixed(1) || 'N/A'}`);
   return { scores, average: avg };
 }
 
@@ -314,5 +317,3 @@ Your output must ONLY be this JSON format:
 }
 `.trim();
 }
-
-// 6. Exports
