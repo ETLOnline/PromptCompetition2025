@@ -1,6 +1,6 @@
 import express from "express"
 import { db } from "../config/firebase-admin.js"
-import { runJudges, MODELS } from "../utils/judgeLlms.js"
+import { runJudges } from "../utils/judgeLlms.js"
 import { cleanRubricData } from "../utils/sanitise.js";
 
 const router = express.Router()
@@ -33,34 +33,27 @@ router.post("/start-evaluation", async (req, res) => {
 
     const challengeConfigMap: Record<string, ChallengeConfig> = {}
 
-    challengesSnapshot.forEach((doc) => {
-      const data = doc.data()
-      const rubric = data?.rubric
-      const problemStatement = typeof data?.problemStatement === "string" ? data.problemStatement : null
+    for (const doc of challengesSnapshot.docs) {
+      const data = doc.data();
+      const rubric = data?.rubric;
+      const problemStatement = typeof data?.problemStatement === "string" ? data.problemStatement : null;
 
       if (Array.isArray(rubric)) {
-        console.log(`Processing rubric for challenge ${doc.id}:`, JSON.stringify(rubric, null, 2));
-        
         const cleanedRubric = cleanRubricData(rubric);
-        
+
         if (cleanedRubric) {
-          console.log(`Cleaned rubric for challenge ${doc.id}:`, JSON.stringify(cleanedRubric, null, 2));
-          
           challengeConfigMap[doc.id] = {
             rubric: cleanedRubric,
             problemStatement
           };
-          console.log(
-            `Valid rubric loaded for challenge ${doc.id} with ${cleanedRubric.length} criteria` +
-              (problemStatement ? " and problemStatement" : " (no problemStatement)")
-          );
+          console.log(`✅ Challenge ${doc.id}: ${cleanedRubric.length} criteria loaded`);
         } else {
-          console.warn(`⚠️ Challenge ${doc.id} has invalid rubric after cleaning`);
+          console.warn(`⚠️ Challenge ${doc.id}: invalid rubric after cleaning`);
         }
       } else {
-        console.warn(`⚠️ Challenge ${doc.id} has invalid rubric format - only array-based weighted rubrics are supported`);
+        console.warn(`⚠️ Challenge ${doc.id}: invalid rubric format`);
       }
-    })
+    }
 
     console.log(`Loaded configs for ${Object.keys(challengeConfigMap).length} challenges`)
 
@@ -88,13 +81,12 @@ router.post("/start-evaluation", async (req, res) => {
       const rubricData = cfg.rubric
       const problemStatement = cfg.problemStatement ?? undefined
       if (!problemStatement) {
-        console.warn(`ℹ️ Submission ${docSnap.id}: challenge ${challengeId} has no problemStatement; proceeding without it`)
+        console.log(`ℹ️ Submission ${docSnap.id}: proceeding without problem statement`);
       }
 
       try {
-        console.log(`🔄 Evaluating submission ${docSnap.id} for challenge ${challengeId}`)
+        console.log(`🔄 Evaluating submission ${docSnap.id}`);
 
-        // ➜ Pass problemStatement to the judge LLM
         const result = await runJudges(promptText, rubricData, problemStatement)
         const { scores: llmScores, average } = result || {}
 
@@ -105,7 +97,7 @@ router.post("/start-evaluation", async (req, res) => {
         }
 
         const updateData: any = {
-          llmScores,  // This now contains the correct structure
+          llmScores,
           status: "evaluated"
         }
         if (typeof average === "number") {
@@ -118,7 +110,7 @@ router.post("/start-evaluation", async (req, res) => {
           .update(updateData)
 
         evaluatedCount++
-        console.log(`✅ Successfully evaluated submission ${docSnap.id} with average score: ${average}`)
+        console.log(`✅ Submission ${docSnap.id}: ${average?.toFixed(1) || 'N/A'}/100`)
 
         // small delay to avoid rate limiting
         await new Promise((resolve) => setTimeout(resolve, 100))

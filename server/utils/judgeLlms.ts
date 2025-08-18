@@ -1,13 +1,13 @@
 // 1. Imports
 import axios from "axios";
-import type { ModelEvaluationResult, EvaluationSummary, LLMScores } from "../types/llm-evaluation.js";
+import type { ModelEvaluationResult, EvaluationResult } from "../types/llm-evaluation.js";
 import { LLM_CONFIG } from "../config/llm.js";
 
 // 2. Constants
 const MODELS = LLM_CONFIG.models;
 
 // 4. Main exported function
-export async function runJudges(prompt: string, rubric: any, problemStatement?: string): Promise<EvaluationSummary> {
+export async function runJudges(prompt: string, rubric: any, problemStatement?: string): Promise<EvaluationResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY environment variable is required");
@@ -16,12 +16,11 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
   if (typeof prompt !== "string" || prompt.trim() === "") {
     throw new Error("Prompt must be a non-empty string");
   }
-  if (typeof problemStatement !== "string" || problemStatement.trim() === "") {
-    throw new Error("Problem statement must be a non-empty string");
+  if (problemStatement !== undefined && (typeof problemStatement !== "string" || problemStatement.trim() === "")) {
+    throw new Error("Problem statement must be a non-empty string if provided");
   }
 
-  console.log("runJudges called with prompt length:", prompt.length);
-  console.log("Rubric data received (already cleaned):", JSON.stringify(rubric, null, 2));
+  console.log(`🔄 Starting evaluation for prompt (${prompt.length} chars)`);
 
   const rubricArray = rubric;
   const systemPrompt = createSystemPrompt(rubricArray);
@@ -31,7 +30,7 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
     MODELS.map(({ model }) => evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, apiKey))
   );
 
-  return processAllResults(results, rubricArray);
+  return processAllResults(results);
 }
 
 // 5. Private helper functions (organized by purpose)
@@ -52,30 +51,30 @@ async function evaluateWithRetry(
       }
 
       const response = await callLLM(model, systemPrompt, prompt, problemStatement, apiKey, rubricArray);
-      const parsedResponse = parseLLMResponse(response, model, attempt);
+      const parsedResponse = parseLLMResponse(response);
       const evaluation = processEvaluationResults(parsedResponse, rubricArray);
       
-      if (evaluation.successRate >= 0.5) {
+      if (evaluation.isValid) {
         const finalScore = calculateFinalScore(evaluation.scores, rubricArray);
+        console.log(`✅ ${model}: ${finalScore.toFixed(1)}/100`);
         return {
           model,
           scores: evaluation.scores,
-          errors: evaluation.errors,
-          warnings: evaluation.warnings,
-          successRate: evaluation.successRate,
           description: parsedResponse.description || "No description provided",
           finalScore
         };
       }
       
-      logEvaluationFailure(model, attempt, evaluation, parsedResponse, rubricArray);
+      if (attempt === LLM_CONFIG.retryAttempts) {
+        logEvaluationFailure(model, parsedResponse, rubricArray);
+      }
       
     } catch (error: any) {
-      console.error(`🔥 Model ${model} failed (attempt ${attempt}):`, error.message || error);
+      console.error(`❌ ${model} failed (attempt ${attempt}):`, error.message);
     }
   }
   
-  console.error(`❌ Model ${model} failed to produce a valid score after ${LLM_CONFIG.retryAttempts} attempts`);
+  console.error(`❌ ${model} failed after ${LLM_CONFIG.retryAttempts} attempts`);
   return null;
 }
 
@@ -104,38 +103,53 @@ Prompt to Evaluate:
 Return only the JSON object with scores for each criterion and a brief description.
   `.trim();
 
-  const res = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: input }
-      ],
-      max_tokens: LLM_CONFIG.maxTokens,
-      temperature: LLM_CONFIG.temperature
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        ...LLM_CONFIG.headers
+  try {
+    const res = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: input }
+        ],
+        max_tokens: LLM_CONFIG.maxTokens,
+        temperature: LLM_CONFIG.temperature
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          ...LLM_CONFIG.headers
+        }
+      }
+    );
+
+    const content = res?.data?.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || content.trim() === "") {
+      throw new Error(`Model ${model} returned empty content`);
+    }
+
+    return content;
+    
+  } catch (error: any) {
+    if (error.response) {
+      if (error.response.status === 400) {
+        throw new Error(`Bad request for ${model}: ${error.response.data?.error?.message || 'Invalid request format'}`);
+      } else if (error.response.status === 401) {
+        throw new Error(`Authentication failed for ${model}: Check your API key`);
+      } else if (error.response.status === 429) {
+        throw new Error(`Rate limit exceeded for ${model}: Try again later`);
+      } else if (error.response.status === 500) {
+        throw new Error(`Server error for ${model}: ${error.response.data?.error || 'Internal server error'}`);
       }
     }
-  );
-
-  const content = res?.data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || content.trim() === "") {
-    throw new Error(`Model ${model} returned empty content`);
+    throw error;
   }
-
-  return content;
 }
 
-function parseLLMResponse(content: string, model: string, attempt: number): any {
+function parseLLMResponse(content: string): any {
   let raw = content.trim();
   raw = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
-  console.log(`Model ${model} raw response (attempt ${attempt}):`, raw);
 
   let parsed: any;
   try {
@@ -186,7 +200,7 @@ function findScoreForCriterion(parsedResponse: any, criterionName: string): numb
 }
 
 // - Validation
-function validateScore(score: any, criterionName: string): { isValid: boolean; value: number; error?: string } {
+function validateScore(score: any): { isValid: boolean; value: number } {
   if (typeof score === "string" && /^\d+$/.test(score)) {
     score = Number(score);
   }
@@ -195,46 +209,36 @@ function validateScore(score: any, criterionName: string): { isValid: boolean; v
     return { isValid: true, value: score };
   }
   
-  const error = `Invalid score for "${criterionName}": ${score} (type: ${typeof score}, expected: integer 0-100)`;
-  return { isValid: false, value: 0, error };
+  return { isValid: false, value: 0 };
 }
 
 function processEvaluationResults(parsedResponse: any, rubricArray: any[]): {
   scores: Record<string, number>;
-  errors: string[];
-  warnings: string[];
-  successRate: number;
+  isValid: boolean;
 } {
   const scores: Record<string, number> = {};
-  const errors: string[] = [];
-  const warnings: string[] = [];
   let validScores = 0;
   
   for (const item of rubricArray) {
     const score = findScoreForCriterion(parsedResponse, item.name);
     
     if (score !== null) {
-      const validation = validateScore(score, item.name);
+      const validation = validateScore(score);
       if (validation.isValid) {
         scores[item.name] = validation.value;
         validScores++;
       } else {
-        scores[item.name] = 0;
-        errors.push(validation.error!);
+        scores[item.name] = 0;  // Mark as 0 for invalid scores
       }
     } else {
-      scores[item.name] = 0;
-      errors.push(`Missing score for criterion: "${item.name}"`);
+      scores[item.name] = 0;  // Mark as 0 for missing scores
     }
   }
   
-  const successRate = validScores / rubricArray.length;
+  // Simple validation: need at least 50% valid scores
+  const isValid = validScores >= rubricArray.length * 0.5;
   
-  if (successRate < 0.5) {
-    warnings.push(`Low evaluation success rate: ${(successRate * 100).toFixed(1)}%`);
-  }
-  
-  return { scores, errors, warnings, successRate };
+  return { scores, isValid };
 }
 
 function calculateFinalScore(scores: Record<string, number>, rubricArray: any[]): number {
@@ -245,46 +249,25 @@ function calculateFinalScore(scores: Record<string, number>, rubricArray: any[])
 }
 
 // - Error handling & reporting
-function createDetailedErrorReport(
+function logEvaluationFailure(
   model: string, 
-  attempt: number, 
   parsedResponse: any, 
-  expectedCriteria: string[],
-  errors: string[]
-): string {
-  const availableKeys = Object.keys(parsedResponse);
-  const missingKeys = expectedCriteria.filter(criterion => 
-    !availableKeys.some(key => 
+  rubricArray: any[]
+): void {
+  const expectedCriteria = rubricArray.map(r => r.name);
+  const missingCriteria = expectedCriteria.filter(criterion => 
+    !Object.keys(parsedResponse).some(key => 
       key.toLowerCase().includes(criterion.toLowerCase()) ||
       criterion.toLowerCase().includes(key.toLowerCase())
     )
   );
   
-  return `
-Model: ${model} (attempt ${attempt})
-Available keys: ${availableKeys.join(', ')}
-Expected criteria: ${expectedCriteria.join(', ')}
-Missing criteria: ${missingKeys.join(', ')}
-Errors: ${errors.join('; ')}
-Response structure: ${JSON.stringify(parsedResponse, null, 2)}
-  `.trim();
+  console.warn(`⚠️ ${model} evaluation failed: ${missingCriteria.length} missing criteria`);
 }
 
-function logEvaluationFailure(
-  model: string, 
-  attempt: number, 
-  evaluation: any, 
-  parsedResponse: any, 
-  rubricArray: any[]
-): void {
-  const expectedCriteria = rubricArray.map(r => r.name);
-  const errorReport = createDetailedErrorReport(model, attempt, parsedResponse, expectedCriteria, evaluation.errors);
-  console.warn(`⚠️ Model ${model} evaluation failed (attempt ${attempt}):\n${errorReport}`);
-}
-
-function processAllResults(results: (ModelEvaluationResult | null)[], rubricArray: any[]): EvaluationSummary {
+function processAllResults(results: (ModelEvaluationResult | null)[]): EvaluationResult {
   const valid = results.filter((s): s is ModelEvaluationResult => s !== null);
-  const scores: LLMScores = {};
+  const scores: Record<string, { description: string; finalScore: number; scores: Record<string, number> }> = {};
 
   MODELS.forEach(({ model }, idx) => {
     const result = results[idx];
@@ -301,8 +284,8 @@ function processAllResults(results: (ModelEvaluationResult | null)[], rubricArra
   const finalScores = valid.map(result => result.finalScore);
   const avg = finalScores.length ? finalScores.reduce((a, b) => a + b, 0) / finalScores.length : null;
 
-  console.log(`Final result: ${valid.length} valid scores, average: ${avg}`);
-  return { scores, average: avg, totalValid: valid.length };
+  console.log(`📊 Evaluation complete: ${valid.length}/${MODELS.length} models successful, average: ${avg?.toFixed(1) || 'N/A'}`);
+  return { scores, average: avg };
 }
 
 function createSystemPrompt(rubricArray: any[]): string {
@@ -333,4 +316,3 @@ Your output must ONLY be this JSON format:
 }
 
 // 6. Exports
-export { MODELS };
