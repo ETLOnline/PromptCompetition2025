@@ -1,6 +1,7 @@
 import express from "express"
 import { db } from "../config/firebase-admin.js"
 import { runJudges, MODELS } from "../utils/judgeLlms.js"
+import { cleanRubricData } from "../utils/sanitise.js";
 
 const router = express.Router()
 
@@ -38,44 +39,26 @@ router.post("/start-evaluation", async (req, res) => {
       const problemStatement = typeof data?.problemStatement === "string" ? data.problemStatement : null
 
       if (Array.isArray(rubric)) {
-        let isValidRubric = true
-        let totalWeight = 0
-        const validatedRubric: RubricItem[] = []
-
-        for (const item of rubric) {
-          if (
-            typeof item?.name === "string" &&
-            typeof item?.description === "string" &&
-            typeof item?.weight === "number" &&
-            item.weight > 0 &&
-            item.weight <= 1
-          ) {
-            validatedRubric.push({
-              name: item.name,
-              description: item.description,
-              weight: item.weight
-            })
-            totalWeight += item.weight
-          } else {
-            isValidRubric = false
-            break
-          }
-        }
-
-        if (isValidRubric && Math.abs(totalWeight - 1.0) < 0.001) {
+        console.log(`Processing rubric for challenge ${doc.id}:`, JSON.stringify(rubric, null, 2));
+        
+        const cleanedRubric = cleanRubricData(rubric);
+        
+        if (cleanedRubric) {
+          console.log(`Cleaned rubric for challenge ${doc.id}:`, JSON.stringify(cleanedRubric, null, 2));
+          
           challengeConfigMap[doc.id] = {
-            rubric: validatedRubric,
+            rubric: cleanedRubric,
             problemStatement
-          }
+          };
           console.log(
-            `✅ Valid rubric loaded for challenge ${doc.id} with ${validatedRubric.length} criteria` +
+            `Valid rubric loaded for challenge ${doc.id} with ${cleanedRubric.length} criteria` +
               (problemStatement ? " and problemStatement" : " (no problemStatement)")
-          )
+          );
         } else {
-          console.warn(`⚠️ Invalid rubric for challenge ${doc.id}: weights sum to ${totalWeight}, expected 1.0`)
+          console.warn(`⚠️ Challenge ${doc.id} has invalid rubric after cleaning`);
         }
       } else {
-        console.warn(`⚠️ Challenge ${doc.id} has invalid rubric format - only array-based weighted rubrics are supported`)
+        console.warn(`⚠️ Challenge ${doc.id} has invalid rubric format - only array-based weighted rubrics are supported`);
       }
     })
 
