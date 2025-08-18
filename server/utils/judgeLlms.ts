@@ -34,6 +34,9 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
 
   console.log("runJudges called with prompt length:", prompt.length);
   console.log("rubric criteria:", rubric.map(r => r.name));
+  
+  // Note: Rubric data has been cleaned upstream in evaluateAll.ts
+  console.log("Rubric data received (already cleaned):", JSON.stringify(rubric, null, 2));
 
   // Ensure rubric array is valid
   const rubricArray = rubric;
