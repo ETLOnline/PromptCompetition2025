@@ -24,6 +24,7 @@ interface Competition {
   startDeadline: any
   endDeadline: any
   createdAt?: string
+  ChallengeCount?: number
   isActive?: boolean
   isLocked?: boolean
   location?: string
@@ -66,6 +67,7 @@ export default function CompetitionsPage() {
 
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
   const [user, setUser] = useState<UserProfile | null>(null)
+  
   const [completedCompetitions, setCompletedCompetitions] = useState<string[]>([])
 
   useEffect(() => {
@@ -115,7 +117,20 @@ export default function CompetitionsPage() {
             let isCompleted = false
             if (isParticipant) {
               const participantData = participantDoc.data()
-              isCompleted = participantData?.challengesCompleted > 0
+              const challengesCompleted = participantData?.challengesCompleted || 0
+              const challengeCount = competition.ChallengeCount || 0
+
+              console.log(`Checking competition ${competition.id}: challengesCompleted=${challengesCompleted}, challengeCount=${challengeCount}`)
+
+              if (challengesCompleted === challengeCount && challengeCount > 0) {
+                isCompleted = true
+                // ✅ update participant doc with `isCompleted: true`
+                await setDoc(
+                  participantDocRef,
+                  { isCompleted: true },
+                  { merge: true }
+                )
+              }
             }
             completionStatus[competition.id] = isCompleted
           } catch (error) {
@@ -126,7 +141,6 @@ export default function CompetitionsPage() {
             participantStatus[competition.id] = false
             completionStatus[competition.id] = false
           } finally {
-            // ✅ Only stop button loading AFTER badges (participant + completion) are set
             setButtonStatesLoading((prev) => ({
               ...prev,
               [competition.id]: false,
@@ -248,7 +262,7 @@ export default function CompetitionsPage() {
     const status = getCompetitionStatus(competition)
 
     if (status.status === "ENDED" && isRegistered) {
-      router.push(`/participant/${competition.id}/results`)
+      router.push(`/participant/${competition.id}/results`);
     } else if (isRegistered) {
       router.push(`/participant/${competition.id}`)
     } else {
@@ -271,7 +285,7 @@ export default function CompetitionsPage() {
         groups.upcoming.push(comp)
       } else if (status.status === "ENDED") {
         const isRegistered = participantMap[comp.id]
-        const isCompleted = completedCompetitions.includes(comp.id)
+        const isCompleted = completionMap[comp.id] // Use completionMap instead of completedCompetitions
         if (isRegistered || isCompleted) {
           groups.ended.push(comp)
         }
