@@ -1,3 +1,4 @@
+// components\LlmEvaluation\ChallengeAccordion.tsx
 "use client"
 
 import { useState } from "react"
@@ -12,11 +13,21 @@ export function ChallengeAccordion({ challenges, competitionId }: ChallengeAccor
 
   if (!challenges || challenges.length === 0) {
     return (
-      <Card className="bg-white shadow-sm rounded-xl p-8 hover:shadow-md transition-all duration-200">
+      <Card className="bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 shadow-lg rounded-2xl p-12 hover:shadow-xl transition-all duration-300">
         <div className="text-center">
-          <div className="text-sm font-medium text-gray-700 mb-2">No challenges found</div>
-          <div className="text-xs font-medium text-gray-700">
-            No LLM evaluations are available for this competition yet.
+          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
+          <div className="text-lg font-semibold text-slate-800 mb-3">No challenges found</div>
+          <div className="text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+            No LLM evaluations are available for this competition yet. Check back later for new challenges.
           </div>
         </div>
       </Card>
@@ -24,40 +35,34 @@ export function ChallengeAccordion({ challenges, competitionId }: ChallengeAccor
   }
 
   return (
-    <Card className="bg-white shadow-sm rounded-xl p-6 hover:shadow-md transition-all duration-200">
-      <Accordion
-        type="multiple"
-        value={expandedChallenges}
-        onValueChange={setExpandedChallenges}
-        className="space-y-2"
-      >
+    <Card className="bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-lg rounded-2xl p-8 hover:shadow-xl transition-all duration-300">
+      <Accordion type="multiple" value={expandedChallenges} onValueChange={setExpandedChallenges} className="space-y-4">
         {challenges.map((challenge) => (
           <AccordionItem
             key={challenge.id}
             value={challenge.id}
-            className="border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+            className="border-2 border-slate-200 rounded-xl bg-gradient-to-r from-white to-slate-50 hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md"
           >
-            <AccordionTrigger className="px-4 py-3 hover:no-underline">
+            <AccordionTrigger className="px-6 py-5 hover:no-underline group">
               <div className="flex items-center justify-between w-full mr-4">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-gray-900">{challenge.title || `Challenge ${challenge.id}`}</h3>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-900 transition-colors duration-200">
+                    {challenge.title || `Challenge ${challenge.id}`}
+                  </h3>
                   <Badge
                     variant="secondary"
-                    className="bg-blue-50 border-blue-200 text-blue-800 text-xs font-medium uppercase"
+                    className="bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-200 text-blue-800 text-xs font-bold uppercase tracking-wide px-3 py-1.5 rounded-full shadow-sm"
                   >
                     {challenge.submissionCount} SUBMISSIONS
                   </Badge>
                 </div>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <AccordionContent className="px-6 pb-6">
+              <div className="bg-white rounded-xl border-2 border-slate-100 p-6 shadow-inner">
                 {/* Fetch submissions on demand */}
                 {expandedChallenges.includes(challenge.id) && (
-                  <LlmSubmissionList
-                    challengeId={challenge.id}
-                    competitionId={competitionId}
-                  />
+                  <LlmSubmissionList challengeId={challenge.id} competitionId={competitionId} />
                 )}
               </div>
             </AccordionContent>

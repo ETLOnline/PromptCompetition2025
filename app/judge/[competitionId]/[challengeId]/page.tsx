@@ -115,28 +115,54 @@ export default function ChallengePage() {
     }
   }
 
-  const loadSubmissions = async (reset = false) => {
-    if (!userUID) return
-    try {
-      setIsLoadingSubmissions(true)
-      
-      const { submissions: newSubmissions, lastDoc: newLastDoc, hasMore } =
-      await fetchWithAuth(
-        `${process.env.NEXT_PUBLIC_API_URL}/judge/submissions/${competitionId}/${challengeId}`
-      )
+  const pageSize = 10;
 
-      if (reset) {
-        setSubmissions(newSubmissions)
-      } else {
-        setSubmissions((prev) => [...prev, ...newSubmissions])
+  const loadSubmissions = async (reset = false) => {
+    if (!userUID) return;
+
+    try {
+      setIsLoadingSubmissions(true);
+
+      // 1️⃣ Fetch assignment for the judge
+      const assignmentData = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/assignment/${userUID}/${competitionId}`
+      ) as CompetitionAssignment;
+
+      const assignedSubmissionIds: string[] = assignmentData?.submissionsByChallenge?.[challengeId] || [];
+
+      // Early return if no assignment or no submissions for this challenge
+      if (!assignmentData || assignedSubmissionIds.length === 0) {
+        setSubmissions([]);
+        setHasMoreSubmissions(false);
+        setProgressStats({
+          totalAssigned: 0,
+          totalScored: 0,
+          graded: 0,
+          remaining: 0,
+          percentage: 0,
+          currentPage: 1,
+          totalPages: 1,
+        });
+        return;
       }
 
-      setLastDoc(newLastDoc)
-      setHasMoreSubmissions(hasMore)
+      // 2️⃣ Fetch submissions by IDs (backend supports this)
+      const { submissions: newSubmissions, lastDoc: newLastDoc, hasMore } = 
+        await fetchWithAuth(
+          `${process.env.NEXT_PUBLIC_API_URL}/judge/submissions/${competitionId}/${challengeId}?ids=${assignedSubmissionIds.join(",")}`
+        ) as { submissions: Submission[]; lastDoc: DocumentSnapshot | null; hasMore: boolean };
 
-      const totalAssigned = assignment?.assignedCountTotal || newSubmissions.length
-      const totalScored = newSubmissions.filter((s: Submission) => Boolean(s.judges?.[userUID])).length
-      const percentage = totalAssigned > 0 ? Math.round((totalScored / totalAssigned) * 100) : 0
+      // 3️⃣ Merge submissions
+      const updatedSubmissions = reset ? newSubmissions : [...submissions, ...newSubmissions];
+
+      setSubmissions(updatedSubmissions);
+      setLastDoc(newLastDoc);
+      setHasMoreSubmissions(hasMore);
+
+      // 4️⃣ Calculate progress stats
+      const totalScored = updatedSubmissions.filter(s => Boolean(s.judges?.[userUID])).length;
+      const totalAssigned = assignedSubmissionIds.length;
+      const percentage = totalAssigned > 0 ? Math.round((totalScored / totalAssigned) * 100) : 0;
 
       setProgressStats({
         totalAssigned,
@@ -144,15 +170,18 @@ export default function ChallengePage() {
         graded: totalScored,
         remaining: totalAssigned - totalScored,
         percentage,
-        currentPage: Math.ceil(newSubmissions.length / 10),
-        totalPages: Math.ceil(totalAssigned / 10),
-      })
+        currentPage: Math.ceil(updatedSubmissions.length / pageSize),
+        totalPages: Math.ceil(totalAssigned / pageSize),
+      });
+
     } catch (error) {
-      addNotification("error", "Failed to load submissions")
+      addNotification("error", "Failed to load submissions");
     } finally {
-      setIsLoadingSubmissions(false)
+      setIsLoadingSubmissions(false);
     }
-  }
+  };
+
+
 
   const loadMoreSubmissions = () => {
     if (!isLoadingSubmissions && hasMoreSubmissions) {

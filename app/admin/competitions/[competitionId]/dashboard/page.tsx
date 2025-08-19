@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileText, Activity, Users, Trophy, BarChart3, Shield } from "lucide-react"
+import { FileText, Activity, Users, Trophy, BarChart3, Shield, ExternalLink } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import JudgeProgress from "@/components/JudgeProgress"
 import StartEvaluationButton from "@/components/StartEvaluation"
@@ -66,45 +66,54 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href={`/admin/competitions/${competitionId}/participants`}>
-            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+          <Link href={`/admin/competitions/${competitionId}/participants`} className="group">
+            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-green-200">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <h3 className="text-gray-600 font-medium">Total Participants</h3>
-                  <div className="text-4xl font-bold text-gray-900">{stats.totalParticipants}</div>
-                  <p className="text-gray-500 text-sm">For this competition</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-gray-600 font-medium">Total Participants</h3>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-green-600 transition-colors" />
+                  </div>
+                  <div className="text-4xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{stats.totalParticipants}</div>
+                  <p className="text-gray-500 text-sm">View participants & leaderboard</p>
                 </div>
-                <div className="p-3 bg-green-100 rounded-xl">
+                <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
                   <Users className="h-6 w-6 text-green-600" />
                 </div>
               </div>
             </Card>
           </Link>
 
-          <Link href={`/admin/competitions/${competitionId}/llm-evaluations`}>
-            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+          <Link href={`/admin/competitions/${competitionId}/llm-evaluations`} className="group">
+            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-blue-200">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <h3 className="text-gray-600 font-medium">Total Submissions</h3>
-                  <div className="text-4xl font-bold text-gray-900">{totalSubmissions}</div>
-                  <p className="text-gray-500 text-sm">For this competition</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-gray-600 font-medium">Total Submissions</h3>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                  </div>
+                  <div className="text-4xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors">{totalSubmissions}</div>
+                  <p className="text-gray-500 text-sm">View submissions & LLM evaluations</p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-xl">
+                <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </Card>
           </Link>
 
-          <Link href={`/admin/competitions/${competitionId}/judge-evaluations`}>
-            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+          <Link href={`/admin/competitions/${competitionId}/judge-evaluations`} className="group">
+            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-amber-200">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <h3 className="text-gray-600 font-medium">Judge Reviews</h3>
-                  <div className="text-4xl font-bold text-gray-900">{stats.pendingReviews}</div>
-                  <p className="text-gray-500 text-sm">reviews completed by judge</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-gray-600 font-medium">Judge Reviews</h3>
+                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-amber-600 transition-colors" />
+                  </div>
+                  <div className="text-4xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors">{stats.pendingReviews}</div>
+                  <p className="text-gray-500 text-sm">View judge evaluations</p>
                 </div>
-                <div className="p-3 bg-amber-100 rounded-xl">
+                <div className="p-3 bg-amber-100 rounded-xl group-hover:bg-amber-200 transition-colors">
                   <Activity className="h-6 w-6 text-amber-600" />
                 </div>
               </div>

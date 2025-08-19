@@ -1,8 +1,6 @@
-// server/routes/judge/evaluations.ts
-
-import type { Request, Response } from "express";
+import { Request, Response } from "express";
 import { db } from "../../config/firebase-admin.js";
-import { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 interface JudgeEvaluation {
   judgeId: string;
@@ -10,7 +8,7 @@ interface JudgeEvaluation {
   scores: Record<string, number>;
   totalScore: number;
   comment: string;
-  updatedAt: FirebaseFirestore.Timestamp;
+  updatedAt: any;
 }
 
 export async function fetchJudgeEvaluations(
@@ -21,13 +19,15 @@ export async function fetchJudgeEvaluations(
     const { competitionId } = req.params;
     const { lastDocId, pageSize = 50 } = req.query;
 
+    // Step 1: Query scored submissions only
     let submissionsRef = db
       .collection("competitions")
       .doc(competitionId)
       .collection("submissions")
+      .where("status", "==", "scored")
       .limit(Number(pageSize));
 
-    // Pagination
+    // Step 2: Apply pagination
     if (lastDocId) {
       const lastDocSnapshot = await db
         .collection("competitions")
@@ -36,35 +36,46 @@ export async function fetchJudgeEvaluations(
         .doc(String(lastDocId))
         .get();
 
+      if (!lastDocSnapshot.exists) {
+        return res.status(400).json({ message: "Invalid lastDocId for pagination" });
+      }
+
       submissionsRef = submissionsRef.startAfter(
         lastDocSnapshot as QueryDocumentSnapshot
       );
     }
 
+    // Step 3: Fetch submissions
     const snapshot = await submissionsRef.get();
     const evaluations: JudgeEvaluation[] = [];
 
     snapshot.forEach((doc) => {
       const data = doc.data();
+      
+      console.log(data);
 
-      // submissionId = participantId_challengeId
-      const [_participantId, challengeId] = doc.id.split("_");
+      // Skip if no judgeScore exists
+      if (!data.judgeScore) return;
 
-      if (!data.judges) return;
+      const challengeId = data.challengeId;
 
-      Object.keys(data.judges).forEach((judgeId) => {
-        const judgeData = data.judges[judgeId];
-        evaluations.push({
-          judgeId,
-          challengeId,
-          scores: judgeData.scores,
-          totalScore: judgeData.totalScore,
-          comment: judgeData.comment,
-          updatedAt: judgeData.updatedAt,
-        });
+      // Since only one judge exists, extract first judge
+      const judgeId = Object.keys(data.judgeScore)[0];
+      const judgeData = data.judgeScore[judgeId];
+
+      if (!judgeData?.updatedAt) return; // skip if updatedAt missing
+
+      evaluations.push({
+        judgeId,
+        challengeId,
+        scores: judgeData.scores,
+        totalScore: judgeData.totalScore,
+        comment: judgeData.comment,
+        updatedAt: judgeData.updatedAt,
       });
     });
 
+    // Step 4: Determine last document for pagination
     const lastVisible =
       snapshot.docs.length > 0
         ? snapshot.docs[snapshot.docs.length - 1].id

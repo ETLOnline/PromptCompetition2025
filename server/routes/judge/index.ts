@@ -84,8 +84,15 @@ judgeRouter.get(
   authorizeRoles(["judge"]),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { competitionId, challengeId } = req.params;
-      const submissions = await fetchSubmissions(competitionId, challengeId);
+      const { competitionId } = req.params;
+      const idsQuery = req.query.ids as string | undefined;
+      const assignedSubmissionIds = idsQuery ? idsQuery.split(",") : [];
+
+      if (assignedSubmissionIds.length === 0) {
+        return res.json({ submissions: [], lastDoc: null, hasMore: false });
+      }
+
+      const submissions = await fetchSubmissions(competitionId, assignedSubmissionIds);
       res.json(submissions);
     } catch (err) {
       console.error(err);

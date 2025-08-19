@@ -5,24 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Users, Shield } from "lucide-react"
 import { collection, onSnapshot, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-
-interface Judge {
-  judgeId: string
-  assignedCountsByChallenge: Record<string, number>
-  submissionsByChallenge: Record<string, string[]>
-  assignedCountTotal: number
-  completedCount: number
-  challengeProgress: Array<{
-    challengeId: string
-    assigned: number
-    completed: number
-  }>
-  displayName?: string
-}
-
-interface JudgeProgressProps {
-  competitionId: string
-}
+import type { Judge, JudgeProgressProps } from "@/types/JudgeProgress"
 
 export default function JudgeProgress({ competitionId }: JudgeProgressProps) {
   const [judges, setJudges] = useState<Judge[]>([])
