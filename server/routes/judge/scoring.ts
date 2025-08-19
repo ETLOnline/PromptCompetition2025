@@ -73,11 +73,22 @@ export async function submitScore(
       status: "scored",
     });
 
-    batch.update(judgeRef, {
-      [`completedChallenges.${challengeId}`]: admin.firestore.FieldValue.increment(1),
-      reviewedCount: admin.firestore.FieldValue.increment(1),
-      lastReviewedAt: admin.firestore.Timestamp.now(),
-    });
+    const submissionSnap = await submissionRef.get()
+    const submissionData = submissionSnap.data()
+
+    const alreadyScored = !!submissionData?.judgeScore?.[judgeId]
+
+    if (!alreadyScored) {
+      batch.update(judgeRef, {
+        [`completedChallenges.${challengeId}`]: admin.firestore.FieldValue.increment(1),
+        reviewedCount: admin.firestore.FieldValue.increment(1),
+      })
+    } else {
+      // If it already existed, we only update lastReviewedAt
+      batch.update(judgeRef, {
+        lastReviewedAt: admin.firestore.Timestamp.now(),
+      })
+    }
 
     // Commit batch
     await batch.commit();
