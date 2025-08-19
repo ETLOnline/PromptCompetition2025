@@ -48,10 +48,10 @@ export function cleanRubricData(rubric: any[]): Array<{ name: string; descriptio
         });
         totalWeight += item.weight;
       } else {
-        console.warn(`⚠️ Skipping rubric item with empty name after cleaning: "${item.name}"`);
+        console.warn(`⚠️ Skipping rubric item with empty name after cleaning`);
       }
     } else {
-      console.warn(`⚠️ Invalid rubric item:`, item);
+      console.warn(`⚠️ Invalid rubric item format`);
       return null;
     }
   }
