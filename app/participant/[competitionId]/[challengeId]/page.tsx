@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { submitPrompt } from "@/lib/firebase/submissions"
+// import { submitPrompt } from "@/lib/firebase/submissions"
+import { submitPrompt, checkExistingSubmission } from "@/lib/api"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import {
@@ -421,7 +422,8 @@ export default function ChallengePage() {
                                 setSubmissionStatus("submitting")
 
                                 try {
-                                  const result = await submitPrompt(routeParams.competitionId, user.uid, routeParams.challengeId, prompt)
+                                  // const result = await submitPrompt(routeParams.competitionId, user.uid, routeParams.challengeId, prompt)
+                                  const result = await submitPrompt(routeParams.competitionId, routeParams.challengeId, prompt)
                                   // console.log("Submission result:", result)
                                   if (!result.success) {
                                     setSubmissionError(result.error || "Unknown error occurred"); // Store the specific error

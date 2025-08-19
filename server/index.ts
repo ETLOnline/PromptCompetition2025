@@ -15,6 +15,8 @@
 // import competitionsRouter from "./routes/competitions.js";
 // import contactRouter from "./routes/contact.js";
 // import resultRoutes from "./routes/result.js";
+// import submissionsRouter from "./routes/submissions.js";
+
 
 
 
@@ -50,6 +52,8 @@
 // app.use("/competition", competitionsRouter);
 // app.use("/contact", contactRouter);
 // app.use("/results", resultRoutes);
+// app.use("/submissions", submissionsRouter);
+
 
 
 
@@ -96,6 +100,8 @@ import authRoutes from "./routes/auth.js"
 import contactRouter from "./routes/contact.js";
 import challengeDistributionRouter from "./routes/challenge-distribution.js";
 import resultRoutes from "./routes/result.js";
+import submissionsRouter from "./routes/submissions.js";
+
 
 // judge dashboard functions
 import judgeRouter from "./routes/judge/index.js";
@@ -133,6 +139,8 @@ app.use("/challenge-distribution", challengeDistributionRouter);
 app.use("/judge", judgeRouter);
 app.use("/results", resultRoutes);
 app.use("/llm-evaluations", llmRouter);
+app.use("/submissions", submissionsRouter);
+
 
 
 

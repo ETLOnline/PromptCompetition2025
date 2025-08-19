@@ -95,3 +95,49 @@ export const fetchCompetitionResults = async (competitionId: string) => {
     method: "GET",
   });
 };
+
+//-------------------------------------------------------
+//------------ submissions API's  ----------------------
+//-------------------------------------------------------
+
+export const checkExistingSubmission = async (
+  competitionId: string,
+  challengeId: string
+) => {
+  return await fetchWithAuth(`${API_URL}/submissions/check/${competitionId}/${challengeId}`, {
+    method: "GET",
+  });
+};
+
+export const submitPrompt = async (
+  competitionId: string,
+  challengeId: string,
+  promptText: string
+) => {
+  return await fetchWithAuth(`${API_URL}/submissions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      competitionId,
+      challengeId,
+      promptText,
+    }),
+  });
+};
+
+export const fetchSubmission = async (
+  competitionId: string,
+  challengeId: string
+) => {
+  return await fetchWithAuth(`${API_URL}/submissions/${competitionId}/${challengeId}`, {
+    method: "GET",
+  });
+};
+
+export const fetchCompetitionSubmissions = async (competitionId: string) => {
+  return await fetchWithAuth(`${API_URL}/submissions/competition/${competitionId}`, {
+    method: "GET",
+  });
+};
