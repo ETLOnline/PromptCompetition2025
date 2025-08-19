@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Scale, ChevronRight } from "lucide-react"
 import { getAvatarColor } from "../../lib/judge/utils"

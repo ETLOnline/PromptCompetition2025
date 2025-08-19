@@ -50,7 +50,7 @@ export interface Submission {
   }
 
   // Manual judge scoring (map of judgeIds → their scores)
-  judges?: {
+  judgeScore?: {
     [judgeId: string]: {
       totalScore: number
       updatedAt: any

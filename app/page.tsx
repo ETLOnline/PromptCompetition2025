@@ -1,7 +1,6 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
-import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 
 import { fetchCompetitions } from "@/lib/api" // Import your API utility
@@ -281,19 +280,6 @@ function CompetitionEventsSection() {
 }
 
 export default function HomePage() {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <div className="flex items-center gap-4">
-          <Loader className="h-10 w-10 animate-spin text-slate-600" />
-          <span className="text-xl font-medium text-muted-foreground">Loading...</span>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <>

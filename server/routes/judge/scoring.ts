@@ -106,7 +106,7 @@ export async function getSubmissionScore(
     if (!submissionDoc.exists) return null;
 
     const data = submissionDoc.data();
-    const judgeEntry = data?.judges?.[judgeId];
+    const judgeEntry = data?.judgeScore?.[judgeId];
 
     if (!judgeEntry) return null;
 
@@ -116,7 +116,6 @@ export async function getSubmissionScore(
       rubricScores: judgeEntry.scores || {},
     };
   } catch (error) {
-    console.error("Error fetching submission score:", error);
     throw new Error("Failed to fetch submission score");
   }
 }
