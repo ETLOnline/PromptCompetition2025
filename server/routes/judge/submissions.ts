@@ -1,55 +1,73 @@
-// server/routes/judge/submissions.ts
-
 import type { Submission } from "../../types/judge-submission.js";
-import { db } from "../../config/firebase-admin.js"; // Admin SDK Firestore instance
+import { db } from "../../config/firebase-admin.js";
 import { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 /**
- * Fetch submissions for a challenge with optional pagination
+ * Fetch submissions for a judge using only assigned submission IDs
  */
 export async function fetchSubmissions(
   competitionId: string,
-  challengeId: string,
+  assignedSubmissionIds: string[], // explicit IDs assigned to judge
   pageSize = 10,
   lastDoc?: QueryDocumentSnapshot | null
 ): Promise<{ submissions: Submission[]; lastDoc: QueryDocumentSnapshot | null; hasMore: boolean }> {
   try {
-    let submissionsRef = db
-      .collection("competitions")
-      .doc(competitionId)
-      .collection("submissions");
-
-    let submissionsQuery = submissionsRef
-      .where("challengeId", "==", challengeId)
-      .limit(pageSize);
-
-    if (lastDoc) {
-      submissionsQuery = submissionsQuery.startAfter(lastDoc);
+    if (!assignedSubmissionIds || assignedSubmissionIds.length === 0) {
+      return { submissions: [], lastDoc: null, hasMore: false };
     }
 
-    const snapshot = await submissionsQuery.get();
     const submissions: Submission[] = [];
+    let lastVisibleSnapshot: QueryDocumentSnapshot | null = lastDoc || null;
 
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      submissions.push({
-        id: doc.id,
-        participantId: data.participantId,
-        challengeId: data.challengeId,
-        promptText: data.promptText,
-        submissionTime: data.submissionTime,
-        status: data.status,
-        finalScore: data.finalScore,
-        llmScores: data.llmScores || {},
-        judges: data.judges || {},
+    // Firestore 'in' query limit is 10
+    const chunkSize = 10;
+    let remainingIds = assignedSubmissionIds;
+
+    while (remainingIds.length > 0 && submissions.length < pageSize) {
+      const currentChunk = remainingIds.slice(0, chunkSize);
+      remainingIds = remainingIds.slice(chunkSize);
+
+      let submissionsRef = db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("submissions");
+
+      let submissionsQuery = submissionsRef
+        .where("__name__", "in", currentChunk)
+        .limit(pageSize - submissions.length);
+
+      if (lastVisibleSnapshot) {
+        submissionsQuery = submissionsQuery.startAfter(lastVisibleSnapshot);
+      }
+
+      const snapshot = await submissionsQuery.get();
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        submissions.push({
+          id: doc.id,
+          participantId: data.participantId,
+          challengeId: data.challengeId,
+          promptText: data.promptText,
+          submissionTime: data.submissionTime,
+          status: data.status,
+          finalScore: data.finalScore,
+          llmScores: data.llmScores || {},
+          judges: data.judges || {},
+        });
       });
-    });
 
-    const lastVisible = snapshot.docs[snapshot.docs.length - 1] || null;
-    const hasMore = snapshot.docs.length === pageSize;
+      if (snapshot.docs.length > 0) {
+        lastVisibleSnapshot = snapshot.docs[snapshot.docs.length - 1];
+      }
 
-    return { submissions, lastDoc: lastVisible, hasMore };
+      if (snapshot.docs.length < currentChunk.length) break; // no more docs in this batch
+    }
+
+    const hasMore = remainingIds.length > 0;
+
+    return { submissions, lastDoc: lastVisibleSnapshot, hasMore };
   } catch (error) {
+    console.error(error);
     throw new Error("Failed to fetch submissions");
   }
 }
