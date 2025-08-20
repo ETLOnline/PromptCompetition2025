@@ -15,9 +15,10 @@ interface SubmissionCardProps {
   submission: Submission
   userUID: string | null
   onOpenScoring: (submission: Submission) => void
+  index: number
 }
 
-export function SubmissionCard({ submission, userUID, onOpenScoring }: SubmissionCardProps) {
+export function SubmissionCard({ submission, userUID, onOpenScoring, index }: SubmissionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showModelInsights, setShowModelInsights] = useState(false)
 
@@ -39,8 +40,7 @@ export function SubmissionCard({ submission, userUID, onOpenScoring }: Submissio
               </AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <h3 className="font-semibold text-gray-900">Participant {submission.participantId}</h3>
-              <p className="text-sm text-gray-600">Submission ID: {submission.id.slice(0, 8)}...</p>
+              <h3 className="font-semibold text-gray-900">Participant {index + 1}</h3>
             </div>
           </div>
           <div className="flex items-center gap-2">
