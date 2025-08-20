@@ -212,6 +212,57 @@ router.get(
  * POST /challenge-distribution/:competitionId/config
  * Save config (topN and optional maxPerJudge; no matrix persisted).
  */
+// router.post(
+//   "/:competitionId/config",
+//   authenticateToken,
+//   authorizeRoles(["superadmin"]),
+//   async (req: AuthenticatedRequest, res: Response) => {
+//     const { competitionId } = req.params;
+//     const { topN, maxPerJudge } = req.body as { topN?: number; maxPerJudge?: number };
+
+//     if (!topN || isNaN(Number(topN)) || Number(topN) < 1) {
+//       return res.status(400).json({ error: "Valid topN parameter is required" });
+//     }
+
+//     try {
+//       const configRef = db
+//         .collection("competitions")
+//         .doc(competitionId)
+//         .collection("distributionConfigs")
+//         .doc("current");
+
+//       await configRef.set(
+//         {
+//           topN: Number(topN),
+//           ...(typeof maxPerJudge === "number" ? { maxPerJudge: Number(maxPerJudge) } : {}),
+//           timestamp: new Date(),
+//           updatedBy: req.user?.uid || null,
+//         },
+//         { merge: true }
+//       );
+
+//       return res.status(200).json({
+//         message: "Configuration saved successfully",
+//         topN: Number(topN),
+//         maxPerJudge: typeof maxPerJudge === "number" ? Number(maxPerJudge) : null,
+//         timestamp: new Date(),
+//         updatedBy: req.user?.uid || null,
+//       });
+//     } catch (err: any) {
+//       console.error("Error saving distribution config:", err);
+//       return res.status(500).json({
+//         error: "Failed to save distribution configuration",
+//         detail: err.message,
+//       });
+//     }
+//   }
+// );
+
+
+/**
+ * POST /challenge-distribution/:competitionId/config
+ * Save config (topN and optional maxPerJudge; no matrix persisted).
+ */
 router.post(
   "/:competitionId/config",
   authenticateToken,
@@ -231,12 +282,25 @@ router.post(
         .collection("distributionConfigs")
         .doc("current");
 
+      const competitionRef = db
+        .collection("competitions")
+        .doc(competitionId);
+
+      // Save topN (and optional maxPerJudge) under /distributionConfigs/current
       await configRef.set(
         {
           topN: Number(topN),
           ...(typeof maxPerJudge === "number" ? { maxPerJudge: Number(maxPerJudge) } : {}),
           timestamp: new Date(),
           updatedBy: req.user?.uid || null,
+        },
+        { merge: true }
+      );
+
+      // ALSO save topN on the competition document itself
+      await competitionRef.set(
+        {
+          TopN: Number(topN),
         },
         { merge: true }
       );
@@ -257,6 +321,7 @@ router.post(
     }
   }
 );
+
 
 /**
  * POST /challenge-distribution/:competitionId/distribute
