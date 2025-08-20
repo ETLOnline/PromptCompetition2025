@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogIn, UserPlus } from "lucide-react"
+import { Menu, LogIn, UserPlus, X } from "lucide-react"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -20,9 +20,9 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="w-full relative overflow-hidden">
+    <header className="w-full relative">
       {/* Main Navigation Container */}
-      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20 shadow-lg">
+      <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="container mx-auto max-w-6xl">
           <div className="flex h-20 items-center justify-between px-4">
             {/* Logo Section */}
@@ -31,16 +31,16 @@ export default function Navbar() {
                 href="https://www.etlonline.org/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-2 transition-all duration-200 hover:scale-105"
+                className="flex items-center transition-all duration-200 hover:opacity-80"
                 aria-label="Empowerment Through Learning Homepage"
               >
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2 border border-white/20 hover:bg-white/20 transition-all duration-200">
+                <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 hover:bg-gray-100 hover:shadow-sm transition-all duration-200">
                   <Image
                     src="/images/Logo-for-Picton-Blue.png"
                     alt="Empowerment Through Learning Logo"
                     width={300}
                     height={130}
-                    className="h-12 w-auto"
+                    className="h-10 w-auto"
                     priority
                   />
                 </div>
@@ -48,109 +48,142 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6" aria-label="Main Navigation">
+            <nav className="hidden lg:flex items-center gap-1" aria-label="Main Navigation">
               {navItems.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
-                  className="px-6 py-3 font-medium rounded-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-1
-                 text-black hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  className="px-6 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
+
             {/* Auth Buttons & Mobile Menu */}
             <div className="flex items-center gap-3">
               {/* Desktop Auth Buttons */}
-              <div className="hidden md:flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-2">
                 <Button
                   asChild
-                  className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-                            bg-[#10142c] text-white"
+                  className="gap-2 px-6 py-3 text-sm font-medium rounded-lg border-gray-200 text-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
                 >
                   <Link href="/auth/login">
-                    <div className="bg-[#0d1024] rounded-md p-1 mr-2">
-                      <LogIn className="h-3 w-3 text-white" />
-                    </div>
+                    <LogIn className="h-4 w-4" />
                     Login
                   </Link>
                 </Button>
 
                 <Button
                   asChild
-                  className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-                            bg-[#10142c] text-white font-bold"
+                  className="gap-2 px-6 py-3 text-sm font-medium rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:from-gray-600 hover:to-gray-500 shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <Link href="/auth/register">
-                    <div className="bg-[#10142c] rounded-md p-1 mr-2">
-                      <UserPlus className="h-3 w-3 text-white" />
-                    </div>
+                    <UserPlus className="h-4 w-4" />
                     Sign Up
                   </Link>
                 </Button>
               </div>
+
               {/* Mobile Menu Trigger */}
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                <SheetTrigger asChild className="md:hidden">
+                <SheetTrigger asChild className="lg:hidden">
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    variant="outline"
+                    size="sm"
                     aria-label="Open Menu"
-                    className="text-white/90 hover:text-white hover:bg-white/10 border border-white/20 rounded-xl transition-all duration-200 hover:shadow-lg hover:-translate-y-1 focus:ring-2 focus:ring-white/20"
+                    className="p-2 border-gray-200 hover:bg-gray-50 transition-all duration-200"
                   >
-                    <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-md p-1">
-                      <Menu className="h-4 w-4 text-white" />
-                    </div>
+                    <Menu className="h-4 w-4 text-gray-600" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>
                 </SheetTrigger>
+
                 {/* Mobile Menu Content */}
                 <SheetContent
                   side="right"
-                  className="bg-gradient-to-b from-slate-50 to-slate-100 border-l border-gray-200 shadow-xl w-80"
+                  className="bg-white border-l border-gray-200 w-80 p-0"
                 >
-                  <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Navigation</h2>
-                    <nav className="flex flex-col gap-2" aria-label="Mobile Navigation">
-                      {navItems.map((item, index) => (
-                        <Link
-                          key={index}
-                          href={item.href}
-                          className="px-4 py-3 text-base font-medium rounded-lg transition-all duration-200 hover:shadow-sm hover:-translate-y-1
-                 text-black hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                          onClick={() => setIsOpen(false)}
+                  {/* Mobile Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                        <Image
+                          src="/images/Logo-for-Picton-Blue.png"
+                          alt="ETL Logo"
+                          width={120}
+                          height={52}
+                          className="h-6 w-auto"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsOpen(false)}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg"
+                      aria-label="Close Menu"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Mobile Navigation */}
+                  <div className="p-6">
+                    <div className="mb-6">
+                      <h2 className="text-lg font-bold text-gray-900 mb-4">Navigation</h2>
+                      <nav className="space-y-1" aria-label="Mobile Navigation">
+                        {navItems.map((item, index) => (
+                          <Link
+                            key={index}
+                            href={item.href}
+                            className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </nav>
+                    </div>
+
+                    {/* Mobile Auth Section */}
+                    <div className="pt-6 border-t border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+                        Account
+                      </h3>
+                      <div className="space-y-3">
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="w-full justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:bg-gray-50 transition-all duration-200"
                         >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </nav>
-                    {/* Mobile Auth Buttons */}
-                    <div className="flex flex-col gap-3 mt-8 pt-6 border-t border-gray-200">
-                      <Button
-                        asChild
-                        className="w-full justify-start gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-                 bg-gradient-to-r from-gray-700 to-gray-600 text-white"
-                      >
-                        <Link href="/auth/login" onClick={() => setIsOpen(false)}>
-                          <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-md p-1 mr-3">
-                            <LogIn className="h-3 w-3 text-white" />
-                          </div>
-                          Login
-                        </Link>
-                      </Button>
-                      <Button
-                        asChild
-                        className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300
-                 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-bold"
-                      >
-                        <Link href="/auth/register" onClick={() => setIsOpen(false)}>
-                          <div className="bg-white/20 rounded-md p-1 mr-3">
-                            <UserPlus className="h-3 w-3" />
-                          </div>
-                          Sign Up
-                        </Link>
-                      </Button>
+                          <Link href="/auth/login" onClick={() => setIsOpen(false)}>
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                              <LogIn className="h-4 w-4 text-gray-600" />
+                            </div>
+                            Login to your account
+                          </Link>
+                        </Button>
+
+                        <Button
+                          asChild
+                          className="w-full justify-start gap-3 px-4 py-3 text-sm font-medium rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 text-white hover:from-gray-600 hover:to-gray-500 shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          <Link href="/auth/register" onClick={() => setIsOpen(false)}>
+                            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                              <UserPlus className="h-4 w-4 text-white" />
+                            </div>
+                            Create new account
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Mobile Footer */}
+                    <div className="pt-6 mt-6 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 text-center">
+                        © 2024 Empowerment Through Learning
+                      </p>
                     </div>
                   </div>
                 </SheetContent>

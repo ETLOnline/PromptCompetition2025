@@ -68,12 +68,13 @@ export function SubmissionsList({
         </Card>
       ) : (
         <div className="space-y-4">
-          {submissions.map((submission) => (
+          {submissions.map((submission, index) => (
             <SubmissionCard
               key={submission.id}
               submission={submission}
               userUID={userUID}
               onOpenScoring={onOpenScoring}
+              index={index} 
             />
           ))}
 
