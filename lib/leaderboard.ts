@@ -33,28 +33,29 @@ async function withErrorHandling<T>(operation: () => Promise<T>, operationName: 
  * Fetch the most recent competition where AllJudgeEvaluated === true
  */
 export async function getLatestCompetition(): Promise<Competition> {
-  return withErrorHandling(async () => {
-    const competitionsRef = collection(db, "competitions")
-    const q = query(competitionsRef, where("AllJudgeEvaluated", "==", true), orderBy("createdAt", "desc"), limit(1))
+    return withErrorHandling(async () => {
+        const competitionsRef = collection(db, "competitions")
+        const q = query(competitionsRef, where("AllJudgeEvaluated", "==", true), 
+                    orderBy("createdAt", "desc"), limit(1))
 
-    const querySnapshot = await getDocs(q)
+        const querySnapshot = await getDocs(q)
 
-    if (querySnapshot.empty) {
-      throw new Error(
-        "No completed competitions found. Please ensure at least one competition has AllJudgeEvaluated set to true.",
-      )
-    }
+        if (querySnapshot.empty) {
+        throw new Error(
+            "No completed competitions found. Please ensure at least one competition has AllJudgeEvaluated set to true.",
+        )
+        }
 
-    const doc = querySnapshot.docs[0]
-    const data = doc.data()
+        const doc = querySnapshot.docs[0]
+        const data = doc.data()
 
-    return {
-      competitionId: doc.id,
-      title: data.title || "Untitled Competition",
-      TopN: data.TopN,
-      AllJudgeEvaluated: data.AllJudgeEvaluated,
-    }
-  }, "getLatestCompetition")
+        return {
+            competitionId: doc.id,
+            title: data.title || "Untitled Competition",
+            TopN: data.TopN,
+            AllJudgeEvaluated: data.AllJudgeEvaluated,
+        }
+    }, "getLatestCompetition")
 }
 
 /**
@@ -72,7 +73,7 @@ export async function getLeaderboard(competitionId: string): Promise<Leaderboard
       leaderboardData.push({
         participantId: doc.id,
         fullName: data.fullName,
-        llmScore: data.llmScore || 0,
+        llmScore: data.totalScore || 0,
       })
     })
 
