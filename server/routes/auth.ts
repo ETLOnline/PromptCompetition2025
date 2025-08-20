@@ -60,12 +60,24 @@ router.post("/reset-password", async (req, res) => {
         from: `"No Reply" <${process.env.EMAIL_SENDER}>`,
         to: email,
         subject: "Password Reset Request",
-        html: `
-            <p>Hello,</p>
-            <p>You requested a password reset. Click the link below to reset your password:</p>
-            <a href="${link}">Reset Password</a>
-            <p>If you did not request this, you can safely ignore this email.</p>
-        `,
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <p>Hello,</p>
+                    <p>We received a request to reset your password for your <strong>PEC-System</strong> account, 
+                    the platform for Prompt Engineering Competitions.</p>
+                    <p>Please click the button below to set a new password:</p>
+                    <p style="text-align: center;">
+                        <a href="${link}" style="display: inline-block; padding: 12px 24px; background: #0f172a; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                            Reset Your Password
+                        </a>
+                    </p>
+                    <p>If you did not request this, you can safely ignore this email and your password will remain unchanged.</p>
+                    <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;">
+                    <p style="font-size: 12px; color: #666;">
+                        This email was sent by <strong>PEC-System</strong>, the platform for hosting and participating in Prompt Engineering Competitions.
+                    </p>
+                </div>
+            `,
         });
 
         return res.json({ message: "Password reset link sent to your email!" });

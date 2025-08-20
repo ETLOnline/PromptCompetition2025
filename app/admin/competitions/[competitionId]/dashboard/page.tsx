@@ -5,14 +5,14 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileText, Activity, Users, Trophy, BarChart3, Shield, ExternalLink } from "lucide-react"
+import { FileText, Activity, Users, Trophy, BarChart3, Shield, ExternalLink, AlertCircle, X } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
 import JudgeProgress from "@/components/JudgeProgress"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
-import { collection, onSnapshot, query, where } from "firebase/firestore"
+import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
-
+import type { Judge } from "@/types/JudgeProgress"
 import { fetchWithAuth } from "@/lib/api"
 
 export default function AdminDashboard() {
@@ -22,8 +22,100 @@ export default function AdminDashboard() {
   const [totalSubmissions, setSubmissionCount] = useState<number>(0)
   const [stats, setStats] = useState({ totalParticipants: 0, pendingReviews: 0 })
   const [activeTab, setActiveTab] = useState<"challenges" | "judges">("challenges")
-
   const [role, setRole] = useState(null)
+  const [allJudgeEvaluated, setAllJudgeEvaluated] = useState<boolean>(false)
+  const [isCheckingJudges, setIsCheckingJudges] = useState<boolean>(false)
+  const [showAccessDeniedModal, setShowAccessDeniedModal] = useState<boolean>(false)
+
+  // Function to check if all judges have completed their evaluations
+  const checkAllJudgesCompleted = async (): Promise<boolean> => {
+    try {
+      const judgesRef = collection(db, `competitions/${competitionId}/judges`)
+      const judgesSnap = await getDocs(judgesRef)
+      
+      if (judgesSnap.empty) return false
+
+      const judgesData: Judge[] = []
+      
+      for (const judgeDoc of judgesSnap.docs) {
+        const judgeData = judgeDoc.data()
+        const assignedCountTotal = judgeData.assignedCountTotal || 0
+        const reviewedCount = judgeData.reviewedCount || 0
+
+        judgesData.push({
+          judgeId: judgeDoc.id,
+          assignedCountsByChallenge: judgeData.assignedCountsByChallenge || {},
+          submissionsByChallenge: judgeData.submissionsByChallenge || {},
+          assignedCountTotal,
+          completedCount: reviewedCount,
+          challengeProgress: [],
+          displayName: judgeDoc.id.slice(0, 8),
+        })
+      }
+
+      return judgesData.every(judge => {
+        const overallProgress = judge.assignedCountTotal > 0
+          ? (judge.completedCount / judge.assignedCountTotal) * 100
+          : 0
+        return overallProgress === 100
+      })
+    } catch (error) {
+      console.error("Error checking judges completion:", error)
+      return false
+    }
+  }
+
+  // Function to fetch AllJudgeEvaluated status from competition document
+  const fetchAllJudgeEvaluatedStatus = async () => {
+    try {
+      const competitionRef = doc(db, "competitions", competitionId)
+      const competitionDoc = await getDoc(competitionRef)
+      
+      if (competitionDoc.exists()) {
+        const data = competitionDoc.data()
+        return data.AllJudgeEvaluated || false
+      }
+      return false
+    } catch (error) {
+      console.error("Error fetching AllJudgeEvaluated status:", error)
+      return false
+    }
+  }
+
+  // Function to handle leaderboard access
+  const handleLeaderboardAccess = async () => {
+    if (role !== 'superadmin') {
+      return // Only superadmins can access
+    }
+
+    setIsCheckingJudges(true)
+    
+    try {
+      // First check the AllJudgeEvaluated boolean
+      const allJudgeEvaluatedStatus = await fetchAllJudgeEvaluatedStatus()
+      
+      if (allJudgeEvaluatedStatus) {
+        // If boolean is true, proceed to leaderboard
+        router.push(`/admin/competitions/${competitionId}/leaderboard`)
+      } else {
+        // If boolean is false, double-check by calling checkAllJudgesCompleted
+        const allCompleted = await checkAllJudgesCompleted()
+        
+        if (allCompleted) {
+          // If all judges are actually completed, proceed to leaderboard
+          router.push(`/admin/competitions/${competitionId}/leaderboard`)
+        } else {
+          // Show message that not all judges have completed
+          setShowAccessDeniedModal(true)
+        }
+      }
+    } catch (error) {
+      console.error("Error checking leaderboard access:", error)
+      setShowAccessDeniedModal(true)
+    } finally {
+      setIsCheckingJudges(false)
+    }
+  }
 
   useEffect(() => {
     checkAuthAndLoad()
@@ -41,10 +133,19 @@ export default function AdminDashboard() {
       (snap) => setStats((prev) => ({ ...prev, pendingReviews: snap.size })),
     )
 
+    // Listen to competition document for AllJudgeEvaluated changes
+    const unsubCompetition = onSnapshot(doc(db, "competitions", competitionId), (doc) => {
+      if (doc.exists()) {
+        const data = doc.data()
+        setAllJudgeEvaluated(data.AllJudgeEvaluated || false)
+      }
+    })
+
     return () => {
       unsubParts()
       unsubSubs()
       unsubPending()
+      unsubCompetition()
     }
   }, [router, competitionId])
 
@@ -60,6 +161,69 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Custom Access Denied Modal */}
+      {showAccessDeniedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <AlertCircle className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Access Restricted</h3>
+                    <p className="text-sm text-gray-600">Leaderboard not available</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAccessDeniedModal(false)}
+                  className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="space-y-3">
+                <p className="text-gray-700 leading-relaxed">
+                  The leaderboard cannot be accessed because not all judges have completed their evaluations.
+                </p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start space-x-2">
+                    <Shield className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-gray-600">
+                      <strong>Next steps:</strong> Monitor judge progress in the "Judge Progress" tab and ensure all evaluations reach 100% completion.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3 pt-2">
+                <Button
+                  onClick={() => {
+                    setShowAccessDeniedModal(false)
+                    setActiveTab("judges")
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  View Judge Progress
+                </Button>
+                <Button
+                  onClick={() => setShowAccessDeniedModal(false)}
+                  variant="outline"
+                  className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
 
       {/* Main Content */}
@@ -176,12 +340,40 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="space-y-3">
-                <Button
-                  onClick={() => router.push(`/admin/competitions/${competitionId}/leaderboard`)}
-                  className="w-full py-3 bg-gray-900 text-white rounded-lg"
-                >
-                  <Trophy className="h-4 w-4 mr-2" /> View Leaderboard
-                </Button>
+                {role === 'superadmin' ? (
+                  <>
+                    <Button
+                      onClick={handleLeaderboardAccess}
+                      disabled={isCheckingJudges}
+                      className="w-full py-3 bg-gray-900 text-white rounded-lg disabled:bg-gray-400"
+                    >
+                      <Trophy className="h-4 w-4 mr-2" /> 
+                      {isCheckingJudges ? 'Checking...' : 'View Leaderboard'}
+                    </Button>
+                    
+                    {/* Status indicator for superadmin */}
+                    <div className="flex items-center justify-center space-x-2 text-xs">
+                      {allJudgeEvaluated ? (
+                        <div className="flex items-center space-x-1 text-green-600">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>All evaluations complete</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-1 text-amber-600">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Evaluations pending</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="flex items-center justify-center space-x-2 text-gray-500">
+                      <Shield className="h-4 w-4" />
+                      <span className="text-sm">Superadmin access required</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>

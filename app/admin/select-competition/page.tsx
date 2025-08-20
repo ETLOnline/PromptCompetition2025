@@ -112,11 +112,12 @@ export default function ModernCompetitionSelector() {
 
   const checkAuth = async () => {
     try {
-      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_SUPER_AUTH}`);
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
       setRole(profile.role)
     } 
     catch (error) 
     {
+      console.error("Authentication check failed:", error);
       router.push("/");
     } 
     finally 

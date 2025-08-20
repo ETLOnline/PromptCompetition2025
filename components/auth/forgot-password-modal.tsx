@@ -23,30 +23,43 @@ export default function ForgotPasswordModal({ isOpen, onClose, initialEmail = ""
   }, [isOpen, initialEmail])
 
     const handlePasswordReset = async () => {
-        setIsResetting(true)
-        setResetMessage("")
+    setIsResetting(true)
+    setResetMessage("")
 
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: resetEmail }),
-            });
+        });
 
-            if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(errText || "Failed to send reset link.");
+        if (!response.ok) {
+            // Try to parse as JSON first, fall back to text
+            let errorMessage = "Failed to send reset link.";
+            
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch {
+                // If JSON parsing fails, try text
+                const errText = await response.text();
+                errorMessage = errText || errorMessage;
             }
-
-            setResetMessage("Password reset link sent to your email!")
-        } catch (err: any) {
-            console.error("Password reset error:", err)
-            setResetMessage(err.message || "Failed to send reset link.")
-        } finally {
-            setIsResetting(false)
+            
+            throw new Error(errorMessage);
         }
-    }
 
+        // Also handle successful response properly
+        const data = await response.json();
+        setResetMessage(data.message || "Password reset link sent to your email!")
+        
+    } catch (err: any) {
+        console.error("Password reset error:", err)
+        setResetMessage(err.message || "Failed to send reset link.")
+    } finally {
+        setIsResetting(false)
+    }
+}
 
   if (!isOpen) return null
 

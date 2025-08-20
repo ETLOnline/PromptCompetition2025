@@ -105,7 +105,7 @@ export default function RegisterPage() {
                 </h1>
                 <p className="text-muted-foreground">
                   A verification email has been sent to <span className="text-blue-600 font-medium">{email}</span>.
-                  Please click the link in the email to verify your account before signing in.
+                  Check your inbox and spam folder. Please click the link in the email to verify your account before signing in.
                 </p>
                 <button
                   onClick={() => router.push("/auth/login")}
