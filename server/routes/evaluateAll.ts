@@ -129,6 +129,9 @@ router.post("/start-evaluation", async (req, res) => {
       }
     }
 
+    // console.log(`✅ Evaluation complete: ${evaluatedCount} evaluated, ${skippedCount} skipped`)
+    // console.log(`✅ Evaluation complete: ${evaluatedCount} evaluated, ${skippedCount} skipped`)
+
     return res.status(200).json({
       message: `✅ Evaluation completed`,
       summary: {

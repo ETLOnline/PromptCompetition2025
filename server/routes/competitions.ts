@@ -48,6 +48,9 @@ router.post(
         isActive: true,
         isLocked: false,
         ChallengeCount: 0,
+        IsCompetitionEvaluated: false,
+        AllJudgeEvaluated: false,
+        generateleaderboard: false,
         createdAt: req.body.createdAt || new Date().toISOString(),
         createdBy: {
           uid: req.user?.uid || "",
