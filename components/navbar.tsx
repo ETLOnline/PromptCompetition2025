@@ -14,6 +14,7 @@ export default function Navbar() {
   const navItems = [
     { label: "Events", href: "/#events" },
     { label: "Rules", href: "/rules" },
+    { label: "Leaderboard", href: "/leaderboard" },
     { label: "Contact Us", href: "/#contact" },
     { label: "About", href: "/about" },
   ]
@@ -88,7 +89,6 @@ export default function Navbar() {
                     Sign Up
                   </Link>
                 </Button>
-
               </div>
               {/* Mobile Menu Trigger */}
               <Sheet open={isOpen} onOpenChange={setIsOpen}>

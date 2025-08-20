@@ -73,11 +73,22 @@ export async function submitScore(
       status: "scored",
     });
 
-    batch.update(judgeRef, {
-      [`completedChallenges.${challengeId}`]: admin.firestore.FieldValue.increment(1),
-      reviewedCount: admin.firestore.FieldValue.increment(1),
-      lastReviewedAt: admin.firestore.Timestamp.now(),
-    });
+    const submissionSnap = await submissionRef.get()
+    const submissionData = submissionSnap.data()
+
+    const alreadyScored = !!submissionData?.judgeScore?.[judgeId]
+
+    if (!alreadyScored) {
+      batch.update(judgeRef, {
+        [`completedChallenges.${challengeId}`]: admin.firestore.FieldValue.increment(1),
+        reviewedCount: admin.firestore.FieldValue.increment(1),
+      })
+    } else {
+      // If it already existed, we only update lastReviewedAt
+      batch.update(judgeRef, {
+        lastReviewedAt: admin.firestore.Timestamp.now(),
+      })
+    }
 
     // Commit batch
     await batch.commit();
@@ -106,7 +117,7 @@ export async function getSubmissionScore(
     if (!submissionDoc.exists) return null;
 
     const data = submissionDoc.data();
-    const judgeEntry = data?.judges?.[judgeId];
+    const judgeEntry = data?.judgeScore?.[judgeId];
 
     if (!judgeEntry) return null;
 
@@ -116,7 +127,6 @@ export async function getSubmissionScore(
       rubricScores: judgeEntry.scores || {},
     };
   } catch (error) {
-    console.error("Error fetching submission score:", error);
     throw new Error("Failed to fetch submission score");
   }
 }

@@ -159,8 +159,16 @@ export default function ChallengePage() {
       setLastDoc(newLastDoc);
       setHasMoreSubmissions(hasMore);
 
+      fetch("/api/debugger", {
+        method: "POST",
+        body: JSON.stringify({ message: `object updatedSubmissions: ${JSON.stringify(updatedSubmissions)}` }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+      })
+
       // 4️⃣ Calculate progress stats
-      const totalScored = updatedSubmissions.filter(s => Boolean(s.judges?.[userUID])).length;
+      const totalScored = updatedSubmissions.filter(s => Boolean(s.judgeScore?.[userUID])).length;
       const totalAssigned = assignedSubmissionIds.length;
       const percentage = totalAssigned > 0 ? Math.round((totalScored / totalAssigned) * 100) : 0;
 
@@ -196,6 +204,15 @@ export default function ChallengePage() {
       const existingScore = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${submission.id}/${userUID}`
       )
+
+      // fetch("/api/debugger", {
+      //   method: "POST",
+      //   body: JSON.stringify({ message: `object existingScore: ${JSON.stringify(existingScore)}` }),
+      //   headers: {
+      //       "Content-Type": "application/json",
+      //   },
+      // })
+
       if (existingScore) {
         setScoreFormData(existingScore)
       } else {

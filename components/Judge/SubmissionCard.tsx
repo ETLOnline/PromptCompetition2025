@@ -21,8 +21,8 @@ export function SubmissionCard({ submission, userUID, onOpenScoring }: Submissio
   const [isExpanded, setIsExpanded] = useState(false)
   const [showModelInsights, setShowModelInsights] = useState(false)
 
-  const isGraded = userUID && submission.judges?.[userUID]
-  const judgeScore = userUID && submission.judges?.[userUID]
+  const isGraded = userUID && submission.judgeScore?.[userUID]
+  const judgeScore = userUID && submission.judgeScore?.[userUID]
 
   const toggleExpansion = useCallback(() => {
     setIsExpanded((prev) => !prev)
@@ -47,7 +47,7 @@ export function SubmissionCard({ submission, userUID, onOpenScoring }: Submissio
             {isGraded && (
               <Badge variant="default" className="gap-1">
                 <CheckCircle2 className="w-3 h-3" />
-                Total Score: {judgeScore?.totalScore?.toFixed(1) ?? "N/A"}
+                Total Score: {judgeScore ? judgeScore.totalScore.toFixed(1) : "N/A"}
               </Badge>
             )}
           </div>
@@ -111,7 +111,7 @@ export function SubmissionCard({ submission, userUID, onOpenScoring }: Submissio
                             ))}
                           </div>
                         )}
-                      </div>
+                      </div> 
                     ))}
                   </div>
                 </CollapsibleContent>

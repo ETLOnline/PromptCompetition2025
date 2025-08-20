@@ -52,7 +52,7 @@ export async function fetchSubmissions(
           status: data.status,
           finalScore: data.finalScore,
           llmScores: data.llmScores || {},
-          judges: data.judges || {},
+          judgeScore: data.judgeScore || {},
         });
       });
 
@@ -67,7 +67,6 @@ export async function fetchSubmissions(
 
     return { submissions, lastDoc: lastVisibleSnapshot, hasMore };
   } catch (error) {
-    console.error(error);
     throw new Error("Failed to fetch submissions");
   }
 }

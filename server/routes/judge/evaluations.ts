@@ -51,8 +51,6 @@ export async function fetchJudgeEvaluations(
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      
-      console.log(data);
 
       // Skip if no judgeScore exists
       if (!data.judgeScore) return;
