@@ -210,15 +210,6 @@ export default function ModernCompetitionSelector() {
   }
 
   const handleEditClick = (competition: Competition) => {
-    const startDate = new Date(competition.startDeadline)
-    const endDate = new Date(competition.endDeadline)
-    const now = new Date()
-
-    if (now > endDate) {
-      setShowCompetitionEndedDialog(true)
-      return
-    }
-
     setSelectedCompetition(competition)
     setIsEditModalOpen(true)
   }
