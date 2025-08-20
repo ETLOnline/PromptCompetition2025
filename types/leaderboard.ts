@@ -1,21 +1,16 @@
-export interface Competition {
-  competitionId: string
-  title: string
-  TopN: number
-  AllJudgeEvaluated: boolean
-}
+// types/leaderboard.ts
 
-export interface LeaderboardEntry {
-  participantId: string
+/** Final leaderboard entry as stored in Firestore */
+export interface FinalLeaderboardEntry {
+  email: string
   fullName: string
+  finalScore: number
+  judgeScore: number
   llmScore: number
+  rank: number
 }
 
-export interface JudgeScore {
-  participantId: string
-  totalScore: number
-}
-
+/** Display entry used in the table component */
 export interface DisplayEntry {
   rank: number
   name: string
@@ -24,8 +19,10 @@ export interface DisplayEntry {
   finalScore: number
 }
 
-export interface LeaderboardProps {
-  competition: Competition
-  displayData: DisplayEntry[]
-  judgeEvaluationsComplete: boolean
+/** Competition metadata */
+export interface Competition {
+  competitionId: string
+  title: string
+  TopN: number
+  maxScore: number 
 }

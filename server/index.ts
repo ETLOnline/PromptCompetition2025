@@ -107,6 +107,9 @@ import submissionsRouter from "./routes/submissions.js";
 import judgeRouter from "./routes/judge/index.js";
 import llmRouter from "./routes/llmevaluations.js";
 
+import lastRouter from "./routes/leaderboard.js";
+
+
 console.log("2. Starting server setup...");
 console.log("3. Routers imported successfully");
 
@@ -141,6 +144,7 @@ app.use("/results", resultRoutes);
 app.use("/llm-evaluations", llmRouter);
 app.use("/submissions", submissionsRouter);
 
+app.use("/last", lastRouter);
 
 
 

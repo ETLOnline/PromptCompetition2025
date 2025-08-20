@@ -15,6 +15,8 @@ import { db } from "@/lib/firebase"
 import type { Judge } from "@/types/JudgeProgress"
 import { fetchWithAuth } from "@/lib/api"
 
+import { useNotifications } from "@/hooks/useNotifications";
+
 export default function AdminDashboard() {
   const router = useRouter()
   const params = useParams()
@@ -26,6 +28,9 @@ export default function AdminDashboard() {
   const [allJudgeEvaluated, setAllJudgeEvaluated] = useState<boolean>(false)
   const [isCheckingJudges, setIsCheckingJudges] = useState<boolean>(false)
   const [showAccessDeniedModal, setShowAccessDeniedModal] = useState<boolean>(false)
+  const { addNotification } = useNotifications();
+  const [isGenerating, setIsGenerating] = useState(false);
+
 
   // Function to check if all judges have completed their evaluations
   const checkAllJudgesCompleted = async (): Promise<boolean> => {
@@ -158,6 +163,24 @@ export default function AdminDashboard() {
       return
     }
   }
+
+  const generateFinalLeaderboard = async (competitionId: string) => {
+    try {
+      const data = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/last/${competitionId}/final-leaderboard`,
+        { method: "POST" }
+      );
+
+      // Show success notification
+      addNotification("success", "Final leaderboard generated successfully!");
+      return true;
+    } catch (err: any) {
+      // Show error notification
+      addNotification("error", err.message || "Failed to generate final leaderboard");
+      throw err;
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -350,21 +373,6 @@ export default function AdminDashboard() {
                       <Trophy className="h-4 w-4 mr-2" /> 
                       {isCheckingJudges ? 'Checking...' : 'View Leaderboard'}
                     </Button>
-                    
-                    {/* Status indicator for superadmin */}
-                    <div className="flex items-center justify-center space-x-2 text-xs">
-                      {allJudgeEvaluated ? (
-                        <div className="flex items-center space-x-1 text-green-600">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>All evaluations complete</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-1 text-amber-600">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>Evaluations pending</span>
-                        </div>
-                      )}
-                    </div>
                   </>
                 ) : (
                   <div className="text-center py-4">
@@ -374,6 +382,26 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 )}
+                
+                <Button
+                  onClick={async () => {
+                    setIsGenerating(true);
+                    try {
+                      await generateFinalLeaderboard(competitionId);
+                    } catch (err) {
+                      // Notification already handled in generateFinalLeaderboard
+                    } finally {
+                      setIsGenerating(false);
+                    }
+                  }}
+                  className="w-full py-3 bg-gray-900 text-white rounded-lg"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  {isGenerating ? "Generating..." : "Generate Leaderboard"}
+                </Button>
+
+
+
               </div>
             </div>
           </Card>
