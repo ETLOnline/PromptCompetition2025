@@ -373,6 +373,21 @@ export default function AdminDashboard() {
                       <Trophy className="h-4 w-4 mr-2" /> 
                       {isCheckingJudges ? 'Checking...' : 'View Leaderboard'}
                     </Button>
+                    
+                    {/* Status indicator for superadmin */}
+                    <div className="flex items-center justify-center space-x-2 text-xs">
+                      {allJudgeEvaluated ? (
+                        <div className="flex items-center space-x-1 text-green-600">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>All evaluations complete</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-1 text-amber-600">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Evaluations pending</span>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <div className="text-center py-4">
@@ -397,11 +412,8 @@ export default function AdminDashboard() {
                   className="w-full py-3 bg-gray-900 text-white rounded-lg"
                 >
                   <Trophy className="h-4 w-4 mr-2" />
-                  {isGenerating ? "Generating..." : "Generate Leaderboard"}
+                  {isGenerating ? "Generating..." : "Leaderboard"}
                 </Button>
-
-
-
               </div>
             </div>
           </Card>
