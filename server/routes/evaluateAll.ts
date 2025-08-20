@@ -117,7 +117,6 @@ router.post("/start-evaluation", async (req, res) => {
       evaluationStatus: 'running'
     })
 
-    console.log('📝 Progress initialized in Firestore')
 
     // Start evaluation in background
     evaluateSubmissions(competitionId, submissions)
@@ -331,7 +330,6 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
         const problemStatement = cfg.problemStatement ?? undefined
 
         try {
-          console.log(`🔄 Evaluating submission ${docSnap.id}`);
 
           const result = await runJudges(promptText, rubricData, problemStatement)
           const { scores: llmScores, average } = result || {}
@@ -354,7 +352,6 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
             .doc(docSnap.id)
             .update(updateData)
 
-          console.log(`✅ Submission ${docSnap.id}: ${average?.toFixed(1) || 'N/A'}/100`)
           return { status: 'success', average }
         } catch (error) {
           console.error(`❌ Failed to evaluate submission ${docSnap.id}:`, error)
