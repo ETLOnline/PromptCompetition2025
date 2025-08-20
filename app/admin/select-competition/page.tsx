@@ -91,7 +91,6 @@ export default function ModernCompetitionSelector() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
-  const [showCompetitionEndedDialog, setShowCompetitionEndedDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "ended" | "upcoming">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -632,26 +631,6 @@ export default function ModernCompetitionSelector() {
         loading={editLoading}
         deleteLoading={deleteLoading}
       />
-
-      {/* Competition Ended Dialog */}
-      <Dialog open={showCompetitionEndedDialog} onOpenChange={setShowCompetitionEndedDialog}>
-        <DialogContent className="sm:max-w-[425px] p-6">
-          <DialogHeader className="flex flex-col items-center text-center">
-            <div className="p-3 rounded-full bg-red-100 text-red-600 mb-4">
-              <Info className="w-8 h-8" />
-            </div>
-            <DialogTitle className="text-2xl font-bold text-gray-900">Competition Ended</DialogTitle>
-            <DialogDescription className="text-base text-gray-600 mt-2">
-              This competition has already ended and can no longer be edited.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-center pt-4">
-            <Button onClick={() => setShowCompetitionEndedDialog(false)} className="w-full sm:w-auto">
-              Got It
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
