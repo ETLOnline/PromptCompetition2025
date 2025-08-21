@@ -43,7 +43,19 @@ const updateProgressInFirestore = async (competitionId: string, updates: any) =>
 // Helper function to check if evaluation should stop
 const shouldStopEvaluation = (competitionId: string): boolean => {
   // Check if global lock is still held by this competition
-  return !globalEvaluationState.isLocked || globalEvaluationState.lockedBy !== competitionId
+  // Also check if evaluation has been paused
+  if (!globalEvaluationState.isLocked || globalEvaluationState.lockedBy !== competitionId) {
+    return true
+  }
+  
+  // Check if evaluation has been paused in Firestore
+  try {
+    // This is a synchronous check - we'll handle the async check in the main loop
+    return false
+  } catch (error) {
+    console.error(`Error checking pause status for ${competitionId}:`, error)
+    return false
+  }
 }
 
 // Helper function to get current evaluated count from Firestore
@@ -207,6 +219,47 @@ router.post("/resume-evaluation", async (req, res) => {
     globalEvaluationState.lockReason = null
     
     res.status(500).json({ error: 'Failed to resume evaluation' })
+  }
+})
+
+// Pause evaluation endpoint
+router.post("/pause-evaluation", async (req, res) => {
+  try {
+    const { competitionId, userId } = req.body
+
+    if (!competitionId || !userId) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    // Check if evaluation is locked by this competition
+    if (!globalEvaluationState.isLocked || globalEvaluationState.lockedBy !== competitionId) {
+      return res.status(409).json({ 
+        error: 'No evaluation running for this competition' 
+      })
+    }
+
+    console.log(`⏸️ Pausing evaluation for competition ${competitionId}`)
+
+    // Update status to paused in Firestore
+    await updateProgressInFirestore(competitionId, {
+      evaluationStatus: 'paused',
+      lastUpdateTime: new Date().toISOString()
+    })
+
+    // Release global lock
+    globalEvaluationState.isLocked = false
+    globalEvaluationState.lockedBy = null
+    globalEvaluationState.lockedByUser = null
+    globalEvaluationState.lockedAt = null
+    globalEvaluationState.lockReason = null
+
+    res.json({ 
+      message: 'Evaluation paused successfully'
+    })
+
+  } catch (error) {
+    console.error('❌ Pause evaluation error:', error)
+    res.status(500).json({ error: 'Failed to pause evaluation' })
   }
 })
 
@@ -377,9 +430,28 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
 
     // Process submissions in parallel batches
     for (let i = 0; i < submissions.length; i += batchSize) {
+      // Check if evaluation should stop (including pause)
       if (shouldStopEvaluation(competitionId)) {
         console.log(`⏸️ Evaluation stopped for competition ${competitionId}`)
         break
+      }
+
+      // Check if evaluation has been paused in Firestore
+      try {
+        const progressDoc = await db
+          .collection('evaluation-progress')
+          .doc(competitionId)
+          .get()
+        
+        if (progressDoc.exists) {
+          const progressData = progressDoc.data()
+          if (progressData?.evaluationStatus === 'paused') {
+            console.log(`⏸️ Evaluation paused for competition ${competitionId}`)
+            break
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking pause status:`, error)
       }
 
       const batch = submissions.slice(i, i + batchSize)
