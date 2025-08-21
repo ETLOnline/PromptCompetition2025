@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Loader, Play, CheckCircle, AlertCircle, RefreshCw, Clock, Pause } from "lucide-react"
-import { useEvaluationProgress } from "@/hooks/useEvaluationProgress"
+import { useEvaluationStatus } from "@/hooks/useEvaluationStatus"
 import { useState, useEffect } from "react"
 
 interface DashboardEvaluationProgressProps {
@@ -17,7 +17,10 @@ export default function DashboardEvaluationProgress({
   onResume,
   onPause
 }: DashboardEvaluationProgressProps) {
-  const { progress, loading, error, retry, hasStarted, forceRefresh } = useEvaluationProgress(competitionId)
+  const { progress, isLoading: loading, error, refreshStatus: retry, isEvaluated, refreshStatus: forceRefresh } = useEvaluationStatus(competitionId)
+  
+  // Check if evaluation has started (progress exists)
+  const hasStarted = !!progress
   const [elapsedTime, setElapsedTime] = useState<string>("00:00:00")
   const [isPausing, setIsPausing] = useState(false)
   const [isResuming, setIsResuming] = useState(false)

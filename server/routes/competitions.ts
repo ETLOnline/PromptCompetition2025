@@ -48,7 +48,6 @@ router.post(
         isActive: true,
         isLocked: false,
         ChallengeCount: 0,
-        IsCompetitionEvaluated: false,
         AllJudgeEvaluated: false,
         hasFinalLeaderboard: false,
         createdAt: req.body.createdAt || new Date().toISOString(),

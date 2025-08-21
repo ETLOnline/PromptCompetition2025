@@ -67,18 +67,24 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
 
   const checkIfAlreadyEvaluated = async () => {
     try {
-      const competitionRef = doc(db, "competitions", competitionId)
-      const competitionDoc = await getDoc(competitionRef)
-      if (competitionDoc.exists()) {
-        const data = competitionDoc.data()
-        if ("IsCompetitionEvaluated" in data) {
-          return data.IsCompetitionEvaluated === true
+      // Check evaluation-progress collection instead of simple boolean flag
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/progress/${competitionId}`)
+      if (res.ok) {
+        const data = await res.json()
+        const progress = data.progress
+        
+        if (progress) {
+          // Check if evaluation is completed (all submissions evaluated)
+          return progress.evaluationStatus === 'completed'
         }
+        // No evaluation progress exists, so not evaluated
         return false
       }
+      // API call failed, assume not evaluated
       return false
     } catch (error) {
       console.error("Error checking evaluation status:", error)
+      // Fallback to not evaluated
       return false
     }
   }

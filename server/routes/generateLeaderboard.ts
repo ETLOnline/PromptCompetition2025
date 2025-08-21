@@ -3,13 +3,9 @@ import { db } from "../config/firebase-admin.js" // Admin SDK
 
 const router = express.Router()
 
-router.post("/generate", async (req, res) => {
+// Extract the leaderboard generation logic into a reusable function
+export async function generateLeaderboard(competitionId: string) {
   try {
-    const { competitionId } = req.body
-    if (!competitionId) {
-      return res.status(400).json({ error: "Missing competitionId in request body." })
-    }
-
     // Get competitionName once
     const compSnap = await db.doc(`competitions/${competitionId}`).get()
     const competitionName =
@@ -63,7 +59,6 @@ router.post("/generate", async (req, res) => {
         }
       )
 
-
       // Mirror into users/{uid}.participations[competitionId]
       writer.set(
         userRef,
@@ -84,10 +79,26 @@ router.post("/generate", async (req, res) => {
 
     await writer.close()
 
-    return res.status(200).json({
+    return {
       message: "Leaderboard generated and user participations updated.",
       count: leaderboardArray.length,
-    })
+    }
+  } catch (err: any) {
+    console.error("🔥 Leaderboard Generation Error:", err)
+    throw new Error(`Leaderboard generation failed: ${err.message || err}`)
+  }
+}
+
+router.post("/generate", async (req, res) => {
+  try {
+    const { competitionId } = req.body
+    if (!competitionId) {
+      return res.status(400).json({ error: "Missing competitionId in request body." })
+    }
+
+    const result = await generateLeaderboard(competitionId)
+    
+    return res.status(200).json(result)
   } catch (err: any) {
     console.error("🔥 Leaderboard Generation Error:", err)
     return res.status(500).json({

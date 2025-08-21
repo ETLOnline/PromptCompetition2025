@@ -130,7 +130,6 @@ const getCurrentLockInfo = async (): Promise<EvaluationLock | null> => {
 // Lock recovery mechanism for server restarts
 export const recoverLocksOnStartup = async (): Promise<void> => {
   try {
-    console.log('🔍 Recovering locks on server startup...')
     
     const locksSnapshot = await db.collection('evaluation-locks').get()
     
@@ -174,7 +173,6 @@ export const recoverLocksOnStartup = async (): Promise<void> => {
       }
     }
     
-    console.log('✅ Lock recovery completed')
   } catch (error) {
     console.error('❌ Lock recovery failed:', error)
   }
@@ -679,6 +677,23 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
 
     if (isActuallyCompleted) {
       console.log(`✅ Evaluation completed for competition ${competitionId}: ${evaluatedCount}/${totalSubmissions} evaluated, ${skippedCount} skipped`)
+      
+      // Generate leaderboard automatically when evaluation completes
+      try {
+        console.log(`🏆 Generating leaderboard for completed competition ${competitionId}`)
+        
+        // Import and call the leaderboard generation function directly
+        const { generateLeaderboard } = await import('./generateLeaderboard.js')
+        
+        // Call the function directly instead of making HTTP request
+        await generateLeaderboard(competitionId)
+        
+        console.log(`✅ Leaderboard generated successfully for competition ${competitionId}`)
+        
+      } catch (leaderboardError) {
+        console.error(`❌ Failed to generate leaderboard for competition ${competitionId}:`, leaderboardError)
+        // Don't fail the entire evaluation if leaderboard generation fails
+      }
     } else {
       console.log(`⏸️ Evaluation paused/incomplete for competition ${competitionId}: ${evaluatedCount}/${totalSubmissions} evaluated`)
     }

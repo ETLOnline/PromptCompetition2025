@@ -16,6 +16,7 @@ import { db } from "@/lib/firebase"
 import { fetchWithAuth } from "@/lib/api"
 
 import { useNotifications } from "@/hooks/useNotifications";
+import { useEvaluationStatus } from "@/hooks/useEvaluationStatus";
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -27,7 +28,16 @@ export default function AdminDashboard() {
   const [role, setRole] = useState(null)
   const { addNotification } = useNotifications();
   const [progressRefreshKey, setProgressRefreshKey] = useState(0)
-  const [isEvaluated, setIsEvaluated] = useState(false)
+  
+  // Use the shared evaluation status hook
+  const { 
+    evaluationStatus, 
+    isEvaluated, 
+    progress, 
+    isLoading: statusLoading, 
+    error: statusError, 
+    refreshStatus 
+  } = useEvaluationStatus(competitionId)
 
   // Function to handle resume evaluation
   const handleResumeEvaluation = async () => {
@@ -43,6 +53,8 @@ export default function AdminDashboard() {
       addNotification("success", "Evaluation resumed successfully!")
       // Refresh progress after resuming
       setProgressRefreshKey(prev => prev + 1)
+      // Also refresh evaluation status
+      refreshStatus()
     } catch (err: any) {
       addNotification("error", err.message || "Failed to resume evaluation")
     }
@@ -61,37 +73,29 @@ export default function AdminDashboard() {
       addNotification("success", "Evaluation paused successfully!")
       // Refresh progress after pausing
       setProgressRefreshKey(prev => prev + 1)
+      // Also refresh evaluation status
+      refreshStatus()
     } catch (err: any) {
       addNotification("error", err.message || "Failed to pause evaluation")
     }
   }
+
+
 
   const handleEvaluationStart = () => {
     // Force refresh progress when evaluation starts
     // Use a longer delay to ensure backend has written to database
     setTimeout(() => {
       setProgressRefreshKey(prev => prev + 1)
+      // Also refresh evaluation status
+      refreshStatus()
     }, 1000)
   }
 
   useEffect(() => {
     const initializePage = async () => {
       await checkAuthAndLoad()
-
-      const fetchEvaluationStatus = async () => {
-        try {
-          const competitionRef = doc(db, "competitions", competitionId)
-          const competitionDoc = await getDoc(competitionRef)
-          if (competitionDoc.exists()) {
-            const data = competitionDoc.data()
-            setIsEvaluated(data.IsCompetitionEvaluated === true)
-          }
-        } catch (error) {
-          console.error("Error fetching evaluation status:", error)
-        }
-      }
-
-      fetchEvaluationStatus()
+      // Note: fetchEvaluationStatus is now handled by the useEvaluationStatus hook
     }
 
     initializePage()
@@ -128,7 +132,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
@@ -231,7 +234,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900">Admin Controls</h3>
-                    <p className="text-gray-600">Manage roles and judges</p>
+                    <p className="text-gray-600">Manage Judges</p>
                   </div>
                 </div>
 
@@ -239,7 +242,7 @@ export default function AdminDashboard() {
                   onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
                   className="w-full py-3 bg-gray-900 text-white rounded-lg"
                 >
-                  <Users className="h-4 w-4 mr-2" /> Manage Judges
+                  <Users className="h-4 w-4 mr-2" /> Assign Submissions
                 </Button>
               </div>
             </Card>

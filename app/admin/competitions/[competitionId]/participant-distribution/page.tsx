@@ -1128,20 +1128,7 @@ export default function ParticipantDistributionTable() {
       {state.notifications.length > 0 && (
         <div className="fixed top-4 right-4 z-50 space-y-3 max-w-sm">{state.notifications.map(renderNotification)}</div>
       )}
-
-      {/* Header */}
-      <header className="w-full bg-white shadow-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-gray-900 to-gray-700">
-            <Shuffle className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="font-bold text-gray-900">Challenge-wise Distribution</h2>
-            <p className="text-xs text-gray-600">Intelligent Assignment System</p>
-          </div>
-        </div>
-      </header>
-
+      
       <div className="container mx-auto p-6 space-y-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { BarChart3, Loader, CheckCircle, AlertCircle, Clock, X, Shield, AlertTriangle } from "lucide-react"
 import { db } from "@/lib/firebase" // Adjust the import path as needed
 import { fetchWithAuth } from "@/lib/api"
-import { generateLeaderboard } from "@/lib/api"
-import { doc, getDoc, updateDoc } from "firebase/firestore"
+
+import { doc, getDoc } from "firebase/firestore"
 
 export default function StartEvaluationButton({ 
   competitionId, 
@@ -95,14 +95,16 @@ export default function StartEvaluationButton({
 
   const checkIfAlreadyEvaluated = async () => {
     try {
-      const competitionRef = doc(db, "competitions", competitionId)
-      const competitionDoc = await getDoc(competitionRef)
-      if (competitionDoc.exists()) {
-        const data = competitionDoc.data()
-        if ("IsCompetitionEvaluated" in data) {
-          return data.IsCompetitionEvaluated === true
+      // Check evaluation-progress collection instead of simple boolean flag
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/progress/${competitionId}`)
+      if (res.ok) {
+        const data = await res.json()
+        const progress = data.progress
+        
+        // If progress exists, evaluation has been started before
+        if (progress) {
+          return true
         }
-        return false
       }
       return false
     } catch (error) {
@@ -128,20 +130,8 @@ export default function StartEvaluationButton({
       
       if (!res.ok) throw new Error(data.error || "Evaluation failed")
       
-        // Call generateLeaderboard after successful evaluation
-      try {
-        await generateLeaderboard(competitionId)
-        // console.log('Leaderboard generated successfully', competitionId)
-
-        const competitionRef = doc(db, "competitions", competitionId)
-        await updateDoc(competitionRef, { IsCompetitionEvaluated: true })
-
-
-      }
-       catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-          console.error('Failed to generate leaderboard:', errorMessage)
-      }
+                // Leaderboard will be generated automatically when evaluation completes
+        // No need to generate it here as evaluation is just starting
       
       setSuccess(true)
       

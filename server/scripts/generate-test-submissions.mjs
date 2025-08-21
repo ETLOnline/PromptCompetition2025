@@ -88,7 +88,7 @@ function generateSubmission(userId, challengeId) {
   };
 }
 
-async function generateTestSubmissions(total = 50) {
+async function generateTestSubmissions(total = 20) {
   try {
     for (let i = 0; i < total; i++) {
       const userId = USER_IDS[i % USER_IDS.length];
