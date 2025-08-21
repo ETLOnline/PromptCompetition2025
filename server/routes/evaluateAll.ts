@@ -503,7 +503,16 @@ router.get("/progress/:competitionId", async (req, res) => {
 })
 
 // Background evaluation function with batch updates and parallel processing
+// IMPORTANT: This function now properly handles evaluation status:
+// - Only sets status to 'completed' when ALL submissions are actually evaluated
+// - Sets status to 'paused' when evaluation is incomplete or paused
+// - Prevents incorrect 'completed' status for partial evaluations
+// - Simple and reliable: compares evaluatedSubmissions with totalSubmissions
 async function evaluateSubmissions(competitionId: string, submissions: any[]) {
+  // Declare variables outside try block so they're accessible in catch block
+  let evaluatedCount = 0
+  let skippedCount = 0
+  
   try {
     // Load challenge configurations
     const challengesSnapshot = await db
@@ -533,8 +542,8 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       }
     }
 
-    let evaluatedCount = await getCurrentEvaluatedCount(competitionId)
-    let skippedCount = 0
+    evaluatedCount = await getCurrentEvaluatedCount(competitionId)
+    skippedCount = 0
     let batchSize = calculateBatchSize(submissions.length)
     let currentBatch = 0
 
@@ -647,20 +656,59 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       }
     }
 
-    // Final progress update
+    // Final progress update - Compare evaluatedSubmissions with totalSubmissions
+    // Get the total submissions count from the progress document
+    const progressDoc = await db
+      .collection('evaluation-progress')
+      .doc(competitionId)
+      .get()
+    
+    const totalSubmissions = progressDoc.exists ? progressDoc.data()?.totalSubmissions || 0 : 0
+    
+    // Check if we've evaluated all submissions
+    const isActuallyCompleted = evaluatedCount >= totalSubmissions
+    
     await updateProgressInFirestore(competitionId, {
       evaluatedSubmissions: evaluatedCount,
       lastUpdateTime: new Date().toISOString(),
-      evaluationStatus: 'completed'
+      evaluationStatus: isActuallyCompleted ? 'completed' : 'paused'
     })
 
     // Release global lock
     await releaseLock(competitionId)
 
-    console.log(`✅ Evaluation completed for competition ${competitionId}: ${evaluatedCount} evaluated, ${skippedCount} skipped`)
+    if (isActuallyCompleted) {
+      console.log(`✅ Evaluation completed for competition ${competitionId}: ${evaluatedCount}/${totalSubmissions} evaluated, ${skippedCount} skipped`)
+    } else {
+      console.log(`⏸️ Evaluation paused/incomplete for competition ${competitionId}: ${evaluatedCount}/${totalSubmissions} evaluated`)
+    }
 
   } catch (error) {
     console.error(`❌ Background evaluation error for competition ${competitionId}:`, error)
+    
+    // Update status to 'paused' on error if evaluation was incomplete
+    try {
+      const progressDoc = await db
+        .collection('evaluation-progress')
+        .doc(competitionId)
+        .get()
+      
+      if (progressDoc.exists) {
+        const progressData = progressDoc.data()
+        const totalSubmissions = progressData?.totalSubmissions || 0
+        
+        // Check if evaluation is incomplete based on totalSubmissions
+        if (evaluatedCount < totalSubmissions) {
+          await updateProgressInFirestore(competitionId, {
+            evaluationStatus: 'paused',
+            lastUpdateTime: new Date().toISOString()
+          })
+          console.log(`⏸️ Evaluation status set to 'paused' due to error: ${evaluatedCount}/${totalSubmissions} evaluated`)
+        }
+      }
+    } catch (updateError) {
+      console.error(`Failed to update evaluation status on error for ${competitionId}:`, updateError)
+    }
     
     // Release global lock on error
     await releaseLock(competitionId)
