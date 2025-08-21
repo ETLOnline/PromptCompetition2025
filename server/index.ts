@@ -90,7 +90,7 @@ import cors from "cors";
 
 //import "./config/email.js"; 
 // Routers
-import evaluateAllRouter from "./routes/evaluateAll.js";
+import evaluateAllRouter, { recoverLocksOnStartup } from "./routes/evaluateAll.js";
 import leaderboardRouter from "./routes/generateLeaderboard.js";
 import superadminRouter from "./routes/superadmin.js";
 import competitionsRouter from "./routes/competitions.js";
@@ -154,9 +154,16 @@ console.log("4. Routes configured");
 const PORT: number = parseInt(process.env.PORT ?? "8080", 10);
 
 // const HOST = process.env.HOST ?? "0.0.0.0";
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`5. Server running on:${PORT}`);
   console.log("6. All files loaded successfully!");
+  
+  // 🔒 Recover locks on server startup
+  try {
+    await recoverLocksOnStartup()
+  } catch (error) {
+    console.error("❌ Failed to recover locks on startup:", error)
+  }
 });
 
 app.use(cors({

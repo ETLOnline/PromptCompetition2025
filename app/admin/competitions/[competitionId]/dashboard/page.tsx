@@ -10,6 +10,7 @@ import GetChallenges from "@/components/GetChallenges"
 import JudgeProgress from "@/components/JudgeProgress"
 import StartEvaluationButton from "@/components/StartEvaluation"
 import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
+import DashboardEvaluationProgress from "@/components/DashboardEvaluationProgress"
 import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { Judge } from "@/types/JudgeProgress"
@@ -30,7 +31,52 @@ export default function AdminDashboard() {
   const [showAccessDeniedModal, setShowAccessDeniedModal] = useState<boolean>(false)
   const { addNotification } = useNotifications();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progressRefreshKey, setProgressRefreshKey] = useState(0)
 
+  // Function to handle resume evaluation
+  const handleResumeEvaluation = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/resume-evaluation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId, userId: 'admin' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to resume evaluation")
+      
+      addNotification("success", "Evaluation resumed successfully!")
+      // Refresh progress after resuming
+      setProgressRefreshKey(prev => prev + 1)
+    } catch (err: any) {
+      addNotification("error", err.message || "Failed to resume evaluation")
+    }
+  }
+
+  const handlePauseEvaluation = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/pause-evaluation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId, userId: 'admin' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to pause evaluation")
+      
+      addNotification("success", "Evaluation paused successfully!")
+      // Refresh progress after pausing
+      setProgressRefreshKey(prev => prev + 1)
+    } catch (err: any) {
+      addNotification("error", err.message || "Failed to pause evaluation")
+    }
+  }
+
+  const handleEvaluationStart = () => {
+    // Force refresh progress when evaluation starts
+    // Use a longer delay to ensure backend has written to database
+    setTimeout(() => {
+      setProgressRefreshKey(prev => prev + 1)
+    }, 1000)
+  }
 
   // Function to check if all judges have completed their evaluations
   const checkAllJudgesCompleted = async (): Promise<boolean> => {
@@ -252,7 +298,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Link href={`/admin/competitions/${competitionId}/participants`} className="group">
             <Card className="bg-white rounded-2xl shadow-sm p-6 h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-green-200">
               <div className="flex items-start justify-between">
@@ -309,7 +355,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
           {(role === "admin" || role === "superadmin") && (
             <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
               <div className="space-y-6">
@@ -345,7 +391,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="space-y-3">
-                <StartEvaluationButton competitionId={competitionId} />
+                <StartEvaluationButton 
+                  competitionId={competitionId} 
+                  onEvaluationStart={handleEvaluationStart}
+                />
                 <GenerateLeaderboardButton competitionId={competitionId} />
               </div>
             </div>
@@ -373,21 +422,6 @@ export default function AdminDashboard() {
                       <Trophy className="h-4 w-4 mr-2" /> 
                       {isCheckingJudges ? 'Checking...' : 'View Leaderboard'}
                     </Button>
-                    
-                    {/* Status indicator for superadmin */}
-                    <div className="flex items-center justify-center space-x-2 text-xs">
-                      {allJudgeEvaluated ? (
-                        <div className="flex items-center space-x-1 text-green-600">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>All evaluations complete</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-1 text-amber-600">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>Evaluations pending</span>
-                        </div>
-                      )}
-                    </div>
                   </>
                 ) : (
                   <div className="text-center py-4">
@@ -418,6 +452,14 @@ export default function AdminDashboard() {
             </div>
           </Card>
         </div>
+
+        {/* Evaluation Progress - Displayed below admin buttons and above challenges */}
+        <DashboardEvaluationProgress 
+          key={progressRefreshKey}
+          competitionId={competitionId} 
+          onResume={handleResumeEvaluation}
+          onPause={handlePauseEvaluation}
+        />
 
         {/* Challenges Section */}
         <div className="space-y-6">

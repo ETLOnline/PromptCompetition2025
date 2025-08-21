@@ -8,13 +8,176 @@ const router = express.Router()
 type RubricItem = { name: string; description: string; weight: number }
 type ChallengeConfig = { rubric: RubricItem[]; problemStatement?: string | null }
 
-// Global evaluation state
-let globalEvaluationState = {
-  isLocked: false,
-  lockedBy: null as string | null,
-  lockedByUser: null as string | null,
-  lockedAt: null as string | null,
-  lockReason: null as string | null
+// Firestore-based lock management (replaces in-memory state)
+interface EvaluationLock {
+  isLocked: boolean
+  lockedBy: string | null
+  lockedByUser: string | null
+  lockedAt: string | null
+  lockReason: string | null
+}
+
+// Helper function to acquire global evaluation lock
+const acquireLock = async (competitionId: string, userId: string): Promise<boolean> => {
+  try {
+    const lockRef = db.collection('evaluation-locks').doc('global')
+    
+    // Use Firestore transactions for atomic lock acquisition
+    const result = await db.runTransaction(async (transaction) => {
+      const lockDoc = await transaction.get(lockRef)
+      
+      if (lockDoc.exists && lockDoc.data()?.isLocked) {
+        // Check if lock is stale (>1 hour old)
+        const lockAge = Date.now() - new Date(lockDoc.data()?.lockedAt).getTime()
+        if (lockAge > 3600000) { // 1 hour
+          // Lock is stale, we can take it
+          transaction.update(lockRef, {
+            isLocked: true,
+            lockedBy: competitionId,
+            lockedByUser: userId,
+            lockedAt: new Date().toISOString(),
+            lockReason: 'Starting evaluation (recovered from stale lock)'
+          })
+          return true
+        }
+        return false // Lock is valid and recent
+      }
+      
+      // No lock exists, we can take it
+      transaction.set(lockRef, {
+        isLocked: true,
+        lockedBy: competitionId,
+        lockedByUser: userId,
+        lockedAt: new Date().toISOString(),
+        lockReason: 'Starting evaluation'
+      })
+      return true
+    })
+    
+    return result
+  } catch (error) {
+    console.error('Failed to acquire lock:', error)
+    return false
+  }
+}
+
+// Helper function to release global evaluation lock
+const releaseLock = async (competitionId: string): Promise<void> => {
+  try {
+    const lockRef = db.collection('evaluation-locks').doc('global')
+    await lockRef.update({
+      isLocked: false,
+      lockedBy: null,
+      lockedByUser: null,
+      lockedAt: null,
+      lockReason: null
+    })
+  } catch (error) {
+    console.error('Failed to release lock:', error)
+  }
+}
+
+// Helper function to check if lock is held by a specific competition
+const isLockedByCompetition = async (competitionId: string): Promise<boolean> => {
+  try {
+    const lockRef = db.collection('evaluation-locks').doc('global')
+    const lockDoc = await lockRef.get()
+    
+    if (lockDoc.exists) {
+      const lockData = lockDoc.data() as EvaluationLock
+      return lockData.isLocked && lockData.lockedBy === competitionId
+    }
+    return false
+  } catch (error) {
+    console.error('Failed to check lock status:', error)
+    return false
+  }
+}
+
+// Helper function to check if any evaluation is locked
+const isAnyEvaluationLocked = async (): Promise<boolean> => {
+  try {
+    const lockRef = db.collection('evaluation-locks').doc('global')
+    const lockDoc = await lockRef.get()
+    
+    if (lockDoc.exists) {
+      const lockData = lockDoc.data() as EvaluationLock
+      return lockData.isLocked
+    }
+    return false
+  } catch (error) {
+    console.error('Failed to check global lock status:', error)
+    return false
+  }
+}
+
+// Helper function to get current lock information
+const getCurrentLockInfo = async (): Promise<EvaluationLock | null> => {
+  try {
+    const lockRef = db.collection('evaluation-locks').doc('global')
+    const lockDoc = await lockRef.get()
+    
+    if (lockDoc.exists) {
+      return lockDoc.data() as EvaluationLock
+    }
+    return null
+  } catch (error) {
+    console.error('Failed to get lock info:', error)
+    return null
+  }
+}
+
+// Lock recovery mechanism for server restarts
+export const recoverLocksOnStartup = async (): Promise<void> => {
+  try {
+    console.log('🔍 Recovering locks on server startup...')
+    
+    const locksSnapshot = await db.collection('evaluation-locks').get()
+    
+    for (const lockDoc of locksSnapshot.docs) {
+      const lockData = lockDoc.data() as EvaluationLock
+      
+      if (lockData.isLocked) {
+        const lockAge = Date.now() - new Date(lockData.lockedAt).getTime()
+        const maxLockAge = 3600000 // 1 hour
+        
+        if (lockAge > maxLockAge) {
+          console.log(`🔓 Releasing stale lock for competition: ${lockData.lockedBy}`)
+          
+          // Release stale lock
+          await lockDoc.ref.update({
+            isLocked: false,
+            lockedBy: null,
+            lockedByUser: null,
+            lockedAt: null,
+            lockReason: 'Released on server startup (stale)'
+          })
+          
+          // Also update evaluation progress to 'paused' if it was running
+          if (lockData.lockedBy) {
+            try {
+              await db
+                .collection('evaluation-progress')
+                .doc(lockData.lockedBy)
+                .update({
+                  evaluationStatus: 'paused',
+                  lastUpdateTime: new Date().toISOString(),
+                  pauseReason: 'Server restart - evaluation paused'
+                })
+            } catch (progressError) {
+              console.warn(`Could not update progress for ${lockData.lockedBy}:`, progressError)
+            }
+          }
+        } else {
+          console.log(`🔒 Valid lock found for competition: ${lockData.lockedBy}`)
+        }
+      }
+    }
+    
+    console.log('✅ Lock recovery completed')
+  } catch (error) {
+    console.error('❌ Lock recovery failed:', error)
+  }
 }
 
 // Helper function to calculate batch size dynamically for optimal parallel processing
@@ -41,19 +204,30 @@ const updateProgressInFirestore = async (competitionId: string, updates: any) =>
 }
 
 // Helper function to check if evaluation should stop
-const shouldStopEvaluation = (competitionId: string): boolean => {
-  // Check if global lock is still held by this competition
-  // Also check if evaluation has been paused
-  if (!globalEvaluationState.isLocked || globalEvaluationState.lockedBy !== competitionId) {
-    return true
-  }
-  
-  // Check if evaluation has been paused in Firestore
+const shouldStopEvaluation = async (competitionId: string): Promise<boolean> => {
   try {
-    // This is a synchronous check - we'll handle the async check in the main loop
+    // Check if global lock is still held by this competition
+    const isLocked = await isLockedByCompetition(competitionId)
+    if (!isLocked) {
+      return true
+    }
+    
+    // Check if evaluation has been paused in Firestore
+    const progressDoc = await db
+      .collection('evaluation-progress')
+      .doc(competitionId)
+      .get()
+    
+    if (progressDoc.exists) {
+      const progressData = progressDoc.data()
+      if (progressData?.evaluationStatus === 'paused') {
+        return true
+      }
+    }
+    
     return false
   } catch (error) {
-    console.error(`Error checking pause status for ${competitionId}:`, error)
+    console.error(`Error checking evaluation status for ${competitionId}:`, error)
     return false
   }
 }
@@ -78,26 +252,36 @@ const getCurrentEvaluatedCount = async (competitionId: string): Promise<number> 
 }
 
 router.post("/start-evaluation", async (req, res) => {
+  let competitionId: string | undefined
+  let userId: string | undefined
+  
   try {
-    const { competitionId, userId } = req.body
+    const body = req.body
+    competitionId = body.competitionId
+    userId = body.userId
 
     if (!competitionId || !userId) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
     // Check if evaluation is locked by another competition
-    if (globalEvaluationState.isLocked && globalEvaluationState.lockedBy !== competitionId) {
-      return res.status(409).json({ 
-        error: `Evaluation is currently locked by competition ${globalEvaluationState.lockedBy}` 
-      })
+    const isLocked = await isAnyEvaluationLocked()
+    if (isLocked) {
+      const lockInfo = await getCurrentLockInfo()
+      if (lockInfo?.lockedBy !== competitionId) {
+        return res.status(409).json({ 
+          error: `Evaluation is currently locked by competition ${lockInfo?.lockedBy}` 
+        })
+      }
     }
 
-    // Acquire global lock
-    globalEvaluationState.isLocked = true
-    globalEvaluationState.lockedBy = competitionId
-    globalEvaluationState.lockedByUser = userId
-    globalEvaluationState.lockedAt = new Date().toISOString()
-    globalEvaluationState.lockReason = 'Starting evaluation'
+    // Acquire global lock using Firestore
+    const lockAcquired = await acquireLock(competitionId, userId)
+    if (!lockAcquired) {
+      return res.status(409).json({ 
+        error: 'Failed to acquire evaluation lock' 
+      })
+    }
 
     // Get all submissions that haven't been evaluated
     const submissionsRef = db.collection(`competitions/${competitionId}/submissions`)
@@ -107,11 +291,7 @@ router.post("/start-evaluation", async (req, res) => {
     
     if (submissionsSnap.empty) {
       // Release lock if no submissions to evaluate
-      globalEvaluationState.isLocked = false
-      globalEvaluationState.lockedBy = null
-      globalEvaluationState.lockedByUser = null
-      globalEvaluationState.lockedAt = null
-      globalEvaluationState.lockReason = null
+      await releaseLock(competitionId)
       
       return res.json({ message: 'No submissions to evaluate' })
     }
@@ -129,7 +309,6 @@ router.post("/start-evaluation", async (req, res) => {
       evaluationStatus: 'running'
     })
 
-
     // Start evaluation in background
     evaluateSubmissions(competitionId, submissions)
 
@@ -142,12 +321,10 @@ router.post("/start-evaluation", async (req, res) => {
   } catch (error) {
     console.error('❌ Start evaluation error:', error)
     
-    // Release lock on error
-    globalEvaluationState.isLocked = false
-    globalEvaluationState.lockedBy = null
-    globalEvaluationState.lockedByUser = null
-    globalEvaluationState.lockedAt = null
-    globalEvaluationState.lockReason = null
+    // Release lock on error if we have a competitionId
+    if (competitionId) {
+      await releaseLock(competitionId)
+    }
     
     res.status(500).json({ error: 'Failed to start evaluation' })
   }
@@ -155,26 +332,36 @@ router.post("/start-evaluation", async (req, res) => {
 
 // Resume evaluation endpoint (same as start but doesn't overwrite totalSubmissions)
 router.post("/resume-evaluation", async (req, res) => {
+  let competitionId: string | undefined
+  let userId: string | undefined
+  
   try {
-    const { competitionId, userId } = req.body
+    const body = req.body
+    competitionId = body.competitionId
+    userId = body.userId
 
     if (!competitionId || !userId) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
     // Check if evaluation is locked by another competition
-    if (globalEvaluationState.isLocked && globalEvaluationState.lockedBy !== competitionId) {
-      return res.status(409).json({ 
-        error: `Evaluation is currently locked by competition ${globalEvaluationState.lockedBy}` 
-      })
+    const isLocked = await isAnyEvaluationLocked()
+    if (isLocked) {
+      const lockInfo = await getCurrentLockInfo()
+      if (lockInfo?.lockedBy !== competitionId) {
+        return res.status(409).json({ 
+          error: `Evaluation is currently locked by competition ${lockInfo?.lockedBy}` 
+        })
+      }
     }
 
-    // Acquire global lock
-    globalEvaluationState.isLocked = true
-    globalEvaluationState.lockedBy = competitionId
-    globalEvaluationState.lockedByUser = userId
-    globalEvaluationState.lockedAt = new Date().toISOString()
-    globalEvaluationState.lockReason = 'Resuming evaluation'
+    // Acquire global lock using Firestore
+    const lockAcquired = await acquireLock(competitionId, userId)
+    if (!lockAcquired) {
+      return res.status(409).json({ 
+        error: 'Failed to acquire evaluation lock' 
+      })
+    }
 
     // Get remaining submissions that haven't been evaluated
     const submissionsRef = db.collection(`competitions/${competitionId}/submissions`)
@@ -182,11 +369,7 @@ router.post("/resume-evaluation", async (req, res) => {
     
     if (submissionsSnap.empty) {
       // Release lock if no submissions to evaluate
-      globalEvaluationState.isLocked = false
-      globalEvaluationState.lockedBy = null
-      globalEvaluationState.lockedByUser = null
-      globalEvaluationState.lockedAt = null
-      globalEvaluationState.lockReason = null
+      await releaseLock(competitionId)
       
       return res.json({ message: 'No submissions to evaluate' })
     }
@@ -211,12 +394,10 @@ router.post("/resume-evaluation", async (req, res) => {
   } catch (error) {
     console.error('❌ Resume evaluation error:', error)
     
-    // Release lock on error
-    globalEvaluationState.isLocked = false
-    globalEvaluationState.lockedBy = null
-    globalEvaluationState.lockedByUser = null
-    globalEvaluationState.lockedAt = null
-    globalEvaluationState.lockReason = null
+    // Release lock on error if we have a competitionId
+    if (competitionId) {
+      await releaseLock(competitionId)
+    }
     
     res.status(500).json({ error: 'Failed to resume evaluation' })
   }
@@ -232,7 +413,8 @@ router.post("/pause-evaluation", async (req, res) => {
     }
 
     // Check if evaluation is locked by this competition
-    if (!globalEvaluationState.isLocked || globalEvaluationState.lockedBy !== competitionId) {
+    const isLocked = await isLockedByCompetition(competitionId)
+    if (!isLocked) {
       return res.status(409).json({ 
         error: 'No evaluation running for this competition' 
       })
@@ -247,11 +429,7 @@ router.post("/pause-evaluation", async (req, res) => {
     })
 
     // Release global lock
-    globalEvaluationState.isLocked = false
-    globalEvaluationState.lockedBy = null
-    globalEvaluationState.lockedByUser = null
-    globalEvaluationState.lockedAt = null
-    globalEvaluationState.lockReason = null
+    await releaseLock(competitionId)
 
     res.json({ 
       message: 'Evaluation paused successfully'
@@ -266,11 +444,14 @@ router.post("/pause-evaluation", async (req, res) => {
 // Endpoint to check global lock status
 router.get("/check-lock", async (req, res) => {
   try {
+    const lockInfo = await getCurrentLockInfo()
+    
     return res.status(200).json({
-      isLocked: globalEvaluationState.isLocked,
-      lockedBy: globalEvaluationState.lockedBy,
-      lockedByUser: globalEvaluationState.lockedByUser,
-      lockedAt: globalEvaluationState.lockedAt
+      isLocked: lockInfo?.isLocked || false,
+      lockedBy: lockInfo?.lockedBy || null,
+      lockedByUser: lockInfo?.lockedByUser || null,
+      lockedAt: lockInfo?.lockedAt || null,
+      lockReason: lockInfo?.lockReason || null
     })
   } catch (err: unknown) {
     console.error("❌ Check lock error:", err)
@@ -361,65 +542,66 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
     const processBatch = async (batchSubmissions: any[]) => {
       const batchPromises = batchSubmissions.map(async (docSnap) => {
         // Check if evaluation should stop
-        if (shouldStopEvaluation(competitionId)) {
+        const shouldStop = await shouldStopEvaluation(competitionId)
+        if (shouldStop) {
           return { status: 'stopped' }
         }
 
-        const submission = docSnap.data()
-        const { promptText, challengeId } = submission
+      const submission = docSnap.data()
+      const { promptText, challengeId } = submission
 
-        if (!promptText || !challengeId) {
-          console.warn(`⚠️ Skipping submission ${docSnap.id}: missing promptText or challengeId`)
+      if (!promptText || !challengeId) {
+        console.warn(`⚠️ Skipping submission ${docSnap.id}: missing promptText or challengeId`)
           return { status: 'skipped', reason: 'missing data' }
-        }
+      }
 
-        const cfg = challengeConfigMap[challengeId]
-        if (!cfg || !Array.isArray(cfg.rubric) || cfg.rubric.length === 0) {
-          console.warn(`⚠️ Skipping submission ${docSnap.id}: no valid weighted rubric for challenge ${challengeId}`)
+      const cfg = challengeConfigMap[challengeId]
+      if (!cfg || !Array.isArray(cfg.rubric) || cfg.rubric.length === 0) {
+        console.warn(`⚠️ Skipping submission ${docSnap.id}: no valid weighted rubric for challenge ${challengeId}`)
           return { status: 'skipped', reason: 'invalid rubric' }
+      }
+
+      const rubricData = cfg.rubric
+      const problemStatement = cfg.problemStatement ?? undefined
+
+      try {
+
+        const result = await runJudges(promptText, rubricData, problemStatement)
+        const { scores: llmScores, average } = result || {}
+
+        if (!llmScores || Object.keys(llmScores).length === 0) {
+          console.warn(`⚠️ No valid scores returned for submission ${docSnap.id}`)
+            return { status: 'skipped', reason: 'no scores' }
         }
 
-        const rubricData = cfg.rubric
-        const problemStatement = cfg.problemStatement ?? undefined
+        const updateData: any = {
+          llmScores,
+          status: "evaluated"
+        }
+        if (typeof average === "number") {
+          updateData.finalScore = average
+        }
+
+        await db
+          .collection(`competitions/${competitionId}/submissions`)
+          .doc(docSnap.id)
+          .update(updateData)
+
+          return { status: 'success', average }
+      } catch (error) {
+        console.error(`❌ Failed to evaluate submission ${docSnap.id}:`, error)
 
         try {
-
-          const result = await runJudges(promptText, rubricData, problemStatement)
-          const { scores: llmScores, average } = result || {}
-
-          if (!llmScores || Object.keys(llmScores).length === 0) {
-            console.warn(`⚠️ No valid scores returned for submission ${docSnap.id}`)
-            return { status: 'skipped', reason: 'no scores' }
-          }
-
-          const updateData: any = {
-            llmScores,
-            status: "evaluated"
-          }
-          if (typeof average === "number") {
-            updateData.finalScore = average
-          }
-
           await db
             .collection(`competitions/${competitionId}/submissions`)
             .doc(docSnap.id)
-            .update(updateData)
-
-          return { status: 'success', average }
-        } catch (error) {
-          console.error(`❌ Failed to evaluate submission ${docSnap.id}:`, error)
-          
-          try {
-            await db
-              .collection(`competitions/${competitionId}/submissions`)
-              .doc(docSnap.id)
-              .update({
-                status: "failed",
-                error: error instanceof Error ? error.message : "Unknown evaluation error"
-              })
-          } catch (updateError) {
-            console.error(`Failed to update error status for submission ${docSnap.id}:`, updateError)
-          }
+            .update({
+              status: "failed",
+              error: error instanceof Error ? error.message : "Unknown evaluation error"
+            })
+        } catch (updateError) {
+          console.error(`Failed to update error status for submission ${docSnap.id}:`, updateError)
+        }
           
           return { status: 'failed', error: error instanceof Error ? error.message : 'Unknown error' }
         }
@@ -431,27 +613,10 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
     // Process submissions in parallel batches
     for (let i = 0; i < submissions.length; i += batchSize) {
       // Check if evaluation should stop (including pause)
-      if (shouldStopEvaluation(competitionId)) {
+      const shouldStop = await shouldStopEvaluation(competitionId)
+      if (shouldStop) {
         console.log(`⏸️ Evaluation stopped for competition ${competitionId}`)
         break
-      }
-
-      // Check if evaluation has been paused in Firestore
-      try {
-        const progressDoc = await db
-          .collection('evaluation-progress')
-          .doc(competitionId)
-          .get()
-        
-        if (progressDoc.exists) {
-          const progressData = progressDoc.data()
-          if (progressData?.evaluationStatus === 'paused') {
-            console.log(`⏸️ Evaluation paused for competition ${competitionId}`)
-            break
-          }
-        }
-      } catch (error) {
-        console.error(`Error checking pause status:`, error)
       }
 
       const batch = submissions.slice(i, i + batchSize)
@@ -491,13 +656,7 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
     })
 
     // Release global lock
-    if (globalEvaluationState.lockedBy === competitionId) {
-      globalEvaluationState.isLocked = false
-      globalEvaluationState.lockedBy = null
-      globalEvaluationState.lockedByUser = null
-      globalEvaluationState.lockedAt = null
-      globalEvaluationState.lockReason = null
-    }
+    await releaseLock(competitionId)
 
     console.log(`✅ Evaluation completed for competition ${competitionId}: ${evaluatedCount} evaluated, ${skippedCount} skipped`)
 
@@ -505,13 +664,7 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
     console.error(`❌ Background evaluation error for competition ${competitionId}:`, error)
     
     // Release global lock on error
-    if (globalEvaluationState.lockedBy === competitionId) {
-      globalEvaluationState.isLocked = false
-      globalEvaluationState.lockedBy = null
-      globalEvaluationState.lockedByUser = null
-      globalEvaluationState.lockedAt = null
-      globalEvaluationState.lockReason = null
-    }
+    await releaseLock(competitionId)
   }
 }
 
