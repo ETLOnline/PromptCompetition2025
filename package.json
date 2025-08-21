@@ -40,7 +40,7 @@
     "embla-carousel-react": "latest",
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
-    "framer-motion": "latest",
+    "framer-motion": "^12.23.12",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
     "next": "^15.2.4",

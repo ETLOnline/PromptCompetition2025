@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Trophy, Loader, CheckCircle, Shield, X, AlertCircle, Users } from "lucide-react"
+import { Trophy, Loader, CheckCircle, Shield, X, AlertCircle, Users, RefreshCw } from "lucide-react"
 import { fetchWithAuth } from "@/lib/api"
 import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase" // Adjust the import path as needed
 
+import { useNotifications } from "@/hooks/useNotifications";
 
 
 
@@ -18,6 +19,9 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
   const [showNotEvaluatedPopup, setShowNotEvaluatedPopup] = useState(false)
   const [showJudgeNotEvaluatedPopup, setShowJudgeNotEvaluatedPopup] = useState(false)
   const [showNoJudgesPopup, setShowNoJudgesPopup] = useState(false)
+  const [showAlreadyGeneratedPopup, setShowAlreadyGeneratedPopup] = useState(false)
+  const { addNotification } = useNotifications();
+  
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -79,27 +83,43 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
     }
   }
 
-  const proceedWithLeaderboardGeneration = async () => {
-    setLoading(true)
-    setSuccess(false)
-
+  const checkIfFinalLeaderboardExists = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/leaderboard/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitionId }) 
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Generation failed")
       const competitionRef = doc(db, "competitions", competitionId)
-      await updateDoc(competitionRef, { generateleaderboard: true })
-      setSuccess(true)
-    } catch (err: any) {
-      alert(`❌ Error: ${err.message}`)
-    } finally {
-      setLoading(false)
+      const competitionDoc = await getDoc(competitionRef)
+      if (competitionDoc.exists()) {
+        const data = competitionDoc.data()
+        if ("hasFinalLeaderboard" in data) {
+          return data.hasFinalLeaderboard === true
+        }
+        return false
+      }
+      return false
+    } catch (error) {
+      console.error("Error checking final leaderboard status:", error)
+      return false
     }
   }
+
+    const proceedWithLeaderboardGeneration = async () => {
+    try {
+      const data = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/last/${competitionId}/final-leaderboard`,
+        { method: "POST" }
+      );
+
+      // Show success notification
+      const competitionRef = doc(db, "competitions", competitionId)
+      await updateDoc(competitionRef, { hasFinalLeaderboard: true })
+      addNotification("success", "Final leaderboard generated successfully!");
+      setSuccess(true)
+      return true;
+    } catch (err: any) {
+      // Show error notification
+      addNotification("error", err.message || "Failed to generate final leaderboard");
+      throw err;
+    }
+  };
 
   const handleGenerateLeaderboard = async () => {
     setLoading(true)
@@ -118,6 +138,15 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
       
       if (!isEvaluated) {
         setShowNotEvaluatedPopup(true)
+        setLoading(false)
+        return
+      }
+
+      // Check if final leaderboard already exists
+      const hasFinalLeaderboard = await checkIfFinalLeaderboardExists()
+      
+      if (hasFinalLeaderboard) {
+        setShowAlreadyGeneratedPopup(true)
         setLoading(false)
         return
       }
@@ -152,7 +181,16 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
 
   const handleProceedWithoutJudges = async () => {
     setShowNoJudgesPopup(false)
+    setLoading(true)
     await proceedWithLeaderboardGeneration()
+    setLoading(false)
+  }
+
+  const handleRegenerateLeaderboard = async () => {
+    setShowAlreadyGeneratedPopup(false)
+    setLoading(true)
+    await proceedWithLeaderboardGeneration()
+    setLoading(false)
   }
 
   return (
@@ -350,6 +388,55 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
                 className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 Proceed Anyway
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Already Generated Leaderboard Popup */}
+      {showAlreadyGeneratedPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center">
+                <RefreshCw className="h-6 w-6 text-yellow-500 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Leaderboard Already Generated
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAlreadyGeneratedPopup(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                A final leaderboard has already been generated for this competition.
+              </p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <p className="text-sm text-yellow-800">
+                  <strong>Would you like to generate another leaderboard?</strong><br />
+                  This will create a new leaderboard and may overwrite the existing one.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowAlreadyGeneratedPopup(false)}
+              >
+                No, Keep Existing
+              </Button>
+              <Button
+                onClick={handleRegenerateLeaderboard}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              >
+                Yes, Generate New
               </Button>
             </div>
           </div>

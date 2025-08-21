@@ -101,15 +101,6 @@ export default function EditCompetitionModal({
 
     if (!competition) return
 
-    const startDate = new Date(competition.startDeadline)
-    const endDate = new Date(competition.endDeadline)
-    const now = new Date()
-
-    if (now > endDate) {
-      setEditFormError("This competition has already ended and cannot be edited.")
-      return
-    }
-
     // Validate the new dates from the form
     const newStartDateTime = new Date(editFormData.startDeadline)
     const newEndDateTime = new Date(editFormData.endDeadline)

@@ -42,17 +42,11 @@ export function ScoreSheet({
           <SheetTitle className="flex items-center gap-2 text-base font-semibold">
             <Award className="w-4 h-4" />
             Score Submission
-          </SheetTitle>
-          {/* Avoid nesting divs inside <p> (SheetDescription renders a <p>) */}
-          <div className="flex items-center justify-between">
-            <SheetDescription className="text-xs text-muted-foreground">
-              Participant: <span className="font-medium text-foreground">{submission.participantId}</span>
-            </SheetDescription>
             {submission.status && (
               <Badge variant="outline" className="ml-2">{submission.status}</Badge>
             )}
-          </div>
-        </SheetHeader>
+          </SheetTitle>
+        </SheetHeader> 
 
         <div className="mt-6 space-y-6 text-sm leading-5">
           {/* Submission Preview */}
@@ -76,12 +70,26 @@ export function ScoreSheet({
               const currentScore = scoreFormData.rubricScores[criterion.name] || 0
               return (
                 <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">{criterion.name}</Label>
-                    <Badge variant="outline" className="text-xs">Weight: {criterion.weight}</Badge>
-                  </div>
-                  <div className="text-xs text-gray-600">{criterion.description}</div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-4">
+                    {/* Label on the left */}
+                    <Label className="text-sm font-medium w-40">{criterion.name}</Label>
+
+                    {/* Slider in the middle */}
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={currentScore}
+                      onChange={(e) =>
+                        onScoreChange("rubricScores", {
+                          ...scoreFormData.rubricScores,
+                          [criterion.name]: Number(e.target.value),
+                        })
+                      }
+                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+
+                    {/* Number input on the right */}
                     <Input
                       type="number"
                       min="0"
@@ -93,25 +101,9 @@ export function ScoreSheet({
                           [criterion.name]: Math.max(0, Math.min(100, Number(e.target.value))) || 0,
                         })
                       }
-                      className="w-20"
-                      placeholder="0-100"
+                      className="w-20 text-right"
+                      placeholder="0–100"
                     />
-                    <div className="flex-1">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={currentScore}
-                        onChange={(e) =>
-                          onScoreChange("rubricScores", {
-                            ...scoreFormData.rubricScores,
-                            [criterion.name]: Number(e.target.value),
-                          })
-                        }
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 w-8">{currentScore}</span>
                   </div>
                 </div>
               )
@@ -129,7 +121,6 @@ export function ScoreSheet({
 
           {/* Feedback */}
           <div>
-            <Label className="text-xs font-medium">Feedback (optional)</Label>
             <Textarea
               placeholder="Write constructive feedback for the participant..."
               value={scoreFormData.comment || ""}

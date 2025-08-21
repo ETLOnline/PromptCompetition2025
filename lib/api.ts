@@ -37,6 +37,16 @@ export const deleteCompetition = async (id: string) => {
   })
 };
 
+export const generateLeaderboard = async (competitionId: string) => {
+  return await fetchWithAuth(`${API_URL}/leaderboard/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ competitionId }),
+  });
+};
+
 
 
 // sends JWT token to backend And waits for approval

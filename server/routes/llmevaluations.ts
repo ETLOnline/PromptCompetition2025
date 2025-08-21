@@ -15,6 +15,46 @@ interface LLMSubmission {
   }>;
 }
 
+// NEW Route: GET /llm-evaluations/:competitionId/overview
+llmRouter.get(
+  "/:competitionId/overview",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { competitionId } = req.params;
+
+    try {
+      const challengesRef = db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("challenges");
+
+      // get all challenges (no pagination)
+      const challengesSnapshot = await challengesRef.get();
+      const challenges = challengesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // get only IDs of submissions to count them
+      const submissionsRef = db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("submissions");
+      const submissionsSnapshot = await submissionsRef.select().get();
+
+      res.json({
+        challenges,                  // all challenges
+        totalSubmissions: submissionsSnapshot.size,
+      });
+    } catch (error) {
+      console.error("Failed to fetch overview", error);
+      res.status(500).json({ error: "Failed to fetch overview" });
+    }
+  }
+);
+
+
 // Route: GET /llm-evaluations/:competitionId
 llmRouter.get(
   "/:competitionId",

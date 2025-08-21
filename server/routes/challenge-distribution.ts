@@ -124,6 +124,7 @@ router.get(
           .doc(competitionId)
           .collection("submissions")
           .where("participantId", "in", batchIds)
+          .where("status", "==", "evaluated")
           .get();
 
         snap.forEach((d) => {

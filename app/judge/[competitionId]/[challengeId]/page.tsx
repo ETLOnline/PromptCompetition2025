@@ -159,14 +159,6 @@ export default function ChallengePage() {
       setLastDoc(newLastDoc);
       setHasMoreSubmissions(hasMore);
 
-      fetch("/api/debugger", {
-        method: "POST",
-        body: JSON.stringify({ message: `object updatedSubmissions: ${JSON.stringify(updatedSubmissions)}` }),
-        headers: {
-            "Content-Type": "application/json",
-        },
-      })
-
       // 4️⃣ Calculate progress stats
       const totalScored = updatedSubmissions.filter(s => Boolean(s.judgeScore?.[userUID])).length;
       const totalAssigned = assignedSubmissionIds.length;

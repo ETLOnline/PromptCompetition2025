@@ -50,7 +50,7 @@ router.post(
         ChallengeCount: 0,
         IsCompetitionEvaluated: false,
         AllJudgeEvaluated: false,
-        generateleaderboard: false,
+        hasFinalLeaderboard: false,
         createdAt: req.body.createdAt || new Date().toISOString(),
         createdBy: {
           uid: req.user?.uid || "",

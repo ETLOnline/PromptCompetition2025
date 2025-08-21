@@ -65,6 +65,8 @@ export default function ChallengePage() {
 
   
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
+
 
   useEffect(() => {
     const init = async () => {
@@ -94,8 +96,14 @@ export default function ChallengePage() {
         console.error("Error in parallel fetch:", error)
       }
     }
-
+    const checkEnd = async () => {
+      const ended = await checkCompetitionEnded()
+      setIsCompetitionEnded(ended)
+   }
     init()
+
+    checkEnd()
+
   }, [router, routeParams, challengeId])
 
   
@@ -116,6 +124,32 @@ export default function ChallengePage() {
     } catch (error) {
       router.push("/")
       return null
+    }
+  }
+
+  const checkCompetitionEnded = async () => {
+    try {
+      const competitionRef = doc(db, "competitions", competitionId)
+      const competitionDoc = await getDoc(competitionRef)
+
+      if (competitionDoc.exists()) {
+        const data = competitionDoc.data()
+        const endDeadline = data.endDeadline || null
+
+        if (endDeadline) {
+          // Ensure proper Date object
+          const endDate = new Date(endDeadline)
+          const now = new Date()
+          // Compare full datetime (both date and time)
+          // console.log(now.getTime() > endDate.getTime())
+          return now.getTime() > endDate.getTime()
+        }
+      }
+
+      return false
+    } catch (error) {
+      console.error("Error checking competition end date:", error)
+      return false
     }
   }
 
@@ -390,7 +424,7 @@ export default function ChallengePage() {
                       </div>
                       <Button
                         onClick={() => setIsConfirmModalOpen(true)}
-                        disabled={!prompt.trim() || challenge.isCompetitionLocked || loading}
+                        disabled={!prompt.trim() || isCompetitionEnded || loading}   // ✅ added challenge.isCompetitionLocked here
                         className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Send className="h-4 w-4 mr-2" />

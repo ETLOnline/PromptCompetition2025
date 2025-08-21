@@ -10,9 +10,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, FileText, Plus, X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import { doc, setDoc, getDocs, Timestamp, collection, getDoc, updateDoc, increment } from "firebase/firestore"
+import { doc, setDoc, getDocs, Timestamp, collection, getDoc, writeBatch, increment } from "firebase/firestore"
 
 import { fetchWithAuth } from "@/lib/api";
+
+import { getMaxScoreForCompetition } from "@/lib/challengeScore"
+
   
 type RubricItem = {
   name: string
@@ -79,23 +82,23 @@ export default function NewCompetitionPage() {
   }
 
   const uploadToFirestore = async () => {
-    if (!userUID) 
+    if (!userUID) {
       throw new Error("User not authenticated")
+    }
 
-    const userDocRef = doc(db, "users", userUID)
-    const userDocSnap = await getDoc(userDocRef)
-    if (!userDocSnap.exists()) 
-      throw new Error("User document not found")
+    try {
+      // Optional: if you already have fullName/email in context, skip this block
+      const userSnap = await getDoc(doc(db, "users", userUID))
+      if (!userSnap.exists()) throw new Error("User document not found")
+      const { email = "Not Found", fullName = "" } = userSnap.data()
 
-    const userData = userDocSnap.data()
-    const email = userData.email ?? "Not Found"
-    const fullName = userData.fullName ?? ""
+      const challengeId = await getLatestCustomID(competitionId)
 
-    
-    const ID = await getLatestCustomID(competitionId)
-    await setDoc(
-      doc(db, "competitions", competitionId, "challenges", ID),
-      {
+      // 1) Build the batch
+      const batch = writeBatch(db)
+
+      const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId)
+      batch.set(challengeRef, {
         title: formData.title,
         problemStatement: formData.problemStatement,
         rubric: formData.rubric,
@@ -103,14 +106,26 @@ export default function NewCompetitionPage() {
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),
-      }
-    )
+      })
 
-    const competitionDocRef = doc(db, "competitions", competitionId)
-    await updateDoc(competitionDocRef, {
-      ChallengeCount: increment(1),
-    })
+      const competitionRef = doc(db, "competitions", competitionId)
+      batch.update(competitionRef, {
+        ChallengeCount: increment(1),
+      })
+
+      // 2) Commit batch
+      await batch.commit()
+
+      // 3) Update maxScore of competition
+      await getMaxScoreForCompetition(competitionId)
+    } catch (error: any) {
+      toast({
+        title: "error",
+        description: "Failed to create challenge. Please try again."})
+      throw error
+    }
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
