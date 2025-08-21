@@ -205,8 +205,8 @@ export default function AdminDashboard() {
           <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
             <div className="space-y-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <BarChart3 className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900">Evaluation</h3>

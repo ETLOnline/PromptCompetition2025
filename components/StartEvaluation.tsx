@@ -21,7 +21,9 @@ export default function StartEvaluationButton({
   const [competitionEndDate, setCompetitionEndDate] = useState<Date | null>(null)
   const [showEarlyPopup, setShowEarlyPopup] = useState(false)
   const [showRolePopup, setShowRolePopup] = useState(false)
-  const [showReEvaluatePopup, setShowReEvaluatePopup] = useState(false)
+  const [showCompletedMessage, setShowCompletedMessage] = useState(false)
+  const [showResumeMessage, setShowResumeMessage] = useState(false)
+  const [showEvaluationConfirmPopup, setShowEvaluationConfirmPopup] = useState(false)
   const [role, setRole] = useState<string | null>(null)
   const [isLocked, setIsLocked] = useState(false)
   const [lockedBy, setLockedBy] = useState<string | null>(null)
@@ -80,7 +82,7 @@ export default function StartEvaluationButton({
 
           const now = new Date()
           // Compare full datetime (both date and time)
-          return now.getTime() > endDate.getTime()
+          return now.getTime() < endDate.getTime()
         }
       }
 
@@ -201,23 +203,38 @@ export default function StartEvaluationButton({
       const isAlreadyEvaluated = await checkIfAlreadyEvaluated()
       
       if (isAlreadyEvaluated) {
-        setShowReEvaluatePopup(true)
+        // Check if evaluation is actually complete or just paused
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/progress/${competitionId}`)
+          if (res.ok) {
+            const data = await res.json()
+            const progress = data.progress
+            
+            if (progress && progress.evaluationStatus === 'completed') {
+              setShowCompletedMessage(true)
+            } else {
+              setShowResumeMessage(true)
+            }
+          } else {
+            setShowResumeMessage(true)
+          }
+        } catch (error) {
+          setShowResumeMessage(true)
+        }
         setLoading(false)
         return
       }
 
-      // If all checks pass, proceed with evaluation
-      await proceedWithEvaluation()
+      // If all checks pass, show confirmation dialog
+      setShowEvaluationConfirmPopup(true)
+      setLoading(false) // Reset loading state since we're showing confirmation dialog
     } catch (err: any) {
       alert(`❌ Error: ${err.message}`)
       setLoading(false)
     }
   }
 
-  const handleReEvaluateConfirm = () => {
-    setShowReEvaluatePopup(false)
-    proceedWithEvaluation()
-  }
+
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -278,7 +295,7 @@ export default function StartEvaluationButton({
               className="flex items-center gap-2"
             >
               <CheckCircle className="h-4 w-4 text-green-400" />
-              Evaluation completed!
+              Evaluation started!
             </motion.div>
           ) : (
             <motion.div
@@ -376,19 +393,19 @@ export default function StartEvaluationButton({
         </div>
       )}
 
-      {/* Re-evaluate Confirmation Popup */}
-      {showReEvaluatePopup && (
+      {/* Evaluation Completed Message */}
+      {showCompletedMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center">
-                <AlertTriangle className="h-6 w-6 text-amber-500 mr-2" />
+                <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Competition Already Evaluated
+                  Evaluation Completed
                 </h3>
               </div>
               <button
-                onClick={() => setShowReEvaluatePopup(false)}
+                onClick={() => setShowCompletedMessage(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="h-5 w-5" />
@@ -397,11 +414,11 @@ export default function StartEvaluationButton({
             
             <div className="mb-6">
               <p className="text-gray-600 mb-3">
-                This competition has already been evaluated. Running the evaluation again will overwrite the existing results.
+                All submissions for this competition have been evaluated and scored. The evaluation process is complete.
               </p>
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-                <p className="text-sm text-amber-800">
-                  <strong>Warning:</strong> This action cannot be undone and may affect existing rankings and results.
+              <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                <p className="text-sm text-green-800">
+                  <strong>Status:</strong> No more submissions left to evaluate. You can view the final results in the leaderboard.
                 </p>
               </div>
             </div>
@@ -409,15 +426,119 @@ export default function StartEvaluationButton({
             <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
-                onClick={() => setShowReEvaluatePopup(false)}
+                onClick={() => setShowCompletedMessage(false)}
               >
-                No, Cancel
+                Got it
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resume Evaluation Message */}
+      {showResumeMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center">
+                <AlertCircle className="h-6 w-6 text-green-500 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Evaluation Already Started
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowResumeMessage(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                The evaluation for this competition has already been initiated. You can continue from where it left off.
+              </p>
+              <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                <p className="text-sm text-green-800">
+                  <strong>Action Required:</strong> Please use the resume button below to continue the evaluation process.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowResumeMessage(false)}
+              >
+                Understood
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LLM Evaluation Confirmation Popup */}
+      {showEvaluationConfirmPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Confirm LLM Evaluation
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowEvaluationConfirmPopup(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                You are about to start the LLM evaluation for this competition. This process will:
+              </p>
+              <ul className="text-sm text-gray-600 space-y-2 mb-4">
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">•</span>
+                  Evaluate all submissions using AI judges
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">•</span>
+                  Process submissions in batches for optimal performance
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">•</span>
+                  Update scores and rankings in real-time
+                </li>
+                <li className="flex items-start">
+                  <span className="text-green-500 mr-2">•</span>
+                  Generate final leaderboard upon completion
+                </li>
+              </ul>
+              <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                <p className="text-sm text-green-800">
+                  <strong>Note:</strong> The evaluation will run in the background and can be paused/resumed as needed.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowEvaluationConfirmPopup(false)}
+              >
+                Cancel
               </Button>
               <Button
-                onClick={handleReEvaluateConfirm}
-                className="bg-amber-600 hover:bg-amber-700 text-white"
+                onClick={async () => {
+                  setShowEvaluationConfirmPopup(false)
+                  await proceedWithEvaluation()
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
-                Yes, Re-evaluate
+                Start Evaluation
               </Button>
             </div>
           </div>
