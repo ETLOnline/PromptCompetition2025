@@ -139,7 +139,7 @@ export default function CompetitionGrid({
                         <Edit className="w-4 h-4" />
                       </Button>
                     )}
-                    <Badge className={`${status.color} border font-medium whitespace-nowrap`}>
+                    <Badge className={`${status.color} border font-medium whitespace-nowrap hover:bg-transparent`}>
                       <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
                       {status.label}
                     </Badge>

@@ -67,8 +67,26 @@ export default function ModernAdminHeader() {
       .toUpperCase()
   }
 
+  const getDisplayName = (name: string) => {
+    if (!name) return "Admin"
+    const words = name.split(" ").filter((word) => word.length > 0)
+    
+    if (words.length === 1) {
+      // If only one word, return it as is
+      return words[0]
+    } else if (words.length === 2) {
+      // If two words, return the first name
+      return words[0]
+    } else if (words.length >= 3) {
+      // If three or more words, return the middle name
+      return words[1]
+    }
+    return words[0]
+  }
+
   const displayName = user?.displayName || user?.email?.split("@")[0] || "Admin"
   const userInitials = getUserInitials(user?.displayName || user?.email || "Admin")
+  const shortDisplayName = getDisplayName(displayName)
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -97,26 +115,19 @@ export default function ModernAdminHeader() {
 
               {/* Title (Conditional internal navigation) */}
               <div className="flex flex-col">
-                {competitionId ? (
-                  <h1
-                    onClick={() =>
-                      router.push(`/admin/competitions/${competitionId}/dashboard`)
-                    }
-                    className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
-                  >
-                    Admin Dashboard
-                  </h1>
-                ) : (
-                  <h1 className="text-xl font-semibold text-gray-900 leading-tight">
-                    Admin Dashboard
-                  </h1>
-                )}
+                
+                <h1 className="text-xl font-semibold text-gray-900 leading-tight">
+                    Welcome back, {shortDisplayName}
+                </h1>
 
                 {competitionId && (
                   loading ? (
                     <div className="animate-pulse bg-gray-200 rounded h-4 w-40" />
                   ) : (
-                    <p className="text-sm text-gray-500 leading-tight">
+                    <p className="text-sm text-gray-500 leading-tight cursor-pointer"
+                    onClick={() =>
+                      router.push(`/admin/competitions/${competitionId}/dashboard`)
+                    }>
                       {title || "Competition"}
                     </p>
                   )
@@ -161,7 +172,7 @@ export default function ModernAdminHeader() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-gray-900 leading-tight">{displayName}</p>
+                    <p className="text-sm font-semibold text-gray-900 leading-tight">{shortDisplayName}</p>
                     <p className="text-xs text-gray-500 leading-tight">{user?.email || "admin@example.com"}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
