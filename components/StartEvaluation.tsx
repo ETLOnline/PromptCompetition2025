@@ -49,7 +49,7 @@ export default function StartEvaluationButton({ competitionId }: { competitionId
 
           const now = new Date()
           // Compare full datetime (both date and time)
-          return now.getTime() > endDate.getTime()
+          return now.getTime() < endDate.getTime()
         }
       }
 
