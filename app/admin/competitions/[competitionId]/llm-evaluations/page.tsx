@@ -84,7 +84,7 @@ export default function LlmEvaluationsPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-emerald-500/10 rounded-2xl blur-xl"></div>
             <div className="relative bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-lg">
               <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gray-700 rounded-xl flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
@@ -106,13 +106,14 @@ export default function LlmEvaluationsPage() {
             <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-emerald-50 p-1">
               <div className="bg-white rounded-xl p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
                   {/* Total Challenges Stat */}
-                  <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-blue-100 to-blue-150 border border-blue-200/50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                     <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -mr-10 -mt-10"></div>
                     <div className="relative">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14-7H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" />
                           </svg>
                         </div>
@@ -132,12 +133,12 @@ export default function LlmEvaluationsPage() {
                   </div>
 
                   {/* Total Submissions Stat */}
-                  <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-100 to-emerald-150 border border-emerald-200/50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                     <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full -mr-10 -mt-10"></div>
                     <div className="relative">
                       <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
