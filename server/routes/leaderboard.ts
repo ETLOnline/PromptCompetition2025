@@ -84,7 +84,7 @@ lastRouter.post(
       const otherCandidates: any[] = [];
 
       Object.entries(participants).forEach(([userId, data]) => {
-        const finalScore = data.llmScore + data.judgeScore;
+        const finalScore = (data.llmScore + data.judgeScore) / 2;
         data.finalScore = finalScore;
 
         if (data.judgeScore > 0) {
