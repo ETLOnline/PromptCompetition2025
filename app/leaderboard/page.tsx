@@ -239,49 +239,16 @@ function LeaderboardContent({
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 pt-16">
-      <div className="container mx-auto px-4 py-12 max-w-7xl">
+      <div className="container mx-auto px-8 py-8 max-w-7xl">
         <div className="space-y-8">
-          {/* Header Section */}
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-3xl shadow-xl mb-4">
-              <Trophy className="h-8 w-8 text-emerald-600" />
-            </div>
-
-            {/* Stats Cards */}
-            <div className="flex flex-wrap justify-center gap-6 mt-8">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-                    <Users className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-2xl font-bold text-gray-900">{participantsCount}</p>
-                    <p className="text-sm text-gray-600 font-medium">Participants</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl">
-                    <Target className="h-6 w-6 text-emerald-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-2xl font-bold text-gray-900">{selectedCompetition.maxScore}</p>
-                    <p className="text-sm text-gray-600 font-medium">Total Score</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Main Content Card */}
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
             
             {/* Competition Selector */}
             <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-              <div className="max-w-md mx-auto">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <div className="max-w-md mx-auto flex items-center gap-6">
+                <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
                   Select Competition
                 </label>
                 <Select
@@ -312,8 +279,8 @@ function LeaderboardContent({
                 <LeaderboardBanner
                   topN={selectedCompetition.TopN}
                   judgeEvaluationsComplete={true}
-                  competitionTitle={selectedCompetition.title}
                   maxScore={selectedCompetition.maxScore}
+                  participantsCount={participantsCount}
                 />
               </div>
 

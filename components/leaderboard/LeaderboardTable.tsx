@@ -55,7 +55,7 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
 
   return (
     <div className="overflow-hidden">
-      <div className="p-6">
+      <div className="p-3">
         
         {/* Desktop Table */}
         <div className="hidden md:block">
