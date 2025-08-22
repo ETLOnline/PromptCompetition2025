@@ -138,25 +138,7 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
         setLoading(false)
         return
       }
-
-      // Check if competition is evaluated
-      const isEvaluated = await checkIfAlreadyEvaluated()
       
-      if (!isEvaluated) {
-        setShowNotEvaluatedPopup(true)
-        setLoading(false)
-        return
-      }
-
-      // Check if final leaderboard already exists
-      const hasFinalLeaderboard = await checkIfFinalLeaderboardExists()
-      
-      if (hasFinalLeaderboard) {
-        setShowAlreadyGeneratedPopup(true)
-        setLoading(false)
-        return
-      }
-
       // Check if all judges have evaluated
       const isAllJudgeEvaluated = await checkIfAllJudgeEvaluated()
       
@@ -176,6 +158,25 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
           return
         }
       }
+
+      // Check if competition is evaluated
+      const isEvaluated = await checkIfAlreadyEvaluated()
+      
+      if (!isEvaluated) {
+        setShowNotEvaluatedPopup(true)
+        setLoading(false)
+        return
+      }
+
+      // Check if final leaderboard already exists
+      const hasFinalLeaderboard = await checkIfFinalLeaderboardExists()
+      
+      if (hasFinalLeaderboard) {
+        setShowAlreadyGeneratedPopup(true)
+        setLoading(false)
+        return
+      }
+
 
       // If all checks pass, proceed with leaderboard generation
       await proceedWithLeaderboardGeneration()
