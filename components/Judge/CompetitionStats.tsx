@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Users, Target, Scale } from "lucide-react"
 import type { CompetitionAssignment } from "@/types/judge-submission"
+import { format } from "date-fns"
 
 interface CompetitionStatsProps {
   assignment: CompetitionAssignment
@@ -30,9 +31,9 @@ export function CompetitionStats({ assignment, isLoading }: CompetitionStatsProp
 
   const totalSubmissions = assignment.assignedCountTotal || 0
   const challengeCount = Object.keys(assignment.assignedCountsByChallenge || {}).length
-  const lastUpdated = assignment.updatedAt
-    ? new Date(assignment.updatedAt.seconds * 1000).toLocaleDateString()
-    : "Recently"
+
+  const formattedDate = assignment.updatedAt ? format(new Date(assignment.updatedAt), "MMM d, yyyy") : "N/A"
+  const formattedTime = assignment.updatedAt ? format(new Date(assignment.updatedAt), "p") : "N/A"
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -46,7 +47,7 @@ export function CompetitionStats({ assignment, isLoading }: CompetitionStatsProp
             <div className="p-3 rounded-xl bg-blue-50">
               <Users className="w-6 h-6 text-blue-600" />
             </div>
-          </div>
+          </div> 
         </CardContent>
       </Card>
 
@@ -68,8 +69,10 @@ export function CompetitionStats({ assignment, isLoading }: CompetitionStatsProp
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
-              <p className="text-lg font-bold tracking-tight text-gray-900">{lastUpdated}</p>
+              <p className="text-sm font-medium text-muted-foreground">Submissions Assigned at</p>
+              <p className="text-lg font-bold tracking-tight text-gray-900">
+                {formattedDate} <br /> {formattedTime}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-amber-50">
               <Scale className="w-6 h-6 text-amber-600" />

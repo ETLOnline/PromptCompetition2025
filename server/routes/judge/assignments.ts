@@ -26,7 +26,6 @@ export async function fetchAssignments(userId: string): Promise<JudgeAssignment[
 
     return assignmentData;
   } catch (error) {
-    console.error("Error fetching assignments:", error);
     throw new Error("Failed to fetch judge assignments");
   }
 }
@@ -58,10 +57,9 @@ export async function fetchAssignment(
       assignedCountTotal: data.assignedCountTotal || 0,
       assignedCountsByChallenge: data.assignedCountsByChallenge || {},
       submissionsByChallenge: data.submissionsByChallenge || {},
-      updatedAt: data.updatedAt,
+      updatedAt: data.updatedAt?.toDate?.() || null,
     };
   } catch (error) {
-    console.error("Error fetching assignment:", error);
     throw new Error("Failed to fetch judge assignment");
   }
 }
