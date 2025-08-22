@@ -66,15 +66,13 @@ llmRouter.get(
     const lastDocId = req.query.lastDocId as string | undefined;
 
     try {
+      // 🔹 Submissions query (still paginated)
       const submissionsRef = db
         .collection("competitions")
         .doc(competitionId)
         .collection("submissions");
 
-      let query = submissionsRef
-        .orderBy("__name__")
-        .limit(pageSize)
-        .select(); // only get document IDs, no fields
+      let query = submissionsRef.orderBy("__name__").limit(pageSize).select();
 
       if (lastDocId) {
         const lastDoc = await submissionsRef.doc(lastDocId).get();
@@ -83,17 +81,10 @@ llmRouter.get(
 
       const snapshot = await query.get();
 
-      const challengesMap: Record<string, { id: string; submissionCount: number }> = {};
-
-      const submissions: LLMSubmission[] = snapshot.docs.map(doc => {
+      const submissions: LLMSubmission[] = snapshot.docs.map((doc) => {
         const submissionId = doc.id;
         const parts = submissionId.split("_");
         const challengeId = parts[1]; // participantId_challengeId
-
-        if (!challengesMap[challengeId]) {
-          challengesMap[challengeId] = { id: challengeId, submissionCount: 0 };
-        }
-        challengesMap[challengeId].submissionCount += 1;
 
         return {
           submissionId,
@@ -103,17 +94,33 @@ llmRouter.get(
         };
       });
 
-      const challenges = Object.values(challengesMap);
+      // 🔹 Load ALL challenges (no pagination)
+      const challengesRef = db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("challenges");
+
+      const challengesSnapshot = await challengesRef.get();
+      const challenges = challengesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
       const lastVisible = snapshot.docs[snapshot.docs.length - 1]?.id || null;
       const hasMore = snapshot.docs.length === pageSize;
 
+      // 🔹 Global submissions count
+      const countSnap = await submissionsRef.count().get();
+      const totalSubmissions = countSnap.data().count || 0;
+
       res.json({
         submissions,
-        challenges,
+        challenges,       
         lastDocId: lastVisible,
         hasMore,
-        totalSubmissions: submissions.length,
-        totalEvaluations: 0, // can calculate if needed
+        totalSubmissions,
+        pageCount: submissions.length,
+        totalEvaluations: 0, 
       });
     } catch (error) {
       console.error("Failed to fetch LLM submissions", error);
@@ -121,6 +128,8 @@ llmRouter.get(
     }
   }
 );
+
+
 
 llmRouter.get(
   "/:competitionId/challenges/:challengeId/submissions",
@@ -136,11 +145,11 @@ llmRouter.get(
         .collection("competitions")
         .doc(competitionId)
         .collection("submissions")
-        .orderBy("__name__") // ordering by doc ID
-        .limit(pageSize);
+        .where("challengeId", "==", challengeId);
 
-        
-      let query = submissionsRef;
+      // Pagination query
+      let query = submissionsRef.orderBy("__name__").limit(pageSize);
+
       if (lastDocId) {
         const lastDocSnapshot = await db
           .collection("competitions")
@@ -148,18 +157,15 @@ llmRouter.get(
           .collection("submissions")
           .doc(lastDocId)
           .get();
+
         if (lastDocSnapshot.exists) {
           query = query.startAfter(lastDocSnapshot);
         }
       }
 
       const snapshot = await query.get();
-      
 
-      // Filter by challengeId extracted from submissionId
-      const submissions = snapshot.docs
-      .filter((doc) => doc.data().challengeId === challengeId)
-      .map((doc) => {
+      const submissions = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -177,23 +183,28 @@ llmRouter.get(
         };
       });
 
-
       const lastVisible = snapshot.docs[snapshot.docs.length - 1]?.id || null;
       const hasMore = snapshot.docs.length === pageSize;
+
+      // 🔹 Global submissions count
+      const countSnap = await submissionsRef.count().get();
+      const totalSubmissions = countSnap.data().count || 0;
 
       res.json({
         items: submissions,
         lastDocId: lastVisible,
         hasMore,
-        totalCount: submissions.length,
+        pageCount: submissions.length,
+        totalSubmissions, // Global count
       });
     } catch (error) {
-      console.log("Failed to fetch challenge submissions", error);
       console.error("Failed to fetch challenge submissions", error);
       res.status(500).json({ error: "Failed to fetch challenge submissions" });
     }
   }
 );
+  
+
 
 
 export default llmRouter;
