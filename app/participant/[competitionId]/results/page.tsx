@@ -31,7 +31,7 @@ interface Competition {
 }
 
 export default function ResultsPage() {
-  const { competitionId } = useParams() // Changed from 'id' to 'competitionId'
+  const { competitionId } = useParams() 
   const router = useRouter()
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [competition, setCompetition] = useState<Competition | null>(null)
@@ -63,12 +63,12 @@ export default function ResultsPage() {
         setLoading(true)
         setError(null)
 
-        if (!competitionId || typeof competitionId !== "string") { // Changed from 'id' to 'competitionId'
+        if (!competitionId || typeof competitionId !== "string") { 
           throw new Error("Invalid competition ID")
         }
 
         // 🔹 Call backend API instead of Firestore directly
-        const { competition, submissions } = await fetchCompetitionResults(competitionId) // Changed from 'id' to 'competitionId'
+        const { competition, submissions } = await fetchCompetitionResults(competitionId) 
 
         setCompetition(competition)
         setSubmissions(submissions)
@@ -318,9 +318,9 @@ export default function ResultsPage() {
                   className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <div className="p-6 border-b border-gray-100">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3">
                           <h3 className="text-lg font-semibold text-gray-900">
                             {submission.challengeId || "Unknown Challenge"}
                           </h3>
@@ -330,20 +330,6 @@ export default function ResultsPage() {
                             {getStatusIcon(status)}
                             {getStatusMessage(status)}
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-6 text-sm text-gray-500">
-                          {submission.submittedAt && (
-                            <span className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              {formatDate(submission.submittedAt)}
-                            </span>
-                          )}
-                          {submission.id && (
-                            <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                              ID: {submission.id.slice(-8)}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>

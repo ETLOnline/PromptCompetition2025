@@ -68,7 +68,6 @@ export default function CompetitionsPage() {
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
   const [user, setUser] = useState<UserProfile | null>(null)
   
-  const [completedCompetitions, setCompletedCompetitions] = useState<string[]>([])
 
   useEffect(() => {
     const init = async () => {
@@ -368,7 +367,6 @@ export default function CompetitionsPage() {
                 participantMap={participantMap}
                 completionMap={completionMap}
                 loadingMap={loadingMap}
-                buttonStatesLoading={buttonStatesLoading}
                 onCardClick={handleCompetitionClick}
                 onButtonClick={handleButtonClick}
               />
@@ -384,7 +382,6 @@ export default function CompetitionsPage() {
                 participantMap={participantMap}
                 completionMap={completionMap}
                 loadingMap={loadingMap}
-                buttonStatesLoading={buttonStatesLoading}
                 onCardClick={handleCompetitionClick}
                 onButtonClick={handleButtonClick}
               />
@@ -400,7 +397,6 @@ export default function CompetitionsPage() {
                 participantMap={participantMap}
                 completionMap={completionMap}
                 loadingMap={loadingMap}
-                buttonStatesLoading={buttonStatesLoading}
                 onCardClick={handleCompetitionClick}
                 onButtonClick={handleButtonClick}
               />
