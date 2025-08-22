@@ -2,19 +2,19 @@
 export const LLM_CONFIG = {
   models: [
     { 
-      model: process.env.MODEL_1 || "anthropic/claude-3.7-sonnet",
+      model: process.env.MODEL_1 || "anthropic/claude-sonnet-4",
       maxTokens: 500,
-      temperature: 0.1
-    },
-    { 
-      model: process.env.MODEL_2 || "openai/gpt-4o",
-      maxTokens: 300,
       temperature: 0.0
     },
     { 
-      model: process.env.MODEL_3 || "meta-llama/llama-3.1-405b-instruct",
-      maxTokens: 400,
-      temperature: 0.2
+      model: process.env.MODEL_2 || "openai/gpt-5-chat",
+      maxTokens: 500,
+      temperature: 0.0
+    },
+    { 
+      model: process.env.MODEL_3 || "google/gemini-2.5-pro",
+      maxTokens: 500,
+      temperature: 0.0
     }
   ],
   retryAttempts: Math.max(1, Math.min(5, parseInt(process.env.LLM_RETRY_ATTEMPTS || "2"))),
