@@ -2,7 +2,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, AlertTriangle, Clock, Users } from "lucide-react"
+import { CheckCircle, AlertTriangle, Clock, Users, Trophy, Award } from "lucide-react"
 
 export default function RulesPage() {
   return (
@@ -16,39 +16,38 @@ export default function RulesPage() {
                 Competition Rules & Guidelines
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Please read and understand all rules before participating in the competition
+                Please read and understand all rules before participating in any competition
               </p>
             </div>
             <div className="space-y-8">
-              {/* Eligibility */}
+              {/* General Eligibility */}
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
                     <Users className="h-6 w-6 text-emerald-500" />
-                    Eligibility Criteria
+                    General Eligibility
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Must be a Pakistani citizen or resident</p>
+                    <p className="text-muted-foreground">Open to participants worldwide unless specified otherwise</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Age limit: 16-35 years</p>
+                    <p className="text-muted-foreground">Age requirements vary by competition (will be specified in each competition)</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
-                      Must be enrolled in or graduated from a recognized educational institution
-                    </p>
+                    <p className="text-muted-foreground">Individual participation only (no team submissions unless specified)</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Individual participation only (no team submissions)</p>
+                    <p className="text-muted-foreground">Valid email address and account registration required</p>
                   </div>
                 </CardContent>
               </Card>
+
               {/* Submission Guidelines */}
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
@@ -61,51 +60,49 @@ export default function RulesPage() {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <p className="text-muted-foreground">
-                      Submit both your crafted prompt and the LLM-generated output
+                      Submit both your crafted prompts
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <p className="text-muted-foreground">
-                      Prompt must be original and created specifically for this competition
+                      Prompts must be original and created specifically for the competition
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
-                      Output must be generated using GPT-4, Claude-3, or Gemini-Pro
-                    </p>
+                    <p className="text-muted-foreground">Maximum one submission per participant per challenge</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Maximum one submission per participant per competition</p>
+                    <p className="text-muted-foreground">Submissions can be updated until the competition deadline</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Submissions can be updated until the deadline</p>
+                    <p className="text-muted-foreground">All submissions must be in English unless specified otherwise</p>
                   </div>
                 </CardContent>
               </Card>
+
               {/* Evaluation Process */}
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <Badge variant="outline" className="text-emerald-600 border-emerald-300">
-                      Evaluation Process
-                    </Badge>
+                    <Award className="h-6 w-6 text-emerald-500" />
+                    Evaluation Process
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-emerald-600">Phase 1: Automated Evaluation</h3>
+                    <h3 className="text-lg font-semibold text-emerald-600">Automated Evaluation</h3>
                     <p className="text-muted-foreground">
-                      All submissions are evaluated by multiple AI models for initial scoring
+                      All submissions are evaluated by multiple AI models for initial scoring and consistency checks
                     </p>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-emerald-600">Phase 2: Expert Review</h3>
+                    <h3 className="text-lg font-semibold text-emerald-600">Expert Review</h3>
                     <p className="text-muted-foreground">
-                      Top-scoring submissions (85+ points) are flagged for manual review by expert judges
+                      High-scoring submissions are reviewed by expert judges for final ranking
                     </p>
                   </div>
                   <div className="space-y-3">
@@ -116,41 +113,49 @@ export default function RulesPage() {
                       <li>• Problem-Solving Effectiveness (25%)</li>
                       <li>• Output Quality and Relevance (25%)</li>
                     </ul>
+                    <p className="text-sm text-muted-foreground italic">
+                      Note: Specific scoring criteria may vary by competition type
+                    </p>
                   </div>
                 </CardContent>
               </Card>
-              {/* Important Deadlines */}
+
+              {/* Timeline & Deadlines */}
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
                     <Clock className="h-6 w-6 text-slate-500" />
-                    Important Deadlines
+                    Timeline & Deadlines
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-foreground font-medium">Registration Deadline</p>
-                      <p className="text-muted-foreground">March 10, 2024 at 11:59 PM PKT</p>
+                      <p className="text-foreground font-medium">Registration</p>
+                      <p className="text-muted-foreground">Registration opens when competition is announced and closes at the submission deadline</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-foreground font-medium">Submission Deadline</p>
-                      <p className="text-muted-foreground">March 15, 2024 at 11:59 PM PKT</p>
+                      <p className="text-foreground font-medium">Submission Period</p>
+                      <p className="text-muted-foreground">Specific dates and times will be clearly stated for each competition</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-foreground font-medium">Results Announcement</p>
-                      <p className="text-muted-foreground">March 25, 2024</p>
+                      <p className="text-muted-foreground">Results typically announced within 1-2 weeks after submission deadline</p>
                     </div>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <p className="text-blue-700 font-medium">⏰ All times are in UTC unless specified otherwise</p>
                   </div>
                 </CardContent>
               </Card>
+
               {/* Prohibited Actions */}
               <Card className="bg-white border-red-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
@@ -166,7 +171,7 @@ export default function RulesPage() {
                   </div>
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Collaboration with other participants</p>
+                    <p className="text-muted-foreground">Collaboration with other participants (unless team competition)</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
@@ -174,46 +179,105 @@ export default function RulesPage() {
                   </div>
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Submitting inappropriate or offensive content</p>
+                    <p className="text-muted-foreground">Submitting inappropriate, offensive, or harmful content</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Multiple accounts or fake registrations</p>
+                    <p className="text-muted-foreground">Creating multiple accounts or fake registrations</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-muted-foreground">Attempting to manipulate the evaluation system</p>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <p className="text-red-700 font-medium">⚠️ Violation of any rule may result in immediate disqualification</p>
                   </div>
                 </CardContent>
               </Card>
+
               {/* Prizes and Recognition */}
-              {/* <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-foreground flex items-center gap-2">
+                    <Trophy className="h-6 w-6 text-yellow-500" />
+                    Prizes & Recognition
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border border-yellow-200">
+                    <h3 className="text-lg font-semibold text-yellow-700 mb-2">Prize Structure</h3>
+                    <p className="text-muted-foreground">
+                      Prize amounts and rewards vary by competition and will be clearly specified in each competition announcement.
+                    </p>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                      <h4 className="font-semibold text-emerald-700 mb-2">Recognition</h4>
+                      <ul className="space-y-1 text-muted-foreground text-sm">
+                        <li>• Digital certificates for winners</li>
+                        <li>• Public recognition on our platform</li>
+                        <li>• Featured showcase of winning submissions</li>
+                      </ul>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-700 mb-2">Additional Benefits</h4>
+                      <ul className="space-y-1 text-muted-foreground text-sm">
+                        <li>• Portfolio enhancement opportunities</li>
+                        <li>• Access to exclusive competitions</li>
+                        <li>• Community recognition and networking</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Fair Play & Integrity */}
+              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
                     <Badge variant="outline" className="text-slate-700 border-slate-300">
-                      Prizes & Recognition
+                      Fair Play & Integrity
                     </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
-                      <h3 className="text-xl font-bold text-yellow-700 mb-2">1st Place</h3>
-                      <p className="text-2xl font-bold text-foreground">PKR 200,000</p>
-                      <p className="text-sm text-muted-foreground">+ Certificate + Trophy</p>
-                    </div>
-                    <div className="text-center p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm">
-                      <h3 className="text-xl font-bold text-slate-700 mb-2">2nd Place</h3>
-                      <p className="text-2xl font-bold text-foreground">PKR 150,000</p>
-                      <p className="text-sm text-muted-foreground">+ Certificate + Trophy</p>
-                    </div>
-                    <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200 shadow-sm">
-                      <h3 className="text-xl font-bold text-orange-700 mb-2">3rd Place</h3>
-                      <p className="text-2xl font-bold text-foreground">PKR 100,000</p>
-                      <p className="text-sm text-muted-foreground">+ Certificate + Trophy</p>
-                    </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-muted-foreground">We maintain a zero-tolerance policy for cheating and misconduct</p>
                   </div>
-                  <p className="text-muted-foreground text-center mt-4">
-                    Top 10 participants will receive certificates of excellence
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-muted-foreground">All submissions are checked for originality and authenticity</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-muted-foreground">Decisions made by the judging panel are final</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-muted-foreground">We reserve the right to modify rules with appropriate notice</p>
+                  </div>
                 </CardContent>
-              </Card> */}
+              </Card>
+
+              {/* Contact & Support */}
+              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-foreground">
+                    Questions or Concerns?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    If you have any questions about these rules or need clarification about a specific competition, please don't hesitate to contact our support team.
+                  </p>
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <p className="text-sm text-muted-foreground">
+                      Competition-specific details (dates, prizes, requirements) will be provided in each individual competition announcement.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>

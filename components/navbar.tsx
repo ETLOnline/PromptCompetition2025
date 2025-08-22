@@ -22,6 +22,7 @@ export default function Navbar() {
   }, [])
 
   const navItems = [
+    { label: "Home", href: "/" },
     { label: "Events", href: "/#events" },
     { label: "Rules", href: "/rules" },
     { label: "Leaderboard", href: "/leaderboard" },
@@ -39,18 +40,16 @@ export default function Navbar() {
       }`}>
         <div className="container mx-auto max-w-7xl">
           <div className="flex h-20 items-center justify-between px-6">
-            {/* Logo Section */}
+            {/* Logo Section - Left Aligned */}
             <div className="flex items-center">
               <a
                 href="https://www.etlonline.org/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center group transition-all duration-300"
+                className="flex items-center transition-opacity duration-300 hover:opacity-80"
                 aria-label="Empowerment Through Learning Homepage"
               >
-                <div className="relative rounded-xl p-2 group-hover:shadow-md transition-all duration-300 overflow-hidden">
-                  {/* Subtle background pattern */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative rounded-xl p-2">
                   <Image
                     src="/images/Logo-for-Picton-Blue.png"
                     alt="Empowerment Through Learning Logo"
@@ -63,43 +62,54 @@ export default function Navbar() {
               </a>
             </div>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center" aria-label="Main Navigation">
+            {/* Desktop Navigation - Center */}
+            <nav className="hidden lg:flex items-center flex-1 justify-center" aria-label="Main Navigation">
               <div className="flex items-center">
                 {navItems.map((item, index) => (
                   <Link
                     key={index}
                     href={item.href}
-                    className="relative px-5 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 group"
+                    className="relative px-5 py-2.5 text-sm font-medium text-gray-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 group overflow-hidden rounded-lg"
                   >
-                    <span className="relative z-10">{item.label}</span>
+                    {/* Subtle background that slides in */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-lg"></div>
+                    {/* Bottom border indicator */}
+                    <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 transform -translate-x-1/2 group-hover:w-3/4 transition-all duration-300"></div>
+                    <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">{item.label}</span>
                   </Link>
                 ))}
               </div>
             </nav>
 
-            {/* Auth Buttons & Mobile Menu */}
-            <div className="flex items-center gap-4">
+            {/* Auth Buttons & Mobile Menu - Right Aligned */}
+            <div className="flex items-center gap-4 ml-auto">
               {/* Desktop Auth Buttons */}
               <div className="hidden lg:flex items-center gap-3">
                 <Button
                   asChild
                   variant="outline"
-                  className="gap-2 px-6 py-2.5 text-sm font-medium rounded-xl border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all duration-200 group"
+                  className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden"
                 >
                   <Link href="/auth/login">
-                    <LogIn className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                    Login
+                    {/* Subtle slide-up background */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <LogIn className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                    <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">Login</span>
                   </Link>
                 </Button>
 
                 <Button
                   asChild
-                  className="gap-2 px-6 py-2.5 text-sm font-medium rounded-xl bg-gray-700 text-white hover:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-200 group"
+                  className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
+                  style={{ backgroundColor: '#10142c' }}
                 >
                   <Link href="/auth/register">
-                    <UserPlus className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                    Sign Up
+                    {/* Gradient overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    {/* Light shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                    <UserPlus className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                    <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
                   </Link>
                 </Button>
               </div>
@@ -111,9 +121,10 @@ export default function Navbar() {
                     variant="outline"
                     size="sm"
                     aria-label="Open Menu"
-                    className="p-2.5 hover:bg-gray-50 rounded-xl transition-all duration-200 group"
+                    className="p-2.5 rounded-lg transition-all duration-300 group relative overflow-hidden"
                   >
-                    <Menu className="h-5 w-5 text-gray-600 transition-transform duration-200 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gray-50 transform scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300"></div>
+                    <Menu className="h-5 w-5 text-gray-600 transition-all duration-300 group-hover:scale-110 relative z-10" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>
                 </SheetTrigger>
@@ -166,11 +177,13 @@ export default function Navbar() {
                           <Link
                             key={index}
                             href={item.href}
-                            className="flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group"
+                            className="flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
                             onClick={() => setIsOpen(false)}
                           >
-                            <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                            {item.label}
+                            {/* Slide-in background */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                            <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-125 relative z-10"></div>
+                            <span className="relative z-10">{item.label}</span>
                           </Link>
                         ))}
                       </nav>
@@ -187,13 +200,14 @@ export default function Navbar() {
                         <Button
                           asChild
                           variant="outline"
-                          className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-xl text-gray-700 hover:bg-white/80 hover:shadow-sm transition-all duration-200 group"
+                          className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-gray-700 hover:bg-white/80 hover:shadow-sm transition-all duration-300 group relative overflow-hidden"
                         >
                           <Link href="/auth/login" onClick={() => setIsOpen(false)}>
-                            <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-200">
-                              <LogIn className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                            <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 relative z-10">
+                              <LogIn className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-300" />
                             </div>
-                            <div>
+                            <div className="relative z-10">
                               <p className="font-medium">Login</p>
                               <p className="text-xs text-gray-500">Access your account</p>
                             </div>
@@ -202,13 +216,18 @@ export default function Navbar() {
 
                         <Button
                           asChild
-                          className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-xl bg-gray-700 text-white hover:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-200 group"
+                          className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
+                          style={{ backgroundColor: '#10142c' }}
                         >
                           <Link href="/auth/register" onClick={() => setIsOpen(false)}>
-                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center transition-all duration-200">
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            {/* Shine effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center transition-all duration-300 relative z-10">
                               <UserPlus className="h-5 w-5 text-white" />
                             </div>
-                            <div>
+                            <div className="relative z-10">
                               <p className="font-medium">Sign Up</p>
                               <p className="text-xs text-blue-100">Create new account</p>
                             </div>

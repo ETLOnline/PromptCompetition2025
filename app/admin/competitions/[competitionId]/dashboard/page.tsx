@@ -217,36 +217,54 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="space-y-3">
-                <StartEvaluationButton 
-                  competitionId={competitionId} 
-                  onEvaluationStart={handleEvaluationStart}
-                />
+                {role === 'superadmin' ? (
+                  <StartEvaluationButton 
+                    competitionId={competitionId} 
+                    onEvaluationStart={handleEvaluationStart}
+                  />
+                ) : (
+                  <div className="text-center py-4">
+                    <div className="flex items-center justify-center space-x-2 text-gray-500">
+                      <Shield className="h-4 w-4" />
+                      <span className="text-sm">Superadmin access required</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
 
-          {(role === "admin" || role === "superadmin") && (
-            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Shield className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">Admin Controls</h3>
-                    <p className="text-gray-600">Manage Judges</p>
-                  </div>
-                </div>
-
+        <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Shield className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Admin Controls</h3>
+                <p className="text-gray-600">Manage Judges</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {role === 'superadmin' ? (
                 <Button
                   onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
                   className="w-full py-3 bg-gray-900 text-white rounded-lg"
                 >
                   <Users className="h-4 w-4 mr-2" /> Assign Submissions
                 </Button>
-              </div>
-            </Card>
-          )}
+              ) : (
+                <div className="text-center py-4">
+                  <div className="flex items-center justify-center space-x-2 text-gray-500">
+                    <Shield className="h-4 w-4" />
+                    <span className="text-sm">Superadmin access required</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
 
           <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
             <div className="space-y-6">

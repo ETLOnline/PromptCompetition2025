@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Linkedin, Twitter, Github } from "lucide-react"
+import { Linkedin, Instagram, Facebook, Youtube, Github, MessageCircle } from "lucide-react"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -7,135 +7,81 @@ export default function Footer() {
   return (
     <footer className="bg-gradient-to-br from-slate-100 to-slate-150 border-t border-gray-200 py-12 md:py-16 relative shadow-lg">
       {/* Subtle top accent line */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 opacity-20" />
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 opacity-60" />
 
       <div className="container mx-auto max-w-6xl px-4 md:px-6 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-gray-900">ETL Online</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Competition Info */}
+          <div className="space-y-4 md:col-span-1">
+            <h3 className="text-xl font-bold text-gray-900">All Pakistan Prompt Engineering Competition</h3>
             <p className="text-sm font-medium text-gray-700 leading-relaxed">
-              Official website for the All Pakistan Prompt Engineering Competition, hosted by ETL Online.
+              The premier national competition for prompt engineering skills, organized by ETL Online. 
+              Empowering the next generation of AI professionals across Pakistan.
             </p>
+            <div className="pt-2">
+              <a 
+                href="https://www.etlonline.org/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200 underline-offset-4 hover:underline"
+              >
+                Visit ETL Online →
+              </a>
+            </div>
           </div>
 
-          {/* Product Links */}
+          {/* Competition Links */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-900">Product</h3>
-            <nav aria-label="Product Navigation">
+            <h3 className="text-base font-bold text-gray-900">Competition</h3>
+            <nav aria-label="Competition Navigation">
               <ul className="space-y-3 text-sm">
                 <li>
                   <Link
-                    href="#features"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                    href="/#events"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-blue-600/20 rounded-md px-1 py-1"
                   >
-                    Features
+                    Competition Events
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="#security"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                    href="/rules"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-blue-600/20 rounded-md px-1 py-1"
                   >
-                    Security
+                    Rules & Guidelines
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="#enterprise"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                    href="/leaderboard"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-blue-600/20 rounded-md px-1 py-1"
                   >
-                    Enterprise
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="#government"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Government
+                    Leaderboard
                   </Link>
                 </li>
               </ul>
             </nav>
           </div>
 
-          {/* Resources Links */}
+          {/* Support & Info Links */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-900">Resources</h3>
-            <nav aria-label="Resources Navigation">
-              <ul className="space-y-3 text-sm">
-                <li>
-                  <Link
-                    href="/documentation"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/case-studies"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Case Studies
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/blog"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/support"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Support
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </div>
-
-          {/* Company Links */}
-          <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-900">Company</h3>
-            <nav aria-label="Company Navigation">
+            <h3 className="text-base font-bold text-gray-900">Support & Info</h3>
+            <nav aria-label="Support Navigation">
               <ul className="space-y-3 text-sm">
                 <li>
                   <Link
                     href="/about"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-blue-600/20 rounded-md px-1 py-1"
                   >
-                    About
+                    About Competition
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="/careers"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
+                    href="/#contact"
+                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-blue-600/20 rounded-md px-1 py-1"
                   >
-                    Careers
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-md px-1 py-1"
-                  >
-                    Privacy Policy
+                    Contact Us
                   </Link>
                 </li>
               </ul>
@@ -145,42 +91,78 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-sm font-medium text-gray-700 text-center md:text-left">
-            © {currentYear} ETL Online. All rights reserved. Prompt Engineering Competition.
-          </p>
+          <div className="text-center md:text-left">
+            <p className="text-sm font-medium text-gray-700">
+              © {currentYear} ETL Online. All rights reserved.
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              All Pakistan Prompt Engineering Competition
+            </p>
+          </div>
 
-          {/* Social Links with Gradient Containers */}
-          <div className="flex gap-3">
+          {/* Social Links */}
+          <div className="flex gap-4 flex-wrap justify-center">
             <Link
-              href="https://linkedin.com"
-              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-lg"
+              href="https://www.linkedin.com/company/etlonline/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
               aria-label="LinkedIn"
             >
-              <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-2 shadow-sm hover:shadow-md transition-all duration-200">
-                <Linkedin className="h-4 w-4 text-white" />
-              </div>
+              <Linkedin className="h-7 w-7 text-blue-600 group-hover:text-blue-800 transition-colors duration-200" />
             </Link>
 
             <Link
-              href="https://twitter.com"
-              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-lg"
-              aria-label="Twitter"
+              href="https://chat.whatsapp.com/Dy8uKSyedZ19o70wLOxs6y"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-600/20"
+              aria-label="WhatsApp Group"
             >
-              <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-2 shadow-sm hover:shadow-md transition-all duration-200">
-                <Twitter className="h-4 w-4 text-white" />
-              </div>
+              <MessageCircle className="h-7 w-7 text-green-600 group-hover:text-green-700 transition-colors duration-200" />
             </Link>
 
             <Link
-              href="https://github.com"
-              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-900/10 rounded-lg"
+              href="https://www.instagram.com/etlonline.official?igsh=ZDR6dmdjcTVtcjBi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-600/20"
+              aria-label="Instagram"
+            >
+              <Instagram className="h-7 w-7 text-pink-600 group-hover:text-pink-700 transition-colors duration-200" />
+            </Link>
+
+            <Link
+              href="https://www.facebook.com/share/1A1L82Yqmi/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
+              aria-label="Facebook"
+            >
+              <Facebook className="h-7 w-7 text-blue-700 group-hover:text-blue-800 transition-colors duration-200" />
+            </Link>
+
+            <Link
+              href="https://www.youtube.com/@etlonline"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-600/20"
+              aria-label="YouTube"
+            >
+              <Youtube className="h-7 w-7 text-red-600 group-hover:text-red-700 transition-colors duration-200" />
+            </Link>
+
+            <Link
+              href="https://github.com/etlonline"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-700/20"
               aria-label="GitHub"
             >
-              <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-lg p-2 shadow-sm hover:shadow-md transition-all duration-200">
-                <Github className="h-4 w-4 text-white" />
-              </div>
+              <Github className="h-7 w-7 text-gray-800 group-hover:text-black transition-colors duration-200" />
             </Link>
           </div>
+
         </div>
       </div>
     </footer>

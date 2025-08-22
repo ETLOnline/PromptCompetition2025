@@ -22,6 +22,7 @@ import {
   Sparkles,
   Zap,
   Star,
+  MessageCircle, Globe
 } from "lucide-react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
@@ -454,7 +455,7 @@ export default function HomePage() {
                     <h3 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
                       Submit Your Prompt
                     </h3>
-                    <p className="text-muted-foreground">Craft and submit your prompt with the LLM-generated output.</p>
+                    <p className="text-muted-foreground">Craft and submit your prompt according to challenges assigned.</p>
                   </div>
                   <div className="text-center group">
                     <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4 hover:scale-110 transition-all duration-200">
@@ -491,72 +492,72 @@ export default function HomePage() {
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Contact Info Card */}
               <Card className="bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-xl border-0 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30 pointer-events-none" />
-                <CardHeader className="p-8 relative">
-                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
-                    Get in Touch
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground text-lg">
-                    Reach out to us through any of the following channels
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-8 pt-0 space-y-6">
-                  {[
-                    {
-                      icon: Mail,
-                      title: "Email",
-                      details: ["info@promptcompetition.pk", "support@promptcompetition.pk"],
-                      bgColor: "bg-blue-100",
-                      iconColor: "text-blue-600",
-                    },
-                    {
-                      icon: Phone,
-                      title: "Phone",
-                      details: ["+92 21 1234 5678", "+92 42 8765 4321"],
-                      bgColor: "bg-emerald-100",
-                      iconColor: "text-emerald-600",
-                    },
-                    {
-                      icon: MapPin,
-                      title: "Address",
-                      details: [
-                        "National Incubation Center",
-                        "Lahore University of Management Sciences",
-                        "Lahore, Punjab, Pakistan",
-                      ],
-                      bgColor: "bg-purple-100",
-                      iconColor: "text-purple-600",
-                    },
-                    {
-                      icon: Clock,
-                      title: "Support Hours",
-                      details: [
-                        "Monday - Friday: 9:00 AM - 6:00 PM PKT",
-                        "Saturday: 10:30 AM - 4:00 PM PKT",
-                        "Sunday: Closed",
-                      ],
-                      bgColor: "bg-slate-100",
-                      iconColor: "text-slate-600",
-                    },
-                  ].map((contact, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow">
-                      <div
-                        className={`w-12 h-12 ${contact.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
-                      >
-                        <contact.icon className={`h-6 w-6 ${contact.iconColor}`} />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-black mb-1">{contact.title}</h3>
-                        {contact.details.map((detail, idx) => (
-                          <p key={idx} className="text-black text-sm">
-                            {detail}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30 pointer-events-none" />
+      <CardHeader className="p-8 relative">
+        <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+          Let's Connect
+        </CardTitle>
+        <CardDescription className="text-muted-foreground text-lg">
+          Reach out through your preferred channel - we're here to help
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-8 pt-0 space-y-6">
+        {[
+          {
+            icon: Mail,
+            title: "Email",
+            details: ["info@etlonline.org", "Perfect for detailed inquiries"],
+            bgColor: "bg-blue-100",
+            iconColor: "text-blue-600",
+          },
+          {
+            icon: MessageCircle,
+            title: "Contact Form",
+            details: ["Fill out our online form", "Quick and convenient"],
+            bgColor: "bg-emerald-100",
+            iconColor: "text-emerald-600",
+          },
+          {
+            icon: Users,
+            title: "Social Media",
+            details: [
+              "Follow us on our social channels",
+              "Stay updated with our latest news",
+            ],
+            bgColor: "bg-purple-100",
+            iconColor: "text-purple-600",
+          },
+          {
+            icon: Globe,
+            title: "Digital First",
+            details: [
+              "Fully online services",
+              "Remote collaboration ready",
+              "Global accessibility",
+            ],
+            bgColor: "bg-slate-100",
+            iconColor: "text-slate-600",
+          },
+        ].map((contact, index) => (
+          <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow">
+            <div
+              className={`w-12 h-12 ${contact.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
+            >
+              <contact.icon className={`h-6 w-6 ${contact.iconColor}`} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-black mb-1">{contact.title}</h3>
+              {contact.details.map((detail, idx) => (
+                <p key={idx} className="text-black text-sm">
+                  {detail}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+
               {/* Contact Form */}
               <Card className="bg-white rounded-xl border-0">
                 <CardContent className="p-8 space-y-6">

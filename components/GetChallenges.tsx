@@ -69,6 +69,8 @@ export default function GetChallenges({ competitionId }: { competitionId: string
   const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
   const [expandedChallenges, setExpandedChallenges] = useState<Set<string>>(new Set())
   const router = useRouter()
+  const [isDeleting, setIsDeleting] = useState(false)
+
 
   const toggleChallengeExpansion = (challengeId: string) => {
     setExpandedChallenges((prev) => {
@@ -118,14 +120,71 @@ export default function GetChallenges({ competitionId }: { competitionId: string
     fetchUserRoleAndChallenges()
   }, [competitionId])
 
+  // const handleDelete = async (challengeId: string) => {
+  //   try {
+  //     await deleteDoc(doc(db, "competitions", competitionId, "challenges", challengeId))
+  //     setChallenges((prev) => prev.filter((c) => c.id !== challengeId))
+  //     const competitionDocRef = doc(db, "competitions", competitionId)
+  //     await updateDoc(competitionDocRef, {
+  //       ChallengeCount: increment(-1),
+  //     })
+  //   } catch (err) {
+  //     console.error("Error deleting challenge:", err)
+  //   }
+  // }
+
   const handleDelete = async (challengeId: string) => {
     try {
+      // Delete the challenge document
       await deleteDoc(doc(db, "competitions", competitionId, "challenges", challengeId))
+      
+      // Update local state to remove the challenge
       setChallenges((prev) => prev.filter((c) => c.id !== challengeId))
+      
+      // Try to get submissions collection - handle case where collection doesn't exist
+      try {
+        const submissionsRef = collection(db, "competitions", competitionId, "submissions")
+        const submissionsSnapshot = await getDocs(submissionsRef)
+        
+        // Check if submissions collection exists and has documents
+        if (!submissionsSnapshot.empty) {
+          // Filter submissions that belong to the deleted challenge
+          const submissionsToDelete = submissionsSnapshot.docs.filter(doc => {
+            const submissionId = doc.id
+            // Validate submissionId format
+            if (!submissionId || typeof submissionId !== 'string') {
+              return false
+            }
+            
+            // Extract challengeId from submissionId format: participantId_challengeId
+            const parts = submissionId.split('_')
+            if (parts.length >= 2) {
+              const submissionChallengeId = parts[parts.length - 1] // Get the last part after splitting by '_'
+              return submissionChallengeId === challengeId
+            }
+            return false
+          })
+          
+          // Delete all related submissions if any exist
+          if (submissionsToDelete.length > 0) {
+            const deletePromises = submissionsToDelete.map(submissionDoc => 
+              deleteDoc(doc(db, "competitions", competitionId, "submissions", submissionDoc.id))
+            )
+            
+            await Promise.all(deletePromises)
+          }
+        }
+      } catch (submissionError) {
+        // Handle case where submissions collection doesn't exist or other submission-related errors
+        // Continue with challenge deletion even if submission cleanup fails
+      }
+      
+      // Update competition document to decrement challenge count
       const competitionDocRef = doc(db, "competitions", competitionId)
       await updateDoc(competitionDocRef, {
         ChallengeCount: increment(-1),
       })
+      
     } catch (err) {
       console.error("Error deleting challenge:", err)
     }
@@ -312,19 +371,27 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                         size="sm"
                         className="bg-gray-900 text-white hover:bg-gray-800 font-semibold px-4 py-2"
                         onClick={() => {
-                          if (isExpired) setShowModal(true)
-                          else router.push(`/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`)
+                          if (isExpired && userRole !== "superadmin") {
+                            // normal users can't edit expired competitions
+                            setShowModal(true)
+                          } else {
+                            // superadmin OR non-expired case
+                            router.push(
+                              `/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`
+                            )
+                          }
                         }}
                       >
                         Edit
                       </Button>
+
                       {(userRole === "admin" || userRole === "superadmin") && (
                         <Button
                           size="sm"
                           variant="destructive"
                           className="bg-red-600 text-white hover:bg-red-700 font-semibold px-4 py-2"
                           onClick={() => {
-                            if (competitionStartTime && competitionStartTime < new Date()) {
+                            if (competitionStartTime && competitionStartTime < new Date() && userRole !== "superadmin") {
                               setShowModal(true)
                             } else {
                               setChallengeToDelete(challenge.id)
@@ -345,44 +412,79 @@ export default function GetChallenges({ competitionId }: { competitionId: string
       </CardContent>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl rounded-xl">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-full bg-red-50">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <DialogTitle className="text-xl font-bold text-gray-900">Are you sure?</DialogTitle>
-            </div>
-            <DialogDescription className="text-gray-700 font-medium">
-              This action will permanently delete the challenge. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
-              onClick={() => {
-                setChallengeToDelete(null)
-                setDeleteConfirmOpen(false)
-              }}
+// Updated Dialog component
+<Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+  <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl rounded-xl">
+    <DialogHeader>
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 rounded-full bg-red-50">
+          <AlertCircle className="w-6 h-6 text-red-600" />
+        </div>
+        <DialogTitle className="text-xl font-bold text-gray-900">Are you sure?</DialogTitle>
+      </div>
+      <DialogDescription className="text-gray-700 font-medium">
+        This action will permanently delete the challenge. This cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="flex justify-end gap-2">
+      <Button
+        variant="outline"
+        className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
+        disabled={isDeleting}
+        onClick={() => {
+          setChallengeToDelete(null)
+          setDeleteConfirmOpen(false)
+        }}
+      >
+        Cancel
+      </Button>
+      <Button
+        className="bg-red-600 text-white hover:bg-red-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isDeleting}
+        onClick={async () => {
+          if (!challengeToDelete) return
+          
+          setIsDeleting(true)
+          try {
+            await handleDelete(challengeToDelete)
+            setChallengeToDelete(null)
+            setDeleteConfirmOpen(false)
+          } finally {
+            setIsDeleting(false)
+          }
+        }}
+      >
+        {isDeleting ? (
+          <>
+            <svg
+              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
             >
-              Cancel
-            </Button>
-            <Button
-              className="bg-red-600 text-white hover:bg-red-700 font-semibold"
-              onClick={async () => {
-                if (!challengeToDelete) return
-                await handleDelete(challengeToDelete)
-                setChallengeToDelete(null)
-                setDeleteConfirmOpen(false)
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Deleting...
+          </>
+        ) : (
+          "Delete"
+        )}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
 
       {/* Shared Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
