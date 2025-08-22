@@ -3,7 +3,7 @@
 
 import React from "react"
 import { Suspense, useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChallengeAccordion } from "@/components/LlmEvaluation/ChallengeAccordion"
@@ -33,21 +33,43 @@ export default function LlmEvaluationsPage() {
   const [competitionData, setCompetitionData] = useState<CompetitionLlmEvaluations | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-
+  const router = useRouter()
+    
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true)
-        const data = await fetchCompetitionLlmEvaluations(competitionId)
-        setCompetitionData(data)
-      } catch (err: any) {
-        setError(err)
-      } finally {
-        setLoading(false)
+    const init = async () => {
+      const authed = await checkAuth()
+      if (authed) {
+        await loadData(competitionId)
       }
     }
-    loadData()
+    init()
   }, [competitionId])
+
+  const loadData = async (competitionId: string) => {
+    try {
+      setLoading(true)
+      const data = await fetchCompetitionLlmEvaluations(competitionId)
+      setCompetitionData(data)
+    } catch (err: any) {
+      setError(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const checkAuth = async () => {
+    try {
+      await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_SUPER_AUTH}`
+      )
+      return true
+    } catch (error) {
+      router.push("/")
+      return false
+    }
+  }
+
+
 
   if (loading) return <LlmEvaluationsLoading />
   if (error) return <LlmEvaluationsError error={error} competitionId={competitionId} />

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { fetchWithAuth } from "@/lib/api"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -184,6 +184,17 @@ export default function JudgeEvaluationsPage() {
   const [judgeMapping, setJudgeMapping] = useState<Record<string, string>>({} as Record<string, string>)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    const init = async () => {
+      const authed = await checkAuth()
+      if (authed) {
+        await fetchData()
+      }
+    }
+    init()
+  }, [competitionId])
 
   const fetchData = async () => {
     if (!competitionId) return
@@ -206,10 +217,18 @@ export default function JudgeEvaluationsPage() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    fetchData()
-  }, [competitionId])
+    
+  const checkAuth = async () => {
+    try {
+      await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_SUPER_AUTH}`
+      )
+      return true
+    } catch (error) {
+      router.push("/")
+      return false
+    }
+  }
 
   const judgeIds = Object.keys(groupedEvaluations)
 
