@@ -1,4 +1,4 @@
-import { Clock, CheckCircle, Users, Gavel } from "lucide-react"
+import { Clock, CheckCircle, Users, Gavel, Sparkles, Trophy } from "lucide-react"
 
 interface LeaderboardBannerProps {
   topN: number
@@ -13,49 +13,44 @@ export function LeaderboardBanner({
   competitionTitle,
   maxScore,
 }: LeaderboardBannerProps) {
-  const totalMaxScore = maxScore * 2
 
   if (judgeEvaluationsComplete) {
     return (
-      <div className="p-6">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-start gap-4">
+      <div className="relative">
+        <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-200/80 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 rounded-full -translate-y-6 translate-x-6 blur-2xl"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-green-200/20 to-emerald-200/20 rounded-full translate-y-4 -translate-x-4 blur-xl"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-start gap-6">
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <CheckCircle className="h-8 w-8 text-white" />
+                  </div>
                 </div>
               </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-emerald-700">
-                  <span>Final leaderboard including Judge evaluations for top</span>
-                  <span className="inline-flex items-center bg-emerald-100 border border-emerald-300 text-emerald-800 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide">
-                    {topN}
-                  </span>
-                  <span>participants. Remaining participants ranked by LLM only.</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 border border-emerald-100">
-              <div className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-3">
-                Maximum Possible Scores
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                <div className="text-center">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">LLM Max</div>
-                  <div className="text-lg font-bold text-gray-900">{maxScore}</div>
-                  <div className="text-xs text-gray-400">points</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Judge Max</div>
-                  <div className="text-lg font-bold text-gray-900">{maxScore}</div>
-                  <div className="text-xs text-gray-400">points</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Maximum</div>
-                  <div className="text-xl font-bold text-emerald-600">{totalMaxScore}</div>
-                  <div className="text-xs text-gray-400">points</div>
+              
+              <div className="flex-1 space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
+                      Final Results Complete
+                    </h3>
+                    <div className="px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold rounded-full shadow-sm">
+                      OFFICIAL
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2 text-base text-emerald-800 leading-relaxed">
+                    <span className="font-medium">Final leaderboard including judge evaluations for top</span>
+                    <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border-2 border-emerald-300 text-emerald-800 px-4 py-2 rounded-full shadow-sm">
+                      <Trophy className="h-4 w-4" />
+                      <span className="font-bold text-lg">{topN}</span>
+                    </div>
+                    <span className="font-medium">participants. Remaining participants ranked by LLM evaluation.</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -66,109 +61,85 @@ export function LeaderboardBanner({
   }
 
   return (
-    <div className="p-6">
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-4">
+    <div className="relative">
+      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200/80 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/20 to-purple-200/20 rounded-full -translate-y-6 translate-x-6 blur-2xl"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-200/20 to-blue-200/20 rounded-full translate-y-4 -translate-x-4 blur-xl"></div>
+        
+        <div className="relative z-10">
+          <div className="flex items-start gap-6">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-5 w-5 text-blue-800" />
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-blue-800">
-                <span>Leaderboard based on LLM scores. Top</span>
-                <span className="inline-flex items-center bg-blue-100 border border-blue-300 text-blue-800 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide">
-                  {topN}
-                </span>
-                <span>participants are being evaluated by judges for final scores.</span>
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                <div className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <Gavel className="h-3 w-3 text-amber-600" />
+              <div className="relative">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Clock className="h-8 w-8 text-white" />
                 </div>
-                <span className="inline-flex items-center bg-amber-50 border border-amber-200 text-amber-800 px-2 py-1 rounded-lg text-xs font-bold uppercase tracking-wide">
-                  In Progress
-                </span>
+                <div className="absolute -bottom-1 -right-1">
+                  <div className="w-6 h-6 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full animate-pulse shadow-md"></div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-3">
-              Maximum Possible Scores
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-              <div className="text-center">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">LLM Max</div>
-                <div className="text-lg font-bold text-gray-900">{maxScore}</div>
-                <div className="text-xs text-gray-400">points</div>
+            
+            <div className="flex-1 space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+                    Preliminary Rankings
+                  </h3>
+                  <div className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold rounded-full shadow-sm">
+                    LIVE
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 text-base text-blue-800 leading-relaxed">
+                  <span className="font-medium">Current leaderboard based on LLM evaluation. Top</span>
+                  <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border-2 border-blue-300 text-blue-800 px-4 py-2 rounded-full shadow-sm">
+                    <Trophy className="h-4 w-4" />
+                    <span className="font-bold text-lg">{topN}</span>
+                  </div>
+                  <span className="font-medium">participants are under judge evaluation.</span>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Judge Max</div>
-                <div className="text-lg font-bold text-gray-900">{maxScore}</div>
-                <div className="text-xs text-gray-400">points</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Maximum</div>
-                <div className="text-xl font-bold text-blue-600">{totalMaxScore}</div>
-                <div className="text-xs text-gray-400">points</div>
+              
+              {/* Progress indicator */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-blue-200/50">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center">
+                        <Gavel className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full animate-bounce"></div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-amber-800">Judge Evaluation</span>
+                        <div className="px-2 py-1 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs font-bold rounded-full shadow-sm animate-pulse">
+                          IN PROGRESS
+                        </div>
+                      </div>
+                      <p className="text-xs text-amber-700 font-medium">Final scores will be available soon</p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress animation */}
+                  <div className="flex-1 flex justify-end">
+                    <div className="flex gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"
+                          style={{ animationDelay: `${i * 0.2}s` }}
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-export function CompetitionHeader({
-  title,
-  totalParticipants,
-  maxScore,
-}: {
-  title: string
-  totalParticipants: number
-  maxScore?: number
-}) {
-  const totalMaxScore = maxScore ? maxScore * 2 : 0
-
-  return (
-    <div className="text-center space-y-4">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-        <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm hover:shadow-md transition-shadow duration-200">
-          <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center">
-            <Users className="h-3 w-3 text-blue-600" />
-          </div>
-          <span className="text-sm font-medium text-gray-700">{totalParticipants} Participants</span>
-        </div>
-      </div>
-      
-      {maxScore && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200 max-w-md mx-auto">
-          <div className="text-xs font-medium text-gray-700 uppercase tracking-wide mb-3 text-center">
-            Maximum Possible Scores
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">LLM Max</div>
-              <div className="text-lg font-bold text-gray-900">{maxScore}</div>
-              <div className="text-xs text-gray-400">points</div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Judge Max</div>
-              <div className="text-lg font-bold text-gray-900">{maxScore}</div>
-              <div className="text-xs text-gray-400">points</div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Total Max</div>
-              <div className="text-xl font-bold text-blue-600">{totalMaxScore}</div>
-              <div className="text-xs text-gray-400">points</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

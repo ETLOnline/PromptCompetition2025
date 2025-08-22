@@ -56,13 +56,7 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
   return (
     <div className="overflow-hidden">
       <div className="p-6">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">{competitionTitle}</h2>
-          <div className="inline-flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1">
-            <span className="text-sm font-medium text-gray-700">Leaderboard</span>
-          </div>
-        </div>
-
+        
         {/* Desktop Table */}
         <div className="hidden md:block">
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
