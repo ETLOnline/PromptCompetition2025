@@ -17,6 +17,12 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
 
   const rubricArray = rubric;
   const systemPrompt = createSystemPrompt(rubricArray);
+  
+  // Log system prompt for verification
+  console.log(`📝 System Prompt (${systemPrompt.length} chars):`);
+  console.log('='.repeat(60));
+  console.log(systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : ''));
+  console.log('='.repeat(60));
 
   // Run all models in parallel with individual configurations
   const results = await Promise.all(
@@ -115,6 +121,12 @@ Prompt to Evaluate:
 Return only the JSON object with scores for each criterion and a brief description.
   `.trim();
 
+  // Log API request details for verification
+  console.log(`🤖 Calling ${model}:`);
+  console.log(`   System Prompt: ${systemPrompt.length} chars`);
+  console.log(`   User Input: ${input.length} chars`);
+  console.log(`   Messages: [system, user]`);
+
   try {
     const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -142,9 +154,11 @@ Return only the JSON object with scores for each criterion and a brief descripti
       throw new Error(`Model ${model} returned empty content`);
     }
 
+    console.log(`✅ ${model} response: ${content.length} chars`);
     return content;
     
   } catch (error: any) {
+    console.error(`❌ ${model} error:`, error.message);
     throw error;
   }
 }
