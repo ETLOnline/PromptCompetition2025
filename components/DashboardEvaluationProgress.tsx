@@ -123,10 +123,10 @@ export default function DashboardEvaluationProgress({
           
           {/* Progress text */}
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-gray-900 transition-all duration-300">
               {progress.evaluatedSubmissions} of {progress.totalSubmissions}
             </span>
-            <span className="text-sm text-gray-500">({progressPercentage}%)</span>
+            <span className="text-sm text-gray-500 transition-all duration-300">({progressPercentage}%)</span>
           </div>
 
           {/* Progress bar */}
@@ -156,7 +156,7 @@ export default function DashboardEvaluationProgress({
           )}
 
           {/* Status badge */}
-          <div className={`px-2 py-1 text-xs font-medium rounded-full ${
+          <div className={`px-2 py-1 text-xs font-medium rounded-full transition-all duration-300 ${
             isRunning ? 'bg-blue-100 text-blue-800' : 
             isCompleted ? 'bg-green-100 text-green-800' :
             isPaused ? 'bg-orange-100 text-orange-800' : 
