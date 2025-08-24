@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export type EvaluationStatus = 'running' | 'paused' | 'completed' | null
 
@@ -25,10 +25,15 @@ export const useEvaluationStatus = (competitionId: string): UseEvaluationStatusR
   const [progress, setProgress] = useState<EvaluationProgress | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasInitialized, setHasInitialized] = useState(false)
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (isInitialFetch = false) => {
     try {
-      setIsLoading(true)
+      // Only show loading on initial fetch, not on subsequent updates
+      if (isInitialFetch) {
+        setIsLoading(true)
+      }
       setError(null)
       
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bulk-evaluate/progress/${competitionId}`)
@@ -38,9 +43,25 @@ export const useEvaluationStatus = (competitionId: string): UseEvaluationStatusR
         const progressData = data.progress
         
         if (progressData) {
-          setProgress(progressData)
-          setEvaluationStatus(progressData.evaluationStatus)
-          setIsEvaluated(progressData.evaluationStatus === 'completed')
+          // For smooth progress updates, debounce non-critical updates
+          if (!isInitialFetch && progressData.evaluationStatus === 'running') {
+            // Clear any existing timeout
+            if (updateTimeoutRef.current) {
+              clearTimeout(updateTimeoutRef.current)
+            }
+            
+            // Debounce progress updates to 500ms for smooth UI
+            updateTimeoutRef.current = setTimeout(() => {
+              setProgress(progressData)
+              setEvaluationStatus(progressData.evaluationStatus)
+              setIsEvaluated(progressData.evaluationStatus === 'completed')
+            }, 500)
+          } else {
+            // Immediate update for status changes and initial load
+            setProgress(progressData)
+            setEvaluationStatus(progressData.evaluationStatus)
+            setIsEvaluated(progressData.evaluationStatus === 'completed')
+          }
         } else {
           setProgress(null)
           setEvaluationStatus(null)
@@ -59,26 +80,39 @@ export const useEvaluationStatus = (competitionId: string): UseEvaluationStatusR
       setEvaluationStatus(null)
       setIsEvaluated(false)
     } finally {
-      setIsLoading(false)
+      if (isInitialFetch) {
+        setIsLoading(false)
+        setHasInitialized(true)
+      }
     }
   }, [competitionId])
 
   const refreshStatus = useCallback(async () => {
-    await fetchStatus()
+    // Don't show loading on manual refresh
+    await fetchStatus(false)
   }, [fetchStatus])
 
   // Initial fetch
   useEffect(() => {
-    fetchStatus()
+    fetchStatus(true)
   }, [fetchStatus])
 
   // Poll for updates every 5 seconds when evaluation is running
   useEffect(() => {
-    if (evaluationStatus === 'running') {
-      const interval = setInterval(fetchStatus, 5000)
+    if (evaluationStatus === 'running' && hasInitialized) {
+      const interval = setInterval(() => fetchStatus(false), 5000)
       return () => clearInterval(interval)
     }
-  }, [evaluationStatus, fetchStatus])
+  }, [evaluationStatus, fetchStatus, hasInitialized])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return {
     evaluationStatus,
