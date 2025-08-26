@@ -96,7 +96,7 @@ export default function Footer() {
               © {currentYear} ETL Online. All rights reserved.
             </p>
             <p className="text-xs text-gray-600 mt-1">
-              All Pakistan Prompt Engineering Competition
+              Powered by Enlight AI
             </p>
           </div>
 

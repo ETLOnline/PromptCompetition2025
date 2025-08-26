@@ -10,7 +10,12 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "All Pakistan Prompt Engineering Competition",
   description: "National competition platform for prompt engineering excellence",
-  generator: 'v0.dev'
+  generator: "EnlightTechAI",
+  icons: {
+    icon: "/favicon.png",                // Standard favicon
+    shortcut: "/favicon.png",            // Fallback
+    apple: "/apple-touch-icon.png",      // iOS homescreen
+  },
 }
 
 export default function RootLayout({
@@ -29,5 +34,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-
