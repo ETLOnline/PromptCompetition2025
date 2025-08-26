@@ -412,7 +412,6 @@ export default function GetChallenges({ competitionId }: { competitionId: string
       </CardContent>
 
       {/* Delete Confirmation Dialog */}
-// Updated Dialog component
 <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
   <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl rounded-xl">
     <DialogHeader>
