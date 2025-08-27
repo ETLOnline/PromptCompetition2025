@@ -180,6 +180,9 @@ export const recoverLocksOnStartup = async (): Promise<void> => {
 
 // Helper function to calculate batch size dynamically for optimal parallel processing
 const calculateBatchSize = (totalSubmissions: number): number => {
+  // For very small competitions, use the actual number of submissions
+  if (totalSubmissions <= 3) return totalSubmissions
+  
   // For parallel processing, we want to balance concurrency with system resources
   if (totalSubmissions <= 20) return 3      // Small competitions: 3 concurrent
   if (totalSubmissions <= 50) return 5     // Medium competitions: 5 concurrent  
@@ -545,6 +548,8 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
     let batchSize = calculateBatchSize(submissions.length)
     let currentBatch = 0
 
+    console.log(`🔍 Debug: Starting evaluation with ${submissions.length} submissions, batch size: ${batchSize}`)
+
     // Process submissions in parallel batches for better performance
     const processBatch = async (batchSubmissions: any[]) => {
       const batchPromises = batchSubmissions.map(async (docSnap) => {
@@ -626,7 +631,7 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       }
 
       const batch = submissions.slice(i, i + batchSize)
-      console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1}: ${batch.length} submissions`)
+      console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1}: ${batch.length} submissions (i=${i}, batchSize=${batchSize})`)
       
       const batchResults = await processBatch(batch)
       
@@ -651,6 +656,18 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       // Small delay between batches to avoid overwhelming the system
       if (i + batchSize < submissions.length) {
         await new Promise((resolve) => setTimeout(resolve, 200))
+      }
+    }
+
+    // Safety check: If no batches were processed (edge case), process at least one submission
+    if (evaluatedCount === 0 && submissions.length > 0) {
+      console.log(`⚠️ No batches processed, processing first submission directly`)
+      const firstSubmission = submissions[0]
+      const result = await processBatch([firstSubmission])
+      
+      if (result[0]?.status === 'success') {
+        evaluatedCount = 1
+        console.log(`✅ First submission processed successfully`)
       }
     }
 
@@ -729,5 +746,4 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
     await releaseLock(competitionId)
   }
 }
-
 export default router

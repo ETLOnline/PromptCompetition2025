@@ -17,7 +17,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 // Competition ID
-const COMPETITION_ID = 'yPIgKL2iQ6KRNSfy62Wm';
+const COMPETITION_ID = '5Nuh3NXYgYS2p7c2nxtg';
 
 // Hardcoded user/participant IDs
 const USER_IDS = [
@@ -92,8 +92,7 @@ const USER_IDS = [
 
 // Hardcoded challenge IDs
 const CHALLENGE_IDS = [
-  '01', '02', '03', '04', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16',
-  '17', '18', '19', '20', '21', '22', '23', '24', '25', '26',  '27', '28', '29', '30',
+  '01', '02', '03', '04', '07', '08', '09'
   // '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44',
   // '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56'
 ];
@@ -636,12 +635,13 @@ function generateSubmission(userId, challengeId) {
     promptText: getRandomPrompt(performanceType), // main variation
     submissionTime: timestamp,
     status: 'pending',
-    submissionId
+    submissionId,
+    finalScore: null,
   };
 }
 
 // Generate multiple submissions
-async function generateTestSubmissions(total = 500) {
+async function generateTestSubmissions(total = 50) {
   try {
     for (let i = 0; i < total; i++) {
       const userId = USER_IDS[i % USER_IDS.length];
@@ -723,4 +723,4 @@ async function createParticipants() {
 // Run the function
 // createChallengesFromArray([...CHALLENGES, ...ADDITIONAL_CHALLENGES]);
 
-// generateTestSubmissions();
+generateTestSubmissions();
