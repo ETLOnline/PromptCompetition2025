@@ -8,12 +8,12 @@ import { AuthProvider } from "@/components/auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "All Pakistan Prompt Engineering Competition",
+  title: "Prompt Engineering Competition",
   description: "National competition platform for prompt engineering excellence",
   generator: "EnlightTechAI",
   icons: {
-    icon: "/favicon.png",                // Standard favicon
-    shortcut: "/favicon.png",            // Fallback
+    icon: "/favicon.PNG",                // Standard favicon
+    shortcut: "/favicon.PNG",            // Fallback
     apple: "/apple-touch-icon.png",      // iOS homescreen
   },
 }

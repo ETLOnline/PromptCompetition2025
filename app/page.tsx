@@ -506,7 +506,7 @@ export default function HomePage() {
           {
             icon: Mail,
             title: "Email",
-            details: ["info@etlonline.org", "Perfect for detailed inquiries"],
+            details: ["info@etlonline.org","etl1competition@gmail.com", "Perfect for detailed inquiries"],
             bgColor: "bg-blue-100",
             iconColor: "text-blue-600",
           },

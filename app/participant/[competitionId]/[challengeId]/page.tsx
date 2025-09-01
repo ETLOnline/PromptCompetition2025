@@ -66,6 +66,7 @@ export default function ChallengePage() {
   
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
+  const [isCompetitionActive, setIsCompetitionActive] = useState(false)
 
 
   useEffect(() => {
@@ -135,6 +136,8 @@ export default function ChallengePage() {
       if (competitionDoc.exists()) {
         const data = competitionDoc.data()
         const endDeadline = data.endDeadline || null
+        const isCompetitionActive= data.isActive || false
+        setIsCompetitionActive(isCompetitionActive)
 
         if (endDeadline) {
           // Ensure proper Date object
@@ -424,7 +427,7 @@ export default function ChallengePage() {
                       </div>
                       <Button
                         onClick={() => setIsConfirmModalOpen(true)}
-                        disabled={!prompt.trim() || isCompetitionEnded || loading}   // ✅ added challenge.isCompetitionLocked here
+                        disabled={!prompt.trim() || isCompetitionEnded || loading || !isCompetitionActive}   // ✅ added challenge.isCompetitionLocked here
                         className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Send className="h-4 w-4 mr-2" />

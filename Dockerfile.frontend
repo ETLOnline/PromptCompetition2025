@@ -63,22 +63,10 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# Set NODE_ENV to production (no sensitive env vars here)
-ENV NODE_ENV=production
-
-# Copy built application (env vars are baked into the build, not the runtime)
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-FROM node:18-alpine AS runner
-
-WORKDIR /app
-
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
-# Copy built application
+# Copy built application and public files
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./

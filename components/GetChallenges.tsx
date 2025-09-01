@@ -64,7 +64,9 @@ export default function GetChallenges({ competitionId }: { competitionId: string
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showLockModal, setShowLockModal] = useState(false)
   const [competitionStartTime, setCompetitionStartTime] = useState<Date | null>(null)
+  const [competitionLockStatus, setCompetitionLock] = useState<Date | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
   const [expandedChallenges, setExpandedChallenges] = useState<Set<string>>(new Set())
@@ -96,6 +98,9 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         const compSnap = await getDoc(compDocRef)
         if (compSnap.exists()) {
           const startTimestamp = compSnap.data()?.startDeadline
+          const competitionlocked = compSnap.data()?.isLocked
+          setCompetitionLock(competitionlocked)
+          // console.log("Competition Lock Status:", competitionlocked)
           if (startTimestamp) {
             const startDate = new Date(startTimestamp) // ← simple conversion
             setCompetitionStartTime(startDate)
@@ -202,7 +207,12 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             onClick={() => {
               if (competitionStartTime && competitionStartTime < new Date()) {
                 setShowCreateModal(true)
-              } else {
+              } 
+              else if (competitionLockStatus) {
+                setShowLockModal(true)
+              }
+              
+              else {
                 router.push(`/admin/competitions/${competitionId}/challenges/new`)
               }
             }}
@@ -528,6 +538,30 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             <Button
               className="bg-gray-900 text-white hover:bg-gray-800 font-semibold"
               onClick={() => setShowCreateModal(false)}
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLockModal} onOpenChange={setShowLockModal}>
+        <DialogContent className="bg-white border border-gray-200 text-gray-900 shadow-xl rounded-xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-amber-50">
+                <AlertCircle className="w-6 h-6 text-amber-600" />
+              </div>
+              <DialogTitle className="text-xl font-bold text-gray-900">Challenge Creation Not Allowed</DialogTitle>
+            </div>
+            <DialogDescription className="text-gray-700 font-medium">
+              You can't create a new challenge because the competition is locked.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              className="bg-gray-900 text-white hover:bg-gray-800 font-semibold"
+              onClick={() => setShowLockModal(false)}
             >
               Got it
             </Button>

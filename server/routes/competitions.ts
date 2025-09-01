@@ -50,6 +50,7 @@ router.post(
         ChallengeCount: 0,
         AllJudgeEvaluated: false,
         hasFinalLeaderboard: false,
+        generateleaderboard: false,
         createdAt: req.body.createdAt || new Date().toISOString(),
         createdBy: {
           uid: req.user?.uid || "",
@@ -87,9 +88,9 @@ router.patch(
       // Prevent editing ended competitions
       const now = new Date();
       const endDeadline = new Date(data.endDeadline);
-      if (now > endDeadline) {
-        return res.status(403).json({ error: "This competition has ended and cannot be edited." });
-      }
+      // if (now > endDeadline) {
+      //   return res.status(403).json({ error: "This competition has ended and cannot be edited." });
+      // }
 
       await ref.update(updateData);
       return res.status(200).json({ message: "Competition updated" });
