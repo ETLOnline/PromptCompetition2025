@@ -540,10 +540,13 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       }
     }
 
+    // fetch competition-level systemPrompt once
+    const competitionDoc = await db.collection('competitions').doc(competitionId).get();
+    const competitionSystemPrompt = competitionDoc.exists ? competitionDoc.data()?.systemPrompt ?? null : null;
+
     evaluatedCount = await getCurrentEvaluatedCount(competitionId)
     skippedCount = 0
     let batchSize = calculateBatchSize(submissions.length)
-    let currentBatch = 0
 
     // Process submissions in parallel batches for better performance
     const processBatch = async (batchSubmissions: any[]) => {
@@ -572,7 +575,7 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
         const problemStatement = cfg.problemStatement ?? undefined
 
         try {
-          const result = await runJudges(promptText, rubricData, problemStatement)
+          const result = await runJudges(promptText, rubricData, problemStatement, competitionSystemPrompt)
           const { scores: llmScores, average } = result || {}
 
           if (!llmScores || Object.keys(llmScores).length === 0) {

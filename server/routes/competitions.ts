@@ -30,10 +30,11 @@ router.post(
       startDeadline,
       endDeadline,
       location,
+      systemPrompt,
       prizeMoney
     } = req.body;
 
-    if (!title || !description || !startDeadline || !endDeadline || !location || !prizeMoney) {
+    if (!title || !description || !startDeadline || !endDeadline || !location || !prizeMoney || !systemPrompt) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -41,6 +42,7 @@ router.post(
       const newDoc = await db.collection("competitions").add({
         title,
         description,
+        systemPrompt,
         startDeadline,
         endDeadline,
         location,
@@ -80,15 +82,6 @@ router.patch(
 
       if (!snap.exists) {
         return res.status(404).json({ error: "Competition not found" });
-      }
-
-      const data = snap.data() as FirebaseFirestore.DocumentData;
-
-      // Prevent editing ended competitions
-      const now = new Date();
-      const endDeadline = new Date(data.endDeadline);
-      if (now > endDeadline) {
-        return res.status(403).json({ error: "This competition has ended and cannot be edited." });
       }
 
       await ref.update(updateData);

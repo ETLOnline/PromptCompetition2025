@@ -7,7 +7,9 @@ import { LLM_CONFIG } from "../config/llm.js";
 const MODELS = LLM_CONFIG.models;
 
 // 4. Main exported function
-export async function runJudges(prompt: string, rubric: any, problemStatement?: string): Promise<EvaluationResult> {
+export async function runJudges(prompt: string, 
+  rubric: any, problemStatement?: string,
+  competitionSystemPrompt?: string): Promise<EvaluationResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY environment variable is required");
@@ -16,7 +18,8 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
   console.log(`🔄 Starting evaluation for prompt (${prompt.length} chars)`);
 
   const rubricArray = rubric;
-  const systemPrompt = createSystemPrompt(rubricArray);
+  const DEFAULT_SYSTEM_PROMPT = createSystemPrompt(rubricArray)
+  const systemPrompt =  competitionSystemPrompt ?? DEFAULT_SYSTEM_PROMPT;
   
   // Log system prompt for verification
   console.log(`📝 System Prompt (${systemPrompt.length} chars):`);
@@ -36,63 +39,118 @@ export async function runJudges(prompt: string, rubric: any, problemStatement?: 
 
 // 5. Private helper functions (organized by purpose)
 
-// - Evaluation orchestration
+// - Evaluation orchestration 
 async function evaluateWithRetry(
-  model: string, 
-  prompt: string, 
-  systemPrompt: string, 
-  rubricArray: any[], 
+  model: string,
+  prompt: string,
+  systemPrompt: string,
+  rubricArray: any[],
   problemStatement: string,
   apiKey: string,
   maxTokens: number,
   temperature: number
 ): Promise<ModelEvaluationResult | null> {
-  
+
+  let lastRawResponse: string | null = null;
+  let lastParsed: any | null = null;
+
   for (let attempt = 1; attempt <= LLM_CONFIG.retryAttempts; attempt++) {
     try {
       if (attempt > 1) {
         await new Promise(res => setTimeout(res, LLM_CONFIG.retryDelay));
       }
 
-      const response = await callLLM(model, systemPrompt, prompt, problemStatement, apiKey, rubricArray, maxTokens, temperature);
-      
-      const parsedResponse = parseLLMResponse(response);
-      
-      const evaluation = processEvaluationResults(parsedResponse, rubricArray);
-      
-      if (evaluation.isValid) {
-        const finalScore = calculateFinalScore(evaluation.scores, rubricArray);
-        return {
-          model,
-          scores: evaluation.scores,
-          description: parsedResponse.description || "No description provided",
-          finalScore
-        };
+      const rawResponse = await callLLM(
+        model,
+        systemPrompt,
+        prompt,
+        problemStatement,
+        apiKey,
+        rubricArray,
+        maxTokens,
+        temperature
+      );
+      lastRawResponse = rawResponse;
+
+      try {
+        lastParsed = parseLLMResponse(rawResponse);
+      } catch (parseErr) {
+        console.warn(`⚠️ ${model} parse error (attempt ${attempt}): ${String(parseErr)}`);
+        continue; // let retries handle it
       }
-      
-      if (attempt === LLM_CONFIG.retryAttempts) {
-        logEvaluationFailure(model, parsedResponse, rubricArray);
+
+      if (lastParsed) {
+        const evaluation = processEvaluationResults(lastParsed, rubricArray);
+        if (evaluation.isValid) {
+          const finalScore = calculateFinalScore(evaluation.scores, rubricArray);
+          return {
+            model,
+            scores: evaluation.scores,
+            description: lastParsed.description || "No description provided",
+            finalScore
+          };
+        } else {
+          console.warn(`⚠️ ${model} returned invalid evaluation (attempt ${attempt})`);
+        }
       }
-      
+
     } catch (error: any) {
       if (error.response) {
-        if (error.response.status === 400) {
+        const status = error.response.status;
+        if (status === 400) {
           throw new Error(`Bad request for ${model}: ${error.response.data?.error?.message || 'Invalid request format'}`);
-        } else if (error.response.status === 401) {
+        } else if (status === 401) {
           throw new Error(`Authentication failed for ${model}: Check your API key`);
-        } else if (error.response.status === 429) {
-          throw new Error(`Rate limit exceeded for ${model}: Try again later`);
-        } else if (error.response.status === 500) {
-          throw new Error(`Server error for ${model}: ${error.response.data?.error || 'Internal server error'}`);
+        } else if (status === 429 || status === 500) {
+          console.warn(`⚠️ ${model} retriable error ${status} (attempt ${attempt}): retrying...`);
+          continue;
         }
       } else if (error.code === 'ECONNABORTED') {
-        throw new Error(`Request timeout for ${model}: ${LLM_CONFIG.requestTimeout}ms exceeded`);
+        console.warn(`⚠️ ${model} request timeout (attempt ${attempt}): retrying...`);
+        continue;
+      } else {
+        console.error(`❌ Unexpected error for ${model}:`, error?.message ?? error);
       }
     }
   }
-  
+
+  // --- If we got here, retries are exhausted ---
+  console.warn(`⚠️ ${model} failed after ${LLM_CONFIG.retryAttempts} attempts.`);
+
+  if (lastRawResponse && lastRawResponse.trim()) {
+    try {
+      console.warn(`🔧 Attempting repair for ${model}.......`);
+      const repaired = await attemptRepair(lastRawResponse, rubricArray, /*attempts=*/2);
+
+      if (repaired) {
+        const repairedEval = processEvaluationResults(repaired, rubricArray);
+        if (repairedEval.isValid) {
+          const finalScore = calculateFinalScore(repairedEval.scores, rubricArray);
+          return {
+            model,
+            scores: repairedEval.scores,
+            description: repaired.description || "No description provided",
+            finalScore
+          };
+        }
+      }
+      console.warn(`⚠️ Repair for ${model} failed or returned invalid output`);
+    } catch (repairErr: any) {
+      console.error(`❌ Repair step crashed for ${model}:`, repairErr?.message ?? repairErr);
+    }
+  } else {
+    console.warn(`⚠️ Skipping repair for ${model}: no usable raw response`);
+  }
+
+  try {
+    logEvaluationFailure(model, lastParsed ?? {}, rubricArray);
+  } catch (logErr) {
+    console.warn(`⚠️ logEvaluationFailure error:`, logErr);
+  }
+
   return null;
 }
+
 
 // - Response processing
 async function callLLM(
@@ -105,20 +163,34 @@ async function callLLM(
   maxTokens: number,
   temperature: number
 ): Promise<any> {
+
+  const escapedJsonSchema = rubricArray
+    .map(r => `"${r.name.replace(/"/g, '\\"')}": <integer 0-100>`)
+    .join(", ");
+
   const input = `
-Evaluate the following student's prompt according to the PROBLEM STATEMENT and the rubric below.
-Score each criterion from 0-100 (integers only).
+    Evaluate the following student's prompt according to the PROBLEM STATEMENT and the rubric below.
+    Score each criterion from 0-100 (integers only).
 
-PROBLEM STATEMENT (authoritative brief):
-${problemStatement}
+    PROBLEM STATEMENT (authoritative brief):
+    ${problemStatement}
 
-Rubric:
-${rubricArray.map(item => `- ${item.name} : ${item.description}`).join("\n")}
+    Rubric:
+    ${rubricArray.map(item => `- ${item.name} : ${item.description}`).join("\n")}
 
-Prompt to Evaluate:
-"""${prompt}"""
+    Prompt to Evaluate:
+    """${prompt}"""
 
-Return only the JSON object with scores for each criterion and a brief description.
+    <output_format>
+    Your final output MUST be a single, valid JSON object and nothing else.
+    Do not include any text, explanations, or markdown formatting before or after the JSON.
+
+    The JSON structure is:
+    {
+      ${escapedJsonSchema},
+      "description": "< the number of sentences stated in the prompt above, neutral justification for your scores, summarizing the submission's strengths and weaknesses.>"
+    }
+    </output_format>
   `.trim();
 
   // Log API request details for verification
@@ -154,7 +226,7 @@ Return only the JSON object with scores for each criterion and a brief descripti
       throw new Error(`Model ${model} returned empty content`);
     }
 
-    console.log(`✅ ${model} response: ${content.length} chars`);
+    console.log(`✅ ${model} response: ${content.length} chars ${content.slice(0, 80)}`);
     return content;
     
   } catch (error: any) {
@@ -211,7 +283,12 @@ function findScoreForCriterion(parsedResponse: any, criterionName: string): numb
   if (partialMatch) {
     return parsedResponse[partialMatch];
   }
-  
+
+  // Strategy 5: Nested score property
+  if (parsedResponse["scores"][criterionName] !== undefined) {
+      return parsedResponse["scores"][criterionName];
+  }
+
   return null;
 }
 
@@ -278,7 +355,7 @@ function logEvaluationFailure(
     )
   );
   
-  console.warn(`⚠️ ${model} evaluation failed: ${missingCriteria.length} missing criteria`);
+  console.warn(`⚠️ ${model} evaluation failed: ${missingCriteria.length} missing criteria ${missingCriteria}`);
 }
 
 function processAllResults(results: (ModelEvaluationResult | null)[]): EvaluationResult {
@@ -346,8 +423,117 @@ Do not include any text, explanations, or markdown formatting before or after th
 The JSON structure is:
 {
   ${escapedJsonSchema},
-  "description": "<A 1-2 sentence, neutral justification for your scores, summarizing the submission's strengths and weaknesses.>"
+  "description": "<A 3-5 sentence, neutral justification for your scores, summarizing the submission's strengths and weaknesses.>"
 }
 </output_format>
 `.trim();
+}
+
+
+
+// - Repair to the correct struc
+async function attemptRepair(rawOutput: string, rubricArray: any[], attempts = 2): Promise<any | null> {
+  const { model, maxTokens, temperature } = LLM_CONFIG.repairModel;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY environment variable is required for repair LLM");
+  }
+
+  const repairPrompt = `
+    You will be given some text that was intended to be a valid JSON evaluation result but may include extra text, Markdown fences, comments, trailing commas, or small formatting errors.
+
+    Your task: OUTPUT ONLY a single valid JSON object that matches the schema below. Fix **only structural/formatting issues** needed to make the JSON valid. Do NOT change the meaning of any values or reword descriptions. If you cannot confidently repair without inventing or altering content, return a minimal error object: {"_repair_error": "<short reason>"}.
+
+    Schema:
+    {
+      ${rubricArray.map(r => `"${r.name}": <number>`).join(", ")},
+      "description": "<string justification for the scores>"
+    }
+
+    Rules (must follow):
+    1. Preserve all keys and values exactly as provided. Do not alter text semantics.
+    2. Allowed minimal conversions:
+      - Convert numeric strings like "85" → 85 when needed so that numbers are numbers.
+      - Remove comments (e.g., // ...) and trailing commas.
+      - Replace single quotes with double quotes where required for valid JSON.
+    3. Do NOT add, remove, or rephrase the description text. Do NOT change score values except for harmless type conversion.
+    4. If multiple JSON objects appear, attempt to parse the first valid JSON object. If the first is unrecoverable and a later one is clearly valid, use the later one.
+    5. If keys are duplicated/conflicting, prefer the first occurrence.
+    6. If the input is too ambiguous to repair safely, return exactly: {"_repair_error": "<brief reason>"} (no other text).
+    7. Output only the final JSON object — no explanations, no markdown fences, no commentary.
+
+    Examples (input → output):
+
+    INPUT:
+    Here is the result:
+    {
+      {
+        "Clarity": "95",
+        "Creativity": 105, 
+      },
+      "description": "A clear submission."
+    }
+    OUTPUT:
+    {
+      {
+      "Clarity": 95,
+      "Creativity": 105
+      },
+      "description": "A clear submission."
+    }
+
+    INPUT:
+    Result: { 'scores': { 'Accuracy': '80', 'Depth': '90' }, 'description': 'Good.' } Extra notes.
+    OUTPUT:
+    {
+      {
+      "Accuracy": 80,
+      "Depth": 90
+      },
+      "description": "Good."
+    }
+
+    Text to repair:
+    """${rawOutput}"""
+  `.trim();
+
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model,
+          messages: [
+            { role: "system", content: "You are a strict JSON repair assistant." },
+            { role: "user", content: repairPrompt }
+          ],
+          max_tokens: maxTokens,
+          temperature
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            ...LLM_CONFIG.headers
+          },
+          timeout: LLM_CONFIG.requestTimeout
+        }
+      );
+
+      const content = res?.data?.choices?.[0]?.message?.content?.trim();
+      if (!content) continue;
+
+      try {
+        const parsed = parseLLMResponse(content);
+        return parsed; // return repaired JSON
+      } catch {
+        console.warn(`⚠️ Repair attempt ${i + 1} failed to parse JSON`);
+      }
+    } catch (err: any) {
+      console.error(`❌ Repair model error (attempt ${i + 1}):`, err.message);
+    }
+  }
+
+  console.warn("⚠️ Repair failed after all attempts");
+  return null;
 }
