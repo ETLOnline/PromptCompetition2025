@@ -193,11 +193,6 @@ async function callLLM(
     </output_format>
   `.trim();
 
-  // Log API request details for verification
-  console.log(`🤖 Calling ${model}:`);
-  console.log(`   System Prompt: ${systemPrompt.length} chars`);
-  console.log(`   User Input: ${input.length} chars`);
-  console.log(`   Messages: [system, user]`);
 
   try {
     const res = await axios.post(
