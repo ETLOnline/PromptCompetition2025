@@ -47,11 +47,6 @@ export function ChallengeHeader({ challenge, isLoading, progressStats }: Challen
             <div className="prose prose-sm max-w-none text-gray-700">
               <p>{challenge.problemStatement}</p>
             </div>
-            {challenge.guidelines && (
-              <div className="text-sm text-gray-600">
-                <strong>Guidelines:</strong> {challenge.guidelines}
-              </div>
-            )}
           </div>
           <div className="flex gap-2 ml-4">
             <Badge variant="outline" className="gap-1">

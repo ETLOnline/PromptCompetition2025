@@ -197,14 +197,6 @@ export default function ChallengePage() {
         `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${submission.id}/${userUID}`
       )
 
-      // fetch("/api/debugger", {
-      //   method: "POST",
-      //   body: JSON.stringify({ message: `object existingScore: ${JSON.stringify(existingScore)}` }),
-      //   headers: {
-      //       "Content-Type": "application/json",
-      //   },
-      // })
-
       if (existingScore) {
         setScoreFormData(existingScore)
       } else {

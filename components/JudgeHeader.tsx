@@ -86,20 +86,11 @@ export default function JudgeHeader() {
 
                 {/* Title (Conditional internal navigation) */}
                 <div className="flex flex-col">
-                {competitionId ? (
-                    <h1
-                    onClick={() =>
-                        router.push(`/judge/${competitionId}`)
-                    }
+                  <h1 onClick={() => router.push(`/judge/${competitionId}`)}
                     className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
-                    >
-                    Judge Dashboard
-                    </h1>
-                ) : (
-                    <h1 className="text-xl font-semibold text-gray-900 leading-tight">
-                    Admin Dashboard
-                    </h1>
-                )}
+                  >
+                  Judge Dashboard
+                  </h1>
 
                 {competitionId && (
                     loading ? (
