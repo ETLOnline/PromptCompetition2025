@@ -32,6 +32,7 @@ export default function CreateCompetitionModal({
     startTime: "",
     endTime: "",
     location: "online",
+    systemPrompt: "", 
   })
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -44,9 +45,9 @@ export default function CreateCompetitionModal({
     e.preventDefault()
     setFormError(null)
 
-    const { title, description, prizeMoney, startTime, endTime, location } = formData
+    const { title, description, prizeMoney, startTime, endTime, location, systemPrompt } = formData
 
-    if (!title || !description || !prizeMoney || !startTime || !endTime || !location) {
+    if (!title || !description || !prizeMoney || !startTime || !endTime || !location || !systemPrompt) {
       setFormError("All fields are required.")
       return
     }
@@ -72,6 +73,9 @@ export default function CreateCompetitionModal({
     }
 
     try {
+
+      console.log("Prompt", systemPrompt)
+      
       const createData: CreateCompetitionData = {
         title,
         description,
@@ -80,8 +84,10 @@ export default function CreateCompetitionModal({
         endDeadline: endDateTime.toISOString(),
         createdAt: new Date().toISOString(),
         location,
+        systemPrompt,       
         ChallengeCount: 0,
       }
+
 
       await onSubmit(createData)
 
@@ -93,6 +99,7 @@ export default function CreateCompetitionModal({
         startTime: "",
         endTime: "",
         location: "online",
+        systemPrompt: "",
       })
       onClose()
     } catch (error) {
@@ -109,6 +116,7 @@ export default function CreateCompetitionModal({
       startTime: "",
       endTime: "",
       location: "online",
+      systemPrompt: "",
     })
     setFormError(null)
     onClose()
@@ -116,7 +124,7 @@ export default function CreateCompetitionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-0 shadow-2xl max-w-2xl">
+      <DialogContent className="bg-white border-0 shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
@@ -156,6 +164,23 @@ export default function CreateCompetitionModal({
                 placeholder="Describe what this competition is about, its goals, and what participants can expect..."
               />
             </div>
+
+            <div>
+              <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 mb-2 block">
+                System Prompt
+              </Label>
+              <p className="text-s italic text-gray-600 mb-2">
+                Important: Do not include output format here. Re-writing it could cause errors.
+              </p>
+              <Textarea
+                id="systemPrompt"
+                value={formData.systemPrompt}
+                onChange={(e) => handleFormChange("systemPrompt", e.target.value)}
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 font-mono text-sm min-h-[300px] max-h-[500px] overflow-y-auto resize-y"
+                placeholder="write the base system instruction or system prompt here..."
+              />
+            </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

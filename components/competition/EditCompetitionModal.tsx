@@ -40,6 +40,7 @@ export default function EditCompetitionModal({
     prizeMoney: "",
     isActive: false,
     isLocked: false,
+    systemPrompt: "",
   })
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [editFormError, setEditFormError] = useState<string | null>(null)
@@ -68,6 +69,7 @@ export default function EditCompetitionModal({
         prizeMoney: competition.prizeMoney || "",
         isActive: competition.isActive ?? false,
         isLocked: competition.isLocked ?? false,
+        systemPrompt: competition.systemPrompt || "",
       })
     }
   }, [competition, isOpen])
@@ -75,6 +77,8 @@ export default function EditCompetitionModal({
   const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
     const checked = (e.target as HTMLInputElement).checked
+
+    console.log(e)
 
     setEditFormData((prev) => ({
       ...prev,
@@ -191,6 +195,23 @@ export default function EditCompetitionModal({
                     rows={4}
                     required
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 mb-2 block">
+                    System Prompt
+                  </Label>
+                  <p className="text-s italic text-gray-600 mb-2">
+                    Important: Do not include output format here. Re-writing it could cause errors.
+                  </p>
+                  <Textarea
+                    id="systemPrompt"
+                    name="systemPrompt"  
+                    value={editFormData.systemPrompt}
+                    onChange={handleEditFormChange}
+                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 font-mono text-sm min-h-[300px] max-h-[500px] overflow-y-auto resize-y"
+                    placeholder="write the base system instruction or system prompt here..."
                   />
                 </div>
 
