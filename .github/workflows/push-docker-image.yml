@@ -1,18 +1,11 @@
 # .github/workflows/deploy.yml
 
-name: Build and Push Container Images to ACR
+name: Build and Push Container Images to ACR (Admin Auth)
 
-# This workflow runs on any push to the 'main' branch
 on:
   push:
     branches: [ main ]
 
-# Permissions are required for the OIDC token exchange
-permissions:
-  id-token: write
-  contents: read
-
-# Environment variables. These are using the names you provided.
 env:
   ACR_NAME: "etlonline"
   FRONTEND_IMAGE_NAME: "prompt-competition-2025-frontend"
@@ -25,21 +18,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Log in to Azure with Client Secret
-      uses: azure/login@v1
-      with:
-        creds: |
-          {
-            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-          }
-          
     - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v1
+      uses: docker/login-action@v3
       with:
-        login-server: ${{ env.ACR_NAME }}.azurecr.io
+        registry: ${{ env.ACR_NAME }}.azurecr.io
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
 
     - name: Build and push frontend image to ACR
       uses: docker/build-push-action@v5
@@ -60,5 +44,3 @@ jobs:
         tags: |
           ${{ env.ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
           ${{ env.ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:latest
-
-# End of workflow. No deployment steps are included as requested.
