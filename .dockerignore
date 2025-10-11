@@ -8,3 +8,5 @@ server/
 *.log
 .env*
 .vscode
+.next
+next-env.d.ts
