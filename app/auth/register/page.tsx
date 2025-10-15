@@ -10,6 +10,8 @@ import { auth } from "@/lib/firebase"
 import { fetchWithAuth } from "@/lib/api"
 
 export default function RegisterPage() {
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [institution, setInstitution] = useState("")
@@ -304,15 +306,56 @@ const validateInstitution = (inst: string): string | null => {
     }
 
     setLoading(true)
+    // try {
+    //   // Use trimmed values for signup - FIREBASE LOGIC RESTORED
+    //   await signUp(email, password, trimmedName, trimmedInst)
+    //   setIsRegistered(true)
+    // } catch (err: any) {
+    //   setError(err.message || "Failed to sign up. Please check your details.")
+    // } finally {
+    //   setLoading(false)
+    // }
+
     try {
-      // Use trimmed values for signup - FIREBASE LOGIC RESTORED
-      await signUp(email, password, trimmedName, trimmedInst)
-      setIsRegistered(true)
-    } catch (err: any) {
-      setError(err.message || "Failed to sign up. Please check your details.")
-    } finally {
-      setLoading(false)
-    }
+        await signUp(email, password, trimmedName, trimmedInst);
+        setIsRegistered(true);
+      } catch (err: any) {
+        console.log("Error during signup:", err.code, err.message);
+        let errorMessage = err.message || "Failed to sign up. Please check your details.";
+
+        // Handle Firebase-specific error codes for better UX
+        switch (err.code) {
+          case "auth/email-already-in-use":
+            errorMessage = "";
+            setEmailError("This email is already registered. Please sign in instead.")
+            break;
+          case "auth/invalid-email":
+            errorMessage = "Invalid email address format.";
+            break;
+          case "auth/weak-password":
+            errorMessage = "Password is too weak. It should be at least 6 characters.";
+            break;
+          case "auth/operation-not-allowed":
+            errorMessage = "Email/password accounts are not enabled. Please contact support.";
+            break;
+          case "auth/missing-password":
+            errorMessage = "Please enter a password.";
+            break;
+          default:
+            // fallback to any custom backend error message if applicable
+            if (typeof err.message === "string" && err.message.startsWith("Firebase:")) {
+              errorMessage = "An unexpected error occurred. Please try again.";
+            } else {
+              errorMessage = err.message || "Failed to sign up. Please try again.";
+            }
+            break;
+        }
+
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+
   }
 
   const handleGoogleSignIn = async () => {
@@ -427,23 +470,27 @@ const validateInstitution = (inst: string): string | null => {
 
                   {/* Email Input */}
                   <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                      Email
-                    </label>
+                    <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                       <input
                         id="email"
-                        name="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        required
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${
+                          emailError ? "border-red-500 focus:border-red-500" : "border-slate-300 focus:border-blue-500"
+                        }`}
                         placeholder="example@email.com"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                        disabled={loading || googleLoading}
+                        disabled={loading}
                       />
                     </div>
+                    {emailError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <X className="h-3 w-3" />
+                        {emailError}
+                      </p>
+                    )}
                   </div>
 
                   {/* Institution Input */}
@@ -764,6 +811,8 @@ const validateInstitution = (inst: string): string | null => {
                     </Link>
                   </p>
                 </div>
+
+                
               </>
             )}
           </div>
