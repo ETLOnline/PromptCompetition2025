@@ -1,8 +1,9 @@
 import { authenticateToken, AuthenticatedRequest } from "../utils/auth.js"
-
+import { db,auth } from "../config/firebase-admin.js";
 import express from "express";
 import { admin } from "../config/firebase-admin.js";
 import { transporter } from "../config/email.js";
+
 // import rateLimit from "express-rate-limit";
 
 const router = express.Router()
@@ -26,7 +27,41 @@ router.post("/google-signin", authenticateToken, (req: AuthenticatedRequest, res
     res.json({ role, redirectUrl })
 })
 
+router.post("/google-signup", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const decodedUser = req.user;
+    if (!decodedUser) return res.status(401).json({ error: "Unauthorized" });
 
+    // Fetch full user info from Firebase Auth (to get displayName)
+    const userRecord = await auth.getUser(decodedUser.uid);
+
+    const userRef = db.collection("users").doc(decodedUser.uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      await userRef.set({
+        fullName: userRecord.displayName || "",
+        email: decodedUser.email || userRecord.email || "",
+        institution: "",
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    const role = decodedUser.role || "user";
+
+    const redirectUrl =
+      role === "admin" || role === "superadmin"
+        ? "/admin/select-competition"
+        : role === "judge"
+        ? "/judge"
+        : "/participant";
+
+    res.status(200).json({ role, redirectUrl });
+  } catch (error) {
+    console.error("Error in Google signup:", error);
+    res.status(500).json({ error: "Failed to create user" });
+  }
+});
 
 // Rate limiter to prevent abuse
 // const resetLimiter = rateLimit({
@@ -91,6 +126,16 @@ router.post("/login", authenticateToken, async (req: AuthenticatedRequest, res) 
         const user = req.user
         if (!user) return res.status(401).json({ error: "Unauthorized" })
 
+        // Get user from Firebase Auth to check emailVerified
+        const authUser = await admin.auth().getUser(user.uid)
+        // console.log("authUser emailVerified:", authUser.emailVerified)
+
+        if (!authUser.emailVerified) {
+            return res.status(403).json({ 
+                error: "Email not verified"
+            })
+        }
+
         // Determine redirect URL based on role
         const role = user.role || "participant"
         const redirectUrl =
@@ -106,6 +151,4 @@ router.post("/login", authenticateToken, async (req: AuthenticatedRequest, res) 
         res.status(500).json({ error: "Failed to login" })
     }
 })
-
-
 export default router

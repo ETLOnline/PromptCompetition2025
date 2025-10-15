@@ -10,3 +10,5 @@ server/
 .vscode
 .next
 next-env.d.ts
+serviceAccountKey.json
+firebase-debug.log

@@ -57,25 +57,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, institution: string) => {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-  // Send verification email
-  await sendEmailVerification(user);
+    // Send verification email
+    await sendEmailVerification(user);
 
-  // Create user document with isVerified flag
-  await setDoc(doc(collection(db, "users"), user.uid), {
-    fullName,
-    email,
-    institution,
-    createdAt: new Date().toISOString(),
-    isVerified: false, // Track verification status
-  });
-};
+    // Create user document with isVerified flag
+    await setDoc(doc(collection(db, "users"), user.uid), {
+      fullName,
+      email,
+      institution,
+      createdAt: new Date().toISOString()
+    });
+  };
 
   const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    // console.log("user verification status", user.emailVerified)
 
     if (!user.emailVerified) {
       await auth.signOut();
@@ -92,27 +92,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Google sign-in function
   const signInWithGoogle = async (): Promise<UserCredential> => {
-  const provider = new GoogleAuthProvider();
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    // Optionally, create user doc in Firestore if new
-    const usersCollectionRef = collection(db, "users");
-    await setDoc(doc(usersCollectionRef, user.uid), {
-      fullName: user.displayName || '',
-      email: user.email || '',
-      institution: '', // Google doesn't provide institution by default
-      createdAt: new Date().toISOString(),
-    }, { merge: true });
-    return result; // Explicitly return UserCredential
-  } catch (error: any) {
-    let errorMessage = 'Failed to sign in with Google.';
-    if (error.code === 'auth/popup-closed-by-user') {
-      errorMessage = 'Google sign-in popup was closed.';
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      // Optionally, create user doc in Firestore if new
+      const usersCollectionRef = collection(db, "users");
+      await setDoc(doc(usersCollectionRef, user.uid), {
+        fullName: user.displayName || '',
+        email: user.email || '',
+        institution: '', // Google doesn't provide institution by default
+        createdAt: new Date().toISOString(),
+      }, { merge: true });
+      return result; // Explicitly return UserCredential
+    } catch (error: any) {
+      let errorMessage = 'Failed to sign in with Google.';
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Google sign-in popup was closed.';
+      }
+      throw new Error(errorMessage);
     }
-    throw new Error(errorMessage);
-  }
-};
+  };
   // const signInWithGoogle = async () => {
   //   const provider = new GoogleAuthProvider();
   //   try {

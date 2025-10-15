@@ -31,22 +31,20 @@ export default function Login({ onForgotPassword }: LoginProps) {
         setLoading(true)
 
         try {
-            const auth = getAuth()
-            // First authenticate user and get currentUser
-            await signInWithEmailAndPassword(auth, email, password)
+          const auth = getAuth();
+          await signInWithEmailAndPassword(auth, email, password);
 
-            // Now currentUser exists → send token to backend
-            const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+          const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }), // backend only needs email if token is verified
-            })
+            body: JSON.stringify({ email }),
+          });
 
-            router.push(data.redirectUrl)
+          router.push(data.redirectUrl);
         } catch (err: any) {
-            setError(err.message)
+          setError(err.message);
         } finally {
-            setLoading(false)
+          setLoading(false);
         }
     }
 
@@ -58,7 +56,7 @@ export default function Login({ onForgotPassword }: LoginProps) {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
 
-        const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/google-signin`, {
+        const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/google-signup`, {
             method: "POST",
         });
 

@@ -5,6 +5,9 @@ import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Home, User, Mail, Building, Lock, Eye, EyeOff, Check, UserPlus } from "lucide-react"
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { auth } from "@/lib/firebase"
+import { fetchWithAuth } from "@/lib/api"
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("")
@@ -14,7 +17,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [isRegistered, setIsRegistered] = useState(false) // Track registration success
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [isRegistered, setIsRegistered] = useState(false)
   const { signUp } = useAuth()
   const router = useRouter()
 
@@ -41,12 +45,12 @@ export default function RegisterPage() {
   }
 
   // Email validation for Gmail
-  const validateEmail = (email: string) => {
-    if (!email.toLowerCase().endsWith("@gmail.com")) {
-      return "Email must be a Gmail address (e.g., example@gmail.com)."
-    }
-    return null
-  }
+  // const validateEmail = (email: string) => {
+  //   if (!email.toLowerCase().endsWith("@gmail.com")) {
+  //     return "Email must be a Gmail address (e.g., example@gmail.com)."
+  //   }
+  //   return null
+  // }
 
   // Check password rules for real-time checkbox updates
   const isLengthValid = password.length > 10
@@ -59,11 +63,11 @@ export default function RegisterPage() {
     setError(null)
 
     // Validate email
-    const emailError = validateEmail(email)
-    if (emailError) {
-      setError(emailError)
-      return
-    }
+    // const emailError = validateEmail(email)
+    // if (emailError) {
+    //   setError(emailError)
+    //   return
+    // }
 
     // Validate password
     const passwordError = validatePassword(password)
@@ -75,11 +79,31 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await signUp(email, password, fullName, institution)
-      setIsRegistered(true) // Show confirmation message
+      setIsRegistered(true)
     } catch (err: any) {
       setError(err.message || "Failed to sign up. Please check your details.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError(null)
+    setGoogleLoading(true)
+
+    try {
+      const provider = new GoogleAuthProvider()
+      await signInWithPopup(auth, provider)
+
+      const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/google-signup`, {
+        method: "POST",
+      })
+
+      router.push(data.redirectUrl)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setGoogleLoading(false)
     }
   }
 
@@ -133,7 +157,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-
                 {/* Registration Form */}
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Error Message Display */}
@@ -159,7 +182,7 @@ export default function RegisterPage() {
                         required
                         placeholder="John Doe"
                         className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                        disabled={loading}
+                        disabled={loading || googleLoading}
                       />
                     </div>
                   </div>
@@ -180,7 +203,7 @@ export default function RegisterPage() {
                         required
                         placeholder="example@gmail.com"
                         className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                        disabled={loading}
+                        disabled={loading || googleLoading}
                       />
                     </div>
                   </div>
@@ -201,7 +224,7 @@ export default function RegisterPage() {
                         required
                         placeholder="University of Example"
                         className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                        disabled={loading}
+                        disabled={loading || googleLoading}
                       />
                     </div>
                   </div>
@@ -222,7 +245,7 @@ export default function RegisterPage() {
                         required
                         placeholder="••••••••••"
                         className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                        disabled={loading}
+                        disabled={loading || googleLoading}
                       />
                       <button
                         type="button"
@@ -302,7 +325,7 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     className="w-full bg-[#10142c] text-white font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                    disabled={loading}
+                    disabled={loading || googleLoading}
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
@@ -311,6 +334,60 @@ export default function RegisterPage() {
                       </div>
                     ) : (
                       "Register"
+                    )}
+                  </button>
+
+                  {/* Divider */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-slate-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign In Button */}
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    className="w-full flex items-center justify-center gap-2 px-8 py-4 h-14 text-lg border border-slate-300 rounded-xl bg-white text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    disabled={googleLoading || loading}
+                  >
+                    {googleLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Signing in with Google...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <g clipPath="url(#clip0_17_40)">
+                            <path
+                              d="M47.532 24.552c0-1.636-.146-3.2-.418-4.704H24.48v9.02h13.02c-.56 3.02-2.24 5.58-4.76 7.3v6.06h7.7c4.5-4.14 7.09-10.24 7.09-17.68z"
+                              fill="#4285F4"
+                            />
+                            <path
+                              d="M24.48 48c6.48 0 11.92-2.14 15.89-5.82l-7.7-6.06c-2.14 1.44-4.88 2.3-8.19 2.3-6.3 0-11.64-4.26-13.56-9.98H2.6v6.26C6.56 43.98 14.7 48 24.48 48z"
+                              fill="#34A853"
+                            />
+                            <path
+                              d="M10.92 28.44c-.5-1.44-.8-2.98-.8-4.44s.3-3 .8-4.44v-6.26H2.6A23.98 23.98 0 000 24c0 3.98.96 7.76 2.6 11.18l8.32-6.74z"
+                              fill="#FBBC05"
+                            />
+                            <path
+                              d="M24.48 9.52c3.54 0 6.68 1.22 9.17 3.62l6.86-6.86C36.4 2.14 30.96 0 24.48 0 14.7 0 6.56 4.02 2.6 10.08l8.32 6.26c1.92-5.72 7.26-9.98 13.56-9.98z"
+                              fill="#EA4335"
+                            />
+                          </g>
+                          <defs>
+                            <clipPath id="clip0_17_40">
+                              <rect width="48" height="48" fill="white" />
+                            </clipPath>
+                          </defs>
+                        </svg>
+                        <span>Sign in with Google</span>
+                      </>
                     )}
                   </button>
                 </form>

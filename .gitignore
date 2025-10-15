@@ -5,6 +5,8 @@
 
 serviceAccountKey.json
 
+firebase-debug.log
+
 # next.js
 /.next/
 /out/

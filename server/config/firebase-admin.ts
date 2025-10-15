@@ -5,7 +5,6 @@ dotenv.config();
 
 // ✅ Resolve service account path
 const serviceAccountKey = process.env.NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY;
-
 if (!serviceAccountKey) {
   throw new Error("NEXT_PUBLIC_FIREBASE_SERVICE_ACCOUNT_KEY is not set in .env");
 }
