@@ -42,6 +42,7 @@ export default function Login({ onForgotPassword }: LoginProps) {
       router.push(data.redirectUrl);
     } catch (err: any) {
       // Parse error message if it's a JSON string
+      console.log("Error during login:", err.code);
       let errorMessage = err.message;
       
       try {
@@ -60,8 +61,8 @@ export default function Login({ onForgotPassword }: LoginProps) {
       }
       
       // Handle Firebase-specific error codes for better UX
-      if (err.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password. Please try again.';
+      if (err.code === 'auth/invalid-credential') {
+        errorMessage = 'Incorrect credentials. Please try again.';
       } else if (err.code === 'auth/user-not-found') {
         errorMessage = 'No account found with this email.';
       } else if (err.code === 'auth/too-many-requests') {
@@ -150,6 +151,13 @@ export default function Login({ onForgotPassword }: LoginProps) {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <p className="font-medium">{error}</p>
+        </div>
+      )}
+
       {/* Forgot Password Button */}
       <div className="text-right -mt-2">
         <button
@@ -160,13 +168,6 @@ export default function Login({ onForgotPassword }: LoginProps) {
           Forgot Password?
         </button>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-          <p className="font-medium">{error}</p>
-        </div>
-      )}
 
       {/* Sign In Button */}
       <button
