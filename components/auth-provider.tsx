@@ -61,7 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const user = userCredential.user;
 
     // Send verification email
-    await sendEmailVerification(user);
+    // await sendEmailVerification(user);
+    await sendEmailVerificationFromBackend(user.email!, user.uid); // user.email! asserts it's not null
 
     // Create user document with isVerified flag
     await setDoc(doc(collection(db, "users"), user.uid), {
@@ -71,6 +72,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     });
   };
+
+  async function sendEmailVerificationFromBackend(email: string, uid: string): Promise<boolean> {
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/send-verification-email`;
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, uid }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send verification email from backend.');
+      }
+
+      const result = await response.json();
+      console.log('Backend response for email verification:', result.message);
+      return true; // Successfully sent
+    } catch (error: any) {
+      console.error('Error requesting email verification from backend:', error.message);
+      alert(`Failed to send verification email: ${error.message}`);
+      // Optionally, handle specific errors (e.g., if already verified)
+      return false; // Failed to send
+    }
+  }
+
 
   const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
