@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Home, User, Mail, Building, Lock, Eye, EyeOff, Check, UserPlus } from "lucide-react"
+import { Home, User, Mail, Building, Lock, Eye, EyeOff, Check, UserPlus, X, AlertCircle } from "lucide-react"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { fetchWithAuth } from "@/lib/api"
@@ -16,69 +16,297 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [institutionError, setInstitutionError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [isRegistered, setIsRegistered] = useState(false)
   const { signUp } = useAuth()
   const router = useRouter()
 
-  // Password validation function
-  const validatePassword = (password: string) => {
-    const minLength = password.length > 10
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-    const hasNumber = /\d/.test(password)
-    const hasCapital = /[A-Z]/.test(password)
+  // Full Name validation function
+  const validateFullName = (name: string): string | null => {
+    const trimmedName = name.trim()
 
-    if (!minLength) {
-      return "Password must be longer than 10 characters."
+    if (!trimmedName || trimmedName.length === 0) {
+      return "Full name is required."
     }
-    if (!hasSpecialChar) {
-      return "Password must include at least one special character (e.g., !@#$%^&*)."
+
+    if (trimmedName.length < 3) {
+      return "Full name must be at least 3 characters long."
     }
-    if (!hasNumber) {
-      return "Password must include at least one number."
+
+    if (trimmedName.length > 50) {
+      return "Full name must not exceed 50 characters."
     }
-    if (!hasCapital) {
-      return "Password must include at least one capital letter."
+
+    const validNameRegex = /^[A-Za-z]+(\s[A-Za-z]+)*$/
+    if (!validNameRegex.test(trimmedName)) {
+      return "Full name must contain only English letters and single spaces between words."
     }
+
+    if (/\d/.test(trimmedName)) {
+      return "Full name cannot contain numbers."
+    }
+
+    if (/[!@#$%^&*(),.?":{}|<>[\]\\/_+=`~;'-]/.test(trimmedName)) {
+      return "Full name cannot contain special characters."
+    }
+
+    if (/[^\x00-\x7F]/.test(trimmedName)) {
+      return "Full name must contain only English letters."
+    }
+
+    const htmlTagRegex = /<[^>]*>/g
+    if (htmlTagRegex.test(trimmedName)) {
+      return "Invalid input detected."
+    }
+
+    if (/\s{2,}/.test(trimmedName)) {
+      return "Full name cannot contain multiple consecutive spaces."
+    }
+
     return null
   }
 
-  // Email validation for Gmail
-  // const validateEmail = (email: string) => {
-  //   if (!email.toLowerCase().endsWith("@gmail.com")) {
-  //     return "Email must be a Gmail address (e.g., example@gmail.com)."
-  //   }
-  //   return null
-  // }
+  // Institution validation function
+const validateInstitution = (inst: string): string | null => {
+  const trimmedInst = inst.trim()
+
+  if (!trimmedInst || trimmedInst.length === 0) {
+    return "Institution/Organization is required."
+  }
+
+  if (trimmedInst.length < 3) {
+    return "Institution name must be at least 3 characters long."
+  }
+
+  if (trimmedInst.length > 100) {
+    return "Institution name must not exceed 100 characters."
+  }
+
+  // Disallow numbers; allow letters, spaces, dots, hyphens, ampersands, and apostrophes
+  const validInstRegex = /^[A-Za-z\s.\-&']+$/
+  if (!validInstRegex.test(trimmedInst)) {
+    return "Institution name can only contain letters, spaces, dots, hyphens, ampersands, and apostrophes."
+  }
+
+  // Check for emojis and unicode characters
+  if (/[^\x00-\x7F]/.test(trimmedInst)) {
+    return "Institution name must contain only English characters."
+  }
+
+  // Check for HTML/Script tags
+  const htmlTagRegex = /<[^>]*>/g
+  if (htmlTagRegex.test(trimmedInst)) {
+    return "Invalid input detected."
+  }
+
+  // Check for multiple consecutive spaces
+  if (/\s{2,}/.test(trimmedInst)) {
+    return "Institution name cannot contain multiple consecutive spaces."
+  }
+
+  // Check for disallowed special characters
+  if (/[!@#$%^*()_+={}[\]|\\:;"<>?,/~`]/.test(trimmedInst)) {
+    return "Institution name contains invalid special characters."
+  }
+
+  return null
+}
+
+
+  // Password validation function
+  const validatePassword = (pass: string): string | null => {
+    // Check for leading or trailing spaces
+    if (pass !== pass.trim()) {
+      return "Password cannot have leading or trailing spaces."
+    }
+
+    if (pass.length <= 10) {
+      return "Password must be longer than 10 characters."
+    }
+
+    if (pass.length > 128) {
+      return "Password must not exceed 128 characters."
+    }
+
+    // Check for emojis and non-ASCII characters
+    if (/[^\x00-\x7F]/.test(pass)) {
+      return "Password cannot contain emojis or special Unicode characters."
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) {
+      return "Password must include at least one special character (e.g., !@#$%^&*)."
+    }
+
+    if (!/\d/.test(pass)) {
+      return "Password must include at least one number."
+    }
+
+    if (!/[A-Z]/.test(pass)) {
+      return "Password must include at least one capital letter."
+    }
+
+    if (!/[a-z]/.test(pass)) {
+      return "Password must include at least one lowercase letter."
+    }
+
+    return null
+  }
+
+  // Calculate password strength
+  const calculatePasswordStrength = (pass: string): { strength: number; label: string; color: string } => {
+    let strength = 0
+    
+    if (pass.length > 10) strength += 20
+    if (pass.length > 15) strength += 10
+    if (pass.length > 20) strength += 10
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) strength += 20
+    if (/\d/.test(pass)) strength += 15
+    if (/[A-Z]/.test(pass)) strength += 15
+    if (/[a-z]/.test(pass)) strength += 10
+    
+    // Bonus for having multiple special chars, numbers, etc.
+    const specialCount = (pass.match(/[!@#$%^&*(),.?":{}|<>]/g) || []).length
+    const numberCount = (pass.match(/\d/g) || []).length
+    const upperCount = (pass.match(/[A-Z]/g) || []).length
+    
+    if (specialCount > 1) strength += 5
+    if (numberCount > 1) strength += 5
+    if (upperCount > 1) strength += 5
+
+    let label = "Weak"
+    let color = "bg-red-500"
+    
+    if (strength >= 80) {
+      label = "Strong"
+      color = "bg-green-500"
+    } else if (strength >= 60) {
+      label = "Good"
+      color = "bg-yellow-500"
+    } else if (strength >= 40) {
+      label = "Fair"
+      color = "bg-orange-500"
+    }
+
+    return { strength: Math.min(strength, 100), label, color }
+  }
 
   // Check password rules for real-time checkbox updates
   const isLengthValid = password.length > 10
+  const isMaxLengthValid = password.length <= 128
   const isSpecialCharValid = /[!@#$%^&*(),.?":{}|<>]/.test(password)
   const isNumberValid = /\d/.test(password)
   const isCapitalValid = /[A-Z]/.test(password)
+  const isLowercaseValid = /[a-z]/.test(password)
+  const hasNoSpaces = password === password.trim() && !/\s/.test(password)
+  const hasNoEmojis = !/[^\x00-\x7F]/.test(password)
+
+  const passwordStrength = password.length > 0 ? calculatePasswordStrength(password) : null
+
+  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const allowedCharsRegex = /^[A-Za-z\s]*$/
+    
+    if (!allowedCharsRegex.test(value)) {
+      return
+    }
+
+    setFullName(value)
+    
+    if (nameError) {
+      setNameError(null)
+    }
+  }
+
+  const handleFullNameBlur = () => {
+    const error = validateFullName(fullName)
+    setNameError(error)
+  }
+
+  const handleInstitutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    
+    // Allow only valid characters during typing
+    const allowedCharsRegex = /^[A-Za-z\s.\-&']*$/
+    
+    if (!allowedCharsRegex.test(value)) {
+      return
+    }
+
+    setInstitution(value)
+    
+    if (institutionError) {
+      setInstitutionError(null)
+    }
+  }
+
+  const handleInstitutionBlur = () => {
+    const error = validateInstitution(institution)
+    setInstitutionError(error)
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    
+    // Prevent emojis and non-ASCII characters during typing
+    if (/[^\x00-\x7F]/.test(value)) {
+      return
+    }
+
+    // Limit maximum length during typing
+    if (value.length > 128) {
+      return
+    }
+
+    setPassword(value)
+    
+    if (passwordError) {
+      setPasswordError(null)
+    }
+  }
+
+  const handlePasswordBlur = () => {
+    const error = validatePassword(password)
+    setPasswordError(error)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    // Validate email
-    // const emailError = validateEmail(email)
-    // if (emailError) {
-    //   setError(emailError)
-    //   return
-    // }
+    // Validate full name
+    const trimmedName = fullName.trim()
+    const nameValidationError = validateFullName(trimmedName)
+    if (nameValidationError) {
+      setNameError(nameValidationError)
+      setError(nameValidationError)
+      return
+    }
+
+    // Validate institution
+    const trimmedInst = institution.trim()
+    const instValidationError = validateInstitution(trimmedInst)
+    if (instValidationError) {
+      setInstitutionError(instValidationError)
+      setError(instValidationError)
+      return
+    }
 
     // Validate password
-    const passwordError = validatePassword(password)
-    if (passwordError) {
-      setError(passwordError)
+    const passwordValidationError = validatePassword(password)
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError)
+      setError(passwordValidationError)
       return
     }
 
     setLoading(true)
     try {
-      await signUp(email, password, fullName, institution)
+      // Use trimmed values for signup - FIREBASE LOGIC RESTORED
+      await signUp(email, password, trimmedName, trimmedInst)
       setIsRegistered(true)
     } catch (err: any) {
       setError(err.message || "Failed to sign up. Please check your details.")
@@ -92,6 +320,7 @@ export default function RegisterPage() {
     setGoogleLoading(true)
 
     try {
+      // FIREBASE GOOGLE AUTH LOGIC RESTORED
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
 
@@ -109,7 +338,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
-      {/* Back to Home Link */}
       <Link
         href="/"
         className="absolute top-6 left-6 flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors duration-200 group"
@@ -118,7 +346,6 @@ export default function RegisterPage() {
         <span className="font-medium">Back to Home</span>
       </Link>
 
-      {/* Main Card */}
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200">
           <div className="p-8 text-slate-900">
@@ -140,7 +367,6 @@ export default function RegisterPage() {
               </div>
             ) : (
               <>
-            {/* Header */}
             <div className="text-center mb-8 space-y-4">
               <div className="mx-auto w-16 h-16 bg-[#10142c] rounded-xl flex items-center justify-center shadow-lg">
                 <div className="p-3 bg-white/20 rounded-xl">
@@ -157,11 +383,10 @@ export default function RegisterPage() {
               </div>
             </div>
 
-                {/* Registration Form */}
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Error Message Display */}
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                       <p className="font-medium">{error}</p>
                     </div>
                   )}
@@ -178,19 +403,32 @@ export default function RegisterPage() {
                         name="fullName"
                         type="text"
                         value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        onChange={handleFullNameChange}
+                        onBlur={handleFullNameBlur}
                         required
                         placeholder="John Doe"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
+                          nameError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                        }`}
                         disabled={loading || googleLoading}
+                        maxLength={50}
                       />
                     </div>
+                    {nameError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <X className="h-3 w-3" />
+                        {nameError}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      3-50 characters, English letters only, single spaces between words
+                    </p>
                   </div>
 
                   {/* Email Input */}
                   <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                      Email (Gmail required)
+                      Email
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -201,7 +439,7 @@ export default function RegisterPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        placeholder="example@gmail.com"
+                        placeholder="example@email.com"
                         className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
                         disabled={loading || googleLoading}
                       />
@@ -220,13 +458,26 @@ export default function RegisterPage() {
                         name="institution"
                         type="text"
                         value={institution}
-                        onChange={(e) => setInstitution(e.target.value)}
+                        onChange={handleInstitutionChange}
+                        onBlur={handleInstitutionBlur}
                         required
-                        placeholder="University of Example"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
+                        placeholder="FAST University"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
+                          institutionError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                        }`}
                         disabled={loading || googleLoading}
+                        maxLength={100}
                       />
                     </div>
+                    {institutionError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <X className="h-3 w-3" />
+                        {institutionError}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      3-100 characters, letters, numbers, spaces, dots, hyphens, ampersands, and apostrophes only
+                    </p>
                   </div>
 
                   {/* Password Input */}
@@ -241,10 +492,13 @@ export default function RegisterPage() {
                         name="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={handlePasswordChange}
+                        onBlur={handlePasswordBlur}
                         required
                         placeholder="••••••••••"
-                        className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
+                        className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
+                          passwordError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
+                        }`}
                         disabled={loading || googleLoading}
                       />
                       <button
@@ -257,67 +511,177 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
-                    {/* Password Requirements with Animated Checkboxes */}
-                    <div className="text-sm text-slate-500 mt-2">
-                      <p>Password must:</p>
-                      <ul className="space-y-2 mt-2">
-                        <li className="flex items-center gap-2">
+                    
+                    {passwordError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <X className="h-3 w-3" />
+                        {passwordError}
+                      </p>
+                    )}
+
+                    {/* Password Strength Meter */}
+                    {passwordStrength && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600">Password Strength:</span>
+                          <span className={`font-semibold ${
+                            passwordStrength.label === 'Strong' ? 'text-green-600' :
+                            passwordStrength.label === 'Good' ? 'text-yellow-600' :
+                            passwordStrength.label === 'Fair' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {passwordStrength.label}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                            style={{ width: `${passwordStrength.strength}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Password Requirements */}
+                    <div className="text-sm text-slate-500 mt-3">
+                      <p className="font-medium mb-2">Password Requirements:</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex items-center gap-2">
                           <span
                             className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isLengthValid ? "border-green-400 bg-green-400/20" : "border-slate-300"
+                              isLengthValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
                             }`}
                           >
-                            {isLengthValid && (
-                              <Check className="w-4 h-4 text-green-400 transform scale-0 animate-check" />
+                            {isLengthValid ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-slate-400" />
                             )}
                           </span>
-                          <span className={isLengthValid ? "text-green-600" : "text-slate-500"}>
-                            Be longer than 10 characters
+                          <span className={isLengthValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
+                            Longer than 10 characters
                           </span>
-                        </li>
-                        <li className="flex items-center gap-2">
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
                           <span
                             className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isSpecialCharValid ? "border-green-400 bg-green-400/20" : "border-slate-300"
+                              isMaxLengthValid ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
                             }`}
                           >
-                            {isSpecialCharValid && (
-                              <Check className="w-4 h-4 text-green-400 transform scale-0 animate-check" />
+                            {isMaxLengthValid ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-white" />
                             )}
                           </span>
-                          <span className={isSpecialCharValid ? "text-green-600" : "text-slate-500"}>
-                            Include at least one special character (e.g., !@#$%^&*)
+                          <span className={isMaxLengthValid ? "text-green-600 text-xs" : "text-red-600 text-xs"}>
+                            No more than 128 characters
                           </span>
-                        </li>
-                        <li className="flex items-center gap-2">
+                        </div>
+
+                        <div className="flex items-center gap-2">
                           <span
                             className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isNumberValid ? "border-green-400 bg-green-400/20" : "border-slate-300"
+                              isCapitalValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
                             }`}
                           >
-                            {isNumberValid && (
-                              <Check className="w-4 h-4 text-green-400 transform scale-0 animate-check" />
+                            {isCapitalValid ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-slate-400" />
                             )}
                           </span>
-                          <span className={isNumberValid ? "text-green-600" : "text-slate-500"}>
-                            Include at least one number
+                          <span className={isCapitalValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
+                            At least one uppercase letter
                           </span>
-                        </li>
-                        <li className="flex items-center gap-2">
+                        </div>
+
+                        <div className="flex items-center gap-2">
                           <span
                             className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isCapitalValid ? "border-green-400 bg-green-400/20" : "border-slate-300"
+                              isLowercaseValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
                             }`}
                           >
-                            {isCapitalValid && (
-                              <Check className="w-4 h-4 text-green-400 transform scale-0 animate-check" />
+                            {isLowercaseValid ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-slate-400" />
                             )}
                           </span>
-                          <span className={isCapitalValid ? "text-green-600" : "text-slate-500"}>
-                            Include at least one capital letter
+                          <span className={isLowercaseValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
+                            At least one lowercase letter
                           </span>
-                        </li>
-                      </ul>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
+                              isNumberValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
+                            }`}
+                          >
+                            {isNumberValid ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-slate-400" />
+                            )}
+                          </span>
+                          <span className={isNumberValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
+                            At least one number
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
+                              isSpecialCharValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
+                            }`}
+                          >
+                            {isSpecialCharValid ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-slate-400" />
+                            )}
+                          </span>
+                          <span className={isSpecialCharValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
+                            At least one special character (!@#$%^&*...)
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
+                              hasNoSpaces ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
+                            }`}
+                          >
+                            {hasNoSpaces ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-white" />
+                            )}
+                          </span>
+                          <span className={hasNoSpaces ? "text-green-600 text-xs" : "text-red-600 text-xs"}>
+                            No leading/trailing spaces
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
+                              hasNoEmojis ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
+                            }`}
+                          >
+                            {hasNoEmojis ? (
+                              <Check className="w-3 h-3 text-white" />
+                            ) : (
+                              <X className="w-3 h-3 text-white" />
+                            )}
+                          </span>
+                          <span className={hasNoEmojis ? "text-green-600 text-xs" : "text-red-600 text-xs"}>
+                            No emojis or special Unicode
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -405,23 +769,6 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
-      {/* Tailwind CSS Animation for Checkboxes */}
-      <style jsx>{`
-        @keyframes check {
-          0% {
-            transform: scale(0);
-          }
-          50% {
-            transform: scale(1.2);
-          }
-          100% {
-            transform: scale(1);
-          }
-        }
-        .animate-check {
-          animation: check 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   )
 }
