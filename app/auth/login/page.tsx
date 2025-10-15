@@ -57,8 +57,14 @@ export default function AdminLoginPage() {
 
             {/* Footer */}
             <div className="mt-6 text-center">
-              <p className="text-xs text-slate-500">This portal is restricted to authorized users</p>
+              <p className="text-sm text-slate-500">
+                Don’t have an account?{" "}
+                <Link href="/auth/register" className="text-blue-600 hover:underline">
+                  Sign up here
+                </Link>
+              </p>
             </div>
+
           </div>
         </div>
       </div>
