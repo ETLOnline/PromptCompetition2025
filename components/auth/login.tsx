@@ -24,29 +24,57 @@ export default function Login({ onForgotPassword }: LoginProps) {
 
   const router = useRouter()
 
-  
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setError(null)
-        setLoading(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
 
-        try {
-          const auth = getAuth();
-          await signInWithEmailAndPassword(auth, email, password);
+    try {
+      const auth = getAuth();
+      await signInWithEmailAndPassword(auth, email, password);
 
-          const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-          });
+      const data = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-          router.push(data.redirectUrl);
-        } catch (err: any) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
+      router.push(data.redirectUrl);
+    } catch (err: any) {
+      // Parse error message if it's a JSON string
+      let errorMessage = err.message;
+      
+      try {
+        // Try to parse if the error message is a JSON string
+        const parsedError = JSON.parse(err.message);
+        
+        // Prioritize 'message' field over 'error' field
+        if (parsedError.message) {
+          errorMessage = parsedError.message;
+        } else if (parsedError.error) {
+          errorMessage = parsedError.error;
         }
+      } catch (parseError) {
+        // If parsing fails, it's already a plain string, use it as is
+        errorMessage = err.message;
+      }
+      
+      // Handle Firebase-specific error codes for better UX
+      if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (err.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email.';
+      } else if (err.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address format.';
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
+  }
 
   const handleGoogleSignIn = async () => {
     setError(null)
