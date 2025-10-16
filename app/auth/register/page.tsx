@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Home, User, Mail, Building, Lock, Eye, EyeOff, Check, UserPlus, X, AlertCircle } from "lucide-react"
+import { Home, User, Mail, Building, Lock, Eye, EyeOff, UserPlus, X, AlertCircle } from "lucide-react"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { fetchWithAuth } from "@/lib/api"
@@ -73,55 +73,48 @@ export default function RegisterPage() {
   }
 
   // Institution validation function
-const validateInstitution = (inst: string): string | null => {
-  const trimmedInst = inst.trim()
+  const validateInstitution = (inst: string): string | null => {
+    const trimmedInst = inst.trim()
 
-  if (!trimmedInst || trimmedInst.length === 0) {
-    return "Institution/Organization is required."
+    if (!trimmedInst || trimmedInst.length === 0) {
+      return "Institution/Organization is required."
+    }
+
+    if (trimmedInst.length < 3) {
+      return "Institution name must be at least 3 characters long."
+    }
+
+    if (trimmedInst.length > 100) {
+      return "Institution name must not exceed 100 characters."
+    }
+
+    const validInstRegex = /^[A-Za-z\s.\-&']+$/
+    if (!validInstRegex.test(trimmedInst)) {
+      return "Institution name can only contain letters, spaces, dots, hyphens, ampersands, and apostrophes."
+    }
+
+    if (/[^\x00-\x7F]/.test(trimmedInst)) {
+      return "Institution name must contain only English characters."
+    }
+
+    const htmlTagRegex = /<[^>]*>/g
+    if (htmlTagRegex.test(trimmedInst)) {
+      return "Invalid input detected."
+    }
+
+    if (/\s{2,}/.test(trimmedInst)) {
+      return "Institution name cannot contain multiple consecutive spaces."
+    }
+
+    if (/[!@#$%^*()_+={}[\]|\\:;"<>?,/~`]/.test(trimmedInst)) {
+      return "Institution name contains invalid special characters."
+    }
+
+    return null
   }
-
-  if (trimmedInst.length < 3) {
-    return "Institution name must be at least 3 characters long."
-  }
-
-  if (trimmedInst.length > 100) {
-    return "Institution name must not exceed 100 characters."
-  }
-
-  // Disallow numbers; allow letters, spaces, dots, hyphens, ampersands, and apostrophes
-  const validInstRegex = /^[A-Za-z\s.\-&']+$/
-  if (!validInstRegex.test(trimmedInst)) {
-    return "Institution name can only contain letters, spaces, dots, hyphens, ampersands, and apostrophes."
-  }
-
-  // Check for emojis and unicode characters
-  if (/[^\x00-\x7F]/.test(trimmedInst)) {
-    return "Institution name must contain only English characters."
-  }
-
-  // Check for HTML/Script tags
-  const htmlTagRegex = /<[^>]*>/g
-  if (htmlTagRegex.test(trimmedInst)) {
-    return "Invalid input detected."
-  }
-
-  // Check for multiple consecutive spaces
-  if (/\s{2,}/.test(trimmedInst)) {
-    return "Institution name cannot contain multiple consecutive spaces."
-  }
-
-  // Check for disallowed special characters
-  if (/[!@#$%^*()_+={}[\]|\\:;"<>?,/~`]/.test(trimmedInst)) {
-    return "Institution name contains invalid special characters."
-  }
-
-  return null
-}
-
 
   // Password validation function
   const validatePassword = (pass: string): string | null => {
-    // Check for leading or trailing spaces
     if (pass !== pass.trim()) {
       return "Password cannot have leading or trailing spaces."
     }
@@ -134,7 +127,6 @@ const validateInstitution = (inst: string): string | null => {
       return "Password must not exceed 128 characters."
     }
 
-    // Check for emojis and non-ASCII characters
     if (/[^\x00-\x7F]/.test(pass)) {
       return "Password cannot contain emojis or special Unicode characters."
     }
@@ -158,19 +150,32 @@ const validateInstitution = (inst: string): string | null => {
     return null
   }
 
-  // Calculate password strength
-  const calculatePasswordStrength = (pass: string): { strength: number; label: string; color: string } => {
+  // Check if password meets all requirements (for button enable/disable)
+  const isPasswordValidGlobally = (): boolean => {
+    if (password.length === 0) return false
+    return validatePassword(password) === null
+  }
+
+  // Calculate password strength with enhanced metrics
+  const calculatePasswordStrength = (pass: string): { strength: number; label: string; color: string; gradient: string } => {
+    if (pass.length === 0) {
+      return { strength: 0, label: "Enter password", color: "bg-slate-300", gradient: "from-slate-300 to-slate-400" }
+    }
+
     let strength = 0
     
+    // Length-based scoring
     if (pass.length > 10) strength += 20
     if (pass.length > 15) strength += 10
     if (pass.length > 20) strength += 10
+    
+    // Character type scoring
     if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) strength += 20
     if (/\d/.test(pass)) strength += 15
     if (/[A-Z]/.test(pass)) strength += 15
     if (/[a-z]/.test(pass)) strength += 10
     
-    // Bonus for having multiple special chars, numbers, etc.
+    // Bonus for complexity
     const specialCount = (pass.match(/[!@#$%^&*(),.?":{}|<>]/g) || []).length
     const numberCount = (pass.match(/\d/g) || []).length
     const upperCount = (pass.match(/[A-Z]/g) || []).length
@@ -179,34 +184,45 @@ const validateInstitution = (inst: string): string | null => {
     if (numberCount > 1) strength += 5
     if (upperCount > 1) strength += 5
 
-    let label = "Weak"
+    // Check for invalid conditions
+    const hasInvalidSpaces = pass !== pass.trim() || /\s/.test(pass)
+    const hasEmojis = /[^\x00-\x7F]/.test(pass)
+    const tooLong = pass.length > 128
+
+    let label = "Very Weak"
     let color = "bg-red-500"
+    let gradient = "from-red-500 to-red-600"
     
-    if (strength >= 80) {
-      label = "Strong"
+    if (hasInvalidSpaces || hasEmojis || tooLong) {
+      label = "Invalid"
+      color = "bg-red-600"
+      gradient = "from-red-600 to-red-700"
+    } else if (strength >= 85) {
+      label = "Very Strong"
       color = "bg-green-500"
-    } else if (strength >= 60) {
+      gradient = "from-green-500 to-green-600"
+    } else if (strength >= 70) {
+      label = "Strong"
+      color = "bg-green-400"
+      gradient = "from-green-400 to-green-500"
+    } else if (strength >= 50) {
       label = "Good"
       color = "bg-yellow-500"
-    } else if (strength >= 40) {
+      gradient = "from-yellow-500 to-yellow-600"
+    } else if (strength >= 30) {
       label = "Fair"
       color = "bg-orange-500"
+      gradient = "from-orange-500 to-orange-600"
+    } else {
+      label = "Weak"
+      color = "bg-red-500"
+      gradient = "from-red-500 to-red-600"
     }
 
-    return { strength: Math.min(strength, 100), label, color }
+    return { strength: Math.min(strength, 100), label, color, gradient }
   }
 
-  // Check password rules for real-time checkbox updates
-  const isLengthValid = password.length > 10
-  const isMaxLengthValid = password.length <= 128
-  const isSpecialCharValid = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-  const isNumberValid = /\d/.test(password)
-  const isCapitalValid = /[A-Z]/.test(password)
-  const isLowercaseValid = /[a-z]/.test(password)
-  const hasNoSpaces = password === password.trim() && !/\s/.test(password)
-  const hasNoEmojis = !/[^\x00-\x7F]/.test(password)
-
-  const passwordStrength = password.length > 0 ? calculatePasswordStrength(password) : null
+  const passwordStrength = calculatePasswordStrength(password)
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -231,7 +247,6 @@ const validateInstitution = (inst: string): string | null => {
   const handleInstitutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     
-    // Allow only valid characters during typing
     const allowedCharsRegex = /^[A-Za-z\s.\-&']*$/
     
     if (!allowedCharsRegex.test(value)) {
@@ -253,12 +268,10 @@ const validateInstitution = (inst: string): string | null => {
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     
-    // Prevent emojis and non-ASCII characters during typing
     if (/[^\x00-\x7F]/.test(value)) {
       return
     }
 
-    // Limit maximum length during typing
     if (value.length > 128) {
       return
     }
@@ -279,7 +292,6 @@ const validateInstitution = (inst: string): string | null => {
     e.preventDefault()
     setError(null)
 
-    // Validate full name
     const trimmedName = fullName.trim()
     const nameValidationError = validateFullName(trimmedName)
     if (nameValidationError) {
@@ -288,7 +300,6 @@ const validateInstitution = (inst: string): string | null => {
       return
     }
 
-    // Validate institution
     const trimmedInst = institution.trim()
     const instValidationError = validateInstitution(trimmedInst)
     if (instValidationError) {
@@ -297,7 +308,6 @@ const validateInstitution = (inst: string): string | null => {
       return
     }
 
-    // Validate password
     const passwordValidationError = validatePassword(password)
     if (passwordValidationError) {
       setPasswordError(passwordValidationError)
@@ -306,56 +316,44 @@ const validateInstitution = (inst: string): string | null => {
     }
 
     setLoading(true)
-    // try {
-    //   // Use trimmed values for signup - FIREBASE LOGIC RESTORED
-    //   await signUp(email, password, trimmedName, trimmedInst)
-    //   setIsRegistered(true)
-    // } catch (err: any) {
-    //   setError(err.message || "Failed to sign up. Please check your details.")
-    // } finally {
-    //   setLoading(false)
-    // }
 
     try {
-        await signUp(email, password, trimmedName, trimmedInst);
-        setIsRegistered(true);
-      } catch (err: any) {
-        console.log("Error during signup:", err.code, err.message);
-        let errorMessage = err.message || "Failed to sign up. Please check your details.";
+      await signUp(email, password, trimmedName, trimmedInst);
+      setIsRegistered(true);
+    } catch (err: any) {
+      console.log("Error during signup:", err.code, err.message);
+      let errorMessage = err.message || "Failed to sign up. Please check your details.";
 
-        // Handle Firebase-specific error codes for better UX
-        switch (err.code) {
-          case "auth/email-already-in-use":
-            errorMessage = "";
-            setEmailError("This email is already registered. Please sign in instead.")
-            break;
-          case "auth/invalid-email":
-            errorMessage = "Invalid email address format.";
-            break;
-          case "auth/weak-password":
-            errorMessage = "Password is too weak. It should be at least 6 characters.";
-            break;
-          case "auth/operation-not-allowed":
-            errorMessage = "Email/password accounts are not enabled. Please contact support.";
-            break;
-          case "auth/missing-password":
-            errorMessage = "Please enter a password.";
-            break;
-          default:
-            // fallback to any custom backend error message if applicable
-            if (typeof err.message === "string" && err.message.startsWith("Firebase:")) {
-              errorMessage = "An unexpected error occurred. Please try again.";
-            } else {
-              errorMessage = err.message || "Failed to sign up. Please try again.";
-            }
-            break;
-        }
-
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+      switch (err.code) {
+        case "auth/email-already-in-use":
+          errorMessage = "";
+          setEmailError("This email is already registered. Please sign in instead.")
+          break;
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address format.";
+          break;
+        case "auth/weak-password":
+          errorMessage = "Password is too weak. It should be at least 6 characters.";
+          break;
+        case "auth/operation-not-allowed":
+          errorMessage = "Email/password accounts are not enabled. Please contact support.";
+          break;
+        case "auth/missing-password":
+          errorMessage = "Please enter a password.";
+          break;
+        default:
+          if (typeof err.message === "string" && err.message.startsWith("Firebase:")) {
+            errorMessage = "An unexpected error occurred. Please try again.";
+          } else {
+            errorMessage = err.message || "Failed to sign up. Please try again.";
+          }
+          break;
       }
 
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleGoogleSignIn = async () => {
@@ -363,7 +361,6 @@ const validateInstitution = (inst: string): string | null => {
     setGoogleLoading(true)
 
     try {
-      // FIREBASE GOOGLE AUTH LOGIC RESTORED
       const provider = new GoogleAuthProvider()
       await signInWithPopup(auth, provider)
 
@@ -410,21 +407,21 @@ const validateInstitution = (inst: string): string | null => {
               </div>
             ) : (
               <>
-            <div className="text-center mb-8 space-y-4">
-              <div className="mx-auto w-16 h-16 bg-[#10142c] rounded-xl flex items-center justify-center shadow-lg">
-                <div className="p-3 bg-white/20 rounded-xl">
-                  <UserPlus className="h-6 w-6 text-white" />
+                <div className="text-center mb-8 space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-[#10142c] rounded-xl flex items-center justify-center shadow-lg">
+                    <div className="p-3 bg-white/20 rounded-xl">
+                      <UserPlus className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                      Register Account
+                    </h1>
+                    <p className="text-muted-foreground mt-2">
+                      Create your account to participate in the competition
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                  Register Account
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                  Create your account to participate in the competition
-                </p>
-              </div>
-            </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {error && (
@@ -523,11 +520,11 @@ const validateInstitution = (inst: string): string | null => {
                       </p>
                     )}
                     <p className="text-xs text-slate-500">
-                      3-100 characters, letters, numbers, spaces, dots, hyphens, ampersands, and apostrophes only
+                      3-100 characters, letters, spaces, dots, hyphens, ampersands, and apostrophes only
                     </p>
                   </div>
 
-                  {/* Password Input */}
+                  {/* Password Input with Dynamic Strength Meter */}
                   <div className="space-y-2">
                     <label htmlFor="password" className="text-sm font-medium text-slate-700">
                       Password
@@ -566,177 +563,44 @@ const validateInstitution = (inst: string): string | null => {
                       </p>
                     )}
 
-                    {/* Password Strength Meter */}
-                    {passwordStrength && (
-                      <div className="space-y-2">
+                    {/* Enhanced Password Strength Meter */}
+                    {password.length > 0 && (
+                      <div className="space-y-3 mt-3">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600">Password Strength:</span>
-                          <span className={`font-semibold ${
-                            passwordStrength.label === 'Strong' ? 'text-green-600' :
+                          <span className="text-slate-600 font-medium">Password Strength</span>
+                          <span className={`font-bold ${
+                            passwordStrength.label === 'Very Strong' ? 'text-green-600' :
+                            passwordStrength.label === 'Strong' ? 'text-green-500' :
                             passwordStrength.label === 'Good' ? 'text-yellow-600' :
-                            passwordStrength.label === 'Fair' ? 'text-orange-600' :
+                            passwordStrength.label === 'Fair' ? 'text-orange-500' :
+                            passwordStrength.label === 'Invalid' ? 'text-red-700' :
                             'text-red-600'
                           }`}>
                             {passwordStrength.label}
                           </span>
                         </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div className="relative w-full bg-slate-200 rounded-full h-3 overflow-hidden shadow-inner">
                           <div
-                            className={`h-full rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                            className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${passwordStrength.gradient} shadow-sm`}
                             style={{ width: `${passwordStrength.strength}%` }}
-                          ></div>
+                          >
+                            <div className="h-full w-full bg-white/20 animate-pulse"></div>
+                          </div>
                         </div>
+                        {!isPasswordValidGlobally() && password.length > 0 && (
+                          <p className="text-xs text-slate-600 mt-2 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                            <span className="font-medium">Tip:</span> Use a mix of uppercase, lowercase, numbers, and special characters (length: 11-128)
+                          </p>
+                        )}
                       </div>
                     )}
-
-                    {/* Password Requirements */}
-                    <div className="text-sm text-slate-500 mt-3">
-                      <p className="font-medium mb-2">Password Requirements:</p>
-                      <div className="grid grid-cols-1 gap-2">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isLengthValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
-                            }`}
-                          >
-                            {isLengthValid ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-slate-400" />
-                            )}
-                          </span>
-                          <span className={isLengthValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
-                            Longer than 10 characters
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isMaxLengthValid ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
-                            }`}
-                          >
-                            {isMaxLengthValid ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-white" />
-                            )}
-                          </span>
-                          <span className={isMaxLengthValid ? "text-green-600 text-xs" : "text-red-600 text-xs"}>
-                            No more than 128 characters
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isCapitalValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
-                            }`}
-                          >
-                            {isCapitalValid ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-slate-400" />
-                            )}
-                          </span>
-                          <span className={isCapitalValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
-                            At least one uppercase letter
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isLowercaseValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
-                            }`}
-                          >
-                            {isLowercaseValid ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-slate-400" />
-                            )}
-                          </span>
-                          <span className={isLowercaseValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
-                            At least one lowercase letter
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isNumberValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
-                            }`}
-                          >
-                            {isNumberValid ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-slate-400" />
-                            )}
-                          </span>
-                          <span className={isNumberValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
-                            At least one number
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              isSpecialCharValid ? "border-green-500 bg-green-500" : "border-slate-300 bg-white"
-                            }`}
-                          >
-                            {isSpecialCharValid ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-slate-400" />
-                            )}
-                          </span>
-                          <span className={isSpecialCharValid ? "text-green-600 text-xs" : "text-slate-500 text-xs"}>
-                            At least one special character (!@#$%^&*...)
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              hasNoSpaces ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
-                            }`}
-                          >
-                            {hasNoSpaces ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-white" />
-                            )}
-                          </span>
-                          <span className={hasNoSpaces ? "text-green-600 text-xs" : "text-red-600 text-xs"}>
-                            No leading/trailing spaces
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border transition-all duration-300 ${
-                              hasNoEmojis ? "border-green-500 bg-green-500" : "border-red-500 bg-red-500"
-                            }`}
-                          >
-                            {hasNoEmojis ? (
-                              <Check className="w-3 h-3 text-white" />
-                            ) : (
-                              <X className="w-3 h-3 text-white" />
-                            )}
-                          </span>
-                          <span className={hasNoEmojis ? "text-green-600 text-xs" : "text-red-600 text-xs"}>
-                            No emojis or special Unicode
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
-                  {/* Submit Button */}
+                  {/* Submit Button - Disabled if password doesn't meet all requirements */}
                   <button
                     type="submit"
                     className="w-full bg-[#10142c] text-white font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                    disabled={loading || googleLoading}
+                    disabled={loading || googleLoading || !isPasswordValidGlobally()}
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
@@ -811,8 +675,6 @@ const validateInstitution = (inst: string): string | null => {
                     </Link>
                   </p>
                 </div>
-
-                
               </>
             )}
           </div>
