@@ -180,7 +180,7 @@ export default function CompetitionsPage() {
 
   const handleRegister = async (registerInput: string) => {
     if (!selectedCompetition || !user) return
-    if (registerInput !== "REGISTER") {
+    if (registerInput.trim().toLowerCase() !== "register") {
       toast.error("Please type 'REGISTER' to confirm.")
       return
     }

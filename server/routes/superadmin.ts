@@ -236,7 +236,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     try {
       const origin = process.env.APP_ORIGIN;
       const actionCodeSettings = {
-        url: `${origin}/auth/login/admin`,   // or your post-completion route
+        url: `${origin}/auth/login`,   // or your post-completion route
         handleCodeInApp: false,     // use Firebase hosted page; set true if you handle link in-app
       };
       resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings as any);
@@ -245,7 +245,6 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     }
 
     // (Optional but recommended) also send an email verification link
-    // const verifyLink = await auth.generateEmailVerificationLink(email, { url: `${origin}/verify-complete` });
 
     // 5) Send invite email
     try {
