@@ -58,7 +58,7 @@ export const RegistrationModal = ({
             disabled={isLoading}
           />
           <div className="flex gap-2 pt-2">
-            <Button onClick={handleConfirm} disabled={registerInput !== "REGISTER" || isLoading} className="flex-1">
+            <Button onClick={handleConfirm} disabled={registerInput.trim().toLowerCase() !== "register" || isLoading} className="flex-1">
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
