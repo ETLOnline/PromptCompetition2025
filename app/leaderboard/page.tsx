@@ -289,7 +289,7 @@ function EmptyState() {
             {/* Additional Info */}
             <div className="pt-8 border-t border-gray-200 w-full">
               <p className="text-xs text-gray-400">
-                Currently no competitions have been created with final leaderboards. Check bback later!
+                Currently no competitions have been created with final leaderboards. Check back later!
               </p>
             </div>
           </div>
