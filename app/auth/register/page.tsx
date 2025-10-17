@@ -131,9 +131,10 @@ export default function RegisterPage() {
       return "Password cannot contain emojis or special Unicode characters."
     }
 
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) {
-      return "Password must include at least one special character (e.g., !@#$%^&*)."
+    if (!/[!@#$%^&*(),.?":{}|<>\[\]_\/~'\-`]/.test(pass)) {
+      return "Password must include at least one special character (e.g., !@#$%^&*_-/~'`)."
     }
+
 
     if (!/\d/.test(pass)) {
       return "Password must include at least one number."
@@ -157,29 +158,33 @@ export default function RegisterPage() {
   }
 
   // Calculate password strength with enhanced metrics
-  const calculatePasswordStrength = (pass: string): { strength: number; label: string; color: string; gradient: string } => {
+  const calculatePasswordStrength = (
+    pass: string
+  ): { strength: number; label: string; color: string; gradient: string } => {
     if (pass.length === 0) {
       return { strength: 0, label: "Enter password", color: "bg-slate-300", gradient: "from-slate-300 to-slate-400" }
     }
 
     let strength = 0
-    
+
     // Length-based scoring
     if (pass.length > 10) strength += 20
     if (pass.length > 15) strength += 10
     if (pass.length > 20) strength += 10
-    
-    // Character type scoring
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(pass)) strength += 20
+
+    // Character type scoring (updated special char regex)
+    const specialRegex = /[!@#$%^&*(),.?":{}|<>\[\]_\/~'\-`]/g
+
+    if (specialRegex.test(pass)) strength += 20
     if (/\d/.test(pass)) strength += 15
     if (/[A-Z]/.test(pass)) strength += 15
     if (/[a-z]/.test(pass)) strength += 10
-    
+
     // Bonus for complexity
-    const specialCount = (pass.match(/[!@#$%^&*(),.?":{}|<>]/g) || []).length
+    const specialCount = (pass.match(specialRegex) || []).length
     const numberCount = (pass.match(/\d/g) || []).length
     const upperCount = (pass.match(/[A-Z]/g) || []).length
-    
+
     if (specialCount > 1) strength += 5
     if (numberCount > 1) strength += 5
     if (upperCount > 1) strength += 5
@@ -192,7 +197,7 @@ export default function RegisterPage() {
     let label = "Very Weak"
     let color = "bg-red-500"
     let gradient = "from-red-500 to-red-600"
-    
+
     if (hasInvalidSpaces || hasEmojis || tooLong) {
       label = "Invalid"
       color = "bg-red-600"
@@ -221,6 +226,7 @@ export default function RegisterPage() {
 
     return { strength: Math.min(strength, 100), label, color, gradient }
   }
+
 
   const passwordStrength = calculatePasswordStrength(password)
 
