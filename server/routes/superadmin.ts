@@ -244,8 +244,6 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       console.error("Reset link generation failed:", e?.code, e?.message);
     }
 
-    // (Optional but recommended) also send an email verification link
-
     // 5) Send invite email
     try {
       await transporter.sendMail({
