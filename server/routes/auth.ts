@@ -185,7 +185,7 @@ router.post("/google-signup", authenticateToken, async (req: AuthenticatedReques
 //     },
 // });
 
-
+// Password reset endpoint (server generates link)
 // Password reset endpoint (server generates link)
 router.post("/reset-password", async (req, res) => {
     const { email } = req.body as PasswordResetRequest;
@@ -196,16 +196,21 @@ router.post("/reset-password", async (req, res) => {
 
     try {
         // Generate password reset link using Admin SDK
+        // Set the redirect URL to your custom reset password page
         const link = await admin.auth().generatePasswordResetLink(email, {
-            url: process.env.APP_ORIGIN + "/auth/login",
+            url: process.env.APP_ORIGIN + "/auth/reset-password",
             handleCodeInApp: true,
         });
 
+        // Extract the oobCode from the link
+        const url = new URL(link);
+        const oobCode = url.searchParams.get("oobCode");
+
         // Send email via nodemailer
         await transporter.sendMail({
-        from: `"No Reply" <${process.env.EMAIL_SENDER}>`,
-        to: email,
-        subject: "Password Reset Request",
+            from: `"No Reply" <${process.env.EMAIL_SENDER}>`,
+            to: email,
+            subject: "Password Reset Request",
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                     <p>Hello,</p>
@@ -213,11 +218,11 @@ router.post("/reset-password", async (req, res) => {
                     the platform for Prompt Engineering Competitions.</p>
                     <p>Please click the button below to set a new password:</p>
                     <p style="text-align: center;">
-                        <a href="${link}" style="display: inline-block; padding: 12px 24px; background: #0f172a; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        <a href="${process.env.APP_ORIGIN}/auth/reset-password?oobCode=${oobCode}" style="display: inline-block; padding: 12px 24px; background: #0f172a; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;">
                             Reset Your Password
                         </a>
                     </p>
-                    <p>If you did not request this, you can safely ignore this email and your password will remain unchanged.</p>
+                    <p>This link will expire in 24 hours. If you did not request this, you can safely ignore this email and your password will remain unchanged.</p>
                     <hr style="margin: 24px 0; border: none; border-top: 1px solid #ddd;">
                     <p style="font-size: 12px; color: #666;">
                         This email was sent by <strong>PEC-System</strong>, the platform for hosting and participating in Prompt Engineering Competitions.
@@ -228,9 +233,11 @@ router.post("/reset-password", async (req, res) => {
 
         return res.json({ message: "Password reset link sent to your email!" });
     } catch (err: any) {
-        return res.status(500).json({ error: "Failed to send password reset link." });
+        console.error("Error sending password reset email:", err);
+        return res.status(500).json(err);
     }
 });
+
 
 router.post("/login", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

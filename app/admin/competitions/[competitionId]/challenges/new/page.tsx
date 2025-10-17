@@ -51,6 +51,7 @@ export default function NewCompetitionPage() {
     try {
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
       setUserID(profile.uid)
+      // console.log("user role:", profile.role);
     } catch (error) {
       router.push("/");
     } finally {
@@ -119,6 +120,7 @@ export default function NewCompetitionPage() {
       // 3) Update maxScore of competition
       await getMaxScoreForCompetition(competitionId)
     } catch (error: any) {
+      console.log("Upload error:", error)
       toast({
         title: "error",
         description: "Failed to create challenge. Please try again."})

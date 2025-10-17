@@ -39,6 +39,7 @@ import {
 } from "lucide-react"
 
 // Import our new components
+import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
 import CompetitionGrid from "@/components/competition/CompetitionGrid"
 import CreateCompetitionModal from "@/components/competition/CreateCompetitionModal"
 import EditCompetitionModal from "@/components/competition/EditCompetitionModal"
@@ -113,6 +114,7 @@ export default function ModernCompetitionSelector() {
     try {
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
       setRole(profile.role)
+      // console.log("User role:", profile.role);
     } 
     catch (error) 
     {
@@ -509,109 +511,15 @@ export default function ModernCompetitionSelector() {
       </div>
 
       {/* View Competition Details Modal */}
-      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="bg-white border-0 shadow-2xl max-w-2xl">
-          <DialogHeader className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Eye className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Competition Details</DialogTitle>
-                <p className="text-gray-600 text-sm">View complete information about this competition</p>
-              </div>
-            </div>
-          </DialogHeader>
-          {selectedCompetition && (
-            <div className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-xl font-bold text-gray-900 mb-3 break-words leading-tight">
-                  {selectedCompetition.title}
-                </h3>
-                <div className="bg-white rounded-md p-4 max-h-32 overflow-y-auto border">
-                  <p className="text-gray-700 leading-relaxed text-sm break-all overflow-wrap-anywhere">
-                    {selectedCompetition.description}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-6">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    <Label className="text-base font-semibold text-blue-900">Schedule</Label>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-lg font-bold text-gray-900">
-                      {(() => {
-                        const formatted = formatCompetitionDateTime(
-                          selectedCompetition.startDeadline,
-                          selectedCompetition.endDeadline,
-                        )
-                        return formatted.dateDisplay.replace("Start Date: ", "").replace("    End Date: ", " - ")
-                      })()}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {(() => {
-                        const formatted = formatCompetitionDateTime(
-                          selectedCompetition.startDeadline,
-                          selectedCompetition.endDeadline,
-                        )
-                        return formatted.timeDisplay
-                      })()}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="w-5 h-5 text-green-600" />
-                      <Label className="text-base font-semibold text-green-900">Location</Label>
-                    </div>
-                    <div className="text-sm text-gray-900 capitalize font-medium break-words">
-                      {selectedCompetition.location}
-                    </div>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="w-5 h-5 text-yellow-600" />
-                      <Label className="text-base font-semibold text-yellow-900">Prize Money</Label>
-                    </div>
-                    <div className="text-sm text-gray-900 font-medium break-words">
-                      {selectedCompetition.prizeMoney}
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <Label className="text-base font-semibold text-gray-900 mb-3 block">Status</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${selectedCompetition.isActive ? "bg-green-400" : "bg-red-400"}`}
-                      ></div>
-                      <span className="text-sm font-medium text-gray-700">
-                        {selectedCompetition.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${selectedCompetition.isLocked ? "bg-gray-400" : "bg-green-400"}`}
-                      ></div>
-                      <span className="text-sm font-medium text-gray-700">
-                        {selectedCompetition.isLocked ? "Locked" : "Unlocked"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ViewCompetitionDetailsModal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false)
+          setSelectedCompetition(null)
+        }}
+        competition={selectedCompetition}
+      />
+
 
       {/* Create Competition Modal */}
       <CreateCompetitionModal

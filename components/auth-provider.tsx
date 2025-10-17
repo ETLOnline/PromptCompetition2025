@@ -6,27 +6,28 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
-  User,sendEmailVerification,
+  User,
+  sendEmailVerification,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  UserCredential,
 } from "firebase/auth"
 
-import { doc, setDoc, collection } from "firebase/firestore"
+import { doc, setDoc, collection, getDoc } from "firebase/firestore"
 import { useRouter } from "next/navigation"
-// Define allowed roles
-import { UserCredential } from "firebase/auth";
+
 type Role = "user" | "admin" | "superadmin" | "judge" | null
 
-
 interface AuthContextType {
-  user: User | null;
-  role: string | null; // Add role to context
-  signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>; // Added logout
-  signInWithGoogle: () => Promise<UserCredential>; // Added Google sign-in
-  loading: boolean;
+  user: User | null
+  fullName: string | null
+  role: string | null;
+  signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
+  signInWithGoogle: () => Promise<UserCredential>
+  loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -34,19 +35,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const [fullName, setFullName] = useState<string | null>(null)
   const [role, setRole] = useState<Role>(null)
   const [loading, setLoading] = useState(true)
+
+  // Fetch user profile from Firestore
+  const fetchUserProfile = async (uid: string) => {
+    try {
+      const userRef = doc(db, "users", uid)
+      const userSnap = await getDoc(userRef)
+
+      if (userSnap.exists()) {
+        const data = userSnap.data()
+        setFullName(data.fullName || null)
+        setRole(data.role || "user")
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error)
+    }
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser)
 
       if (currentUser) {
-        const tokenResult = await currentUser.getIdTokenResult(true)
-        const tokenRole = tokenResult.claims.role
+        // Try to get role from token claims first
+        try {
+          const tokenResult = await currentUser.getIdTokenResult(true)
+          const tokenRole = tokenResult.claims.role
+          setRole(typeof tokenRole === "string" ? (tokenRole as Role) : null)
+        } catch (error) {
+          console.error("Error getting token role:", error)
+        }
 
-        setRole(typeof tokenRole === "string" ? (tokenRole as Role) : null)
+        // Fetch full profile from Firestore (fullName and role from db)
+        await fetchUserProfile(currentUser.uid)
       } else {
+        setFullName(null)
         setRole(null)
       }
 
@@ -57,116 +83,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const signUp = async (email: string, password: string, fullName: string, institution: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+    const user = userCredential.user
 
     // Send verification email
-    // await sendEmailVerification(user);
-    await sendEmailVerificationFromBackend(user.email!, user.uid); // user.email! asserts it's not null
+    await sendEmailVerificationFromBackend(user.email!, user.uid)
 
-    // Create user document with isVerified flag
+    // Create user document with fullName and institution
     await setDoc(doc(collection(db, "users"), user.uid), {
       fullName,
       email,
       institution,
-      createdAt: new Date().toISOString()
-    });
-  };
+      createdAt: new Date().toISOString(),
+    })
+
+    // Cache the full name immediately
+    setFullName(fullName)
+  }
 
   async function sendEmailVerificationFromBackend(email: string, uid: string): Promise<boolean> {
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/send-verification-email`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/send-verification-email`
     try {
       const response = await fetch(backendUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, uid }),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send verification email from backend.');
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to send verification email from backend.")
       }
 
-      const result = await response.json();
-      console.log('Backend response for email verification:', result.message);
-      return true; // Successfully sent
+      const result = await response.json()
+      console.log("Backend response for email verification:", result.message)
+      return true
     } catch (error: any) {
-      console.error('Error requesting email verification from backend:', error.message);
-      alert(`Failed to send verification email: ${error.message}`);
-      // Optionally, handle specific errors (e.g., if already verified)
-      return false; // Failed to send
+      console.error("Error requesting email verification from backend:", error.message)
+      // alert(`Failed to send verification email: ${error.message}`)
+      return false
     }
   }
 
-
   const signIn = async (email: string, password: string) => {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    // console.log("user verification status", user.emailVerified)
+    const userCredential = await signInWithEmailAndPassword(auth, email, password)
+    const user = userCredential.user
 
     if (!user.emailVerified) {
-      await auth.signOut();
-      throw new Error("Please verify your email before signing in.");
+      await auth.signOut()
+      throw new Error("Please verify your email before signing in.")
     }
-  };
+
+    // Fetch user profile on sign in
+    await fetchUserProfile(user.uid)
+  }
 
   const logout = async () => {
     await signOut(auth)
     setUser(null)
+    setFullName(null)
     setRole(null)
     router.push("/")
   }
 
-  // Google sign-in function
   const signInWithGoogle = async (): Promise<UserCredential> => {
-    const provider = new GoogleAuthProvider();
+    const provider = new GoogleAuthProvider()
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      // Optionally, create user doc in Firestore if new
-      const usersCollectionRef = collection(db, "users");
-      await setDoc(doc(usersCollectionRef, user.uid), {
-        fullName: user.displayName || '',
-        email: user.email || '',
-        institution: '', // Google doesn't provide institution by default
-        createdAt: new Date().toISOString(),
-      }, { merge: true });
-      return result; // Explicitly return UserCredential
+      const result = await signInWithPopup(auth, provider)
+      const user = result.user
+
+      // Create or update user doc in Firestore
+      const usersCollectionRef = collection(db, "users")
+      await setDoc(
+        doc(usersCollectionRef, user.uid),
+        {
+          fullName: user.displayName || "",
+          email: user.email || "",
+          institution: "", // Google doesn't provide institution by default
+          createdAt: new Date().toISOString(),
+        },
+        { merge: true }
+      )
+
+      // Cache the full name immediately
+      setFullName(user.displayName || "")
+
+      return result
     } catch (error: any) {
-      let errorMessage = 'Failed to sign in with Google.';
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'Google sign-in popup was closed.';
+      let errorMessage = "Failed to sign in with Google."
+      if (error.code === "auth/popup-closed-by-user") {
+        errorMessage = "Google sign-in popup was closed."
       }
-      throw new Error(errorMessage);
+      throw new Error(errorMessage)
     }
-  };
-  // const signInWithGoogle = async () => {
-  //   const provider = new GoogleAuthProvider();
-  //   try {
-  //     const result = await signInWithPopup(auth, provider);
-  //     const user = result.user;
-  //     // Optionally, create user doc in Firestore if new
-  //     const usersCollectionRef = collection(db, "users");
-  //     await setDoc(doc(usersCollectionRef, user.uid), {
-  //       fullName: user.displayName || '',
-  //       email: user.email || '',
-  //       institution: '', // Google doesn't provide institution by default
-  //       createdAt: new Date().toISOString(),
-  //     }, { merge: true });
-  //   } catch (error: any) {
-  //     let errorMessage = 'Failed to sign in with Google.';
-  //     if (error.code === 'auth/popup-closed-by-user') {
-  //       errorMessage = 'Google sign-in popup was closed.';
-  //     }
-  //     throw new Error(errorMessage);
-  //   }
-  // };
+  }
 
   return (
     <AuthContext.Provider
-      value={{ user, role, signUp, signIn, logout, signInWithGoogle, loading }}
+      value={{ user, fullName, role, signUp, signIn, logout, signInWithGoogle, loading }}
     >
       {!loading && children}
     </AuthContext.Provider>

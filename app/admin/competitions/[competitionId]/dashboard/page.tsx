@@ -124,6 +124,7 @@ export default function AdminDashboard() {
     try {
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`)
       setRole(profile.role)
+      // console.log("User role:", profile.role)
     } catch (error) {
       router.push("/")
       return

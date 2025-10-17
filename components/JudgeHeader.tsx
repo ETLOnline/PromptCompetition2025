@@ -13,13 +13,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, LogOut, FileText } from "lucide-react"
+import { ChevronDown, LogOut } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import Image from "next/image"
 
 export default function JudgeHeader() {
-  const { user, logout } = useAuth()
+  const { user, fullName, logout } = useAuth()
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string
@@ -56,54 +56,56 @@ export default function JudgeHeader() {
     return words.slice(0, 2).map((w) => w[0]).join("").toUpperCase()
   }
 
-  const displayName = user?.displayName || user?.email?.split("@")[0] || "Judge"
-  const userInitials = getUserInitials(user?.displayName || user?.email || "Judge")
+  // Use fullName from context, fallback to email username
+  const displayFullName = fullName || user?.email?.split("@")[0] || "Judge"
+  const userInitials = getUserInitials(displayFullName)
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Left Section - Logo and Title */}
-            <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <div className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
-                {/* Logo (External Link) */}
-                <div className="flex-shrink-0">
+              {/* Logo (External Link) */}
+              <div className="flex-shrink-0">
                 <a
-                    href="https://www.etlonline.org/"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  href="https://www.etlonline.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                    <Image
+                  <Image
                     src="/images/Logo-for-Picton-Blue.png"
                     alt="Empowerment Through Learning Logo"
                     width={120}
                     height={120}
                     className="object-contain"
                     priority
-                    />
+                  />
                 </a>
-                </div>
+              </div>
 
-                {/* Title (Conditional internal navigation) */}
-                <div className="flex flex-col">
-                  <h1 onClick={() => router.push(`/judge/${competitionId}`)}
-                    className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
-                  >
+              {/* Title (Conditional internal navigation) */}
+              <div className="flex flex-col">
+                <h1
+                  onClick={() => router.push(`/judge/${competitionId}`)}
+                  className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
+                >
                   Judge Dashboard
-                  </h1>
+                </h1>
 
                 {competitionId && (
-                    loading ? (
+                  loading ? (
                     <div className="animate-pulse bg-gray-200 rounded h-4 w-40" />
-                    ) : (
+                  ) : (
                     <p className="text-sm text-gray-500 leading-tight">
-                        {title || "Competition"}
+                      {title || "Competition"}
                     </p>
-                    )
+                  )
                 )}
-                </div>
+              </div>
             </div>
-        </div>
+          </div>
 
           {/* Right Section - User Menu */}
           <div className="flex items-center space-x-4">
@@ -127,7 +129,7 @@ export default function JudgeHeader() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-gray-900">{displayName}</p>
+                    <p className="text-sm font-semibold text-gray-900">{displayFullName}</p>
                     <p className="text-xs text-gray-500">{user?.email || "judge@example.com"}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -142,7 +144,7 @@ export default function JudgeHeader() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
+                      <p className="text-sm font-semibold leading-none text-gray-900">{displayFullName}</p>
                       <p className="text-xs leading-none text-gray-500">{user?.email || "judge@example.com"}</p>
                     </div>
                   </div>

@@ -1,3 +1,4 @@
+//register/page.tsx
 "use client"
 import type React from "react"
 import { useState } from "react"
@@ -119,6 +120,10 @@ export default function RegisterPage() {
       return "Password cannot have leading or trailing spaces."
     }
 
+    if (/\s/.test(pass)) {
+      return "Spaces are not allowed in the password."
+    }
+
     if (pass.length <= 10) {
       return "Password must be longer than 10 characters."
     }
@@ -132,7 +137,7 @@ export default function RegisterPage() {
     }
 
     if (!/[!@#$%^&*(),.?":{}|<>\[\]_\/~'`=+\-\\;]/.test(pass)) {
-      return "Password must include at least one special character (e.g., !@#$%^&*()_+-=[]{}|;:',.<>?/\\~`=)."
+      return "Password must include at least one special character"
     }
 
     if (!/\d/.test(pass)) {
@@ -282,10 +287,9 @@ export default function RegisterPage() {
     }
 
     setPassword(value)
-    
-    if (passwordError) {
-      setPasswordError(null)
-    }
+      
+    const error = validatePassword(value)
+    setPasswordError(error)
   }
 
   const handlePasswordBlur = () => {
@@ -380,6 +384,21 @@ export default function RegisterPage() {
       setGoogleLoading(false)
     }
   }
+
+  // Check if all required fields are valid
+  const isFormValid =
+    fullName.trim().length > 0 &&
+    institution.trim().length > 0 &&
+    email.trim().length > 0 &&
+    password.trim().length > 0 &&
+    !validateFullName(fullName) &&
+    !validateInstitution(institution) &&
+    !validatePassword(password) &&
+    !emailError &&
+    !nameError &&
+    !institutionError &&
+    !passwordError;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
@@ -479,13 +498,22 @@ export default function RegisterPage() {
                         id="email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          const newEmail = e.target.value
+                          setEmail(newEmail)
+
+                          // If user is editing and there was a "already registered" message, remove it immediately
+                          if (emailError === "This email is already registered. Please sign in instead.") {
+                            setEmailError(null)
+                          }
+                        }}
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${
                           emailError ? "border-red-500 focus:border-red-500" : "border-slate-300 focus:border-blue-500"
                         }`}
                         placeholder="example@email.com"
                         disabled={loading}
                       />
+
                     </div>
                     {emailError && (
                       <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
@@ -604,18 +632,17 @@ export default function RegisterPage() {
                   {/* Submit Button - Disabled if password doesn't meet all requirements */}
                   <button
                     type="submit"
-                    className="w-full bg-[#10142c] text-white font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                    disabled={loading || googleLoading || !isPasswordValidGlobally()}
+                    disabled={!isFormValid || loading || googleLoading}
+                    className={`w-full font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2
+                      ${
+                        !isFormValid || loading || googleLoading
+                          ? "bg-slate-400 cursor-not-allowed opacity-60"
+                          : "bg-[#10142c] text-white hover:shadow-xl hover:-translate-y-1"
+                      }`}
                   >
-                    {loading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Creating Account...</span>
-                      </div>
-                    ) : (
-                      "Register"
-                    )}
+                    {loading ? "Registering..." : "Register"}
                   </button>
+
 
                   {/* Divider */}
                   <div className="relative">

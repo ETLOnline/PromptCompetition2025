@@ -15,19 +15,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Settings, LogOut, Grid3X3, Shield } from "lucide-react"
+import { ChevronDown, LogOut, Shield } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import Image from "next/image"
 
 
 export default function ModernAdminHeader() {
-  const { user, role, logout } = useAuth()
+  const { user, fullName, role, logout } = useAuth()
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string
   const [title, setTitle] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
 
   useEffect(() => {
     const fetchTitle = async () => {
@@ -53,6 +54,7 @@ export default function ModernAdminHeader() {
   }, [competitionId])
 
   const getUserInitials = (name: string) => {
+    // console.log("full name:", name)
     if (!name) return "AD"
     const words = name.split(" ").filter((word) => word.length > 0)
     if (words.length === 1) {
@@ -67,26 +69,16 @@ export default function ModernAdminHeader() {
       .toUpperCase()
   }
 
-  const getDisplayName = (name: string) => {
+  const getFirstName = (name: string) => {
     if (!name) return "Admin"
     const words = name.split(" ").filter((word) => word.length > 0)
-    
-    if (words.length === 1) {
-      // If only one word, return it as is
-      return words[0]
-    } else if (words.length === 2) {
-      // If two words, return the first name
-      return words[0]
-    } else if (words.length >= 3) {
-      // If three or more words, return the middle name
-      return words[1]
-    }
-    return words[0]
+    return words[0] || "Admin"
   }
 
-  const displayName = user?.displayName || user?.email?.split("@")[0] || "Admin"
-  const userInitials = getUserInitials(user?.displayName || user?.email || "Admin")
-  const shortDisplayName = getDisplayName(displayName)
+  // Use fullName from context, fallback to email username
+  const displayFullName = fullName || user?.email?.split("@")[0] || "Admin"
+  const displayFirstName = getFirstName(displayFullName)
+  const userInitials = getUserInitials(displayFullName)
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -117,7 +109,7 @@ export default function ModernAdminHeader() {
               <div className="flex flex-col">
                 
                 <h1 className="text-xl font-semibold text-gray-900 leading-tight">
-                    Welcome back, {shortDisplayName}
+                    Welcome back, {displayFirstName}
                 </h1>
 
                 {competitionId && (
@@ -172,7 +164,7 @@ export default function ModernAdminHeader() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden sm:block text-left">
-                    <p className="text-sm font-semibold text-gray-900 leading-tight">{shortDisplayName}</p>
+                    <p className="text-sm font-semibold text-gray-900 leading-tight">{displayFullName}</p>
                     <p className="text-xs text-gray-500 leading-tight">{user?.email || "admin@example.com"}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -187,7 +179,7 @@ export default function ModernAdminHeader() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
+                      <p className="text-sm font-semibold leading-none text-gray-900">{displayFullName}</p>
                       <p className="text-xs leading-none text-gray-500">{user?.email || "admin@example.com"}</p>
                       {role === "superadmin" && (
                         <Badge
