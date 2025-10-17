@@ -69,7 +69,10 @@ export default function Login({ onForgotPassword }: LoginProps) {
         errorMessage = 'Too many failed attempts. Please try again later.';
       } else if (err.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email address format.';
+      } else if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Invalid password. Please try again';
       }
+      
       
       setError(errorMessage);
     } finally {

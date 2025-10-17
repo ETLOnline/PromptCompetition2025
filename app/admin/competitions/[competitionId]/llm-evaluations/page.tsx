@@ -60,7 +60,7 @@ export default function LlmEvaluationsPage() {
   const checkAuth = async () => {
     try {
       await fetchWithAuth(
-        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_SUPER_AUTH}`
+        `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`
       )
       return true
     } catch (error) {

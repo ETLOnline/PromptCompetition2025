@@ -36,10 +36,12 @@ export default function ForgotPasswordModal({ isOpen, onClose, initialEmail = ""
         if (!response.ok) {
             // Try to parse as JSON first, fall back to text
             let errorMessage = "Failed to send reset link.";
+            // console.log(response)
             
             try {
                 const errorData = await response.json();
                 errorMessage = errorData.error || errorData.message || errorMessage;
+                console.log(errorData)
             } catch {
                 // If JSON parsing fails, try text
                 const errText = await response.text();
@@ -54,7 +56,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, initialEmail = ""
         setResetMessage(data.message || "Password reset link sent to your email!")
         
     } catch (err: any) {
-        console.error("Password reset error:", err)
+        console.error("Password reset error:", err.message) //
         setResetMessage(err.message || "Failed to send reset link.")
     } finally {
         setIsResetting(false)
@@ -92,10 +94,14 @@ export default function ForgotPasswordModal({ isOpen, onClose, initialEmail = ""
               id="emailInput"
               placeholder="Enter your email address"
               value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
+              onChange={(e) => {
+                setResetEmail(e.target.value)
+                if (resetMessage) setResetMessage("") // Clear message when user starts editing
+              }}
               className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
               disabled={isResetting}
             />
+
           </div>
 
           <button
@@ -117,7 +123,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, initialEmail = ""
         {resetMessage && (
           <p
             className={`mt-4 text-center text-sm ${
-              resetMessage.toLowerCase().includes("failed") || resetMessage.toLowerCase().includes("no account")
+              /error|failed|no user|not found|invalid/i.test(resetMessage)
                 ? "text-red-700"
                 : "text-green-700"
             }`}
@@ -125,6 +131,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, initialEmail = ""
             {resetMessage}
           </p>
         )}
+
       </div>
     </div>
   )

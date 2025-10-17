@@ -9,26 +9,34 @@ import { db } from "../../config/firebase-admin.js"; // Admin SDK Firestore inst
 export async function fetchAssignments(userId: string): Promise<JudgeAssignment[]> {
   try {
     const snapshot = await db.collectionGroup("judges").where("judgeId", "==", userId).get();
-    const assignmentData: JudgeAssignment[] = [];
 
-    snapshot.docs.forEach((doc) => {
+    if (snapshot.empty) return [];
+
+    return snapshot.docs.map((doc) => {
       const data = doc.data();
 
-      assignmentData.push({
+      return {
         id: data.judgeId,
         title: data.competitionTitle || `Competition ${data.competitionId}`,
         competitionId: data.competitionId,
         submissionCount: data.assignedCountTotal || 0,
         assignedDate: data.updatedAt,
         assignedCountsByChallenge: data.assignedCountsByChallenge || {},
-      });
+      };
     });
+  } catch (error: any) {
+    // Handle Firestore collectionGroup precondition error gracefully
+    if (error.code === 9 || error.message?.includes("FAILED_PRECONDITION")) {
+      console.warn("No 'judges' subcollection exists yet. Returning empty list.");
+      return [];
+    }
 
-    return assignmentData;
-  } catch (error) {
-    throw new Error("Failed to fetch judge assignments");
+    console.error("Unexpected error fetching judge assignments:", error);
+    return [];
   }
 }
+
+
 
 /**
  * Fetch a single assignment for a specific judge and competition
