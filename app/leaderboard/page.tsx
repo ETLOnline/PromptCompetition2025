@@ -16,7 +16,7 @@ import type { Competition, FinalLeaderboardEntry, DisplayEntry } from "@/types/l
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable"
 import { LeaderboardBanner } from "@/components/leaderboard/LeaderboardBanner"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, ChevronLeft, ChevronRight, Trophy, Users, Target } from "lucide-react"
+import { AlertCircle, ChevronLeft, ChevronRight, Trophy, Users, Target, RefreshCw, Inbox } from "lucide-react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 
@@ -69,6 +69,7 @@ export default function LeaderboardPage() {
   // Fetch competitions for dropdown
   const fetchCompetitions = async () => {
     setLoading(true)
+    setError(null)
     try {
       const compQuery = query(
         collection(db, "competitions"),
@@ -89,9 +90,9 @@ export default function LeaderboardPage() {
         })
         setCompetitions(comps)
         setSelectedCompetitionId(comps[0].competitionId)
-        setError(null)
       } else {
-        setError("No competitions with final leaderboard found.")
+        // No competitions found - this is not an error, just empty state
+        setCompetitions([])
       }
     } catch (err: any) {
       console.error(err)
@@ -155,15 +156,21 @@ export default function LeaderboardPage() {
 
   const selectedCompetition = competitions.find((c) => c.competitionId === selectedCompetitionId) || null
 
+  // Determine which state to show
+  const showEmptyState = !loading && competitions.length === 0 && !error
+  const showErrorState = !loading && error !== null
+
   return (
     <>
       <Navbar />
 
       {loading && leaderboard.length === 0 ? (
         <LeaderboardSkeleton />
-      ) : error || !selectedCompetition ? (
+      ) : showErrorState ? (
         <ErrorState error={error} onRetry={fetchCompetitions} />
-      ) : (
+      ) : showEmptyState ? (
+        <EmptyState />
+      ) : selectedCompetition ? (
         <LeaderboardContent
           competitions={competitions}
           selectedCompetition={selectedCompetition}
@@ -175,40 +182,116 @@ export default function LeaderboardPage() {
           hasMore={hasMore}
           loading={loading}
         />
-      )}
+      ) : null}
 
       <Footer />
     </>
   )
 }
 
+// Enhanced Error State - For actual errors
 function ErrorState({ error, onRetry }: { error: string | null; onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 pt-16">
       <div className="container mx-auto px-4 py-16 max-w-4xl">
-        <div className="bg-white/80 backdrop-blur-sm border border-red-100 rounded-3xl p-8 shadow-xl">
-          <div className="flex flex-col items-center text-center space-y-6">
+        <div className="bg-white/90 backdrop-blur-md border border-red-100 rounded-3xl p-12 shadow-2xl">
+          <div className="flex flex-col items-center text-center space-y-8">
+            {/* Animated Icon */}
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-400 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <AlertCircle className="h-10 w-10 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600 rounded-3xl blur-2xl opacity-30 animate-pulse"></div>
+              <div className="relative w-24 h-24 bg-gradient-to-br from-red-400 via-red-500 to-red-600 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                <AlertCircle className="h-12 w-12 text-white drop-shadow-lg" strokeWidth={2.5} />
               </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full animate-pulse"></div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full animate-ping"></div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full"></div>
             </div>
-            <div className="space-y-3">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                Oops! Something went wrong
+
+            {/* Error Message */}
+            <div className="space-y-4 max-w-lg">
+              <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent">
+                Oops! Something Went Wrong
               </h3>
-              <p className="text-gray-600 font-medium max-w-md">
-                {error || "An unknown error occurred while loading the leaderboard. Don't worry, we're on it!"}
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                <p className="text-red-700 font-medium text-sm leading-relaxed">
+                  {error || "An unexpected error occurred while loading the leaderboard. Our team has been notified and is working on it!"}
+                </p>
+              </div>
+              <p className="text-gray-500 text-sm">
+                This might be a temporary issue. Please try refreshing the page.
               </p>
             </div>
+
+            {/* Action Button */}
             <button
               onClick={onRetry}
-              className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-2xl hover:shadow-xl hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-200"
+              className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-bold rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-300/50 overflow-hidden"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <RefreshCw className="relative z-10 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
               <span className="relative z-10">Try Again</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </button>
+
+            {/* Additional Help */}
+            <div className="pt-4 border-t border-gray-200 w-full">
+              <p className="text-xs text-gray-400">
+                Still having issues? Contact support at{" "}
+                <a href="mailto:support@example.com" className="text-indigo-600 hover:text-indigo-700 font-medium underline">
+                  etl1competition@gmail.com
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Empty State - For when no competitions exist (not an error)
+function EmptyState() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 pt-16">
+      <div className="container mx-auto px-4 py-16 max-w-4xl">
+        <div className="bg-white/90 backdrop-blur-md border border-gray-100 rounded-3xl p-12 shadow-2xl">
+          <div className="flex flex-col items-center text-center space-y-8">
+            {/* Animated Icon */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-3xl blur-2xl opacity-20 animate-pulse"></div>
+              <div className="relative w-24 h-24 bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-3xl flex items-center justify-center shadow-xl transform hover:scale-105 transition-transform duration-300">
+                <Trophy className="h-12 w-12 text-indigo-600 drop-shadow-sm" strokeWidth={2} />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                <Inbox className="h-3 w-3 text-white" />
+              </div>
+            </div>
+
+            {/* Empty Message */}
+            <div className="space-y-4 max-w-lg">
+              <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-indigo-800 to-purple-800 bg-clip-text text-transparent">
+                No Competitions Available
+              </h3>
+              <p className="text-gray-600 font-medium leading-relaxed">
+                There are currently no competitions with final leaderboards available.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Check back soon for upcoming competitions and exciting challenges!
+              </p>
+            </div>
+
+            {/* Decorative Elements */}
+            <div className="flex items-center gap-4 pt-4">
+              <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-medium text-indigo-700">New competitions coming soon</span>
+              </div>
+            </div>
+
+            {/* Additional Info */}
+            <div className="pt-8 border-t border-gray-200 w-full">
+              <p className="text-xs text-gray-400">
+                Currently no competitions have been created with final leaderboards.
+              </p>
+            </div>
           </div>
         </div>
       </div>
