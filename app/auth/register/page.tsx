@@ -131,10 +131,9 @@ export default function RegisterPage() {
       return "Password cannot contain emojis or special Unicode characters."
     }
 
-    if (!/[!@#$%^&*(),.?":{}|<>\[\]_\/~'\-`]/.test(pass)) {
-      return "Password must include at least one special character (e.g., !@#$%^&*_-/~'`)."
+    if (!/[!@#$%^&*(),.?":{}|<>\[\]_\/~'`=+\-\\;]/.test(pass)) {
+      return "Password must include at least one special character (e.g., !@#$%^&*()_+-=[]{}|;:',.<>?/\\~`=)."
     }
-
 
     if (!/\d/.test(pass)) {
       return "Password must include at least one number."
@@ -173,7 +172,7 @@ export default function RegisterPage() {
     if (pass.length > 20) strength += 10
 
     // Character type scoring (updated special char regex)
-    const specialRegex = /[!@#$%^&*(),.?":{}|<>\[\]_\/~'\-`]/g
+    const specialRegex = /[!@#$%^&*(),.?":{}|<>\[\]_\/~'`=+\-\\;]/g
 
     if (specialRegex.test(pass)) strength += 20
     if (/\d/.test(pass)) strength += 15
