@@ -162,7 +162,7 @@ app.listen(PORT, async () => {
   try {
     await recoverLocksOnStartup()
   } catch (error) {
-    console.error("❌ Failed to recover locks on startup:", error)
+    console.error("❌ Failed to recover lock on startup:", error)
   }
 });
 

@@ -15,7 +15,7 @@ var app = (0, app_1.initializeApp)({
 // Get the Auth service instance from the initialized app
 var auth = (0, auth_1.getAuth)(app);
 // Define the User ID and the custom role
-var targetUid = "your-id"; // Use your desired UID here, perhaps from an env var
+var targetUid = "0Pz0JyaNUlRAs7fYEg7jatPXSwy2"; // Use your desired UID here, perhaps from an env var
 var roleToSet = "superadmin"; // This must match your Firestore rule's expectation
 console.log("Attempting to set custom claims for UID:", targetUid);
 auth

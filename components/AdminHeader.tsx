@@ -31,6 +31,7 @@ export default function ModernAdminHeader() {
 
 
   useEffect(() => {
+    console.log("user role:", role)
     const fetchTitle = async () => {
       if (!competitionId) {
         setLoading(false)
