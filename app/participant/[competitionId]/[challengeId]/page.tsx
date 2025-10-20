@@ -420,6 +420,12 @@ export default function ChallengePage() {
                         disabled={challenge.isCompetitionLocked}
                       />
                     </div>
+                    {hasPreviousSubmission && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 mb-2 mt-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>You have already submitted this challenge. You can update your submission below.</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between pt-2">
                       <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                         Characters: <span className="font-semibold">{prompt.length}</span> | Words:{" "}
@@ -431,7 +437,13 @@ export default function ChallengePage() {
                         className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Send className="h-4 w-4 mr-2" />
-                        {loading ? "Submitting..." : "Submit Prompt"}
+                        {loading
+                          ? hasPreviousSubmission
+                            ? "Updating..."
+                            : "Submitting..."
+                          : hasPreviousSubmission
+                          ? "Update Prompt"
+                          : "Submit Prompt"}
                       </Button>
                     </div>
                     {/* Confirmation Modal */}
@@ -488,7 +500,13 @@ export default function ChallengePage() {
                                 }
                               }}
                             >
-                              {loading ? "Submitting..." : hasPreviousSubmission ? "Update" : "Submit"}
+                                {loading
+                                  ? hasPreviousSubmission
+                                    ? "Updating..."
+                                    : "Submitting..."
+                                  : hasPreviousSubmission
+                                  ? "Update"
+                                  : "Submit"}
                             </Button>
 
                             <Button

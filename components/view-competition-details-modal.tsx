@@ -28,8 +28,14 @@ export const ViewCompetitionDetailsModal = ({ isOpen, onClose, competition }: Vi
   const formattedSchedule = formatCompetitionDateTime(competition.startDeadline, competition.endDeadline)
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border-0 shadow-2xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent
+        className="bg-white border-0 shadow-2xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => {
+          // prevent closing when clicking outside
+          e.preventDefault()
+        }}
+      >
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">

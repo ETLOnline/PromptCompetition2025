@@ -35,10 +35,13 @@ export default function CreateCompetitionModal({
     systemPrompt: "", 
   })
   const [formError, setFormError] = useState<string | null>(null)
+  const [touched, setTouched] = useState(false)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
   const handleFormChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setFormError(null)
+    setTouched(true)
   }
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -119,12 +122,31 @@ export default function CreateCompetitionModal({
       systemPrompt: "",
     })
     setFormError(null)
+    setTouched(false)
     onClose()
   }
 
+  const handleAttemptClose = () => {
+    if (!touched) {
+      handleClose()
+      return
+    }
+
+    // show confirmation
+    setShowDiscardConfirm(true)
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-0 shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto">
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleAttemptClose() }}>
+        <DialogContent
+          className="bg-white border-0 shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => {
+            // Prevent Radix from closing automatically and handle attempt
+            e.preventDefault()
+            handleAttemptClose()
+          }}
+        >
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
@@ -253,7 +275,10 @@ export default function CreateCompetitionModal({
               type="button"
               variant="outline"
               className="border-gray-200 text-gray-700 hover:bg-gray-50 bg-transparent"
-              onClick={handleClose}
+              onClick={() => {
+                // treat explicit cancel click as an attempt to close
+                handleAttemptClose()
+              }}
             >
               Cancel
             </Button>
@@ -268,6 +293,36 @@ export default function CreateCompetitionModal({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+
+      {/* Discard changes confirmation dialog */}
+      <Dialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+        <DialogContent className="sm:max-w-[425px] p-6">
+          <DialogHeader className="flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-yellow-100 text-yellow-600 mb-4">
+              <Plus className="w-8 h-8" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Discard Changes?</DialogTitle>
+            <p className="text-base text-gray-600 mt-2">Are you sure you want to discard the entered data?</p>
+          </DialogHeader>
+
+          <DialogFooter className="flex gap-3 pt-4">
+            <Button variant="outline" onClick={() => setShowDiscardConfirm(false)} className="flex-1">
+              Continue editing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowDiscardConfirm(false)
+                handleClose()
+              }}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              Discard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

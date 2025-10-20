@@ -43,6 +43,8 @@ export default function EditCompetitionModal({
     systemPrompt: "",
   })
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [touched, setTouched] = useState(false)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editFormError, setEditFormError] = useState<string | null>(null)
 
   const formatForDatetimeLocal = (utcIsoString: string): string => {
@@ -85,6 +87,8 @@ export default function EditCompetitionModal({
       [name]: type === "checkbox" ? checked : value,
     }))
 
+    setTouched(true)
+
     // Clear error when user starts typing
     setEditFormError(null)
   }
@@ -97,6 +101,7 @@ export default function EditCompetitionModal({
 
     // Clear error when user changes checkbox
     setEditFormError(null)
+    setTouched(true)
   }
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -144,10 +149,24 @@ export default function EditCompetitionModal({
     }
   }
 
+  const handleCloseAttempt = () => {
+    if (!touched) {
+      onClose()
+      return
+    }
+    setShowDiscardConfirm(true)
+  }
+
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-white border-0 shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleCloseAttempt() }}>
+        <DialogContent
+          className="bg-white border-0 shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => {
+            e.preventDefault()
+            handleCloseAttempt()
+          }}
+        >
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
@@ -348,7 +367,7 @@ export default function EditCompetitionModal({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={onClose}
+                    onClick={() => handleCloseAttempt()}
                     className="border-gray-200 text-gray-700 hover:bg-gray-50 bg-transparent"
                   >
                     <X className="w-4 h-4 mr-2" />
@@ -369,6 +388,35 @@ export default function EditCompetitionModal({
           </form>
         </DialogContent>
       </Dialog>
+        {/* Discard confirmation */}
+        <Dialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+          <DialogContent className="sm:max-w-[425px] p-6">
+            <DialogHeader className="flex flex-col items-center text-center">
+              <div className="p-3 rounded-full bg-yellow-100 text-yellow-600 mb-4">
+                <Info className="w-8 h-8" />
+              </div>
+              <DialogTitle className="text-2xl font-bold text-gray-900">Discard Changes?</DialogTitle>
+              <p className="text-base text-gray-600 mt-2">Are you sure you want to discard the changes you made?</p>
+            </DialogHeader>
+
+            <DialogFooter className="flex gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowDiscardConfirm(false)} className="flex-1">
+                Continue editing
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowDiscardConfirm(false)
+                  setTouched(false)
+                  onClose()
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                Discard
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
