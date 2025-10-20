@@ -352,55 +352,157 @@ export default function CompetitionsPage() {
                 <CompetitionSkeleton key={i} />
               ))}
             </div>
-          ) : filteredCompetitions.length === 0 ? (
-            <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
           ) : (
-            <div className="space-y-12">
-              <CompetitionSection
-                title="Active Competitions"
-                competitions={groupedCompetitions.active}
-                dotColor="bg-green-400"
-                badgeColor="bg-green-50 text-green-700 border-green-200"
-                viewMode={viewMode}
-                getCompetitionStatus={getCompetitionStatus}
-                formatDateTime={formatDateTime}
-                participantMap={participantMap}
-                completionMap={completionMap}
-                loadingMap={loadingMap}
-                onCardClick={handleCompetitionClick}
-                onButtonClick={handleButtonClick}
-              />
+            // Always use groupedCompetitions (which already applies the ended registration logic)
+            filterStatus === "ended" ? (
+              // Show only ended competitions where the user participated (groupedCompetitions.ended)
+              groupedCompetitions.ended.length === 0 ? (
+                <EmptyState
+                  searchTerm={searchTerm}
+                  filterStatus={filterStatus}
+                  title={"You haven't participated in any ended competitions yet"}
+                  message={"Once you've participated in a competition and it ends, results will appear here."}
+                />
+              ) : (
+                <div className="space-y-12">
+                  <CompetitionSection
+                    title="Ended Competitions"
+                    competitions={groupedCompetitions.ended}
+                    dotColor="bg-gray-400"
+                    badgeColor="bg-gray-50 text-gray-600 border-gray-200"
+                    viewMode={viewMode}
+                    getCompetitionStatus={getCompetitionStatus}
+                    formatDateTime={formatDateTime}
+                    participantMap={participantMap}
+                    completionMap={completionMap}
+                    loadingMap={loadingMap}
+                    onCardClick={handleCompetitionClick}
+                    onButtonClick={handleButtonClick}
+                    isFiltered={true}
+                  />
+                </div>
+              )
+            ) : filterStatus === "active" || filterStatus === "upcoming" || searchTerm !== "" ? (
+              // For other filtered views, present matching grouped sections directly
+              // Build a list of sections to show based on groupedCompetitions
+              (groupedCompetitions.active.length === 0 && groupedCompetitions.upcoming.length === 0 && groupedCompetitions.ended.length === 0) ? (
+                <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
+              ) : (
+                <div className="space-y-12">
+                  {groupedCompetitions.active.length > 0 && (
+                    <CompetitionSection
+                      title="Active Competitions"
+                      competitions={groupedCompetitions.active}
+                      dotColor="bg-green-400"
+                      badgeColor="bg-green-50 text-green-700 border-green-200"
+                      viewMode={viewMode}
+                      getCompetitionStatus={getCompetitionStatus}
+                      formatDateTime={formatDateTime}
+                      participantMap={participantMap}
+                      completionMap={completionMap}
+                      loadingMap={loadingMap}
+                      onCardClick={handleCompetitionClick}
+                      onButtonClick={handleButtonClick}
+                      isFiltered={true}
+                    />
+                  )}
 
-              <CompetitionSection
-                title="Upcoming Competitions"
-                competitions={groupedCompetitions.upcoming}
-                dotColor="bg-blue-400"
-                badgeColor="bg-blue-50 text-blue-700 border-blue-200"
-                viewMode={viewMode}
-                getCompetitionStatus={getCompetitionStatus}
-                formatDateTime={formatDateTime}
-                participantMap={participantMap}
-                completionMap={completionMap}
-                loadingMap={loadingMap}
-                onCardClick={handleCompetitionClick}
-                onButtonClick={handleButtonClick}
-              />
+                  {groupedCompetitions.upcoming.length > 0 && (
+                    <CompetitionSection
+                      title="Upcoming Competitions"
+                      competitions={groupedCompetitions.upcoming}
+                      dotColor="bg-blue-400"
+                      badgeColor="bg-blue-50 text-blue-700 border-blue-200"
+                      viewMode={viewMode}
+                      getCompetitionStatus={getCompetitionStatus}
+                      formatDateTime={formatDateTime}
+                      participantMap={participantMap}
+                      completionMap={completionMap}
+                      loadingMap={loadingMap}
+                      onCardClick={handleCompetitionClick}
+                      onButtonClick={handleButtonClick}
+                      isFiltered={true}
+                    />
+                  )}
 
-              <CompetitionSection
-                title="Ended Competitions"
-                competitions={groupedCompetitions.ended}
-                dotColor="bg-gray-400"
-                badgeColor="bg-gray-50 text-gray-600 border-gray-200"
-                viewMode={viewMode}
-                getCompetitionStatus={getCompetitionStatus}
-                formatDateTime={formatDateTime}
-                participantMap={participantMap}
-                completionMap={completionMap}
-                loadingMap={loadingMap}
-                onCardClick={handleCompetitionClick}
-                onButtonClick={handleButtonClick}
-              />
-            </div>
+                  {groupedCompetitions.ended.length > 0 && (
+                    <CompetitionSection
+                      title="Ended Competitions"
+                      competitions={groupedCompetitions.ended}
+                      dotColor="bg-gray-400"
+                      badgeColor="bg-gray-50 text-gray-600 border-gray-200"
+                      viewMode={viewMode}
+                      getCompetitionStatus={getCompetitionStatus}
+                      formatDateTime={formatDateTime}
+                      participantMap={participantMap}
+                      completionMap={completionMap}
+                      loadingMap={loadingMap}
+                      onCardClick={handleCompetitionClick}
+                      onButtonClick={handleButtonClick}
+                      isFiltered={true}
+                    />
+                  )}
+                </div>
+              )
+            ) : (
+              // filterStatus === 'all' (main page): render only non-empty grouped sections and no empty-state per section
+              (groupedCompetitions.active.length === 0 && groupedCompetitions.upcoming.length === 0 && groupedCompetitions.ended.length === 0) ? (
+                <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
+              ) : (
+                <div className="space-y-12">
+                  {groupedCompetitions.active.length > 0 && (
+                    <CompetitionSection
+                      title="Active Competitions"
+                      competitions={groupedCompetitions.active}
+                      dotColor="bg-green-400"
+                      badgeColor="bg-green-50 text-green-700 border-green-200"
+                      viewMode={viewMode}
+                      getCompetitionStatus={getCompetitionStatus}
+                      formatDateTime={formatDateTime}
+                      participantMap={participantMap}
+                      completionMap={completionMap}
+                      loadingMap={loadingMap}
+                      onCardClick={handleCompetitionClick}
+                      onButtonClick={handleButtonClick}
+                    />
+                  )}
+
+                  {groupedCompetitions.upcoming.length > 0 && (
+                    <CompetitionSection
+                      title="Upcoming Competitions"
+                      competitions={groupedCompetitions.upcoming}
+                      dotColor="bg-blue-400"
+                      badgeColor="bg-blue-50 text-blue-700 border-blue-200"
+                      viewMode={viewMode}
+                      getCompetitionStatus={getCompetitionStatus}
+                      formatDateTime={formatDateTime}
+                      participantMap={participantMap}
+                      completionMap={completionMap}
+                      loadingMap={loadingMap}
+                      onCardClick={handleCompetitionClick}
+                      onButtonClick={handleButtonClick}
+                    />
+                  )}
+
+                  {groupedCompetitions.ended.length > 0 && (
+                    <CompetitionSection
+                      title="Ended Competitions"
+                      competitions={groupedCompetitions.ended}
+                      dotColor="bg-gray-400"
+                      badgeColor="bg-gray-50 text-gray-600 border-gray-200"
+                      viewMode={viewMode}
+                      getCompetitionStatus={getCompetitionStatus}
+                      formatDateTime={formatDateTime}
+                      participantMap={participantMap}
+                      completionMap={completionMap}
+                      loadingMap={loadingMap}
+                      onCardClick={handleCompetitionClick}
+                      onButtonClick={handleButtonClick}
+                    />
+                  )}
+                </div>
+              )
+            )
           )}
         </div>
       </div>

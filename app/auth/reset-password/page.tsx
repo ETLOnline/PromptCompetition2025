@@ -396,12 +396,13 @@ export default function ResetPasswordPage() {
                 className={`w-full font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2
                   ${
                     !isFormValid || isSubmitting
-                      ? "bg-slate-400 cursor-not-allowed opacity-60"
+                      ? "bg-[#4B4F63] text-gray-300 cursor-not-allowed"
                       : "bg-[#10142c] text-white hover:shadow-xl hover:-translate-y-1"
                   }`}
               >
                 {isSubmitting ? "Resetting..." : "Reset Password"}
               </button>
+
             </form>
           </div>
         </div>

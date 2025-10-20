@@ -630,18 +630,19 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Submit Button - Disabled if password doesn't meet all requirements */}
-                  <button
+                  <button 
                     type="submit"
                     disabled={!isFormValid || loading || googleLoading}
                     className={`w-full font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2
                       ${
                         !isFormValid || loading || googleLoading
-                          ? "bg-slate-400 cursor-not-allowed opacity-60"
+                          ? "bg-[#4B4F63] text-gray-300 cursor-not-allowed"
                           : "bg-[#10142c] text-white hover:shadow-xl hover:-translate-y-1"
                       }`}
                   >
                     {loading ? "Registering..." : "Register"}
                   </button>
+
 
 
                   {/* Divider */}
