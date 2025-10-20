@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userSnap.exists()) {
         const data = userSnap.data()
         setFullName(data.fullName || null)
-        setRole(data.role || "user")
+        // setRole(data.role || "user")
       }
     } catch (error) {
       console.error("Error fetching user profile:", error)
