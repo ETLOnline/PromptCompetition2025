@@ -27,6 +27,7 @@ import type { Timestamp } from "firebase/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
 
 import { fetchWithAuth } from "@/lib/api"
+import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 interface Challenge {
   id: string
@@ -330,6 +331,7 @@ export default function ChallengePage() {
         </div>
       ) : (
         <>
+          <ParticipantBreadcrumb />
           <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
             {/* Challenge title, badge, and countdown */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
@@ -527,11 +529,17 @@ export default function ChallengePage() {
                           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle className="w-8 h-8 text-green-600" />
                           </div>
-                          <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Successful!</h2>
-                          <p className="text-gray-600 mb-6">Your prompt has been successfully submitted.</p>
+                          <h2 className="text-xl font-bold text-gray-900 mb-2">
+                            {hasPreviousSubmission ? "Updated Successfully!" : "Submission Successful!"}
+                          </h2>
+                          <p className="text-gray-600 mb-6">
+                            {hasPreviousSubmission
+                              ? "Your prompt has been updated successfully."
+                              : "Your prompt has been successfully submitted."}
+                          </p>
                           <Button
                             className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
-                            onClick={() => setSubmissionStatus('idle')} // Close success modal
+                            onClick={() => setSubmissionStatus('idle')}
                           >
                             Done
                           </Button>

@@ -14,7 +14,7 @@ interface Competition {
   createdAt?: string
   isActive?: boolean
   isLocked?: boolean
-  location?: string
+  mode?: string
   prizeMoney?: string
 }
 
@@ -47,23 +47,22 @@ export const CompetitionCard = ({
   onButtonClick,
 }: CompetitionCardProps) => {
   const showButton =
-    status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered)
+    status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered);
 
   const getButtonText = () => {
-    if (status.status === "ENDED") return "View Results"
-    if (isRegistered) return isCompleted ? "View Results" : "Continue"
-    return "Register"
-  }
+    if (status.status === "ENDED") return "View Results";
+    if (isRegistered) return isCompleted ? "View Results" : "Continue";
+    return "Register";
+  };
 
   const getButtonIcon = () => {
-    if (status.status === "ENDED" || isRegistered) return <Trophy className="h-5 w-5" />
-    return <UserPlus className="h-5 w-5" />
-  }
+    if (status.status === "ENDED" || isRegistered) return <Trophy className="h-5 w-5" />;
+    return <UserPlus className="h-5 w-5" />;
+  };
 
   return (
     <Card
-      className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group cursor-pointer"
-      onClick={() => onCardClick(competition)}
+      className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group"
     >
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
@@ -93,10 +92,19 @@ export const CompetitionCard = ({
               </h3>
             </div>
             <div className="ml-4">
-              <Eye className="h-5 w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
+              <button
+                type="button"
+                className="focus:outline-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCardClick(competition);
+                }}
+                aria-label="View competition details"
+              >
+                <Eye className="h-5 w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
+              </button>
             </div>
           </div>
-
           <div className="grid grid-cols-2 gap-4 mb-6 flex-1">
             <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -129,8 +137,8 @@ export const CompetitionCard = ({
                 <MapPin className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Location</p>
-                <p className="text-sm font-semibold text-slate-900">{competition.location || "Online"}</p>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Mode</p>
+                <p className="text-sm font-semibold text-slate-900">{competition.mode || "Online"}</p>
               </div>
             </div>
 
@@ -151,8 +159,8 @@ export const CompetitionCard = ({
                 className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
                 disabled={isButtonLoading}
                 onClick={(e) => {
-                  e.stopPropagation()
-                  onButtonClick(competition)
+                  e.stopPropagation();
+                  onButtonClick(competition);
                 }}
               >
                 {isButtonLoading ? (
@@ -172,5 +180,5 @@ export const CompetitionCard = ({
         </CardContent>
       </div>
     </Card>
-  )
+  );
 }

@@ -22,7 +22,9 @@ import {
   Sparkles,
   Zap,
   Star,
-  MessageCircle, Globe
+  MessageCircle, 
+  Globe,
+  Eye
 } from "lucide-react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
@@ -31,7 +33,8 @@ import TypingPromptInput from "@/components/typing-prompt-input"
 import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import ContactForm from "@/components/contact-form"
-import { CompetitionCardSkeleton } from "@/components/competition-card-skeleton" // Import the new skeleton component
+import { CompetitionCardSkeleton } from "@/components/competition-card-skeleton"
+import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
 
 // The Main Component
 function CompetitionEventsSection() {
@@ -40,7 +43,9 @@ function CompetitionEventsSection() {
   const [isAtStart, setIsAtStart] = useState(true)
   const [isAtEnd, setIsAtEnd] = useState(false)
   const [events, setEvents] = useState<any[]>([])
-  const [isLoadingEvents, setIsLoadingEvents] = useState(true) // Inline loading state
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true)
+  const [selectedCompetition, setSelectedCompetition] = useState<any>(null)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const router = useRouter()
 
   const checkScrollability = () => {
@@ -55,9 +60,9 @@ function CompetitionEventsSection() {
 
   useEffect(() => {
     const loadCompetitions = async () => {
-      setIsLoadingEvents(true) // Set loading to true when fetching starts
+      setIsLoadingEvents(true)
       try {
-        const data = await fetchCompetitions() // Use your API utility
+        const data = await fetchCompetitions()
         const now = new Date()
 
         const processedCompetitions = data
@@ -71,11 +76,7 @@ function CompetitionEventsSection() {
               status = "Finished"
             }
             return {
-              id: comp.id,
-              title: comp.title,
-              location: comp.location,
-              prize: comp.prizeMoney,
-              participants: 0, // Assuming participants are not returned by API or always 0 for now
+              ...comp, // Keep all original competition data
               status,
               date: start.toLocaleDateString("en-US", {
                 year: "numeric",
@@ -90,18 +91,17 @@ function CompetitionEventsSection() {
                 }) + " UTC",
             }
           })
-          .filter((event) => event.status === "Active" || event.status === "Upcoming") // Filter to show only Active or Upcoming
+          .filter((event) => event.status === "Active" || event.status === "Upcoming")
 
         setEvents(processedCompetitions)
       } catch (error) {
         console.error("Error loading competitions:", error)
-        // You might want to add a toast notification here if you have a toast context available
       } finally {
-        setIsLoadingEvents(false) // Set loading to false when fetching finishes
+        setIsLoadingEvents(false)
       }
     }
     loadCompetitions()
-  }, []) // Empty dependency array means this runs once on mount
+  }, [])
 
   useEffect(() => {
     checkScrollability()
@@ -116,7 +116,7 @@ function CompetitionEventsSection() {
         el.removeEventListener("scroll", checkScrollability)
       }
     }
-  }, [events]) // Re-check scrollability when events change
+  }, [events])
 
   const handleScroll = (direction: "left" | "right") => {
     const el = scrollContainerRef.current
@@ -142,6 +142,11 @@ function CompetitionEventsSection() {
     }
   }
 
+  const handleViewDetails = (event: any) => {
+    setSelectedCompetition(event)
+    setIsDetailsModalOpen(true)
+  }
+
   return (
     <section className="py-20 bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-50/20 to-gray-50/30" />
@@ -160,7 +165,7 @@ function CompetitionEventsSection() {
         </div>
         {isScrollable &&
           !isLoadingEvents &&
-          events.length > 0 && ( // Only show scroll buttons if scrollable and not loading
+          events.length > 0 && (
             <div className="flex justify-center gap-4 mb-8">
               <Button
                 onClick={() => handleScroll("left")}
@@ -184,23 +189,16 @@ function CompetitionEventsSection() {
           )}
         <div ref={scrollContainerRef} className="flex overflow-x-auto gap-8 pb-8 scrollbar-hide">
           {isLoadingEvents ? (
-            // Render skeleton loaders when loading
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[...Array(3)].map(
-                (
-                  _,
-                  i, // Render 3 skeleton cards
-                ) => (
-                  <CompetitionCardSkeleton key={i} />
-                ),
-              )}
+              {[...Array(3)].map((_, i) => (
+                <CompetitionCardSkeleton key={i} />
+              ))}
             </div>
           ) : events.length === 0 ? (
             <div className="text-center text-muted-foreground text-lg w-full">
               No active or upcoming competitions found. Check back later!
             </div>
           ) : (
-            // Render actual events when loaded
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {events.map((event, index) => (
                 <motion.div
@@ -224,14 +222,15 @@ function CompetitionEventsSection() {
                               {event.title}
                             </CardTitle>
                           </div>
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <Trophy className="h-6 w-6 text-blue-600" />
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleViewDetails(event)}
+                            className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl hover:scale-110 transition-transform duration-300 hover:bg-gradient-to-br hover:from-blue-200 hover:to-purple-200"
+                          >
+                            <Eye className="h-5 w-5 text-blue-600" />
+                          </Button>
                         </div>
-                        {/* Removed CardDescription for event.description as requested */}
-                        {/* <CardDescription className="text-muted-foreground text-base leading-relaxed">
-                          {event.description}
-                        </CardDescription> */}
                       </CardHeader>
                     </div>
                     <CardContent className="p-8 pt-0 mt-auto space-y-6">
@@ -256,13 +255,19 @@ function CompetitionEventsSection() {
                         </div>
                         <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
                           <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <MapPin className="h-4 w-4 text-purple-600" />
+                            {event.mode === "online" || event.location === "online" ? (
+                              <Globe className="h-4 w-4 text-purple-600" />
+                            ) : (
+                              <MapPin className="h-4 w-4 text-purple-600" />
+                            )}
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                              Location
+                              Mode
                             </p>
-                            <p className="text-sm font-semibold text-slate-900">{event.location}</p>
+                            <p className="text-sm font-semibold text-slate-900 capitalize">
+                              {event.mode || event.location || "Online"}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
@@ -271,21 +276,15 @@ function CompetitionEventsSection() {
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Prize</p>
-                            <p className="text-sm font-semibold text-slate-900">{event.prize}</p>
+                            <p className="text-sm font-semibold text-slate-900">{event.prizeMoney}</p>
                           </div>
                         </div>
                       </div>
                       <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                        {/* <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {event.participants.toLocaleString()} participants
-                          </span>
-                        </div> */}
                         {(event.status === "Active" || event.status === "Upcoming") && (
                           <Button
                             onClick={() => router.push("/auth/login")}
-                            className="gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                            className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                           >
                             <Zap className="h-5 w-5" />
                             <span className="font-semibold">Join Now</span>
@@ -300,6 +299,16 @@ function CompetitionEventsSection() {
           )}
         </div>
       </div>
+
+      {/* View Competition Details Modal */}
+      <ViewCompetitionDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false)
+          setSelectedCompetition(null)
+        }}
+        competition={selectedCompetition}
+      />
     </section>
   )
 }
@@ -492,71 +501,86 @@ export default function HomePage() {
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Contact Info Card */}
               <Card className="bg-white shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-xl border-0 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30 pointer-events-none" />
-      <CardHeader className="p-8 relative">
-        <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
-          Let's Connect
-        </CardTitle>
-        <CardDescription className="text-muted-foreground text-lg">
-          Reach out through your preferred channel - we're here to help
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-8 pt-0 space-y-6">
-        {[
-          {
-            icon: Mail,
-            title: "Email",
-            details: ["info@etlonline.org","etl1competition@gmail.com", "Perfect for detailed inquiries"],
-            bgColor: "bg-blue-100",
-            iconColor: "text-blue-600",
-          },
-          {
-            icon: MessageCircle,
-            title: "Contact Form",
-            details: ["Fill out our online form", "Quick and convenient"],
-            bgColor: "bg-emerald-100",
-            iconColor: "text-emerald-600",
-          },
-          {
-            icon: Users,
-            title: "Social Media",
-            details: [
-              "Follow us on our social channels",
-              "Stay updated with our latest news",
-            ],
-            bgColor: "bg-purple-100",
-            iconColor: "text-purple-600",
-          },
-          {
-            icon: Globe,
-            title: "Digital First",
-            details: [
-              "Fully online services",
-              "Remote collaboration ready",
-              "Global accessibility",
-            ],
-            bgColor: "bg-slate-100",
-            iconColor: "text-slate-600",
-          },
-        ].map((contact, index) => (
-          <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow">
-            <div
-              className={`w-12 h-12 ${contact.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
-            >
-              <contact.icon className={`h-6 w-6 ${contact.iconColor}`} />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-black mb-1">{contact.title}</h3>
-              {contact.details.map((detail, idx) => (
-                <p key={idx} className="text-black text-sm">
-                  {detail}
-                </p>
-              ))}
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30 pointer-events-none" />
+                <CardHeader className="p-8 relative">
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+                    Let's Connect
+                  </CardTitle>
+                  <CardDescription className="text-muted-foreground text-lg">
+                    Reach out through your preferred channel - we're here to help
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-8 pt-0 space-y-6">
+                  {[
+                    {
+                    icon: Mail,
+                    title: "Email",
+                    details: [
+                      { text: "info@etlonline.org", isEmail: true },
+                      { text: "etl1competition@gmail.com", isEmail: true },
+                      { text: "Perfect for detailed inquiries", isEmail: false }
+                    ],
+                    bgColor: "bg-blue-100",
+                    iconColor: "text-blue-600",
+                  },
+                    {
+                      icon: MessageCircle,
+                      title: "Contact Form",
+                      details: ["Fill out our online form", "Quick and convenient"],
+                      bgColor: "bg-emerald-100",
+                      iconColor: "text-emerald-600",
+                    },
+                    {
+                      icon: Users,
+                      title: "Social Media",
+                      details: [
+                        "Follow us on our social channels",
+                        "Stay updated with our latest news",
+                      ],
+                      bgColor: "bg-purple-100",
+                      iconColor: "text-purple-600",
+                    },
+                    {
+                      icon: Globe,
+                      title: "Digital First",
+                      details: [
+                        "Fully online services",
+                        "Remote collaboration ready",
+                        "Global accessibility",
+                      ],
+                      bgColor: "bg-slate-100",
+                      iconColor: "text-slate-600",
+                    },
+                  ].map((contact, index) => (
+                    <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-white shadow">
+                      <div
+                        className={`w-12 h-12 ${contact.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
+                      >
+                        <contact.icon className={`h-6 w-6 ${contact.iconColor}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-black mb-1">{contact.title}</h3>
+                        {contact.details.map((detail, idx) => (
+                          <p key={idx} className="text-black text-sm">
+                            {typeof detail === 'string' ? (
+                              detail
+                            ) : detail.isEmail ? (
+                              <a 
+                                href={`mailto:${detail.text}`}
+                                className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                              >
+                                {detail.text}
+                              </a>
+                            ) : (
+                              detail.text
+                            )}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
               {/* Contact Form */}
               <Card className="bg-white rounded-xl border-0">

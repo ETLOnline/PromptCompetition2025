@@ -26,6 +26,7 @@ export default function JudgePage() {
       const userAssignments = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/assignments/${profile.uid}`
       )
+      // console.log("judge assigned assignments:", userAssignments)
       setAssignments(userAssignments)
     } catch (error) {
       console.error("Authentication failed:", error)

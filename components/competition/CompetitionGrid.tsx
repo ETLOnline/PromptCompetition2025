@@ -167,7 +167,7 @@ export default function CompetitionGrid({
                   <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-4 h-4 text-green-600" />
                   </div>
-                  <span className="font-medium capitalize">{competition.location}</span>
+                  <span className="font-medium capitalize">{competition.mode}</span>
                 </div>
 
                 <div className="flex items-center gap-3 text-sm text-gray-600">

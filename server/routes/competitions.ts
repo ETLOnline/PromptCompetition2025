@@ -29,23 +29,30 @@ router.post(
       description,
       startDeadline,
       endDeadline,
-      location,
+      mode,          // CHANGED from 'location'
+      venue,         // NEW FIELD
       systemPrompt,
       prizeMoney
     } = req.body;
 
-    if (!title || !description || !startDeadline || !endDeadline || !location || !prizeMoney || !systemPrompt) {
+    // Update validation
+    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !systemPrompt) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    // NEW VALIDATION: Validate venue for offline mode
+    if (mode === "offline" && !venue) {
+      return res.status(400).json({ error: "Venue is required for offline competitions" });
+    }
+
     try {
-      const newDoc = await db.collection("competitions").add({
+      const competitionData: any = {
         title,
         description,
         systemPrompt,
         startDeadline,
         endDeadline,
-        location,
+        mode,          // CHANGED from 'location'
         prizeMoney,
         isActive: true,
         isLocked: false,
@@ -59,7 +66,14 @@ router.post(
           email: req.user?.email || "",
           name: req.user?.email?.split("@")[0] || "",
         },
-      });
+      };
+
+      // NEW: Only add venue if it exists (offline mode)
+      if (venue) {
+        competitionData.venue = venue;
+      }
+
+      const newDoc = await db.collection("competitions").add(competitionData);
 
       return res.status(201).json({ id: newDoc.id, message: "Competition created" });
     } catch (err: any) {
@@ -76,6 +90,16 @@ router.patch(
   async (req: AuthenticatedRequest, res: Response) => {
     const { id } = req.params;
     const updateData = req.body;
+
+    // NEW VALIDATION: Check venue for offline mode
+    if (updateData.mode === "offline" && updateData.venue !== undefined && !updateData.venue) {
+      return res.status(400).json({ error: "Venue is required for offline competitions" });
+    }
+
+    // NEW: If changing from offline to online, explicitly remove venue
+    if (updateData.mode === "online" && updateData.venue !== undefined) {
+      updateData.venue = "";  // Set to empty string to clear it
+    }
 
     try {
       const ref = db.collection("competitions").doc(id);
