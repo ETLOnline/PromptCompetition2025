@@ -5,7 +5,8 @@ export interface Competition {
   prizeMoney: string
   startDeadline: string
   endDeadline: string
-  location: string
+  mode: string
+  venue?: string
   isActive: boolean
   isLocked: boolean
   createdAt?: string
@@ -18,20 +19,22 @@ export interface CreateCompetitionData {
   prizeMoney: string
   startDeadline: string
   endDeadline: string
-  location: string
+  mode: "online" | "offline"
+  venue?: string
   ChallengeCount: number
   createdAt: string
   systemPrompt: string
 }
 
 export interface EditCompetitionData {
-  title: string
-  description: string
-  startDeadline: string
-  endDeadline: string
-  location: string
-  prizeMoney: string
-  isActive: boolean
-  isLocked: boolean
-  systemPrompt: string
+  title?: string
+  description?: string
+  startDeadline?: string
+  endDeadline?: string
+  mode?: "online" | "offline"
+  venue?: string
+  prizeMoney?: string
+  isActive?: boolean
+  isLocked?: boolean
+  systemPrompt?: string
 }

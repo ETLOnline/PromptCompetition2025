@@ -20,7 +20,9 @@ import { doc, getDoc } from "firebase/firestore"
 import Image from "next/image"
 
 export default function ParticipantHeader() {
-  const { user, logout } = useAuth()
+  // const { user, logout } = useAuth()
+  const { user, fullName, role, logout } = useAuth()
+
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string | undefined
@@ -58,7 +60,7 @@ export default function ParticipantHeader() {
       .toUpperCase()
   }
 
-  const displayName = user?.displayName || user?.email?.split("@")[0] || "Participant"
+  const displayName = fullName || user?.email?.split("@")[0] || "Participant"
   const userInitials = getUserInitials(user?.displayName || user?.email || "Participant")
 
   return (

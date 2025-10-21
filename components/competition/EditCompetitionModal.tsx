@@ -1,3 +1,4 @@
+//EditCompetitionModal.tsx
 "use client"
 
 import type React from "react"
@@ -36,7 +37,8 @@ export default function EditCompetitionModal({
     description: "",
     startDeadline: "",
     endDeadline: "",
-    location: "",
+    mode: "",          // CHANGED from 'location: ""'
+    venue: "",         // NEW FIELD
     prizeMoney: "",
     isActive: false,
     isLocked: false,
@@ -67,7 +69,8 @@ export default function EditCompetitionModal({
         description: competition.description || "",
         startDeadline: formatForDatetimeLocal(competition.startDeadline || ""),
         endDeadline: formatForDatetimeLocal(competition.endDeadline || ""),
-        location: competition.location || "",
+        mode: competition.mode || competition.location || "online",  // CHANGED - with fallback for old data
+        venue: competition.venue || "",                              // NEW FIELD
         prizeMoney: competition.prizeMoney || "",
         isActive: competition.isActive ?? false,
         isLocked: competition.isLocked ?? false,
@@ -110,6 +113,12 @@ export default function EditCompetitionModal({
 
     if (!competition) return
 
+    // NEW VALIDATION: Check venue for offline mode
+    if (editFormData.mode === "offline" && !editFormData.venue?.trim()) {
+      setEditFormError("Venue location is required for offline competitions.")
+      return
+    }
+
     // Validate the new dates from the form
     const newStartDateTime = new Date(editFormData.startDeadline)
     const newEndDateTime = new Date(editFormData.endDeadline)
@@ -129,6 +138,7 @@ export default function EditCompetitionModal({
         ...editFormData,
         startDeadline: newStartDateTime.toISOString(),
         endDeadline: newEndDateTime.toISOString(),
+        venue: editFormData.mode === "offline" ? editFormData.venue : undefined,  // NEW: Clear venue if online
       }
 
       await onSubmit(submitData)
@@ -236,17 +246,26 @@ export default function EditCompetitionModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-location" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Location
+                    <Label htmlFor="edit-mode" className="text-sm font-medium text-gray-700 mb-2 block">
+                      Competition Mode
                     </Label>
-                    <Input
-                      id="edit-location"
-                      name="location"
-                      value={editFormData.location}
-                      onChange={handleEditFormChange}
+                    <select
+                      id="edit-mode"
+                      name="mode"
+                      value={editFormData.mode}
+                      onChange={(e) => {
+                        handleEditFormChange(e)
+                        // Clear venue if switching to online
+                        if (e.target.value === "online") {
+                          setEditFormData(prev => ({ ...prev, venue: "" }))
+                        }
+                      }}
                       required
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                    />
+                      className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500/20 focus:outline-none"
+                    >
+                      <option value="online">🌐 Online</option>
+                      <option value="offline">🏢 Offline</option>
+                    </select>
                   </div>
 
                   <div>
@@ -263,6 +282,24 @@ export default function EditCompetitionModal({
                     />
                   </div>
                 </div>
+
+                {/* NEW: Conditional Venue Field */}
+                {editFormData.mode === "offline" && (
+                  <div className="animate-in fade-in-50 duration-200">
+                    <Label htmlFor="edit-venue" className="text-sm font-medium text-gray-700 mb-2 block">
+                      Venue Location
+                    </Label>
+                    <Input
+                      id="edit-venue"
+                      name="venue"
+                      value={editFormData.venue}
+                      onChange={handleEditFormChange}
+                      required
+                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      placeholder="e.g., Convention Center, 123 Main St, City, Country"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

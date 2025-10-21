@@ -91,7 +91,7 @@ export default function JudgeHeader() {
                   onClick={() => router.push(`/judge/${competitionId}`)}
                   className="text-xl font-semibold text-gray-900 leading-tight cursor-pointer"
                 >
-                  Judge Dashboard
+                  Welcome back, {displayFullName.split(" ")[0]}
                 </h1>
 
                 {competitionId && (

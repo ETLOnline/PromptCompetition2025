@@ -12,7 +12,8 @@ interface Competition {
   createdAt?: string
   isActive?: boolean
   isLocked?: boolean
-  location?: string
+  mode?: string
+  venue?: string
   prizeMoney?: string
 }
 
@@ -72,14 +73,25 @@ export const ViewCompetitionDetailsModal = ({ isOpen, onClose, competition }: Vi
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {competition.location && (
+              {competition.mode && (
+                <div className="bg-purple-50 rounded-lg p-4 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                    <Label className="text-base font-semibold text-purple-900">Mode</Label>
+                  </div>
+                  <div className="text-sm text-gray-900 capitalize font-medium break-words overflow-wrap-anywhere">
+                    {competition.mode === "online" ? "Online" : "Offline"}
+                  </div>
+                </div>
+              )}
+              {competition.venue && (
                 <div className="bg-green-50 rounded-lg p-4 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <Label className="text-base font-semibold text-green-900">Location</Label>
+                    <Label className="text-base font-semibold text-green-900">Venue</Label>
                   </div>
-                  <div className="text-sm text-gray-900 capitalize font-medium break-words overflow-wrap-anywhere">
-                    {competition.location}
+                  <div className="text-sm text-gray-900 font-medium break-words overflow-wrap-anywhere">
+                    {competition.venue}
                   </div>
                 </div>
               )}

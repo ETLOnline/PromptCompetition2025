@@ -9,7 +9,10 @@ import { db } from "../../config/firebase-admin.js"; // Admin SDK Firestore inst
 export async function fetchAssignments(userId: string): Promise<JudgeAssignment[]> {
   try {
     const snapshot = await db.collectionGroup("judges").where("judgeId", "==", userId).get();
-
+// console.log("Searching for userId:", userId);
+// console.log("userId type:", typeof userId);
+// const snapshot = await db.collectionGroup("judges").where("judgeId", "==", userId).get();
+// console.log("Results found:", snapshot);
     if (snapshot.empty) return [];
 
     return snapshot.docs.map((doc) => {

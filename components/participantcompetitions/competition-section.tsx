@@ -10,7 +10,7 @@ interface Competition {
   createdAt?: string
   isActive?: boolean
   isLocked?: boolean
-  location?: string
+  mode?: string
   prizeMoney?: string
 }
 

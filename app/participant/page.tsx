@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
 import { useAuth } from "@/components/auth-provider"
+import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 import { RegistrationModal } from "@/components/participantcompetitions/registration-modal"
 import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
@@ -256,16 +257,26 @@ export default function CompetitionsPage() {
     handleViewDetails(competition)
   }
 
-  const handleButtonClick = (competition: Competition) => {
+  const handleButtonClick = async (competition: Competition) => {
+    // Set loading state immediately
+    setLoadingMap((prev) => ({ ...prev, [competition.id]: true }))
     const isRegistered = participantMap[competition.id]
     const status = getCompetitionStatus(competition)
-
-    if (status.status === "ENDED" && isRegistered) {
-      router.push(`/participant/${competition.id}/results`);
-    } else if (isRegistered) {
-      router.push(`/participant/${competition.id}`)
-    } else {
-      showRegistrationConfirmation(competition)
+    try {
+      if (status.status === "ENDED" && isRegistered) {
+        // Simulate async navigation for loader effect
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        router.push(`/participant/${competition.id}/results`);
+      } else if (isRegistered) {
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        router.push(`/participant/${competition.id}`)
+      } else {
+        // Registration modal is sync, but keep loader for consistency
+        showRegistrationConfirmation(competition)
+      }
+    } finally {
+      // Remove loading state after navigation/modal
+      setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
     }
   }
 
@@ -314,6 +325,7 @@ export default function CompetitionsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <ParticipantBreadcrumb />
       <RegistrationModal
         isOpen={showRegistrationModal}
         onClose={() => {

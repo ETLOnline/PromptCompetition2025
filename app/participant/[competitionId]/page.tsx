@@ -37,6 +37,7 @@ import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
 import { Countdown } from "@/components/countdown" // Import the new Countdown component
 import { fetchWithAuth } from "@/lib/api"
+import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 // Skeleton for Dashboard Summary Cards
 const DashboardCardSkeleton = () => (
@@ -319,6 +320,7 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
   // Once initial data is loaded, render the main dashboard
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <ParticipantBreadcrumb />
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-12 px-6">
         {startDeadlineReached && !endDeadlinePassed && currentCompetitionId ? (
