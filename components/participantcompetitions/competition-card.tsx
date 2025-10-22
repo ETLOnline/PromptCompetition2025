@@ -62,9 +62,9 @@ export const CompetitionCard = ({
 
   return (
     <Card
-      className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group"
+      className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group relative isolate"
     >
-      <div className="relative">
+      <div className="relative h-full">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
         <CardContent className="p-8 relative flex flex-col h-full">
           <div className="flex justify-between items-start mb-6">

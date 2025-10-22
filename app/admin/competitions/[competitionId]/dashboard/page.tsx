@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ totalParticipants: 0, pendingReviews: 0 })
   const [activeTab, setActiveTab] = useState<"challenges" | "judges">("challenges")
   const [role, setRole] = useState(null)
+  const [competitionName, setCompetitionName] = useState("")
   const { addNotification } = useNotifications();
   const [progressRefreshKey, setProgressRefreshKey] = useState(0)
   
@@ -95,6 +96,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     const initializePage = async () => {
       await checkAuthAndLoad()
+      // Fetch competition name
+      const competitionDoc = await getDoc(doc(db, 'competitions', competitionId))
+      if (competitionDoc.exists()) {
+        setCompetitionName(competitionDoc.data().title)
+      }
       // Note: fetchEvaluationStatus is now handled by the useEvaluationStatus hook
     }
 
@@ -135,7 +141,19 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-8 py-0 space-y-8">
+        {/* Competition Title */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-100 rounded-xl">
+              <Trophy className="h-7 w-7 text-purple-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{competitionName}</h1>
+              <p className="text-gray-500 mt-1">Competition Dashboard</p>
+            </div>
+          </div>
+        </div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link

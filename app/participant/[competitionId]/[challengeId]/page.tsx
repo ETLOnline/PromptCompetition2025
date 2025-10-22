@@ -57,6 +57,7 @@ export default function ChallengePage() {
   const [hasPreviousSubmission, setHasPreviousSubmission] = useState(false)
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const [competitionendDeadline, setCompetitionendDeadline] = useState<Date | null>(null) // New state for start deadline
+  const [submissionType, setSubmissionType] = useState<'new' | 'update' | null>(null)
   
   const [loadingPrompt, setLoadingPrompt] = useState<boolean>(false)
   const [loadingChallenge, setLoadingChallenge] = useState<boolean>(true)
@@ -94,9 +95,11 @@ export default function ChallengePage() {
           fetchChallengeData(id, challengeId),
           fetchSubmissionPrompt(id, challengeId, profile.uid),
         ])
+        console.log("User submission:",hasPreviousSubmission)
       } catch (error) {
         console.error("Error in parallel fetch:", error)
       }
+      
     }
     const checkEnd = async () => {
       const ended = await checkCompetitionEnded()
@@ -434,7 +437,10 @@ export default function ChallengePage() {
                         <span className="font-semibold">{prompt.split(/\s+/).filter(Boolean).length}</span>
                       </div>
                       <Button
-                        onClick={() => setIsConfirmModalOpen(true)}
+                        onClick={() => {
+                          setSubmissionType(hasPreviousSubmission ? 'update' : 'new');
+                          setIsConfirmModalOpen(true);
+                        }}
                         disabled={!prompt.trim() || isCompetitionEnded || loading || !isCompetitionActive}   // ✅ added challenge.isCompetitionLocked here
                         className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -488,7 +494,7 @@ export default function ChallengePage() {
                                     title: "Submission Successful",
                                     description: hasPreviousSubmission
                                       ? "Your submission has been updated."
-                                      : "Your submission has been saved.",
+                                      : "Your submission has been submitted.",
                                   })
 
                                   await fetchSubmissionPrompt(routeParams.competitionId, routeParams.challengeId, user.uid)
@@ -530,16 +536,19 @@ export default function ChallengePage() {
                             <CheckCircle className="w-8 h-8 text-green-600" />
                           </div>
                           <h2 className="text-xl font-bold text-gray-900 mb-2">
-                            {hasPreviousSubmission ? "Updated Successfully!" : "Submission Successful!"}
+                            {submissionType === 'update' ? "Updated Successfully!" : "Submission Successful!"}
                           </h2>
                           <p className="text-gray-600 mb-6">
-                            {hasPreviousSubmission
+                            {submissionType === 'update'
                               ? "Your prompt has been updated successfully."
                               : "Your prompt has been successfully submitted."}
                           </p>
                           <Button
                             className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
-                            onClick={() => setSubmissionStatus('idle')}
+                            onClick={() => {
+                              setSubmissionStatus('idle');
+                              setSubmissionType(null);
+                            }}
                           >
                             Done
                           </Button>

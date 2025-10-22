@@ -104,6 +104,7 @@ export default function DashboardPage() {
   const [startDeadlineReached, setStartDeadlineReached] = useState<boolean>(false)
   const [endDeadlinePassed, setEndDeadlinePassed] = useState<boolean>(false)
   const [competitionStartDeadline, setCompetitionStartDeadline] = useState<Date | null>(null) // New state for start deadline
+  const [competitionName, setCompetitionName] = useState("")
   // New loading states for progressive rendering
   const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true) // For deadlines and overall challenge count
   const [loadingChallengesList, setLoadingChallengesList] = useState(true) // For the actual list of challenges
@@ -175,6 +176,7 @@ export default function DashboardPage() {
       const competitionRefSnap = await getDoc(competitionRef)
       if (competitionRefSnap.exists()) {
         const competitionData = competitionRefSnap.data()
+        setCompetitionName(competitionData.title || "")
         const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
         const end = competitionData.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
         const now = new Date()
@@ -322,7 +324,20 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <ParticipantBreadcrumb />
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-12 px-6">
+      <main className="max-w-7xl mx-auto py-6 px-6 space-y-6">
+        {/* Competition Title */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-100 rounded-xl">
+              <Trophy className="h-7 w-7 text-purple-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{competitionName}</h1>
+              <p className="text-gray-500 mt-1">Participant Dashboard</p>
+            </div>
+          </div>
+        </div>
+        
         {startDeadlineReached && !endDeadlinePassed && currentCompetitionId ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
