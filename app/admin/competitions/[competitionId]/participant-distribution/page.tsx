@@ -19,6 +19,7 @@ import {
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
+import { useState } from "react"
 import { Separator } from "@/components/ui/separator"
 import {
   Shuffle,
@@ -421,6 +422,20 @@ export default function ParticipantDistributionTable() {
 
   const auth = useMemo(() => getAuth(), [])
   const [state, dispatch] = useReducer(appReducer, initialState)
+
+  const [expandedChallengeIds, setExpandedChallengeIds] = useState<Set<string>>(new Set())
+
+  const toggleChallengeExpand = (challengeId: string) => {
+    setExpandedChallengeIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(challengeId)) {
+        newSet.delete(challengeId)
+      } else {
+        newSet.add(challengeId)
+      }
+      return newSet
+    })
+  }
 
   // Memoized calculations
   const filteredChallenges = useMemo(() => {
@@ -899,22 +914,39 @@ export default function ParticipantDistributionTable() {
   )
 
   // Challenge Card Component
-  const ChallengeCard = useCallback(
-    ({ challenge }: { challenge: Challenge }) => {
-      const challengeAssignments = state.assignmentMatrix[challenge.id] || {}
-      const assigned = Object.values(challengeAssignments).reduce((sum, count) => sum + count, 0)
-      const remaining = challenge.bucketSize - assigned
-      const hasOverflow = assigned > challenge.bucketSize
+  // Challenge Card Component
+// Challenge Card Component
+const ChallengeCard = useCallback(
+  ({ challenge }: { challenge: Challenge }) => {
+    const challengeAssignments = state.assignmentMatrix[challenge.id] || {}
+    const assigned = Object.values(challengeAssignments).reduce((sum, count) => sum + count, 0)
+    const remaining = challenge.bucketSize - assigned
+    const hasOverflow = assigned > challenge.bucketSize
+    const isExpanded = expandedChallengeIds.has(challenge.id)
 
-      return (
-        <Card className={`${hasOverflow ? "border-red-300 bg-red-50/30" : ""}`}>
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg text-gray-900">{challenge.name}</CardTitle>
-                <CardDescription className="text-gray-600">ID: {challenge.id}</CardDescription>
+    return (
+      <Card className={`${hasOverflow ? "border-red-300 bg-red-50/30" : ""}`}>
+        <CardHeader className="pb-4">
+          <div className="space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg text-gray-900">ID: {challenge.id}</CardTitle>
+                <button
+                  onClick={() => toggleChallengeExpand(challenge.id)}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+                  aria-label="Toggle challenge details"
+                >
+                  <svg
+                    className={`w-4 h-4 text-gray-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <Badge variant="outline" className="gap-1">
                   <Layers className="w-3 h-3" />
                   {challenge.bucketSize} Available
@@ -926,97 +958,101 @@ export default function ParticipantDistributionTable() {
                   <Target className="w-3 h-3" />
                   {assigned} Assigned
                 </Badge>
-                
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2 mb-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => dispatch({ type: "APPLY_EQUAL_DISTRIBUTION", payload: challenge.id })}
-                className="flex items-center gap-1"
-              >
-                <Scale className="w-3 h-3" />
-                Equal
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => dispatch({ type: "APPLY_AUTO_DISTRIBUTION", payload: challenge.id })}
-                className="flex items-center gap-1"
-              >
-                <TrendingUp className="w-3 h-3" />
-                Auto
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => dispatch({ type: "CLEAR_CHALLENGE_ASSIGNMENTS", payload: challenge.id })}
-                className="flex items-center gap-1"
-              >
-                <RotateCcw className="w-3 h-3" />
-                Clear
-              </Button>
-            </div>
+            {isExpanded && (
+              <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
+                <p className="text-sm text-gray-700 font-medium">{challenge.name}</p>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => dispatch({ type: "APPLY_EQUAL_DISTRIBUTION", payload: challenge.id })}
+              className="flex items-center gap-1"
+            >
+              <Scale className="w-3 h-3" />
+              Equal
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => dispatch({ type: "APPLY_AUTO_DISTRIBUTION", payload: challenge.id })}
+              className="flex items-center gap-1"
+            >
+              <TrendingUp className="w-3 h-3" />
+              Auto
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => dispatch({ type: "CLEAR_CHALLENGE_ASSIGNMENTS", payload: challenge.id })}
+              className="flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Clear
+            </Button>
+          </div>
 
-            <div className="space-y-3">
-              {state.judges.map((judge) => {
-                const assignedCount = challengeAssignments[judge.id] || 0
-                return (
-                  <div key={judge.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className={`${getAvatarColor(judge.name)} text-white text-xs font-semibold`}>
-                          {judge.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium text-gray-900">{judge.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateMatrixCell(challenge.id, judge.id, assignedCount - 1)}
-                        disabled={assignedCount <= 0}
-                        className="h-7 w-7 p-0"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <Input
-                        type="number"
-                        min="0"
-                        max={challenge.bucketSize}
-                        value={assignedCount}
-                        onChange={(e) => updateMatrixCell(challenge.id, judge.id, Number.parseInt(e.target.value) || 0)}
-                        className="w-16 text-center h-7 text-sm"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateMatrixCell(challenge.id, judge.id, assignedCount + 1)}
-                        disabled={assignedCount >= challenge.bucketSize}
-                        className="h-7 w-7 p-0"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
+          <div className="space-y-3">
+            {state.judges.map((judge) => {
+              const assignedCount = challengeAssignments[judge.id] || 0
+              return (
+                <div key={judge.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className={`${getAvatarColor(judge.name)} text-white text-xs font-semibold`}>
+                        {judge.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium text-gray-900">{judge.name}</span>
                   </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )
-    },
-    [state.assignmentMatrix, state.judges, updateMatrixCell],
-  )
-
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateMatrixCell(challenge.id, judge.id, assignedCount - 1)}
+                      disabled={assignedCount <= 0}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min="0"
+                      max={challenge.bucketSize}
+                      value={assignedCount}
+                      onChange={(e) => updateMatrixCell(challenge.id, judge.id, Number.parseInt(e.target.value) || 0)}
+                      className="w-16 text-center h-7 text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateMatrixCell(challenge.id, judge.id, assignedCount + 1)}
+                      disabled={assignedCount >= challenge.bucketSize}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  },
+  [state.assignmentMatrix, state.judges, updateMatrixCell, expandedChallengeIds],
+)
   // Matrix View Component
   const MatrixView = useCallback(() => {
     return (
@@ -1063,9 +1099,31 @@ export default function ParticipantDistributionTable() {
                     <TableRow key={challenge.id} className={hasOverflow ? "bg-red-50" : ""}>
                       <TableCell className="sticky left-0 bg-white z-10 font-medium">
                         <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{challenge.name}</div>
-                            <div className="text-xs text-gray-500">{challenge.bucketSize} available</div>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <div className="font-medium flex items-center gap-2 whitespace-nowrap min-w-max">
+                                Challenge {challenge.id}
+                                <button
+                                  onClick={() => toggleChallengeExpand(challenge.id)}
+                                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                                >
+                                  <svg
+                                    className={`w-3 h-3 text-gray-600 transition-transform ${expandedChallengeIds.has(challenge.id) ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                              </div>
+                              {expandedChallengeIds.has(challenge.id) && (
+                                <div className="mt-1 text-xs text-gray-600 max-w-[180px]">
+                                  {challenge.name}
+                                </div>
+                              )}
+                              <div className="text-xs text-gray-500">{challenge.bucketSize} available</div>
+                            </div>
                           </div>
                           <Badge
                             variant={
@@ -1416,7 +1474,7 @@ export default function ParticipantDistributionTable() {
                 ) : (
                   <>
                     <Shuffle className="w-4 h-4 mr-2" />
-                    Distribute ({globalSummary.totalAssigned} submissions)
+                      {`Distribute (${globalSummary.totalAssigned} Submission${globalSummary.totalAssigned === 1 ? "" : "s"})`}
                   </>
                 )}
               </Button>

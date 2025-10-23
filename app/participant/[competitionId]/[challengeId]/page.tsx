@@ -1,7 +1,6 @@
 "use client"
 
 import { useAuth } from "@/components/auth-provider"
-import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,16 +9,7 @@ import { Label } from "@/components/ui/label"
 import { submitPrompt, checkExistingSubmission } from "@/lib/api"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ArrowLeft, FileText, Send, AlertCircle, ClipboardList, Target, ChevronDown, CheckCircle } from 'lucide-react'
+import { ArrowLeft, FileText, Send, AlertCircle, Target, CheckCircle } from 'lucide-react'
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { useRouter, useParams } from "next/navigation"
@@ -28,6 +18,9 @@ import { CountdownDisplay } from "@/components/countdown-display"
 
 import { fetchWithAuth } from "@/lib/api"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
+import { ParticipantCacheContext } from "@/lib/participant-cache-context"
+
+import { useEffect, useState, useContext } from "react"
 
 interface Challenge {
   id: string
@@ -69,6 +62,9 @@ export default function ChallengePage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
   const [isCompetitionActive, setIsCompetitionActive] = useState(false)
+
+  const { clearCache: clearParticipantCache } = useContext(ParticipantCacheContext)
+
 
 
   useEffect(() => {
@@ -421,6 +417,30 @@ export default function ChallengePage() {
                         placeholder="Enter your carefully crafted prompt here..."
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
+                        onPaste={(e) => {
+                          e.preventDefault()
+                          toast({
+                            title: "Paste Disabled",
+                            description: "Please type your prompt manually.",
+                            variant: "destructive",
+                          })
+                        }}
+                        onCopy={(e) => {
+                          e.preventDefault()
+                          toast({
+                            title: "Copy Disabled",
+                            description: "Copying text is not allowed.",
+                            variant: "destructive",
+                          })
+                        }}
+                        onCut={(e) => {
+                          e.preventDefault()
+                          toast({
+                            title: "Cut Disabled",
+                            description: "Cutting text is not allowed.",
+                            variant: "destructive",
+                          })
+                        }}
                         className="min-h-[280px] font-mono text-sm bg-white border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 rounded-xl resize-none"
                         disabled={challenge.isCompetitionLocked}
                       />
@@ -496,7 +516,7 @@ export default function ChallengePage() {
                                       ? "Your submission has been updated."
                                       : "Your submission has been submitted.",
                                   })
-
+                                  clearParticipantCache(routeParams.competitionId, user.uid); // Clear participant cache after submission
                                   await fetchSubmissionPrompt(routeParams.competitionId, routeParams.challengeId, user.uid)
                                 } catch (error) {
                                   // console.error("Error submitting prompt:", error)

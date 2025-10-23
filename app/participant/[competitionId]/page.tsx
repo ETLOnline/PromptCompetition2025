@@ -1,43 +1,34 @@
+//dashboard page for participants
 "use client"
 
 import { useAuth } from "@/components/auth-provider"
 import { useRouter, useParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useContext } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   FileText,
-  ArrowLeft,
   Trophy,
   Clock,
   ArrowRight,
   CheckCircle2,
-  ChevronDown,
   Sparkles,
   Search,
   Filter,
   Grid3X3,
   List,
 } from "lucide-react"
-import { collection, getDocs, query, doc, getDoc, where } from "firebase/firestore"
+import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useSubmissionStore } from "@/lib/store"
-import { Countdown } from "@/components/countdown" // Import the new Countdown component
+import { Countdown } from "@/components/countdown"
 import { fetchWithAuth } from "@/lib/api"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
+import { ParticipantCacheContext } from "@/lib/participant-cache-context"
+import { CompetitionCacheContext } from "@/lib/competition-cache-context"
 
 // Skeleton for Dashboard Summary Cards
 const DashboardCardSkeleton = () => (
@@ -98,17 +89,24 @@ export default function DashboardPage() {
   const router = useRouter()
   const routeParams = useParams<{ competitionId: string }>()
   const id = routeParams.competitionId
+
+  // PHASE 1 CHANGE: Use both cache contexts
+  const { checkParticipantAndGetData, clearCache: clearParticipantCache } = useContext(ParticipantCacheContext)
+  const { getCompetitionMetadata, clearCache: clearCompetitionCache } = useContext(CompetitionCacheContext)
+
   const [submissions, setSubmissions] = useState<number | null>(null)
   const [challengeCount, setChallengeCount] = useState<number | null>(null)
   const [currentCompetitionId, setCurrentCompetitionId] = useState<string | null>(null)
   const [startDeadlineReached, setStartDeadlineReached] = useState<boolean>(false)
   const [endDeadlinePassed, setEndDeadlinePassed] = useState<boolean>(false)
-  const [competitionStartDeadline, setCompetitionStartDeadline] = useState<Date | null>(null) // New state for start deadline
+  const [competitionStartDeadline, setCompetitionStartDeadline] = useState<Date | null>(null)
   const [competitionName, setCompetitionName] = useState("")
-  // New loading states for progressive rendering
-  const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true) // For deadlines and overall challenge count
-  const [loadingChallengesList, setLoadingChallengesList] = useState(true) // For the actual list of challenges
-  const [loadingUserSubmissions, setLoadingUserSubmissions] = useState(true) // Keep this for user submissions
+  
+  // Loading states
+  const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true)
+  const [loadingChallengesList, setLoadingChallengesList] = useState(true)
+  const [loadingUserSubmissions, setLoadingUserSubmissions] = useState(true)
+  
   const [challenges, setChallenges] = useState<any[]>([])
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
 
@@ -122,19 +120,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const init = async () => {
-      setLoadingCompetitionMetadata(true)
-
       const profile = await checkAuth()
       if (!profile) return
 
-      await checkParticipant(profile)
-      await loadAllData(profile);
+      // PHASE 1 CHANGE: Check participant and get data in one call, then load everything in parallel
+      await checkParticipantAndLoadData(profile)
     }
 
     init()
   }, [router, id])
 
-  
   const checkAuth = async (): Promise<UserProfile | null> => {
     try {
       const profile = await fetchWithAuth(
@@ -154,50 +149,72 @@ export default function DashboardPage() {
     }
   }
 
-  const checkParticipant = async (profile: UserProfile) => {
+  // PHASE 1 CHANGE: Combined function - checks participant AND gets submission data in ONE read
+  const checkParticipantAndLoadData = async (profile: UserProfile) => {
     try {
-      const participantRef = doc(db, "competitions", id, "participants", profile.uid)
-      const participantSnap = await getDoc(participantRef)
+      // This single call does TWO things:
+      // 1. Checks if participant exists (for authorization)
+      // 2. Gets submission data (challengesCompleted, completedChallenges)
+      const participantData = await checkParticipantAndGetData(id, profile.uid)
 
-      if (!participantSnap.exists()) {
+      if (!participantData.exists) {
+        // Not a participant - redirect
         router.push("/participant")
-      } else {
-        setCurrentCompetitionId(id)
+        return
       }
+
+      // Participant exists - set competition ID and submission data
+      setCurrentCompetitionId(id)
+      setSubmissions(participantData.submissions || 0)
+      
+      // Build submission map for UI
+      const submissionMap: Record<string, boolean> = {}
+      if (participantData.completedChallenges) {
+        participantData.completedChallenges.forEach(challengeId => {
+          submissionMap[challengeId] = true
+        })
+      }
+      setUserSubmissions(submissionMap)
+      setLoadingUserSubmissions(false)
+
+      // PHASE 1 CHANGE: Now load metadata and challenges in PARALLEL (not sequential)
+      await Promise.all([
+        loadCompetitionMetadata(),
+        fetchChallenges()
+      ])
     } catch (err) {
-      console.error("Error checking participant:", err)
+      console.error("Error checking participant and loading data:", err)
+      router.push("/participant")
     }
   }
 
+  // PHASE 1 CHANGE: Use cached competition metadata
   const loadCompetitionMetadata = async () => {
     try {
-      setCurrentCompetitionId(id)
-      const competitionRef = doc(db, "competitions", id)
-      const competitionRefSnap = await getDoc(competitionRef)
-      if (competitionRefSnap.exists()) {
-        const competitionData = competitionRefSnap.data()
-        setCompetitionName(competitionData.title || "")
-        const start = competitionData.startDeadline?.toDate?.() ?? new Date(competitionData.startDeadline)
-        const end = competitionData.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
-        const now = new Date()
-        const extendedEnd = new Date(end.getTime() + 60 * 1000) // end + 1 minutes
-        setStartDeadlineReached(now >= start)
-        setEndDeadlinePassed(now > extendedEnd)
-        setCompetitionStartDeadline(start) // Set the start deadline here
-
-        // Use ChallengeCount from competition document if it exists
-        if (competitionData.ChallengeCount !== undefined) {
-          setChallengeCount(competitionData.ChallengeCount)
-        } else {
-          setChallengeCount(null) // Explicitly set to null if key doesn't exist
-        }
-      } else {
-        // If competition document doesn't exist, set challengeCount to null
+      setLoadingCompetitionMetadata(true)
+      
+      // Use the competition cache context
+      const metadata = await getCompetitionMetadata(id)
+      
+      if (!metadata) {
         setChallengeCount(null)
+        return
       }
+
+      // Set all competition metadata
+      setCompetitionName(metadata.title)
+      setCompetitionStartDeadline(metadata.startDeadline)
+      setChallengeCount(metadata.ChallengeCount ?? null)
+
+      // Calculate deadline states
+      const now = new Date()
+      const extendedEnd = new Date(metadata.endDeadline.getTime() + 60 * 1000) // end + 1 minute
+      setStartDeadlineReached(now >= metadata.startDeadline)
+      setEndDeadlinePassed(now > extendedEnd)
+      
     } catch (error) {
       console.error("Error fetching competition metadata:", error)
-      setChallengeCount(null) // Also set to null on error
+      setChallengeCount(null)
     } finally {
       setLoadingCompetitionMetadata(false)
     }
@@ -208,7 +225,7 @@ export default function DashboardPage() {
       setLoadingChallengesList(true)
       const challengesRef = collection(db, "competitions", id, "challenges")
       const challengesSnapshot = await getDocs(challengesRef)
-      // Removed: setChallengeCount(challengesSnapshot.size) - now fetched from competition doc
+      
       if (!challengesSnapshot.empty) {
         const challengeList = challengesSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -216,75 +233,15 @@ export default function DashboardPage() {
         }))
         setChallenges(challengeList)
       } else {
-        setChallenges([]) // Ensure challenges is an empty array if no challenges found
+        setChallenges([])
       }
     } catch (error) {
       console.error("Error fetching challenges:", error)
-      setChallenges([]) // On error, ensure challenges is empty
+      setChallenges([])
     } finally {
       setLoadingChallengesList(false)
     }
   }
-
-
-const fetchUserSubmissions = async (profile: UserProfile) => {
-  try {
-    setLoadingUserSubmissions(true);
-    const competitionId = id;
-    if (!competitionId) return;
-
-    const participantDocRef = doc(
-      db,
-      "competitions",
-      competitionId,
-      "participants",
-      profile.uid
-    );
-
-    const participantSnapshot = await getDoc(participantDocRef);
-
-    if (participantSnapshot.exists()) {
-      const data = participantSnapshot.data();
-      const completedCount = data.challengesCompleted || 0;
-      setSubmissions(completedCount);
-
-
-      // Use completedChallenges array directly
-      const completedChallenges: string[] = data.completedChallenges || [];
-
-      // Build the boolean map for UI
-      const submissionMap: Record<string, boolean> = {};
-      completedChallenges.forEach(challengeId => {
-        submissionMap[challengeId] = true;
-      });
-      // console.log("User submissions map:", submissionMap);
-      // Store count and map
-      setUserSubmissions(submissionMap);
-
-      // No need for a map of booleans now, unless your UI still expects it
-      // setUserSubmissions({});
-    } else {
-      console.warn("Participant document not found for user:", profile.uid);
-      setUserSubmissions({});
-      setSubmissions(0);
-    }
-  } catch (error) {
-    console.error("Error fetching user challenge count:", error);
-    setUserSubmissions({});
-    setSubmissions(0);
-  } finally {
-    setLoadingUserSubmissions(false);
-  }
-};
-
-
-
-  // Orchestrate fetching: Fetch metadata and user submissions in parallel, then fetch challenges
-  const loadAllData = async (profile: UserProfile) => {
-    await Promise.all([loadCompetitionMetadata(), fetchUserSubmissions(profile)])
-    await fetchChallenges()
-  }
-
 
   // Filtered challenges based on search term and submission status
   const filteredChallenges = challenges.filter((challenge) => {
@@ -302,7 +259,6 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
   if (!user || loadingCompetitionMetadata || loadingUserSubmissions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-        {/* Main Content Skeletons */}
         <main className="max-w-7xl mx-auto py-12 px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <DashboardCardSkeleton />
@@ -457,7 +413,7 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
               ) : (
                 <div
                   className={
-                    viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4" // For list view
+                    viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"
                   }
                 >
                   {filteredChallenges.map((challenge) => {
@@ -527,7 +483,7 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
                               </div>
                             )}
                           </div>
-                          {/* Action Button - Color coded based on submission status */}
+                          {/* Action Button */}
                           <div className="flex flex-col sm:flex-row justify-center gap-2 mt-4">
                             {loadingUserSubmissions ? (
                               <Button
@@ -592,7 +548,6 @@ const fetchUserSubmissions = async (profile: UserProfile) => {
                   <p className="text-gray-600 max-w-md mx-auto">
                     Challenges will be available when the countdown ends. Get ready!
                   </p>
-                  {/* Countdown with spacing */}
                   {competitionStartDeadline && (
                     <div className="mt-6">
                       <Countdown targetDate={competitionStartDeadline} />
