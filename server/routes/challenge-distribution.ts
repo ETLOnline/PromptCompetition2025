@@ -139,10 +139,38 @@ router.get(
       // Sort deterministically (once)
       Object.keys(submissionsByChallenge).forEach((cid) => submissionsByChallenge[cid].sort());
 
+      // Fetch challenge titles from Firestore
+      const challengeTitles: Record<string, string> = {};
+      const challengeIds = Object.keys(submissionsByChallenge);
+      
+      // Fetch challenge documents to get their titles
+      const challengePromises = challengeIds.map(async (challengeId) => {
+        try {
+          const challengeDoc = await db
+            .collection("competitions")
+            .doc(competitionId)
+            .collection("challenges")
+            .doc(challengeId)
+            .get();
+          
+          if (challengeDoc.exists) {
+            const data = challengeDoc.data();
+            challengeTitles[challengeId] = data?.title || `Challenge ${challengeId}`;
+          } else {
+            challengeTitles[challengeId] = `Challenge ${challengeId}`;
+          }
+        } catch (error) {
+          console.error(`Error fetching challenge ${challengeId}:`, error);
+          challengeTitles[challengeId] = `Challenge ${challengeId}`;
+        }
+      });
+
+      await Promise.all(challengePromises);
+
       // bucketSize == TOTAL available in pool
       const challenges = Object.entries(submissionsByChallenge).map(([challengeId, submissionIds]) => ({
         id: challengeId,
-        name: `Challenge ${challengeId}`,
+        name: challengeTitles[challengeId] || `Challenge ${challengeId}`,
         bucketSize: submissionIds.length,
         submissionIds,
       }));
@@ -163,6 +191,7 @@ router.get(
     }
   }
 );
+
 
 /**
  * GET /challenge-distribution/:competitionId/config
