@@ -550,7 +550,15 @@ export default function DashboardPage() {
                   </p>
                   {competitionStartDeadline && (
                     <div className="mt-6">
-                      <Countdown targetDate={competitionStartDeadline} />
+                      <Countdown
+                        targetDate={competitionStartDeadline}
+                        onExpire={() => {
+                          setStartDeadlineReached(true)
+                          loadCompetitionMetadata()
+                          fetchChallenges()
+                        }}
+                      />
+
                     </div>
                   )}
                 </div>
