@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 
 interface CountdownProps {
   targetDate: Date
+  onExpire?: () => void
 }
 
-export function Countdown({ targetDate }: CountdownProps) {
+export function Countdown({ targetDate, onExpire }: CountdownProps) {
   const calculateTimeRemaining = () => {
     const now = new Date()
     const difference = targetDate.getTime() - now.getTime()
@@ -27,15 +28,20 @@ export function Countdown({ targetDate }: CountdownProps) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeRemaining(calculateTimeRemaining())
+      const updated = calculateTimeRemaining()
+      setTimeRemaining(updated)
+
+      if (updated.expired) {
+        clearInterval(timer)
+        if (onExpire) onExpire()
+      }
     }, 1000)
 
-    // Clear interval on component unmount
     return () => clearInterval(timer)
-  }, [targetDate])
+  }, [targetDate, onExpire])
 
   if (timeRemaining.expired) {
-    return null // Competition has started or passed, no need to show countdown
+    return null
   }
 
   const formatTime = (num: number) => String(num).padStart(2, "0")
