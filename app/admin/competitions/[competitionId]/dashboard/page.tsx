@@ -29,6 +29,8 @@ export default function AdminDashboard() {
   const [competitionName, setCompetitionName] = useState("")
   const { addNotification } = useNotifications();
   const [progressRefreshKey, setProgressRefreshKey] = useState(0)
+  const [competitionEndDeadline, setCompetitionEndDeadline] = useState<Date | null>(null)
+  const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
   
   // Use the shared evaluation status hook
   const { 
@@ -96,10 +98,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     const initializePage = async () => {
       await checkAuthAndLoad()
-      // Fetch competition name
+      // Fetch competition name and end deadline
       const competitionDoc = await getDoc(doc(db, 'competitions', competitionId))
       if (competitionDoc.exists()) {
-        setCompetitionName(competitionDoc.data().title)
+        const data = competitionDoc.data()
+        setCompetitionName(data.title)
+        
+        // Get end deadline and check if competition has ended
+        if (data.endDeadline) {
+          const endDate = data.endDeadline.toDate ? data.endDeadline.toDate() : new Date(data.endDeadline)
+          setCompetitionEndDeadline(endDate)
+          
+          // Check if current time is greater than end deadline
+          const now = new Date()
+          setIsCompetitionEnded(now > endDate)
+        }
       }
       // Note: fetchEvaluationStatus is now handled by the useEvaluationStatus hook
     }
@@ -237,10 +250,24 @@ export default function AdminDashboard() {
               </div>
               <div className="space-y-3">
                 {role === 'superadmin' ? (
-                  <StartEvaluationButton 
-                    competitionId={competitionId} 
-                    onEvaluationStart={handleEvaluationStart}
-                  />
+                  !isCompetitionEnded ? (
+                    <div className="text-center py-4">
+                      <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">
+                        <AlertCircle className="h-5 w-5" />
+                        <span className="text-sm">Competition must end before evaluation</span>
+                        {competitionEndDeadline && (
+                          <span className="text-xs text-gray-400">
+                            Ends: {competitionEndDeadline.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <StartEvaluationButton 
+                      competitionId={competitionId} 
+                      onEvaluationStart={handleEvaluationStart}
+                    />
+                  )
                 ) : (
                   <div className="text-center py-4">
                     <div className="flex items-center justify-center space-x-2 text-gray-500">
@@ -267,12 +294,26 @@ export default function AdminDashboard() {
             
             <div className="space-y-3">
               {role === 'superadmin' ? (
-                <Button
-                  onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
-                  className="w-full py-3 bg-gray-900 text-white rounded-lg"
-                >
-                  <Users className="h-4 w-4 mr-2" /> Assign Submissions
-                </Button>
+                !isCompetitionEnded ? (
+                  <div className="text-center py-4">
+                    <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">
+                      <AlertCircle className="h-5 w-5" />
+                      <span className="text-sm">Competition must end before assignment</span>
+                      {competitionEndDeadline && (
+                        <span className="text-xs text-gray-400">
+                          Ends: {competitionEndDeadline.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
+                    className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
+                  >
+                    <Users className="h-4 w-4 mr-2" /> Assign Submissions
+                  </Button>
+                )
               ) : (
                 <div className="text-center py-4">
                   <div className="flex items-center justify-center space-x-2 text-gray-500">
@@ -298,9 +339,23 @@ export default function AdminDashboard() {
               </div>
             <div className="space-y-3"> 
               {role === 'superadmin' ? (
-                <div className="flex-1">
-                  <GenerateLeaderboardButton competitionId={competitionId} />
-                </div>
+                !isCompetitionEnded ? (
+                  <div className="text-center py-4">
+                    <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">
+                      <AlertCircle className="h-5 w-5" />
+                      <span className="text-sm">Competition must end to generate leaderboard</span>
+                      {competitionEndDeadline && (
+                        <span className="text-xs text-gray-400">
+                          Ends: {competitionEndDeadline.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1">
+                    <GenerateLeaderboardButton competitionId={competitionId} />
+                  </div>
+                )
               ) : (
                 <div className="text-center py-4">
                   <div className="flex items-center justify-center space-x-2 text-gray-500">

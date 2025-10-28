@@ -91,8 +91,8 @@ export default function DashboardPage() {
   const id = routeParams.competitionId
 
   // PHASE 1 CHANGE: Use both cache contexts
-  const { checkParticipantAndGetData, clearCache: clearParticipantCache } = useContext(ParticipantCacheContext)
-  const { getCompetitionMetadata, clearCache: clearCompetitionCache } = useContext(CompetitionCacheContext)
+  const { checkParticipantAndGetData } = useContext(ParticipantCacheContext)
+  const { getCompetitionMetadata } = useContext(CompetitionCacheContext)
 
   const [submissions, setSubmissions] = useState<number | null>(null)
   const [challengeCount, setChallengeCount] = useState<number | null>(null)

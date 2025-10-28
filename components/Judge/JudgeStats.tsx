@@ -9,21 +9,21 @@ interface JudgeStatsProps {
 export function JudgeStats({ stats }: JudgeStatsProps) {
     const statCards = [
         {
-        title: "Active Competitions",
+        title: "Assigned Competitions",
         value: stats.activeCompetitions,
         icon: Trophy,
         bgColor: "bg-blue-50",
         iconColor: "text-blue-600",
         },
         {
-        title: "Total Submissions",
+        title: "Submissions to Review",
         value: stats.totalSubmissions,
         icon: Users,
         bgColor: "bg-emerald-50",
         iconColor: "text-emerald-600",
         },
         {
-        title: "Challenges",
+        title: "Assigned Challenges",
         value: stats.challenges,
         icon: Scale,
         bgColor: "bg-amber-50",

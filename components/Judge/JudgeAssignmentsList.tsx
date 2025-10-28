@@ -47,7 +47,7 @@ export function JudgeAssignmentsList({ assignments }: JudgeAssignmentsListProps)
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {assignments.map((assignment) => (
-            <Card key={assignment.id} className="hover:shadow-md transition-shadow">
+            <Card key={assignment.competitionId} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
