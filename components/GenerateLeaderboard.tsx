@@ -6,6 +6,7 @@ import { Trophy, Loader, CheckCircle, Shield, X, AlertCircle, Users, RefreshCw }
 import { fetchWithAuth } from "@/lib/api"
 import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase" // Adjust the import path as needed
+import { useRouter } from "next/navigation";
 
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -21,6 +22,7 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
   const [showNoJudgesPopup, setShowNoJudgesPopup] = useState(false)
   const [showAlreadyGeneratedPopup, setShowAlreadyGeneratedPopup] = useState(false)
   const { addNotification } = useNotifications();
+  const router = useRouter();
   
 
   useEffect(() => {
@@ -119,6 +121,8 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
       await updateDoc(competitionRef, { hasFinalLeaderboard: true })
       addNotification("success", "Final leaderboard generated successfully!");
       setSuccess(true)
+      router.push(`/admin/competitions/${competitionId}/leaderboard`);
+
       return true;
     } catch (err: any) {
       // Show error notification
