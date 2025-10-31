@@ -55,7 +55,7 @@ judgeRouter.get(
 );
 
 /**
- * Get challenge details
+ * Get challenge detals
  * GET /judge/challenge/:competitionId/:challengeId
  */
 judgeRouter.get(

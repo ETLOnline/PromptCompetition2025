@@ -98,7 +98,7 @@ export function ChallengeList({ assignment, isLoading, competitionId, onNavigate
                         size="sm"
                         className="bg-gray-900 hover:bg-gray-800"
                       >
-                        Start Scoring
+                        Score
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
                     </div>

@@ -418,7 +418,6 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           )}
-
           {activeTab === "judges" && <JudgeProgress competitionId={competitionId} />} 
         </div>
       </div>
