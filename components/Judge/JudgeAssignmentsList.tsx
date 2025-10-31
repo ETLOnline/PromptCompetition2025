@@ -70,7 +70,9 @@ export function JudgeAssignmentsList({ assignments }: JudgeAssignmentsListProps)
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-900">{assignment.submissionCount} submissions</p>
+                            <p className="text-sm font-medium text-gray-900">
+                                {assignment.submissionCount} {assignment.submissionCount === 1 ? 'submission' : 'submissions'}
+                            </p>
                         </div>
                     </div>
                     <Button

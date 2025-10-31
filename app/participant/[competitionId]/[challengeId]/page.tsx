@@ -449,6 +449,16 @@ export default function ChallengePage() {
                         <span>You have already submitted this challenge. You can update your submission below.</span>
                       </div>
                     )}
+                    {(isCompetitionEnded || !isCompetitionActive) && (
+                      <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-200 mb-2 mt-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>
+                          {isCompetitionEnded 
+                            ? "Submission time is over. You can no longer submit or update responses for this challenge."
+                            : "This competition is currently not active. Submissions are disabled."}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between pt-2">
                       <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                         Characters: <span className="font-semibold">{prompt.length}</span> | Words:{" "}
@@ -460,6 +470,15 @@ export default function ChallengePage() {
                           setIsConfirmModalOpen(true);
                         }}
                         disabled={!prompt.trim() || isCompetitionEnded || loading || !isCompetitionActive}   // ✅ added challenge.isCompetitionLocked here
+                        title={
+                          isCompetitionEnded 
+                            ? "Submission time is over" 
+                            : !isCompetitionActive 
+                            ? "Competition is not active" 
+                            : !prompt.trim() 
+                            ? "Please enter your prompt" 
+                            : ""
+                        }
                         className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Send className="h-4 w-4 mr-2" />
@@ -492,6 +511,15 @@ export default function ChallengePage() {
                             <Button
                               className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
                               onClick={async () => {
+                                // Check if competition has ended before submission
+                                const hasEnded = await checkCompetitionEnded();
+                                if (hasEnded) {
+                                  setIsConfirmModalOpen(false);
+                                  setSubmissionStatus("error");
+                                  setSubmissionError("Submission time is over. You can no longer submit responses for this challenge.");
+                                  return;
+                                }
+
                                 setLoading(true)
                                 setIsConfirmModalOpen(false)
                                 setSubmissionStatus("submitting")
@@ -501,7 +529,23 @@ export default function ChallengePage() {
                                   const result = await submitPrompt(routeParams.competitionId, routeParams.challengeId, prompt)
                                   // console.log("Submission result:", result)
                                   if (!result.success) {
-                                    setSubmissionError(result.error || "Unknown error occurred"); // Store the specific error
+                                    // Handle specific error messages from backend
+                                    let errorMessage = result.error || "Unknown error occurred";
+                                    
+                                    // Transform backend error messages to user-friendly ones
+                                    if (errorMessage.includes("Competition has ended")) {
+                                      errorMessage = "Submission time is over. You can no longer submit responses for this challenge.";
+                                    } else if (errorMessage.includes("Competition has not started yet")) {
+                                      errorMessage = "The competition has not started yet. Please wait until it begins.";
+                                    } else if (errorMessage.includes("Competition is not active")) {
+                                      errorMessage = "This competition is currently not active. Please contact the administrator.";
+                                    } else if (errorMessage.includes("Rate limit exceeded")) {
+                                      errorMessage = "You're submitting too quickly. Please wait a moment and try again.";
+                                    } else if (errorMessage.includes("size exceeds")) {
+                                      errorMessage = "Your submission is too large. Please reduce the size and try again.";
+                                    }
+                                    
+                                    setSubmissionError(errorMessage);
                                     setSubmissionStatus("error")
                                     return
                                   }
@@ -515,11 +559,20 @@ export default function ChallengePage() {
                                       : "Your submission has been submitted.",
                                   })
                                   await fetchSubmissionPrompt(routeParams.competitionId, routeParams.challengeId, user.uid)
-                                } catch (error) {
-                                  // console.error("Error submitting prompt:", error)
+                                } catch (error: any) {
                                   console.error("Error submitting prompt:", error)
+                                  
+                                  // Handle network or other errors
+                                  let errorMessage = "Error submitting prompt. Please try again later.";
+                                  
+                                  if (error.message && error.message.includes("Competition has ended")) {
+                                    errorMessage = "Submission time is over. You can no longer submit responses for this challenge.";
+                                  } else if (error.message && error.message.includes("network")) {
+                                    errorMessage = "Network error. Please check your connection and try again.";
+                                  }
+                                  
                                   setSubmissionStatus("error") 
-                                  setSubmissionError("Error submitting prompt. Please try again later.");                             
+                                  setSubmissionError(errorMessage);                             
                                 } finally {
                                   setLoading(false)
                                 }

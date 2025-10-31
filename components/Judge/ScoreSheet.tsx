@@ -37,6 +37,9 @@ export function ScoreSheet({
   if (!submission || !challenge) return null
 
   const total = calculateWeightedTotal(scoreFormData.rubricScores, challenge.rubric)
+  const rubricCount = challenge.rubric.length
+  const scoredCount = challenge.rubric.filter((c) => c.name in (scoreFormData.rubricScores || {})).length
+  const allCriteriaScored = rubricCount > 0 && scoredCount === rubricCount
   
   const toggleCriterion = (index: number) => {
     const newExpanded = new Set(expandedCriteria)
@@ -85,7 +88,7 @@ export function ScoreSheet({
             <div className="flex items-center justify-between pb-2 border-b border-gray-200">
               <Label className="text-sm font-semibold text-gray-900">Scoring Criteria</Label>
               <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                {challenge.rubric.length} {challenge.rubric.length === 1 ? 'criterion' : 'criteria'}
+                {rubricCount} {rubricCount === 1 ? 'criterion' : 'criteria'} · {scoredCount}/{rubricCount} scored
               </Badge>
             </div>
 
@@ -199,6 +202,11 @@ export function ScoreSheet({
 
           {/* Actions */}
           <DialogFooter className="gap-3 pt-6">
+            {!allCriteriaScored && rubricCount > 0 && (
+              <div className="mr-auto text-xs text-gray-500">
+                Score all criteria to enable saving ({scoredCount}/{rubricCount} completed)
+              </div>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -210,7 +218,7 @@ export function ScoreSheet({
             </Button>
             <Button
               onClick={onSave}
-              disabled={isSavingScore || challenge.rubric.length === 0}
+              disabled={isSavingScore || rubricCount === 0 || !allCriteriaScored}
               className="bg-gray-900 hover:bg-gray-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
             >
               <Save className="h-4 w-4 mr-2" />
