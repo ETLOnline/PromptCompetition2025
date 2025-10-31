@@ -53,6 +53,31 @@ export default function ChallengePage() {
 
   const { notifications, addNotification, removeNotification } = useNotifications()
 
+  // Function to update challenge evaluation status
+  const updateChallengeEvaluationStatus = async (
+    challengeId: string,
+    totalAssigned: number,
+    totalScored: number
+  ) => {
+    if (!userUID || !competitionId) return
+
+    try {
+      const isCompleted = totalAssigned > 0 && totalScored === totalAssigned
+      
+      await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/judge/assignment/${userUID}/${competitionId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            [`challengesEvaluated.${challengeId}`]: isCompleted
+          })
+        }
+      )
+    } catch (error) {
+      console.error("Failed to update challenge evaluation status:", error)
+    }
+  }
 
   // Effects
   useEffect(() => {
@@ -173,6 +198,33 @@ export default function ChallengePage() {
         currentPage: Math.ceil(updatedSubmissions.length / pageSize),
         totalPages: Math.ceil(totalAssigned / pageSize),
       });
+
+      // 5️⃣ Update challenge evaluation status
+      await updateChallengeEvaluationStatus(challengeId, totalAssigned, totalScored);
+
+      // 6️⃣ If all challenges for this judge are evaluated, set AllChallengesEvaluated = true
+      try {
+        const ce = assignmentData.challengesEvaluated || {};
+        const currentCompleted = totalAssigned > 0 && totalScored === totalAssigned;
+        const ceMerged: Record<string, boolean> = { ...ce, [challengeId]: currentCompleted };
+        const allComplete = Object.entries(assignmentData.assignedCountsByChallenge || {})
+          .every(([cid, count]) => (count as number) > 0 ? ceMerged[cid] === true : true);
+
+        if (allComplete && userUID && competitionId) {
+          // Only set to true when fully complete; do not set false otherwise
+          await fetchWithAuth(
+            `${process.env.NEXT_PUBLIC_API_URL}/judge/assignment/${userUID}/${competitionId}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ AllChallengesEvaluated: true })
+            }
+          );
+        }
+      } catch (err) {
+        // Silent failure as requested
+        console.error("Failed to update AllChallengesEvaluated:", err);
+      }
 
     } catch (error) {
       addNotification("error", "Failed to load submissions");

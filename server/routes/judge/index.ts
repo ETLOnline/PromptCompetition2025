@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 
 // Judge route functions
-import { fetchAssignments, fetchAssignment } from "./assignments.js";
+import { fetchAssignments, fetchAssignment, updateChallengeEvaluationStatus } from "./assignments.js";
 import { fetchChallenge } from "./challenges.js";
 import { fetchSubmissions } from "./submissions.js";
 import { submitScore, getSubmissionScore } from "./scoring.js";
@@ -50,6 +50,46 @@ judgeRouter.get(
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch assignment" });
+    }
+  }
+);
+
+/**
+ * Update challenge evaluation status
+ * PATCH /judge/assignment/:judgeId/:competitionId
+ * body: { "challengesEvaluated.01": true }
+ */
+judgeRouter.patch(
+  "/assignment/:judgeId/:competitionId",
+  authenticateToken,
+  authorizeRoles(["judge"]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { judgeId, competitionId } = req.params;
+      const updates = req.body;
+
+      // Validate that updates contain only challengesEvaluated.* fields or AllChallengesEvaluated boolean
+      const validKeys = Object.entries(updates).every(([key, value]) => {
+        if (key === "AllChallengesEvaluated") {
+          return typeof value === "boolean";
+        }
+        if (key.startsWith("challengesEvaluated.")) {
+          return typeof value === "boolean";
+        }
+        return false;
+      });
+
+      if (!validKeys) {
+        return res.status(400).json({ 
+          error: "Only challengesEvaluated.* or AllChallengesEvaluated can be updated and must be boolean" 
+        });
+      }
+
+      await updateChallengeEvaluationStatus(competitionId, judgeId, updates);
+      res.json({ message: "Challenge evaluation status updated successfully" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to update challenge evaluation status" });
     }
   }
 );

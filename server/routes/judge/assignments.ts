@@ -25,6 +25,7 @@ export async function fetchAssignments(userId: string): Promise<JudgeAssignment[
         submissionCount: data.assignedCountTotal || 0,
         assignedDate: data.updatedAt,
         assignedCountsByChallenge: data.assignedCountsByChallenge || {},
+        AllChallengesEvaluated: data.AllChallengesEvaluated ?? false,
       };
     });
   } catch (error: any) {
@@ -68,9 +69,41 @@ export async function fetchAssignment(
       assignedCountTotal: data.assignedCountTotal || 0,
       assignedCountsByChallenge: data.assignedCountsByChallenge || {},
       submissionsByChallenge: data.submissionsByChallenge || {},
+      challengesEvaluated: data.challengesEvaluated || {},
+      AllChallengesEvaluated: data.AllChallengesEvaluated ?? false,
       updatedAt: data.updatedAt?.toDate?.() || null,
     };
   } catch (error) {
     throw new Error("Failed to fetch judge assignment");
+  }
+}
+
+/**
+ * Update challenge evaluation status for a judge
+ * Updates nested field using dot notation
+ */
+export async function updateChallengeEvaluationStatus(
+  competitionId: string,
+  judgeId: string,
+  updates: Record<string, boolean>
+): Promise<void> {
+  try {
+    const judgeDocRef = db
+      .collection("competitions")
+      .doc(competitionId)
+      .collection("judges")
+      .doc(judgeId);
+
+    // Check if judge document exists
+    const judgeDoc = await judgeDocRef.get();
+    if (!judgeDoc.exists) {
+      throw new Error("Judge assignment not found");
+    }
+
+    // Update using Firestore update (supports dot notation)
+    await judgeDocRef.update(updates);
+  } catch (error) {
+    console.error("Error updating challenge evaluation status:", error);
+    throw new Error("Failed to update challenge evaluation status");
   }
 }

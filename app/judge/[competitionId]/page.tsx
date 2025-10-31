@@ -59,7 +59,11 @@ export default function CompetitionPage() {
         return
       }
 
-      setAssignment(assignmentData)
+      // Ensure challengesEvaluated exists to simplify UI logic in ChallengeList
+      setAssignment({
+        ...assignmentData,
+        challengesEvaluated: assignmentData.challengesEvaluated ?? {}
+      })
     } catch (error) {
       addNotification("error", "Failed to load competition details")
     } finally {
