@@ -64,6 +64,7 @@ export default function JudgePage() {
       (sum, a) => sum + Object.keys(a.assignedCountsByChallenge).length,
       0
     ),
+    evaluatedSubmissions: assignments.reduce((sum, a) => sum + (a.evaluatedCount || 0), 0),
   }
 
   return (
