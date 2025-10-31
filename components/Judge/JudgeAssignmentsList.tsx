@@ -75,14 +75,25 @@ export function JudgeAssignmentsList({ assignments }: JudgeAssignmentsListProps)
                             </p>
                         </div>
                     </div>
-                    <Button
+                    {assignment.AllChallengesEvaluated ? (
+                      <Button
+                        onClick={() => router.push(`/judge/${assignment.competitionId}`)}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        Update Score
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    ) : (
+                      <Button
                         onClick={() => router.push(`/judge/${assignment.competitionId}`)}
                         size="sm"
                         className="bg-gray-900 hover:bg-gray-800"
-                    >
+                      >
                         Open
                         <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
+                      </Button>
+                    )}
                 </div>
                 </CardContent>
             </Card>

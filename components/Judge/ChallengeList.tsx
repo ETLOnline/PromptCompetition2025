@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ChevronRight, AlertCircle, Target, Users } from "lucide-react"
+import { ChevronRight, AlertCircle, Target, Users, CheckCircle2, PlayCircle } from "lucide-react"
 import { getAvatarColor } from "@/lib/judge/utils"
 import type { CompetitionAssignment } from "@/types/judge-submission"
 
@@ -71,41 +71,59 @@ export function ChallengeList({ assignment, isLoading, competitionId, onNavigate
         <div className="space-y-4">
           {Object.entries(assignment.assignedCountsByChallenge || {})
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([challengeId, count]) => (
-              <Card key={challengeId} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className={`${getAvatarColor(challengeId)} text-white font-bold`}>
-                          {challengeId.toUpperCase().slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-semibold text-gray-900">Challenge {challengeId}</h3>
-                        <p className="text-sm text-gray-600">
-                          {count} submission{count !== 1 ? "s" : ""} assigned to you
-                        </p>
+            .map(([challengeId, count]) => {
+              // Check if challenge is evaluated (default to false if not exists)
+              const isEvaluated = assignment.challengesEvaluated?.[challengeId] === true
+              
+              return (
+                <Card key={challengeId} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className={`${getAvatarColor(challengeId)} text-white font-bold`}>
+                            {challengeId.toUpperCase().slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="space-y-1">
+                          <h3 className="text-lg font-semibold text-gray-900">Challenge {challengeId}</h3>
+                          <p className="text-sm text-gray-600">
+                            {count} submission{count !== 1 ? "s" : ""} assigned to you
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="gap-1">
+                          <Users className="w-3 h-3" />
+                          {count}
+                        </Badge>
+                        {isEvaluated ? (
+                          <Button
+                            onClick={() => onNavigate(challengeId)}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                            Update Score
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => onNavigate(challengeId)}
+                            size="sm"
+                            className="bg-gray-900 hover:bg-gray-800"
+                          >
+                            <PlayCircle className="w-4 h-4 mr-1" />
+                            Start Score
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="gap-1">
-                        <Users className="w-3 h-3" />
-                        {count}
-                      </Badge>
-                      <Button
-                        onClick={() => onNavigate(challengeId)}
-                        size="sm"
-                        className="bg-gray-900 hover:bg-gray-800"
-                      >
-                        Score
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
         </div>
       )}
     </div>
