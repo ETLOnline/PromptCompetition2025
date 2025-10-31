@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
-import { toast } from "sonner"
+import { useToast } from "@/hooks/use-toast"
 import { fetchCompetitions, fetchWithAuth } from "@/lib/api"
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -42,6 +42,7 @@ interface UserProfile {
 
 export default function CompetitionsPage() {
   const { logout } = useAuth()
+  const { toast } = useToast()
   const router = useRouter()
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loadingInitialFetch, setLoadingInitialFetch] = useState(true)
@@ -153,7 +154,10 @@ export default function CompetitionsPage() {
       setCompletionMap(completionStatus)
     } catch (error) {
       console.error("Error loading competitions:", error)
-      toast.error("Failed to load competitions.")
+      toast({
+        title: "Failed to load competitions.",
+        variant: "destructive"
+      })
       setButtonStatesLoading({})
     } finally {
       setLoadingInitialFetch(false)
@@ -182,7 +186,10 @@ export default function CompetitionsPage() {
   const handleRegister = async (registerInput: string) => {
     if (!selectedCompetition || !user) return
     if (registerInput.trim().toLowerCase() !== "register") {
-      toast.error("Please type 'REGISTER' to confirm.")
+      toast({
+        title: "Please type 'REGISTER' to confirm.",
+        variant: "destructive"
+      })
       return
     }
     try {
@@ -197,10 +204,17 @@ export default function CompetitionsPage() {
       setParticipantMap((prev) => ({ ...prev, [selectedCompetition.id]: true }))
       setShowRegistrationModal(false)
       setSelectedCompetition(null)
-      toast.success("Successfully registered for the competition!")
+      toast({
+        title: "You have registered successfully",
+        description: "You are now enrolled in this competition.",
+        variant: "default"
+      })
     } catch (error) {
       console.error("Error registering for competition:", error)
-      toast.error("Failed to register. Please try again.")
+      toast({
+        title: "Failed to register. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setLoadingMap((prev) => ({ ...prev, [selectedCompetition.id]: false }))
     }
@@ -520,4 +534,5 @@ export default function CompetitionsPage() {
       </div>
     </div>
   )
+
 }
