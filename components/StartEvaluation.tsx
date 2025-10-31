@@ -201,8 +201,21 @@ export default function StartEvaluationButton({
             const data = await res.json()
             const progress = data.progress
             
-            if (progress && progress.evaluationStatus === 'completed') {
-              setShowCompletedMessage(true)
+            // IMPORTANT FIX: Check if there are actually unevaluated submissions
+            // Don't rely solely on status - compare evaluated vs total count
+            if (progress) {
+              const hasUnevaluatedSubmissions = progress.evaluatedSubmissions < progress.totalSubmissions
+              
+              if (progress.evaluationStatus === 'completed' && !hasUnevaluatedSubmissions) {
+                // Truly completed - all submissions evaluated
+                setShowCompletedMessage(true)
+              } else if (hasUnevaluatedSubmissions) {
+                // There are unevaluated submissions (possibly after deadline extension)
+                setShowResumeMessage(true)
+              } else {
+                // Edge case: status is not completed but no submissions left
+                setShowCompletedMessage(true)
+              }
             } else {
               setShowResumeMessage(true)
             }

@@ -298,13 +298,21 @@ router.post("/start-evaluation", async (req, res) => {
     }
 
     const submissions = submissionsSnap.docs
-    const totalSubmissions = submissions.length
-    console.log(`🚀 Starting evaluation for competition ${competitionId}: ${totalSubmissions} submissions`)
+    
+    // IMPORTANT FIX: Get the actual total count of ALL submissions (not just unevaluated)
+    // This ensures totalSubmissions includes previously evaluated ones + new ones
+    const allSubmissionsSnap = await submissionsRef.get()
+    const totalSubmissions = allSubmissionsSnap.size
+    
+    console.log(`🚀 Starting evaluation for competition ${competitionId}: ${submissions.length} unevaluated out of ${totalSubmissions} total submissions`)
 
     // Initialize progress in Firestore - This creates the collection and document
+    // Get current evaluated count to preserve it if re-starting after deadline extension
+    const currentEvaluatedCount = await getCurrentEvaluatedCount(competitionId)
+    
     await updateProgressInFirestore(competitionId, {
       totalSubmissions,
-      evaluatedSubmissions: 0,
+      evaluatedSubmissions: currentEvaluatedCount,
       startTime: new Date().toISOString(),
       lastUpdateTime: new Date().toISOString(),
       evaluationStatus: 'running'
@@ -376,10 +384,18 @@ router.post("/resume-evaluation", async (req, res) => {
     }
 
     const submissions = submissionsSnap.docs
-    console.log(`🔄 Resuming evaluation for competition ${competitionId}: ${submissions.length} submissions remaining`)
+    
+    // IMPORTANT FIX: Update totalSubmissions to account for any new submissions
+    // This ensures that if deadline was extended and new submissions came in,
+    // they are counted in the total
+    const allSubmissionsSnap = await submissionsRef.get()
+    const totalSubmissions = allSubmissionsSnap.size
+    
+    console.log(`🔄 Resuming evaluation for competition ${competitionId}: ${submissions.length} remaining out of ${totalSubmissions} total submissions`)
 
-    // Update status to running
+    // Update status to running and update totalSubmissions
     await updateProgressInFirestore(competitionId, {
+      totalSubmissions,
       evaluationStatus: 'running',
       lastUpdateTime: new Date().toISOString()
     })
@@ -484,13 +500,44 @@ router.get("/progress/:competitionId", async (req, res) => {
 
     const progressData = progressDoc.data()
     
+    // IMPORTANT FIX: Always get the actual count of submissions from Firestore
+    // This ensures that if new submissions come in after deadline extension,
+    // they are counted in the total, and the progress percentage is accurate
+    const submissionsSnapshot = await db
+      .collection(`competitions/${competitionId}/submissions`)
+      .get()
+    
+    const actualTotalSubmissions = submissionsSnapshot.size
+    const evaluatedSubmissions = progressData?.evaluatedSubmissions || 0
+    
+    // Determine the correct evaluation status
+    let evaluationStatus = progressData?.evaluationStatus || 'unknown'
+    
+    // If we have more submissions than evaluated, and status is 'completed', change it to 'paused'
+    // This handles the case where deadline was extended and new submissions came in
+    if (evaluationStatus === 'completed' && evaluatedSubmissions < actualTotalSubmissions) {
+      evaluationStatus = 'paused'
+      
+      // Update the status in Firestore for consistency
+      await db
+        .collection('evaluation-progress')
+        .doc(competitionId)
+        .update({
+          totalSubmissions: actualTotalSubmissions,
+          evaluationStatus: 'paused',
+          lastUpdateTime: new Date().toISOString()
+        })
+      
+      console.log(`📊 Updated evaluation status from 'completed' to 'paused' for competition ${competitionId} due to new submissions (${evaluatedSubmissions}/${actualTotalSubmissions})`)
+    }
+    
     return res.status(200).json({
       progress: {
-        totalSubmissions: progressData?.totalSubmissions || 0,
-        evaluatedSubmissions: progressData?.evaluatedSubmissions || 0,
+        totalSubmissions: actualTotalSubmissions,
+        evaluatedSubmissions: evaluatedSubmissions,
         startTime: progressData?.startTime || new Date().toISOString(),
         lastUpdateTime: progressData?.lastUpdateTime || new Date().toISOString(),
-        evaluationStatus: progressData?.evaluationStatus || 'unknown'
+        evaluationStatus: evaluationStatus
       }
     })
 

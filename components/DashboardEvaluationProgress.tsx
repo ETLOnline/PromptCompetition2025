@@ -102,6 +102,7 @@ export default function DashboardEvaluationProgress({
   const isRunning = progress.evaluationStatus === 'running'
   const isCompleted = progress.evaluationStatus === 'completed'
   const isPaused = progress.evaluationStatus === 'paused'
+  const hasUnevaluatedSubmissions = progress.evaluatedSubmissions < progress.totalSubmissions
 
   return (
     <motion.div
@@ -168,7 +169,7 @@ export default function DashboardEvaluationProgress({
           </div>
 
           {/* Control buttons */}
-          {isPaused && progress.evaluatedSubmissions < progress.totalSubmissions && (
+          {isPaused && hasUnevaluatedSubmissions && (
             <Button
               onClick={onResume}
               size="sm"
@@ -183,7 +184,7 @@ export default function DashboardEvaluationProgress({
             </Button>
           )}
 
-          {isRunning && progress.evaluatedSubmissions < progress.totalSubmissions && (
+          {isRunning && hasUnevaluatedSubmissions && (
             <Button
               onClick={onPause}
               size="sm"
