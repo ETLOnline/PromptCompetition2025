@@ -1,4 +1,3 @@
-//dashboard page for participants
 "use client"
 
 import { useAuth } from "@/components/auth-provider"
@@ -20,6 +19,8 @@ import {
   Filter,
   Grid3X3,
   List,
+  Edit,
+  Eye,
 } from "lucide-react"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -29,8 +30,9 @@ import { fetchWithAuth } from "@/lib/api"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 import { ParticipantCacheContext } from "@/lib/participant-cache-context"
 import { CompetitionCacheContext } from "@/lib/competition-cache-context"
+import { ViewChallengeDetailsModal } from "@/components/view-challenge-details-modal"
 
-// Skeleton for Dashboard Summary Cards
+// Skeleton components remain the same
 const DashboardCardSkeleton = () => (
   <Card className="bg-white border border-gray-100 rounded-xl shadow-sm animate-pulse">
     <CardHeader className="bg-gray-100 rounded-t-xl h-16 flex items-center justify-between px-6 py-4">
@@ -44,7 +46,6 @@ const DashboardCardSkeleton = () => (
   </Card>
 )
 
-// Skeleton for Challenge Cards
 const ChallengeCardSkeleton = () => (
   <Card className="bg-white border border-gray-100 rounded-xl shadow-sm animate-pulse">
     <CardContent className="p-6">
@@ -90,7 +91,6 @@ export default function DashboardPage() {
   const routeParams = useParams<{ competitionId: string }>()
   const id = routeParams.competitionId
 
-  // PHASE 1 CHANGE: Use both cache contexts
   const { checkParticipantAndGetData } = useContext(ParticipantCacheContext)
   const { getCompetitionMetadata } = useContext(CompetitionCacheContext)
 
@@ -102,7 +102,6 @@ export default function DashboardPage() {
   const [competitionStartDeadline, setCompetitionStartDeadline] = useState<Date | null>(null)
   const [competitionName, setCompetitionName] = useState("")
   
-  // Loading states
   const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true)
   const [loadingChallengesList, setLoadingChallengesList] = useState(true)
   const [loadingUserSubmissions, setLoadingUserSubmissions] = useState(true)
@@ -110,20 +109,22 @@ export default function DashboardPage() {
   const [challenges, setChallenges] = useState<any[]>([])
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({})
 
-  // Filtering and View Mode States
   const [searchTerm, setSearchTerm] = useState("")
   const [filterSubmissionStatus, setFilterSubmissionStatus] = useState<"all" | "submitted" | "not-submitted">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const setStoreValues = useSubmissionStore((state) => state.setValues)
 
   const [user, setUser] = useState<UserProfile | null>(null)
+  
+  // Modal state
+  const [selectedChallengeForView, setSelectedChallengeForView] = useState<any | null>(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   useEffect(() => {
     const init = async () => {
       const profile = await checkAuth()
       if (!profile) return
 
-      // PHASE 1 CHANGE: Check participant and get data in one call, then load everything in parallel
       await checkParticipantAndLoadData(profile)
     }
 
@@ -149,25 +150,18 @@ export default function DashboardPage() {
     }
   }
 
-  // PHASE 1 CHANGE: Combined function - checks participant AND gets submission data in ONE read
   const checkParticipantAndLoadData = async (profile: UserProfile) => {
     try {
-      // This single call does TWO things:
-      // 1. Checks if participant exists (for authorization)
-      // 2. Gets submission data (challengesCompleted, completedChallenges)
       const participantData = await checkParticipantAndGetData(id, profile.uid)
 
       if (!participantData.exists) {
-        // Not a participant - redirect
         router.push("/participant")
         return
       }
 
-      // Participant exists - set competition ID and submission data
       setCurrentCompetitionId(id)
       setSubmissions(participantData.submissions || 0)
       
-      // Build submission map for UI
       const submissionMap: Record<string, boolean> = {}
       if (participantData.completedChallenges) {
         participantData.completedChallenges.forEach(challengeId => {
@@ -177,7 +171,6 @@ export default function DashboardPage() {
       setUserSubmissions(submissionMap)
       setLoadingUserSubmissions(false)
 
-      // PHASE 1 CHANGE: Now load metadata and challenges in PARALLEL (not sequential)
       await Promise.all([
         loadCompetitionMetadata(),
         fetchChallenges()
@@ -188,12 +181,10 @@ export default function DashboardPage() {
     }
   }
 
-  // PHASE 1 CHANGE: Use cached competition metadata
   const loadCompetitionMetadata = async () => {
     try {
       setLoadingCompetitionMetadata(true)
       
-      // Use the competition cache context
       const metadata = await getCompetitionMetadata(id)
       
       if (!metadata) {
@@ -201,14 +192,12 @@ export default function DashboardPage() {
         return
       }
 
-      // Set all competition metadata
       setCompetitionName(metadata.title)
       setCompetitionStartDeadline(metadata.startDeadline)
       setChallengeCount(metadata.ChallengeCount ?? null)
 
-      // Calculate deadline states
       const now = new Date()
-      const extendedEnd = new Date(metadata.endDeadline.getTime() + 60 * 1000) // end + 1 minute
+      const extendedEnd = new Date(metadata.endDeadline.getTime() + 60 * 1000)
       setStartDeadlineReached(now >= metadata.startDeadline)
       setEndDeadlinePassed(now > extendedEnd)
       
@@ -243,7 +232,6 @@ export default function DashboardPage() {
     }
   }
 
-  // Filtered challenges based on search term and submission status
   const filteredChallenges = challenges.filter((challenge) => {
     const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
@@ -255,7 +243,11 @@ export default function DashboardPage() {
     return true
   })
 
-  // Initial full page loading state (before any metadata or user data is available)
+  const handleViewChallenge = (challenge: any) => {
+    setSelectedChallengeForView(challenge)
+    setIsViewModalOpen(true)
+  }
+
   if (!user || loadingCompetitionMetadata || loadingUserSubmissions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -275,13 +267,11 @@ export default function DashboardPage() {
     )
   }
 
-  // Once initial data is loaded, render the main dashboard
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <ParticipantBreadcrumb />
-      {/* Main Content */}
+      
       <main className="max-w-7xl mx-auto py-6 px-6 space-y-6">
-        {/* Competition Title */}
         <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-purple-100 rounded-xl">
@@ -324,16 +314,14 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500">Across all submissions</p>
               </Card>
             </div>
-            {/* Combined Challenges List Header and Filter Bar */}
+            
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              {/* Challenges List Header */}
               <div className="flex items-center gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Challenges List</h2>
                   <p className="text-gray-600 text-sm">Browse and start challenges for this competition</p>
                 </div>
               </div>
-              {/* Search, Filter, and View Mode Bar */}
               <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
                 <div className="relative flex-1 max-w-md w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -375,7 +363,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            {/* Challenge Cards Container with Border */}
+            
             <div className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
               {loadingChallengesList ? (
                 <div className={viewMode === "grid" ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
@@ -424,7 +412,6 @@ export default function DashboardPage() {
                         className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100"
                       >
                         <CardContent className="p-6">
-                          {/* Header with icon and status */}
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
                               <div
@@ -447,7 +434,6 @@ export default function DashboardPage() {
                                 )}
                               </div>
                             </div>
-                            {/* Dynamic Status Badge */}
                             {loadingUserSubmissions ? (
                               <Badge className="bg-gray-50 text-gray-500 border-gray-200 font-medium uppercase flex items-center gap-2">
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
@@ -464,11 +450,9 @@ export default function DashboardPage() {
                               </Badge>
                             )}
                           </div>
-                          {/* Description */}
                           {challenge.description && (
                             <p className="text-gray-700 text-base mb-4 leading-relaxed">{challenge.description}</p>
                           )}
-                          {/* Challenge Info */}
                           <div className="flex items-center gap-6 mb-6 text-sm text-gray-600">
                             {challenge.points && (
                               <div className="flex items-center gap-2">
@@ -483,7 +467,6 @@ export default function DashboardPage() {
                               </div>
                             )}
                           </div>
-                          {/* Action Button */}
                           <div className="flex flex-col sm:flex-row justify-center gap-2 mt-4">
                             {loadingUserSubmissions ? (
                               <Button
@@ -494,33 +477,39 @@ export default function DashboardPage() {
                                 Loading...
                               </Button>
                             ) : isSubmitted ? (
-                              <div className="flex justify-center w-full">
+                              <div className="flex gap-2 w-full">
                                 <Button
-                                  variant="outline"
                                   onClick={() =>
                                     router.push(
                                       `/participant/${currentCompetitionId}/${challenge.id}`,
                                     )
                                   }
-                                  className="text-sm px-4 py-2 hover:bg-gray-50 transition-all duration-200 w-full"
+                                  className="flex-1 bg-gray-900 text-white hover:bg-gray-800 hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
                                 >
-                                  View Challenge
+                                  <Edit className="w-4 h-4" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleViewChallenge(challenge)}
+                                  className="flex-1 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View
                                 </Button>
                               </div>
                             ) : (
-                              <>
-                                <Button
-                                  onClick={() =>
-                                    router.push(
-                                      `/participant/${currentCompetitionId}/${challenge.id}`,
-                                    )
-                                  }
-                                  className="w-full bg-gray-900 text-white hover:bg-gray-800 hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
-                                >
-                                  Start Challenge
-                                  <ArrowRight className="w-4 h-4" />
-                                </Button>
-                              </>
+                              <Button
+                                onClick={() =>
+                                  router.push(
+                                    `/participant/${currentCompetitionId}/${challenge.id}`,
+                                  )
+                                }
+                                className="w-full bg-gray-900 text-white hover:bg-gray-800 hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2"
+                              >
+                                Start Challenge
+                                <ArrowRight className="w-4 h-4" />
+                              </Button>
                             )}
                           </div>
                         </CardContent>
@@ -558,7 +547,6 @@ export default function DashboardPage() {
                           fetchChallenges()
                         }}
                       />
-
                     </div>
                   )}
                 </div>
@@ -588,6 +576,18 @@ export default function DashboardPage() {
           </Card>
         )}
       </main>
+
+      {/* View Challenge Details Modal */}
+      <ViewChallengeDetailsModal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false)
+          setSelectedChallengeForView(null)
+        }}
+        challenge={selectedChallengeForView}
+        competitionId={currentCompetitionId || ""}
+        participantId={user?.uid || ""}
+      />
     </div>
   )
 }

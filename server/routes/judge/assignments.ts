@@ -25,6 +25,7 @@ export async function fetchAssignments(userId: string): Promise<JudgeAssignment[
         submissionCount: data.assignedCountTotal || 0,
         assignedDate: data.updatedAt,
         assignedCountsByChallenge: data.assignedCountsByChallenge || {},
+        evaluatedCount: data.CountEvaluatedSubmission || 0,
         AllChallengesEvaluated: data.AllChallengesEvaluated ?? false,
       };
     });

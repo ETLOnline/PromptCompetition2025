@@ -5,6 +5,7 @@ export interface JudgeAssignment {
   competitionId: string
   assignedDate: string
   assignedCountsByChallenge: { [challengeId: string]: number }
+  evaluatedCount?: number
   AllChallengesEvaluated?: boolean
 }
 

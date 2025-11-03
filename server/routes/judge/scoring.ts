@@ -82,6 +82,8 @@ export async function submitScore(
       batch.update(judgeRef, {
         [`completedChallenges.${challengeId}`]: admin.firestore.FieldValue.increment(1),
         reviewedCount: admin.firestore.FieldValue.increment(1),
+        // New: track total count of submissions evaluated by this judge
+        CountEvaluatedSubmission: admin.firestore.FieldValue.increment(1),
       })
     } else {
       // If it already existed, we only update lastReviewedAt
