@@ -99,6 +99,7 @@ import roleRoutes from "./routes/roles.js";
 import authRoutes from "./routes/auth.js" 
 import contactRouter from "./routes/contact.js";
 import challengeDistributionRouter from "./routes/challenge-distribution.js";
+import uploadRouter from "./routes/upload.js";
 import resultRoutes from "./routes/result.js";
 import submissionsRouter from "./routes/submissions.js";
 
@@ -145,6 +146,7 @@ app.use("/llm-evaluations", llmRouter);
 app.use("/submissions", submissionsRouter);
 
 app.use("/last", lastRouter);
+app.use("/upload", uploadRouter);
 
 
 

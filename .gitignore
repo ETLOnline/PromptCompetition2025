@@ -51,3 +51,12 @@ server/serviceAccountKey.json
 
 server/enlightentech-a2046-firebase-adminsdk-fbsvc-8b4473f821.json
 server/enlightentech-*.json
+
+MEDIA_UPLOAD_IMPLEMENTATION.md
+server/AzuriteConfig
+server/__azurite_db_blob__.json
+server/__azurite_db_blob_extent__.json
+server/__azurite_db_queue__.json
+server/__azurite_db_queue_extent__.json
+server/__azurite_db_table__.json
+server/__blobstorage__/
