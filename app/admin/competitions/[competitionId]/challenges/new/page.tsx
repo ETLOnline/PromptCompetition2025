@@ -208,6 +208,7 @@ export default function NewCompetitionPage() {
           try {
             const url = await uploadFile(file, 'image')
             uploadedUrls.push(url)
+            console.log("Uploaded image:", url)
             setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
           } catch (err: any) {
             throw new Error(`Image upload failed: ${err?.message || err}`)
