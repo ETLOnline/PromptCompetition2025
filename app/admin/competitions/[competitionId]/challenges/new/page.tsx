@@ -543,7 +543,7 @@ export default function NewCompetitionPage() {
                   name="systemPrompt"
                   value={formData.systemPrompt}
                   onChange={handleChange}
-                  placeholder="Enter the system prompt for evaluation (e.g. instructions for judges or AI)"
+                  placeholder="Enter the system prompt for evaluation (e.g. instructions for judges or LLM evaluators)"
                   rows={3}
                   className="border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
                   required
