@@ -124,31 +124,29 @@ export default function NewCompetitionPage() {
     return nextID.toString().padStart(2, "0")
   }
 
-  const uploadToFirestore = async () => {
+  const uploadToFirestoreWithData = async (data: typeof formData) => {
     if (!userUID) {
       throw new Error("User not authenticated")
     }
 
     try {
-      // Optional: if you already have fullName/email in context, skip this block
       const userSnap = await getDoc(doc(db, "users", userUID))
       if (!userSnap.exists()) throw new Error("User document not found")
       const { email = "Not Found", fullName = "" } = userSnap.data()
 
       const challengeId = await getLatestCustomID(competitionId)
 
-      // 1) Build the batch
       const batch = writeBatch(db)
 
       const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId)
       batch.set(challengeRef, {
-        title: formData.title,
-        problemStatement: formData.problemStatement,
-        systemPrompt: formData.systemPrompt,
-        rubric: formData.rubric,
-        guidelines: formData.guidelines,
-        imageUrls: formData.imageUrls || [],
-        voiceNoteUrls: formData.voiceNoteUrls || [],
+        title: data.title,
+        problemStatement: data.problemStatement,
+        systemPrompt: data.systemPrompt,
+        rubric: data.rubric,
+        guidelines: data.guidelines,
+        imageUrls: data.imageUrls || [],
+        voiceNoteUrls: data.voiceNoteUrls || [],
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),
@@ -159,25 +157,25 @@ export default function NewCompetitionPage() {
         ChallengeCount: increment(1),
       })
 
-      // 2) Commit batch
       await batch.commit()
 
-      // 3) Update maxScore of competition
+      // Update maxScore of competition
       await getMaxScoreForCompetition(competitionId)
+      
+      console.log("Successfully uploaded to Firestore with URLs:", {
+        images: data.imageUrls?.length || 0,
+        voices: data.voiceNoteUrls?.length || 0
+      })
     } catch (error: any) {
       console.log("Upload error:", error)
-      toast({
-        title: "error",
-        description: "Failed to create challenge. Please try again."})
       throw error
     }
   }
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // New check: ensure all weights are > 0
+    // Validation checks
     if (formData.rubric.some(item => item.weight <= 0)) {
       toast({
         title: "Invalid Rubric",
@@ -198,44 +196,59 @@ export default function NewCompetitionPage() {
 
     setLoading(true)
     try {
+      // Collect all uploaded URLs
+      let finalImageUrls = [...(formData.imageUrls || [])]
+      let finalVoiceUrls = [...(formData.voiceNoteUrls || [])]
+
       // Upload images first (if any)
       if (selectedImages.length > 0) {
         setUploadingImages(true)
         setUploadProgress({ current: 0, total: selectedImages.length })
-        const uploadedUrls: string[] = []
+        
         for (let i = 0; i < selectedImages.length; i++) {
           const file = selectedImages[i]
           try {
             const url = await uploadFile(file, 'image')
-            uploadedUrls.push(url)
+            finalImageUrls.push(url)
             console.log("Uploaded image:", url)
             setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
           } catch (err: any) {
             throw new Error(`Image upload failed: ${err?.message || err}`)
           }
         }
-        setFormData((prev) => ({ ...prev, imageUrls: [...(prev.imageUrls || []), ...uploadedUrls] }))
         setUploadingImages(false)
       }
 
       // Upload voice notes (if any)
       if (selectedVoiceNotes.length > 0) {
         setUploadingVoice(true)
-        const uploadedVoiceUrls: string[] = []
+        
         for (let i = 0; i < selectedVoiceNotes.length; i++) {
           const file = selectedVoiceNotes[i]
           try {
             const url = await uploadFile(file, 'voice')
-            uploadedVoiceUrls.push(url)
+            finalVoiceUrls.push(url)
+            console.log("Uploaded voice:", url)
           } catch (err: any) {
             throw new Error(`Voice upload failed: ${err?.message || err}`)
           }
         }
-        setFormData((prev) => ({ ...prev, voiceNoteUrls: [...(prev.voiceNoteUrls || []), ...uploadedVoiceUrls] }))
         setUploadingVoice(false)
       }
 
-      await uploadToFirestore()
+      // Now update formData with all URLs and upload to Firestore
+      const finalFormData = {
+        ...formData,
+        imageUrls: finalImageUrls,
+        voiceNoteUrls: finalVoiceUrls
+      }
+
+      // Update state for UI
+      setFormData(finalFormData)
+
+      // Upload to Firestore with the complete data
+      await uploadToFirestoreWithData(finalFormData)
+
       toast({
         title: "Success",
         description: "Challenge created successfully!",
