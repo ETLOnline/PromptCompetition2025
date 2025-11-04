@@ -5,10 +5,14 @@ import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Home, User, Mail, Building, Lock, Eye, EyeOff, UserPlus, X, AlertCircle } from "lucide-react"
+import { Home, User, Mail, Building, Lock, Eye, EyeOff, UserPlus, X, AlertCircle, MapPin, Map, GraduationCap, Briefcase, Linkedin, FileText } from "lucide-react"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { fetchWithAuth } from "@/lib/api"
+import { useRef, useEffect } from 'react';
+import {  ChevronDown } from 'lucide-react';
+import CustomDropdown from '@/components/CustomDropdown'; // Adjust path as needed
+
 
 export default function RegisterPage() {
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -16,11 +20,27 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [institution, setInstitution] = useState("")
+  const [gender, setGender] = useState("")
+  const [city, setCity] = useState("")
+  const [province, setProvince] = useState("")
+  const [majors, setMajors] = useState("")
+  const [category, setCategory] = useState("Uni Students")
+  const [linkedin, setLinkedin] = useState("")
+  const [bio, setBio] = useState("")
+  const [consent, setConsent] = useState(false)
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [nameError, setNameError] = useState<string | null>(null)
   const [institutionError, setInstitutionError] = useState<string | null>(null)
+  const [genderError, setGenderError] = useState<string | null>(null)
+  const [cityError, setCityError] = useState<string | null>(null)
+  const [provinceError, setProvinceError] = useState<string | null>(null)
+  const [majorsError, setMajorsError] = useState<string | null>(null)
+  const [categoryError, setCategoryError] = useState<string | null>(null)
+  const [linkedinError, setLinkedinError] = useState<string | null>(null)
+  const [bioError, setBioError] = useState<string | null>(null)
+  const [consentError, setConsentError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -111,6 +131,94 @@ export default function RegisterPage() {
       return "Institution name contains invalid special characters."
     }
 
+    return null
+  }
+
+  // Gender validation
+  const validateGender = (g: string): string | null => {
+    const allowed = ["male", "female", "prefer_not_to_say"]
+    if (!g) return "Gender is required."
+    if (!allowed.includes(g)) return "Invalid gender selection."
+    return null
+  }
+
+  // City validation
+  const validateCity = (c: string): string | null => {
+    const trimmed = c.trim()
+    if (!trimmed) return "City is required."
+    if (trimmed.length < 2) return "City must be at least 2 characters long."
+    if (trimmed.length > 50) return "City must not exceed 50 characters."
+    const validCityRegex = /^[A-Za-z\s.\-']+$/
+    if (!validCityRegex.test(trimmed)) return "City can only contain letters, spaces, dots, hyphens, and apostrophes."
+    if (/[^\x00-\x7F]/.test(trimmed)) return "City must contain only English characters."
+    if (/<[^>]*>/g.test(trimmed)) return "Invalid input detected."
+    if (/\s{2,}/.test(trimmed)) return "City cannot contain multiple consecutive spaces."
+    return null
+  }
+
+  // Province validation
+  const validateProvince = (p: string): string | null => {
+    const trimmed = p.trim()
+    if (!trimmed) return "Province is required."
+    if (trimmed.length < 2) return "Province must be at least 2 characters long."
+    if (trimmed.length > 50) return "Province must not exceed 50 characters."
+    const validProvinceRegex = /^[A-Za-z\s.\-']+$/
+    if (!validProvinceRegex.test(trimmed)) return "Province can only contain letters, spaces, dots, hyphens, and apostrophes."
+    if (/[^\x00-\x7F]/.test(trimmed)) return "Province must contain only English characters."
+    if (/<[^>]*>/g.test(trimmed)) return "Invalid input detected."
+    if (/\s{2,}/.test(trimmed)) return "Province cannot contain multiple consecutive spaces."
+    return null
+  }
+
+  // Majors validation
+  const validateMajors = (m: string): string | null => {
+    const trimmed = m.trim()
+    if (!trimmed) return "Major/Field is required."
+    if (trimmed.length < 2) return "Major must be at least 2 characters long."
+    if (trimmed.length > 100) return "Major must not exceed 100 characters."
+    const validMajorsRegex = /^[A-Za-z0-9\s.,/&'-]+$/
+    if (!validMajorsRegex.test(trimmed)) return "Major can include letters, numbers, spaces, and . , / & - ' characters."
+    if (/[^\x00-\x7F]/.test(trimmed)) return "Major must contain only English characters."
+    if (/<[^>]*>/g.test(trimmed)) return "Invalid input detected."
+    if (/\s{2,}/.test(trimmed)) return "Major cannot contain multiple consecutive spaces."
+    return null
+  }
+
+  // Category validation
+  const validateCategory = (cat: string): string | null => {
+    if (!cat) return "Category is required."
+    if (cat === "Professional") return "This event is only for uni students."
+    if (cat !== "Uni Students") return "Invalid category selection."
+    return null
+  }
+
+  // LinkedIn validation (optional)
+  const validateLinkedIn = (url: string): string | null => {
+    const trimmed = url.trim()
+    if (!trimmed) return null
+    if (trimmed.length > 2083) return "LinkedIn URL is too long."
+    if (/\s/.test(trimmed)) return "LinkedIn URL cannot contain spaces."
+    if (/<[^>]*>/g.test(trimmed)) return "Invalid input detected."
+    if (/[^\x00-\x7F]/.test(trimmed)) return "LinkedIn URL must contain only ASCII characters."
+    const regex = /^https?:\/\/(www\.)?linkedin\.com\/.*$/
+    if (!regex.test(trimmed)) return "Enter a valid LinkedIn URL (e.g., https://www.linkedin.com/in/username)."
+    return null
+  }
+
+  // Bio validation (optional)
+  const validateBio = (b: string): string | null => {
+    const value = b
+    if (!value) return null
+    const trimmed = value.trim()
+    if (trimmed.length === 0) return null
+    if (trimmed.length > 500) return "Bio must not exceed 500 characters."
+    if (/<[^>]*>/g.test(trimmed)) return "Invalid input detected."
+    return null
+  }
+
+  // Consent validation
+  const validateConsent = (c: boolean): string | null => {
+    if (!c) return "You must confirm you are a university student to register."
     return null
   }
 
@@ -270,6 +378,95 @@ export default function RegisterPage() {
     }
   }
 
+  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value
+    setGender(value)
+    if (genderError) setGenderError(null)
+  }
+
+  const handleGenderBlur = () => {
+    const err = validateGender(gender)
+    setGenderError(err)
+  }
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const allowed = /^[A-Za-z\s.\-']*$/
+    if (!allowed.test(value)) return
+    setCity(value)
+    if (cityError) setCityError(null)
+  }
+
+  const handleCityBlur = () => {
+    const err = validateCity(city)
+    setCityError(err)
+  }
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const allowed = /^[A-Za-z\s.\-']*$/
+    if (!allowed.test(value)) return
+    setProvince(value)
+    if (provinceError) setProvinceError(null)
+  }
+
+  const handleProvinceBlur = () => {
+    const err = validateProvince(province)
+    setProvinceError(err)
+  }
+
+  const handleMajorsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const allowed = /^[A-Za-z0-9\s.,/&'-]*$/
+    if (!allowed.test(value)) return
+    setMajors(value)
+    if (majorsError) setMajorsError(null)
+  }
+
+  const handleMajorsBlur = () => {
+    const err = validateMajors(majors)
+    setMajorsError(err)
+  }
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value
+    setCategory(value)
+    if (categoryError) setCategoryError(null)
+  }
+
+  const handleCategoryBlur = () => {
+    const err = validateCategory(category)
+    setCategoryError(err)
+  }
+
+  const handleLinkedinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLinkedin(value)
+    if (linkedinError) setLinkedinError(null)
+  }
+
+  const handleLinkedinBlur = () => {
+    const err = validateLinkedIn(linkedin)
+    setLinkedinError(err)
+  }
+
+  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setBio(value)
+    if (bioError) setBioError(null)
+  }
+
+  const handleBioBlur = () => {
+    const err = validateBio(bio)
+    setBioError(err)
+  }
+
+  const handleConsentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked
+    setConsent(checked)
+    if (consentError) setConsentError(null)
+  }
+
   const handleInstitutionBlur = () => {
     const error = validateInstitution(institution)
     setInstitutionError(error)
@@ -317,6 +514,62 @@ export default function RegisterPage() {
       return
     }
 
+    const genderValidationError = validateGender(gender)
+    if (genderValidationError) {
+      setGenderError(genderValidationError)
+      setError(genderValidationError)
+      return
+    }
+
+    const cityValidationError = validateCity(city)
+    if (cityValidationError) {
+      setCityError(cityValidationError)
+      setError(cityValidationError)
+      return
+    }
+
+    const provinceValidationError = validateProvince(province)
+    if (provinceValidationError) {
+      setProvinceError(provinceValidationError)
+      setError(provinceValidationError)
+      return
+    }
+
+    const majorsValidationError = validateMajors(majors)
+    if (majorsValidationError) {
+      setMajorsError(majorsValidationError)
+      setError(majorsValidationError)
+      return
+    }
+
+    const categoryValidationError = validateCategory(category)
+    if (categoryValidationError) {
+      setCategoryError(categoryValidationError)
+      setError(categoryValidationError)
+      return
+    }
+
+    const linkedInValidationError = validateLinkedIn(linkedin)
+    if (linkedInValidationError) {
+      setLinkedinError(linkedInValidationError)
+      setError(linkedInValidationError)
+      return
+    }
+
+    const bioValidationError = validateBio(bio)
+    if (bioValidationError) {
+      setBioError(bioValidationError)
+      setError(bioValidationError)
+      return
+    }
+
+    const consentValidationError = validateConsent(consent)
+    if (consentValidationError) {
+      setConsentError(consentValidationError)
+      setError(consentValidationError)
+      return
+    }
+
     const passwordValidationError = validatePassword(password)
     if (passwordValidationError) {
       setPasswordError(passwordValidationError)
@@ -327,7 +580,16 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await signUp(email, password, trimmedName, trimmedInst);
+      await signUp(email, password, trimmedName, trimmedInst, {
+        gender: gender as "male" | "female" | "prefer_not_to_say",
+        city: city.trim(),
+        province: province.trim(),
+        majors: majors.trim(),
+        category: category as "Uni Students" | "Professional",
+        linkedin: linkedin.trim(),
+        bio: bio.trim(),
+        consent,
+      });
       setIsRegistered(true);
     } catch (err: any) {
       console.log("Error during signup:", err.code, err.message);
@@ -389,14 +651,35 @@ export default function RegisterPage() {
   const isFormValid =
     fullName.trim().length > 0 &&
     institution.trim().length > 0 &&
+    gender.trim().length > 0 &&
+    city.trim().length > 0 &&
+    province.trim().length > 0 &&
+    majors.trim().length > 0 &&
+    category.trim().length > 0 &&
     email.trim().length > 0 &&
     password.trim().length > 0 &&
     !validateFullName(fullName) &&
     !validateInstitution(institution) &&
+    !validateGender(gender) &&
+    !validateCity(city) &&
+    !validateProvince(province) &&
+    !validateMajors(majors) &&
+    !validateCategory(category) &&
+    !validateLinkedIn(linkedin) &&
+    !validateBio(bio) &&
+    !validateConsent(consent) &&
     !validatePassword(password) &&
     !emailError &&
     !nameError &&
     !institutionError &&
+    !genderError &&
+    !cityError &&
+    !provinceError &&
+    !majorsError &&
+    !categoryError &&
+    !linkedinError &&
+    !bioError &&
+    !consentError &&
     !passwordError;
 
 
@@ -557,6 +840,172 @@ export default function RegisterPage() {
                     </p>
                   </div>
 
+                  {/* Gender */}
+                  {/* Gender */}
+                  <div className="space-y-2">
+                    <label htmlFor="gender" className="text-sm font-medium text-slate-700">Gender</label>
+                    <CustomDropdown
+                      id="gender"
+                      value={gender}
+                      onChange={handleGenderChange}
+                      onBlur={handleGenderBlur}
+                      options={[
+                        { value: 'male', label: 'Male' },
+                        { value: 'female', label: 'Female' },
+                        { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+                      ]}
+                      placeholder="Select gender"
+                      icon={User}
+                      error={genderError}
+                      disabled={loading || googleLoading}
+                      required
+                    />
+                    {genderError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <X className="h-3 w-3" />
+                        {genderError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* City */}
+                  <div className="space-y-2">
+                    <label htmlFor="city" className="text-sm font-medium text-slate-700">City</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        id="city"
+                        type="text"
+                        value={city}
+                        onChange={handleCityChange}
+                        onBlur={handleCityBlur}
+                        required
+                        placeholder="Lahore"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${cityError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
+                        disabled={loading || googleLoading}
+                        maxLength={50}
+                      />
+                    </div>
+                    {cityError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><X className="h-3 w-3" />{cityError}</p>
+                    )}
+                  </div>
+
+                  {/* Province */}
+                  <div className="space-y-2">
+                    <label htmlFor="province" className="text-sm font-medium text-slate-700">Province</label>
+                    <div className="relative">
+                      <Map className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        id="province"
+                        type="text"
+                        value={province}
+                        onChange={handleProvinceChange}
+                        onBlur={handleProvinceBlur}
+                        required
+                        placeholder="Punjab"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${provinceError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
+                        disabled={loading || googleLoading}
+                        maxLength={50}
+                      />
+                    </div>
+                    {provinceError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><X className="h-3 w-3" />{provinceError}</p>
+                    )}
+                  </div>
+
+                  {/* Majors */}
+                  <div className="space-y-2">
+                    <label htmlFor="majors" className="text-sm font-medium text-slate-700">Major / Field of Study</label>
+                    <div className="relative">
+                      <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        id="majors"
+                        type="text"
+                        value={majors}
+                        onChange={handleMajorsChange}
+                        onBlur={handleMajorsBlur}
+                        required
+                        placeholder="IT, Business, Data Science, ..."
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${majorsError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
+                        disabled={loading || googleLoading}
+                        maxLength={100}
+                      />
+                    </div>
+                    {majorsError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><X className="h-3 w-3" />{majorsError}</p>
+                    )}
+                  </div>
+
+                  {/* Category */}
+                  <div className="space-y-2">
+                    <label htmlFor="category" className="text-sm font-medium text-slate-700">Category</label>
+                    <CustomDropdown
+                      id="category"
+                      value={category}
+                      onChange={handleCategoryChange}
+                      onBlur={handleCategoryBlur}
+                      options={[
+                        { value: 'Uni Students', label: 'Uni Students' },
+                        { value: 'Professional', label: 'Professional' }
+                      ]}
+                      icon={Briefcase}
+                      error={categoryError}
+                      disabled={loading || googleLoading}
+                      required
+                    />
+                    <p className="text-xs text-slate-500">Note: This event is only for uni students.</p>
+                    {categoryError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <X className="h-3 w-3" />
+                        {categoryError}
+                      </p>
+                    )}
+                  </div>
+                  {/* LinkedIn (optional) */}
+                  <div className="space-y-2">
+                    <label htmlFor="linkedin" className="text-sm font-medium text-slate-700">LinkedIn (optional)</label>
+                    <div className="relative">
+                      <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        id="linkedin"
+                        type="url"
+                        value={linkedin}
+                        onChange={handleLinkedinChange}
+                        onBlur={handleLinkedinBlur}
+                        placeholder="https://www.linkedin.com/in/username"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${linkedinError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
+                        disabled={loading || googleLoading}
+                      />
+                    </div>
+                    {linkedinError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><X className="h-3 w-3" />{linkedinError}</p>
+                    )}
+                  </div>
+
+                  {/* Bio (optional) */}
+                  <div className="space-y-2">
+                    <label htmlFor="bio" className="text-sm font-medium text-slate-700">Profile bio (optional)</label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                      <textarea
+                        id="bio"
+                        value={bio}
+                        onChange={handleBioChange}
+                        onBlur={handleBioBlur}
+                        rows={3}
+                        placeholder="A short description about you (max 500 characters)"
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 resize-none ${bioError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
+                        maxLength={500}
+                        disabled={loading || googleLoading}
+                      />
+                    </div>
+                    {bioError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><X className="h-3 w-3" />{bioError}</p>
+                    )}
+                  </div>
+
+                  
                   {/* Password Input with Dynamic Strength Meter */}
                   <div className="space-y-2">
                     <label htmlFor="password" className="text-sm font-medium text-slate-700">
@@ -626,6 +1075,27 @@ export default function RegisterPage() {
                           </p>
                         )}
                       </div>
+                    )}
+                  </div>
+{/* Consent */}
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-3">
+                      <input
+                        id="consent"
+                        type="checkbox"
+                        checked={consent}
+                        onChange={handleConsentChange}
+                        onBlur={() => setConsentError(validateConsent(consent))}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-[#10142c] focus:ring-[#10142c]"
+                        disabled={loading || googleLoading}
+                        required
+                      />
+                      <label htmlFor="consent" className="text-sm text-slate-700">
+                        I am a university student and eligible to participate in this event.
+                      </label>
+                    </div>
+                    {consentError && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><X className="h-3 w-3" />{consentError}</p>
                     )}
                   </div>
 

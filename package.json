@@ -31,6 +31,7 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.51.0",
+    "@tailwindcss/forms": "^0.5.10",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "class-variance-authority": "^0.7.1",

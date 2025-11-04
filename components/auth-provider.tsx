@@ -23,7 +23,22 @@ interface AuthContextType {
   user: User | null
   fullName: string | null
   role: string | null;
-  signUp: (email: string, password: string, fullName: string, institution: string) => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    institution: string,
+    extra: {
+      gender: "male" | "female" | "prefer_not_to_say"
+      city: string
+      province: string
+      majors: string
+      category: "Uni Students" | "Professional"
+      linkedin?: string
+      bio?: string
+      consent: boolean
+    }
+  ) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   signInWithGoogle: () => Promise<UserCredential>
@@ -82,7 +97,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string, fullName: string, institution: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    institution: string,
+    extra: {
+      gender: "male" | "female" | "prefer_not_to_say"
+      city: string
+      province: string
+      majors: string
+      category: "Uni Students" | "Professional"
+      linkedin?: string
+      bio?: string
+      consent: boolean
+    }
+  ) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     const user = userCredential.user
 
@@ -94,6 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       fullName,
       email,
       institution,
+      gender: extra.gender,
+      city: extra.city,
+      province: extra.province,
+      majors: extra.majors,
+      category: extra.category,
+      linkedin: extra.linkedin || "",
+      bio: extra.bio || "",
+      consent: !!extra.consent,
       createdAt: new Date().toISOString(),
     })
 
@@ -162,6 +200,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fullName: user.displayName || "",
           email: user.email || "",
           institution: "", // Google doesn't provide institution by default
+          gender: "prefer_not_to_say",
+          city: "",
+          province: "",
+          majors: "",
+          category: "Uni Students",
+          linkedin: user.providerData?.[0]?.providerId?.includes("google") ? "" : "",
+          bio: "",
+          consent: false,
           createdAt: new Date().toISOString(),
         },
         { merge: true }
