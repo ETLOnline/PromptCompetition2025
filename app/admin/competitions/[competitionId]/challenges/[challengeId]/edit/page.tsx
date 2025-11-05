@@ -405,120 +405,6 @@ export default function EditChallengePage() {
               </div>
             </div>
 
-              {/* Challenge Media */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.15s_forwards]">
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Challenge Media</h2>
-                  <p className="text-sm text-gray-500 mt-1">Add optional images and a voice note</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Images */}
-                  <div>
-                    <Label className="text-sm font-medium text-gray-900 mb-2 block">Challenge Images (optional)</Label>
-                    <p className="text-xs text-gray-500 mb-3">Add visual clues and reference materials</p>
-
-                    {(formData.imageUrls || []).length === 0 && imagePreviews.length === 0 ? (
-                      <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-6 rounded-md text-gray-500 cursor-pointer">
-                        <ImageIcon className="w-6 h-6 mb-2" />
-                        <span className="text-sm">Drag & drop or click to upload images</span>
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageInput} />
-                      </label>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                          {(formData.imageUrls || []).map((url, i) => (
-                            <div key={`existing-${i}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '120px' }} onClick={() => setPreviewImage(url)}>
-                              <img src={url} alt={`img-${i}`} className="w-full h-full object-cover pointer-events-none" />
-                              <button type="button" onClick={(e) => { e.stopPropagation(); setFormData((p)=> ({ ...p, imageUrls: (p.imageUrls||[]).filter((_, idx)=> idx !== i) })) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-
-                          {imagePreviews.map((src, idx) => (
-                            <div key={`new-${idx}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '120px' }} onClick={() => setPreviewImage(src)}>
-                              <img src={src} alt={`preview-${idx}`} className="w-full h-full object-cover pointer-events-none" />
-                              <button type="button" onClick={(e) => { e.stopPropagation(); removeNewImage(idx) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="mt-3">
-                          <input id="image-input-edit" type="file" accept="image/*" multiple className="hidden" onChange={handleImageInput} />
-                          <label htmlFor="image-input-edit">
-                            <Button type="button" variant="outline" className="px-3 py-2" onClick={(e)=> { e.preventDefault(); document.getElementById('image-input-edit')?.click() }}>
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add More Images ({(formData.imageUrls||[]).length + imagePreviews.length})
-                            </Button>
-                          </label>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Voice Note */}
-                  <div>
-                    <Label className="text-sm font-medium text-gray-900 mb-2 block">Voice Notes (optional)</Label>
-                    <p className="text-xs text-gray-500 mb-3">Upload or record audio instructions</p>
-
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        {!isRecording ? (
-                          <Button type="button" variant="outline" onClick={startRecording} className="flex-1">
-                            <Mic className="w-4 h-4 mr-2" />
-                            Record Voice Note
-                          </Button>
-                        ) : (
-                          <Button type="button" variant="destructive" onClick={stopRecording} className="flex-1">
-                            <Pause className="w-4 h-4 mr-2" />
-                            Stop Recording ({formatTime(recordingTime)})
-                          </Button>
-                        )}
-                    
-                        <input id="voice-input-edit" type="file" accept="audio/*" multiple className="hidden" onChange={handleVoiceInput} />
-                        <Button type="button" variant="outline" onClick={() => document.getElementById('voice-input-edit')?.click()}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Upload
-                        </Button>
-                      </div>
-
-                      {(formData.voiceNoteUrls || []).map((url, i) => (
-                        <div key={`existing-voice-${i}`} className="bg-white border rounded-md p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-sm font-medium">Voice Note {i + 1}</div>
-                            <button type="button" onClick={() => setFormData((p)=> ({ ...p, voiceNoteUrls: (p.voiceNoteUrls||[]).filter((_, idx)=> idx !== i) }))} className="text-red-500 hover:text-red-700">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <audio controls src={url} className="w-full" onClick={() => setPreviewVoice(url)} />
-                        </div>
-                      ))}
-
-                      {selectedVoiceNotes.map((file, idx) => (
-                        <div key={`new-voice-${idx}`} className="bg-white border rounded-md p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-sm font-medium">{file.name}</div>
-                            <button type="button" onClick={() => removeVoiceNote(idx)} className="text-red-500 hover:text-red-700">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <audio controls src={voiceNotePreviews[idx]} className="w-full" onClick={() => setPreviewVoice(voiceNotePreviews[idx])} />
-                        </div>
-                      ))}
-
-                      {selectedVoiceNotes.length === 0 && (formData.voiceNoteUrls || []).length === 0 && !isRecording && (
-                        <div className="text-center text-sm text-gray-400 py-4">
-                          No voice notes added yet
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             <div className="h-9 w-20 bg-gray-200 rounded animate-pulse" />
           </div>
         </div>
@@ -536,39 +422,6 @@ export default function EditChallengePage() {
           ))}
         </div>
       </main>
-
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <button
-              type="button"
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300"
-            >
-              <X className="w-8 h-8" />
-            </button>
-            <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
-          </div>
-        </div>
-      )}
-
-      {/* Voice Preview Modal */}
-      {previewVoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewVoice(null)}>
-          <div className="relative bg-white rounded-lg p-6 max-w-md w-full">
-            <button
-              type="button"
-              onClick={() => setPreviewVoice(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <h3 className="text-lg font-semibold mb-4">Voice Note Preview</h3>
-            <audio controls src={previewVoice} className="w-full" autoPlay />
-          </div>
-        </div>
-      )}
     </div>
   )
 
@@ -650,8 +503,150 @@ export default function EditChallengePage() {
             </div>
           </div>
 
+          {/* Challenge Media */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.15s_forwards]">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Challenge Media</h2>
+              <p className="text-sm text-gray-500 mt-1">Add optional images and voice notes</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Images */}
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-2 block">Challenge Images (optional)</Label>
+                <p className="text-xs text-gray-500 mb-3">Add visual clues and reference materials</p>
+
+                {(formData.imageUrls || []).length === 0 && imagePreviews.length === 0 ? (
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-6 rounded-md text-gray-500 cursor-pointer">
+                    <ImageIcon className="w-6 h-6 mb-2" />
+                    <span className="text-sm">Drag & drop or click to upload images</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageInput} />
+                  </label>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {(formData.imageUrls || []).map((url, i) => (
+                        <div key={`existing-${i}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity group" style={{ height: '120px' }} onClick={() => setPreviewImage(url)}>
+                          <img src={url} alt={`img-${i}`} className="w-full h-full object-cover pointer-events-none" />
+                          <button 
+                            type="button" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setFormData((p)=> ({ ...p, imageUrls: (p.imageUrls||[]).filter((_, idx)=> idx !== i) })) 
+                            }} 
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {imagePreviews.map((src, idx) => (
+                        <div key={`new-${idx}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity group" style={{ height: '120px' }} onClick={() => setPreviewImage(src)}>
+                          <img src={src} alt={`preview-${idx}`} className="w-full h-full object-cover pointer-events-none" />
+                          <button 
+                            type="button" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              removeNewImage(idx) 
+                            }} 
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3">
+                      <input id="image-input-edit" type="file" accept="image/*" multiple className="hidden" onChange={handleImageInput} />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="px-3 py-2" 
+                        onClick={(e)=> { 
+                          e.preventDefault(); 
+                          document.getElementById('image-input-edit')?.click() 
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add More Images ({(formData.imageUrls||[]).length + imagePreviews.length})
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Voice Notes */}
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-2 block">Voice Notes (optional)</Label>
+                <p className="text-xs text-gray-500 mb-3">Upload or record audio instructions</p>
+
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    {!isRecording ? (
+                      <Button type="button" variant="outline" onClick={startRecording} className="flex-1">
+                        <Mic className="w-4 h-4 mr-2" />
+                        Record Voice Note
+                      </Button>
+                    ) : (
+                      <Button type="button" variant="destructive" onClick={stopRecording} className="flex-1">
+                        <Pause className="w-4 h-4 mr-2" />
+                        Stop Recording ({formatTime(recordingTime)})
+                      </Button>
+                    )}
+                
+                    <input id="voice-input-edit" type="file" accept="audio/*" multiple className="hidden" onChange={handleVoiceInput} />
+                    <Button type="button" variant="outline" onClick={() => document.getElementById('voice-input-edit')?.click()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Upload
+                    </Button>
+                  </div>
+
+                  {(formData.voiceNoteUrls || []).map((url, i) => (
+                    <div key={`existing-voice-${i}`} className="bg-gray-50 border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-medium text-gray-700">Voice Note {i + 1}</div>
+                        <button 
+                          type="button" 
+                          onClick={() => setFormData((p)=> ({ ...p, voiceNoteUrls: (p.voiceNoteUrls||[]).filter((_, idx)=> idx !== i) }))} 
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <audio controls src={url} className="w-full" onClick={() => setPreviewVoice(url)} />
+                    </div>
+                  ))}
+
+                  {selectedVoiceNotes.map((file, idx) => (
+                    <div key={`new-voice-${idx}`} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-medium text-blue-700">{file.name}</div>
+                        <button 
+                          type="button" 
+                          onClick={() => removeVoiceNote(idx)} 
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <audio controls src={voiceNotePreviews[idx]} className="w-full" onClick={() => setPreviewVoice(voiceNotePreviews[idx])} />
+                    </div>
+                  ))}
+
+                  {selectedVoiceNotes.length === 0 && (formData.voiceNoteUrls || []).length === 0 && !isRecording && (
+                    <div className="text-center text-sm text-gray-400 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                      No voice notes added yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Evaluation Rubric */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.2s_forwards]">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.25s_forwards]">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Evaluation Rubric</h2>
@@ -784,7 +779,7 @@ export default function EditChallengePage() {
           </div>
 
           {/* Guidelines */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.4s_forwards]">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.35s_forwards]">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900">How to craft your prompt</h2>
               <p className="text-sm text-gray-500 mt-1">Update instructions for participants</p>
@@ -808,7 +803,7 @@ export default function EditChallengePage() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.5s_forwards]">
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.45s_forwards]">
             <Button
               type="button"
               variant="outline"
@@ -827,6 +822,39 @@ export default function EditChallengePage() {
           </div>
         </form>
       </main>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
+          </div>
+        </div>
+      )}
+
+      {/* Voice Preview Modal */}
+      {previewVoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewVoice(null)}>
+          <div className="relative bg-white rounded-lg p-6 max-w-md w-full">
+            <button
+              type="button"
+              onClick={() => setPreviewVoice(null)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h3 className="text-lg font-semibold mb-4">Voice Note Preview</h3>
+            <audio controls src={previewVoice} className="w-full" autoPlay />
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes fadeIn {

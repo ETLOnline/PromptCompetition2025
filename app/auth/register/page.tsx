@@ -351,15 +351,8 @@ export default function RegisterPage() {
     }
 
     setFullName(value)
-    
-    if (nameError) {
-      setNameError(null)
-    }
-  }
-
-  const handleFullNameBlur = () => {
-    const error = validateFullName(fullName)
-    setNameError(error)
+    // Real-time validation
+    setNameError(validateFullName(value))
   }
 
   const handleInstitutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -372,21 +365,15 @@ export default function RegisterPage() {
     }
 
     setInstitution(value)
-    
-    if (institutionError) {
-      setInstitutionError(null)
-    }
+    // Real-time validation
+    setInstitutionError(validateInstitution(value))
   }
 
   const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value
     setGender(value)
-    if (genderError) setGenderError(null)
-  }
-
-  const handleGenderBlur = () => {
-    const err = validateGender(gender)
-    setGenderError(err)
+    // Real-time validation
+    setGenderError(validateGender(value))
   }
 
   const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -394,12 +381,8 @@ export default function RegisterPage() {
     const allowed = /^[A-Za-z\s.\-']*$/
     if (!allowed.test(value)) return
     setCity(value)
-    if (cityError) setCityError(null)
-  }
-
-  const handleCityBlur = () => {
-    const err = validateCity(city)
-    setCityError(err)
+    // Real-time validation
+    setCityError(validateCity(value))
   }
 
   const handleProvinceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,12 +390,8 @@ export default function RegisterPage() {
     const allowed = /^[A-Za-z\s.\-']*$/
     if (!allowed.test(value)) return
     setProvince(value)
-    if (provinceError) setProvinceError(null)
-  }
-
-  const handleProvinceBlur = () => {
-    const err = validateProvince(province)
-    setProvinceError(err)
+    // Real-time validation
+    setProvinceError(validateProvince(value))
   }
 
   const handleMajorsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,56 +399,36 @@ export default function RegisterPage() {
     const allowed = /^[A-Za-z0-9\s.,/&'-]*$/
     if (!allowed.test(value)) return
     setMajors(value)
-    if (majorsError) setMajorsError(null)
-  }
-
-  const handleMajorsBlur = () => {
-    const err = validateMajors(majors)
-    setMajorsError(err)
+    // Real-time validation
+    setMajorsError(validateMajors(value))
   }
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value
     setCategory(value)
-    if (categoryError) setCategoryError(null)
-  }
-
-  const handleCategoryBlur = () => {
-    const err = validateCategory(category)
-    setCategoryError(err)
+    // Real-time validation
+    setCategoryError(validateCategory(value))
   }
 
   const handleLinkedinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLinkedin(value)
-    if (linkedinError) setLinkedinError(null)
-  }
-
-  const handleLinkedinBlur = () => {
-    const err = validateLinkedIn(linkedin)
-    setLinkedinError(err)
+    // Real-time validation
+    setLinkedinError(validateLinkedIn(value))
   }
 
   const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setBio(value)
-    if (bioError) setBioError(null)
-  }
-
-  const handleBioBlur = () => {
-    const err = validateBio(bio)
-    setBioError(err)
+    // Real-time validation
+    setBioError(validateBio(value))
   }
 
   const handleConsentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked
     setConsent(checked)
-    if (consentError) setConsentError(null)
-  }
-
-  const handleInstitutionBlur = () => {
-    const error = validateInstitution(institution)
-    setInstitutionError(error)
+    // Real-time validation
+    setConsentError(validateConsent(checked))
   }
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -751,9 +710,8 @@ export default function RegisterPage() {
                         type="text"
                         value={fullName}
                         onChange={handleFullNameChange}
-                        onBlur={handleFullNameBlur}
                         required
-                        placeholder="John Doe"
+                        placeholder="Enter your name"
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
                           nameError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'
                         }`}
@@ -819,7 +777,6 @@ export default function RegisterPage() {
                         type="text"
                         value={institution}
                         onChange={handleInstitutionChange}
-                        onBlur={handleInstitutionBlur}
                         required
                         placeholder="FAST University"
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
@@ -848,7 +805,6 @@ export default function RegisterPage() {
                       id="gender"
                       value={gender}
                       onChange={handleGenderChange}
-                      onBlur={handleGenderBlur}
                       options={[
                         { value: 'male', label: 'Male' },
                         { value: 'female', label: 'Female' },
@@ -878,7 +834,6 @@ export default function RegisterPage() {
                         type="text"
                         value={city}
                         onChange={handleCityChange}
-                        onBlur={handleCityBlur}
                         required
                         placeholder="Lahore"
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${cityError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -901,7 +856,6 @@ export default function RegisterPage() {
                         type="text"
                         value={province}
                         onChange={handleProvinceChange}
-                        onBlur={handleProvinceBlur}
                         required
                         placeholder="Punjab"
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${provinceError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -924,7 +878,6 @@ export default function RegisterPage() {
                         type="text"
                         value={majors}
                         onChange={handleMajorsChange}
-                        onBlur={handleMajorsBlur}
                         required
                         placeholder="IT, Business, Data Science, ..."
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${majorsError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -944,7 +897,6 @@ export default function RegisterPage() {
                       id="category"
                       value={category}
                       onChange={handleCategoryChange}
-                      onBlur={handleCategoryBlur}
                       options={[
                         { value: 'Uni Students', label: 'Uni Students' },
                         { value: 'Professional', label: 'Professional' }
@@ -972,7 +924,6 @@ export default function RegisterPage() {
                         type="url"
                         value={linkedin}
                         onChange={handleLinkedinChange}
-                        onBlur={handleLinkedinBlur}
                         placeholder="https://www.linkedin.com/in/username"
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${linkedinError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
                         disabled={loading || googleLoading}
@@ -992,7 +943,6 @@ export default function RegisterPage() {
                         id="bio"
                         value={bio}
                         onChange={handleBioChange}
-                        onBlur={handleBioBlur}
                         rows={3}
                         placeholder="A short description about you (max 500 characters)"
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 resize-none ${bioError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -1085,7 +1035,6 @@ export default function RegisterPage() {
                         type="checkbox"
                         checked={consent}
                         onChange={handleConsentChange}
-                        onBlur={() => setConsentError(validateConsent(consent))}
                         className="mt-1 h-4 w-4 rounded border-slate-300 text-[#10142c] focus:ring-[#10142c]"
                         disabled={loading || googleLoading}
                         required
