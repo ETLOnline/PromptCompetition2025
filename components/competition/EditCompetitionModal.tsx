@@ -37,7 +37,7 @@ export default function EditCompetitionModal({
     description: "",
     startDeadline: "",
     endDeadline: "",
-    mode: "",          // CHANGED from 'location: ""'
+    mode: "online" as "online" | "offline",          // CHANGED from 'location: ""'
     venue: "",         // NEW FIELD
     prizeMoney: "",
     isActive: false,
@@ -48,6 +48,7 @@ export default function EditCompetitionModal({
   const [touched, setTouched] = useState(false)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editFormError, setEditFormError] = useState<string | null>(null)
+  const [prizeMoneyError, setPrizeMoneyError] = useState<string | null>(null)
 
   const formatForDatetimeLocal = (utcIsoString: string): string => {
     if (!utcIsoString) return ""
@@ -62,6 +63,12 @@ export default function EditCompetitionModal({
     return `${year}-${month}-${day}T${hours}:${minutes}`
   }
 
+  const validatePrizeMoney = (value: string): boolean => {
+    // Allow only numbers and commas
+    const regex = /^[0-9,]*$/
+    return regex.test(value)
+  }
+
   useEffect(() => {
     if (competition && isOpen) {
       setEditFormData({
@@ -69,7 +76,7 @@ export default function EditCompetitionModal({
         description: competition.description || "",
         startDeadline: formatForDatetimeLocal(competition.startDeadline || ""),
         endDeadline: formatForDatetimeLocal(competition.endDeadline || ""),
-        mode: competition.mode || competition.location || "online",  // CHANGED - with fallback for old data
+        mode: (competition.mode as "online" | "offline") || "online",  // CHANGED - with fallback for old data
         venue: competition.venue || "",                              // NEW FIELD
         prizeMoney: competition.prizeMoney || "",
         isActive: competition.isActive ?? false,
@@ -84,6 +91,15 @@ export default function EditCompetitionModal({
     const checked = (e.target as HTMLInputElement).checked
 
     console.log(e)
+
+    if (name === "prizeMoney") {
+      if (!validatePrizeMoney(value)) {
+        setPrizeMoneyError("Only numbers and commas are allowed")
+        return
+      } else {
+        setPrizeMoneyError(null)
+      }
+    }
 
     setEditFormData((prev) => ({
       ...prev,
@@ -104,6 +120,7 @@ export default function EditCompetitionModal({
 
     // Clear error when user changes checkbox
     setEditFormError(null)
+    setPrizeMoneyError(null)
     setTouched(true)
   }
 
@@ -120,8 +137,8 @@ export default function EditCompetitionModal({
     }
 
     // Validate the new dates from the form
-    const newStartDateTime = new Date(editFormData.startDeadline)
-    const newEndDateTime = new Date(editFormData.endDeadline)
+    const newStartDateTime = new Date(editFormData.startDeadline || "")
+    const newEndDateTime = new Date(editFormData.endDeadline || "")
 
     if (isNaN(newStartDateTime.getTime()) || isNaN(newEndDateTime.getTime())) {
       setEditFormError("Invalid start or end date/time.")
@@ -254,9 +271,12 @@ export default function EditCompetitionModal({
                       name="mode"
                       value={editFormData.mode}
                       onChange={(e) => {
-                        handleEditFormChange(e)
+                        const value = e.target.value as "online" | "offline"
+                        setEditFormData(prev => ({ ...prev, mode: value }))
+                        setTouched(true)
+                        setEditFormError(null)
                         // Clear venue if switching to online
-                        if (e.target.value === "online") {
+                        if (value === "online") {
                           setEditFormData(prev => ({ ...prev, venue: "" }))
                         }
                       }}
@@ -278,8 +298,16 @@ export default function EditCompetitionModal({
                       value={editFormData.prizeMoney}
                       onChange={handleEditFormChange}
                       required
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      className={`border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${
+                        prizeMoneyError ? "border-red-300 focus:border-red-500 focus:ring-red-500/20" : ""
+                      }`}
                     />
+                    {prizeMoneyError && (
+                      <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {prizeMoneyError}
+                      </p>
+                    )}
                   </div>
                 </div>
 

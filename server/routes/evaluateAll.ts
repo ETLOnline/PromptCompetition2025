@@ -6,7 +6,7 @@ import { cleanRubricData } from "../utils/sanitise.js";
 const router = express.Router()
 
 type RubricItem = { name: string; description: string; weight: number }
-type ChallengeConfig = { rubric: RubricItem[]; problemStatement?: string | null }
+type ChallengeConfig = { rubric: RubricItem[]; problemStatement?: string | null; systemPrompt?: string | null }
 
 // Firestore-based lock management (replaces in-memory state)
 interface EvaluationLock {
@@ -573,6 +573,7 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       const data = doc.data();
       const rubric = data?.rubric;
       const problemStatement = typeof data?.problemStatement === "string" ? data.problemStatement : null;
+      const systemPrompt = typeof data?.systemPrompt === "string" ? data.systemPrompt : null;
 
       if (Array.isArray(rubric)) {
         const cleanedRubric = cleanRubricData(rubric);
@@ -580,7 +581,8 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
         if (cleanedRubric) {
           challengeConfigMap[doc.id] = {
             rubric: cleanedRubric,
-            problemStatement
+            problemStatement,
+            systemPrompt
           };
         } else {
           console.warn(`⚠️ Challenge ${doc.id}: invalid rubric after cleaning`);
@@ -625,9 +627,10 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
 
         const rubricData = cfg.rubric
         const problemStatement = cfg.problemStatement ?? undefined
+        const challengeSystemPrompt = cfg.systemPrompt ?? undefined
 
         try {
-          const result = await runJudges(promptText, rubricData, problemStatement, competitionSystemPrompt)
+          const result = await runJudges(promptText, rubricData, problemStatement, competitionSystemPrompt, challengeSystemPrompt)
           const { scores: llmScores, average } = result || {}
 
           if (!llmScores || Object.keys(llmScores).length === 0) {

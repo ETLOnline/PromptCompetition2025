@@ -148,7 +148,7 @@ export const CompetitionCard = ({
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Prize</p>
-                <p className="text-sm font-semibold text-slate-900">{competition.prizeMoney || "TBD"}</p>
+                <p className="text-sm font-semibold text-slate-900">PKR {competition.prizeMoney || "TBD"}</p>
               </div>
             </div>
           </div>
