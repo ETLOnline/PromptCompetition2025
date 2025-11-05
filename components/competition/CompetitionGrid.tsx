@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Users, DollarSign,Trophy, ArrowRight, CheckCircle2, XCircle, Clock, Edit, Eye } from "lucide-react"
 import type { Competition } from "@/types/competition"
+// import { FaRupeeSign } from 'react-icons/fa'; // Example from Font Awesome
+
 
 interface CompetitionGridProps {
   competitions: Competition[]
@@ -174,7 +176,7 @@ export default function CompetitionGrid({
                   <div className="w-8 h-8 bg-yellow-50 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Trophy className="w-4 h-4 text-yellow-600" />
                   </div>
-                  <span className="font-medium">{competition.prizeMoney}</span>
+                  <span className="font-medium">PKR {competition.prizeMoney}</span>
                 </div>
               </div>
 
