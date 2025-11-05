@@ -323,6 +323,10 @@ export default function EditChallengePage() {
 
       const { email = "", fullName = "" } = userDocSnap.data()
 
+      // Collect final URLs for Firestore update
+      let finalImageUrls = [...(formData.imageUrls || [])]
+      let finalVoiceUrls = [...(formData.voiceNoteUrls || [])]
+
       // Upload new media if any
       if (selectedImages.length > 0) {
         setUploadingImages(true)
@@ -338,7 +342,8 @@ export default function EditChallengePage() {
             throw new Error(`Image upload failed: ${err?.message || err}`)
           }
         }
-        setFormData((p) => ({ ...p, imageUrls: [...(p.imageUrls || []), ...uploaded] }))
+        finalImageUrls = [...finalImageUrls, ...uploaded]
+        setFormData((p) => ({ ...p, imageUrls: finalImageUrls }))
         setUploadingImages(false)
       }
 
@@ -353,9 +358,14 @@ export default function EditChallengePage() {
             throw new Error(`Voice upload failed: ${err?.message || err}`)
           }
         }
-        setFormData((p) => ({ ...p, voiceNoteUrls: [...(p.voiceNoteUrls || []), ...uploaded] }))
+        finalVoiceUrls = [...finalVoiceUrls, ...uploaded]
+        setFormData((p) => ({ ...p, voiceNoteUrls: finalVoiceUrls }))
         setUploadingVoice(false)
       }
+
+      // Log final URLs before saving to Firestore
+      console.log('Final imageUrls to save:', finalImageUrls);
+      console.log('Final voiceUrls to save:', finalVoiceUrls);
 
       // Now update Firestore with updated URLs
       await updateDoc(doc(db, "competitions", competitionId, "challenges", challengeId), {
@@ -364,8 +374,8 @@ export default function EditChallengePage() {
         systemPrompt: formData.systemPrompt,
         rubric: formData.rubric,
         guidelines: formData.guidelines,
-        imageUrls: formData.imageUrls || [],
-        voiceNoteUrls: formData.voiceNoteUrls || [],
+        imageUrls: finalImageUrls,
+        voiceNoteUrls: finalVoiceUrls,
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),
