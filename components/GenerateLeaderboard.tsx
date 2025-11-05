@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Trophy, Loader, CheckCircle, Shield, X, AlertCircle, Users, RefreshCw } from "lucide-react"
 import { fetchWithAuth } from "@/lib/api"
-import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore"
+import { doc, getDoc, updateDoc, collection, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase" // Adjust the import path as needed
 import { useRouter } from "next/navigation";
 
@@ -46,6 +46,95 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
     } catch (error) {
       console.error("Error checking judges collection:", error)
       return false
+    }
+  }
+
+  // Function to calculate judge progress and update AllJudgeEvaluated if needed
+  const calculateAndUpdateJudgeProgress = async () => {
+    try {
+      const judgesRef = collection(db, "competitions", competitionId, "judges")
+      const judgesSnap = await getDocs(judgesRef)
+      
+      if (judgesSnap.empty) {
+        // No judges assigned
+        return { hasJudges: false, allCompleted: false }
+      }
+
+      // Collect all judge IDs to batch fetch names
+      const judgeIds = judgesSnap.docs.map((j) => j.id)
+      let usersMap = new Map<string, any>()
+
+      if (judgeIds.length > 0) {
+        const usersSnap = await getDocs(
+          query(collection(db, "users"), where("__name__", "in", judgeIds))
+        )
+        usersMap = new Map(usersSnap.docs.map((doc) => [doc.id, doc.data()]))
+      }
+
+      const judgesData: any[] = []
+
+      for (const judgeDoc of judgesSnap.docs) {
+        const judgeData = judgeDoc.data()
+        const judgeId = judgeDoc.id
+
+        const assignedCountsByChallenge = judgeData.assignedCountsByChallenge || {}
+        const completedChallenges = judgeData.completedChallenges || {}
+        const assignedCountTotal = judgeData.assignedCountTotal || 0
+        const reviewedCount = judgeData.reviewedCount || 0
+
+        // Calculate challenge progress using the new structure
+        const challengeProgress: Array<{
+          challengeId: string
+          assigned: number
+          completed: number
+        }> = []
+
+        Object.keys(assignedCountsByChallenge).forEach((challengeId) => {
+          const assignedForChallenge = assignedCountsByChallenge[challengeId] || 0
+          const completedForChallenge = completedChallenges[challengeId] || 0
+
+          challengeProgress.push({
+            challengeId,
+            assigned: assignedForChallenge,
+            completed: completedForChallenge,
+          })
+        })
+
+        const displayName =
+          usersMap.get(judgeId)?.fullName || usersMap.get(judgeId)?.displayName || judgeId.slice(0, 8)
+
+        judgesData.push({
+          judgeId,
+          assignedCountsByChallenge,
+          submissionsByChallenge: judgeData.submissionsByChallenge || {}, // Keep for type compatibility
+          assignedCountTotal,
+          completedCount: reviewedCount, // Use reviewedCount directly
+          challengeProgress,
+          displayName,
+        })
+      }
+
+      // Check if all judges have completed their evaluations
+      const allCompleted = judgesData.length > 0 && judgesData.every(judge => {
+        const overallProgress = judge.assignedCountTotal > 0
+          ? (judge.completedCount / judge.assignedCountTotal) * 100
+          : 0
+        return overallProgress === 100
+      })
+
+      // Update AllJudgeEvaluated if all judges are completed
+      if (allCompleted) {
+        const competitionRef = doc(db, "competitions", competitionId)
+        await updateDoc(competitionRef, {
+          AllJudgeEvaluated: true
+        })
+        console.log("AllJudgeEvaluated updated to: true")
+      }
+
+      return { hasJudges: true, allCompleted }
+    } catch (error) {
+      console.error("Error calculating judge progress:", error)
+      return { hasJudges: false, allCompleted: false }
     }
   }
 
@@ -143,24 +232,27 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
         return
       }
       
-      // Check if all judges have evaluated
-      const isAllJudgeEvaluated = await checkIfAllJudgeEvaluated()
+      // First check if AllJudgeEvaluated is already true
+      let isAllJudgeEvaluated = await checkIfAllJudgeEvaluated()
       
       if (!isAllJudgeEvaluated) {
-        // Check if judges collection exists
-        const judgesExist = await checkIfJudgesExist()
+        // AllJudgeEvaluated is false, so calculate judge progress
+        const { hasJudges, allCompleted } = await calculateAndUpdateJudgeProgress()
         
-        if (!judgesExist) {
+        if (!hasJudges) {
           // No judges assigned, show confirmation popup
           setShowNoJudgesPopup(true)
           setLoading(false)
           return
-        } else {
-          // Judges exist but haven't all evaluated
+        } else if (!allCompleted) {
+          // Judges exist but haven't all completed their evaluations
           setShowJudgeNotEvaluatedPopup(true)
           setLoading(false)
           return
         }
+        
+        // If we reach here, all judges have completed and AllJudgeEvaluated has been updated
+        isAllJudgeEvaluated = true
       }
 
       // Check if competition is evaluated
@@ -180,7 +272,6 @@ export default function GenerateLeaderboardButton({ competitionId }: { competiti
         setLoading(false)
         return
       }
-
 
       // If all checks pass, proceed with leaderboard generation
       await proceedWithLeaderboardGeneration()
