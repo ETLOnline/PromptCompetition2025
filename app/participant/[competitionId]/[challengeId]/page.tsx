@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { submitPrompt, checkExistingSubmission } from "@/lib/api"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, FileText, Send, AlertCircle, Target, CheckCircle } from 'lucide-react'
+import { ArrowLeft, FileText, Send, AlertCircle, Target, CheckCircle, Image as ImageIcon, Volume2, X } from 'lucide-react'
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { useRouter, useParams } from "next/navigation"
@@ -29,6 +29,8 @@ interface Challenge {
   guidelines: string
   endDeadline: Timestamp
   isCompetitionLocked: boolean
+  imageUrls?: string[]
+  voiceNoteUrls?: string[]
 }
 interface UserProfile {
   uid: string;
@@ -62,6 +64,7 @@ export default function ChallengePage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
   const [isCompetitionActive, setIsCompetitionActive] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
 
 
@@ -192,6 +195,8 @@ export default function ChallengePage() {
         guidelines: challengeDataRaw.guidelines,
         isCompetitionLocked: isCompetitionLocked,
         endDeadline: competitionData.endDeadline, // from competition, not challenge
+        imageUrls: challengeDataRaw.imageUrls || [],
+        voiceNoteUrls: challengeDataRaw.voiceNoteUrls || [],
       }
 
       setChallenge(challengeData)
@@ -374,6 +379,58 @@ export default function ChallengePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Image Clues Card */}
+            {challenge.imageUrls && challenge.imageUrls.length > 0 && (
+              <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                  <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
+                    <ImageIcon className="h-6 w-6 text-purple-600" />
+                    Image Clues
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {challenge.imageUrls.map((imageUrl, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <img
+                        src={imageUrl}
+                        alt={`Image clue ${index + 1}`}
+                        className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => setPreviewImage(imageUrl)}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Audio Instructions Card */}
+            {challenge.voiceNoteUrls && challenge.voiceNoteUrls.length > 0 && (
+              <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                  <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
+                    <Volume2 className="h-6 w-6 text-orange-600" />
+                    Audio Instructions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {challenge.voiceNoteUrls.map((audioUrl, index) => (
+                    <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="text-sm font-medium text-gray-700 mb-2">
+                        Audio Note {index + 1}
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={audioUrl} type="audio/mpeg" />
+                        <source src={audioUrl} type="audio/wav" />
+                        <source src={audioUrl} type="audio/ogg" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Guidelines Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
@@ -651,6 +708,22 @@ export default function ChallengePage() {
             </Card>
           </div>
         </>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
+          </div>
+        </div>
       )}
     </main>
   )
