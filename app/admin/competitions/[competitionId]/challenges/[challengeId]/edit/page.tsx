@@ -331,6 +331,7 @@ export default function EditChallengePage() {
         for (let i = 0; i < selectedImages.length; i++) {
           try {
             const url = await uploadFile(selectedImages[i], 'image')
+            console.log('Uploaded image URL:', url);
             uploaded.push(url)
             setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
           } catch (err: any) {
