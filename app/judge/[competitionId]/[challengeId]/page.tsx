@@ -313,7 +313,7 @@ export default function ChallengePage() {
       {/* Notifications */}
       <NotificationList notifications={notifications} removeNotification={removeNotification} />
 
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="container mx-auto px-6 space-y-6">
         {/* Challenge Header */}
         <Suspense fallback={<div>Loading challenge...</div>}>
           <ChallengeHeader challenge={challenge} isLoading={isLoadingChallenge} progressStats={progressStats} />
