@@ -183,13 +183,13 @@ export default function ModernAdminHeader() {
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-semibold leading-none text-gray-900">{displayFullName}</p>
                         <p className="text-xs leading-none text-gray-500">{user?.email || "admin@example.com"}</p>
-                        {role === "superadmin" && (
+                        {(role === "superadmin" || role === "admin") && (
                           <Badge
                             variant="secondary"
                             className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
                           >
                             <Shield className="w-3 h-3 mr-1" />
-                            Super Admin
+                            {role === "superadmin" ? "Super Admin" : "Admin"}
                           </Badge>
                         )}
                       </div>
