@@ -395,7 +395,7 @@ export default function ChallengePage() {
                       <img
                         src={imageUrl}
                         alt={`Image clue ${index + 1}`}
-                        className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        className="max-w-full max-h-96 mx-auto cursor-pointer hover:opacity-90 transition-opacity object-contain"
                         onClick={() => setPreviewImage(imageUrl)}
                       />
                     </div>

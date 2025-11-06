@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, LogOut } from "lucide-react"
+import { Badge } from "@/components/ui/badge" 
+import { ChevronDown, LogOut, Shield } from "lucide-react" 
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import Image from "next/image"
@@ -139,6 +140,13 @@ export default function ParticipantHeader() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
                       <p className="text-xs leading-none text-gray-500">{user?.email || "participant@example.com"}</p>
+                      <Badge
+                        variant="secondary"
+                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                      >
+                        <Shield className="w-3 h-3 mr-1" />
+                        Participant
+                      </Badge>
                     </div>
                   </div>
                 </DropdownMenuLabel>

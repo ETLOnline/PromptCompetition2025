@@ -66,6 +66,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showLockModal, setShowLockModal] = useState(false)
   const [competitionStartTime, setCompetitionStartTime] = useState<Date | null>(null)
+  const [competitionEndTime, setCompetitionEndTime] = useState<Date | null>(null)
   const [competitionLockStatus, setCompetitionLock] = useState<Date | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
@@ -98,12 +99,17 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         const compSnap = await getDoc(compDocRef)
         if (compSnap.exists()) {
           const startTimestamp = compSnap.data()?.startDeadline
+          const endTimestamp = compSnap.data()?.endDeadline
           const competitionlocked = compSnap.data()?.isLocked
           setCompetitionLock(competitionlocked)
           // console.log("Competition Lock Status:", competitionlocked)
           if (startTimestamp) {
             const startDate = new Date(startTimestamp) // ← simple conversion
             setCompetitionStartTime(startDate)
+          }
+          if (endTimestamp) {
+            const endDate = new Date(endTimestamp)
+            setCompetitionEndTime(endDate)
           }
         }
 
@@ -230,8 +236,12 @@ export default function GetChallenges({ competitionId }: { competitionId: string
             const updateDate = challenge.lastupdatetime?.toDate()
             // const startDate = challenge.startDeadline?.toDate()
             // const endDate = challenge.endDeadline?.toDate()
-            const isExpired = competitionStartTime < new Date()
+            const currentTime = new Date()
+            const isStarted = competitionStartTime && competitionStartTime < currentTime
+            const isEnded = competitionEndTime && competitionEndTime < currentTime
+      
             const isExpanded = expandedChallenges.has(challenge.id)
+            // console.log("Competition Start Time:", competitionStartTime, "Competition End Time:", competitionEndTime, "Is Started:", isStarted, "Is Ended:", isEnded)
 
             return (
               <Collapsible
@@ -245,11 +255,21 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                       <CardTitle className="text-xl font-semibold text-gray-900">{challenge.title}</CardTitle>
                       <Badge
                         variant="outline"
-                        className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${isExpired ? "bg-red-50 border-red-200 text-red-800" : "bg-emerald-50 border-emerald-200 text-emerald-800"}`}
+                        className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                          isEnded 
+                            ? "bg-gray-50 border-gray-200 text-gray-800" 
+                            : isStarted 
+                            ? "bg-red-50 border-red-200 text-red-800" 
+                            : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                        }`}
                       >
-                        {isExpired ? (
+                        {isEnded ? (
                           <>
-                            <AlertCircle className="w-3 h-3 mr-1" /> Live Now
+                            <AlertCircle className="w-3 h-3 mr-1" /> Competition Ended
+                          </>
+                        ) : isStarted ? (
+                          <>
+                            <AlertCircle className="w-3 h-3 mr-1" /> Competition Started
                           </>
                         ) : (
                           <>
@@ -304,6 +324,10 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                               <div>
                                 <span className="text-gray-600">Start Date:</span>
                                 <div className="font-semibold text-gray-900">{competitionStartTime?.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">End Date:</span>
+                                <div className="font-semibold text-gray-900">{competitionEndTime?.toLocaleString()}</div>
                               </div>
                             </div>
                           </div>
@@ -381,11 +405,11 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                         size="sm"
                         className="bg-gray-900 text-white hover:bg-gray-800 font-semibold px-4 py-2"
                         onClick={() => {
-                          if (isExpired && userRole !== "superadmin") {
-                            // normal users can't edit expired competitions
+                          if (isStarted && userRole !== "superadmin") {
+                            // normal users can't edit after competition starts
                             setShowModal(true)
                           } else {
-                            // superadmin OR non-expired case
+                            // superadmin OR non-started case
                             router.push(
                               `/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`
                             )

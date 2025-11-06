@@ -317,8 +317,11 @@ export default function ModernCompetitionSelector() {
                   </div>
                 </div>
                 {role === "superadmin" && (
-                  <Badge className="bg-blue-600 text-white border-0 px-3 py-1">Super Admin</Badge>
-                )}
+                    <Badge className="bg-blue-600 text-white border-0 px-3 py-1">Super Admin</Badge>
+                  )}
+                  {role === "admin" && (
+                    <Badge className="bg-blue-600 text-white border-0 px-3 py-1">Admin</Badge>
+                  )}
               </div>
             </div>
             <div className="flex items-center gap-3">
