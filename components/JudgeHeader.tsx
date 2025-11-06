@@ -13,10 +13,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, LogOut } from "lucide-react"
+import { Badge } from "@/components/ui/badge" 
+import { ChevronDown, LogOut, Shield } from "lucide-react" 
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import Image from "next/image"
+
+import { JudgeBreadcrumbs } from "@/components/judge-breadcrumbs"
 
 export default function JudgeHeader() {
   const { user, fullName, logout } = useAuth()
@@ -61,7 +64,8 @@ export default function JudgeHeader() {
   const userInitials = getUserInitials(displayFullName)
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm">
+    <>
+      <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Left Section - Logo and Title */}
@@ -146,6 +150,13 @@ export default function JudgeHeader() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayFullName}</p>
                       <p className="text-xs leading-none text-gray-500">{user?.email || "judge@example.com"}</p>
+                                          <Badge
+                        variant="secondary"
+                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                      >
+                        <Shield className="w-3 h-3 mr-1" />
+                        Judge
+                      </Badge>
                     </div>
                   </div>
                 </DropdownMenuLabel>
@@ -163,5 +174,8 @@ export default function JudgeHeader() {
         </div>
       </div>
     </header>
+      {/* Breadcrumbs row below header */}
+      <JudgeBreadcrumbs />
+    </>
   )
 }
