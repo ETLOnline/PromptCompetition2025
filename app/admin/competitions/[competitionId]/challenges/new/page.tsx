@@ -248,6 +248,10 @@ export default function NewCompetitionPage() {
 
       // Upload to Firestore with the complete data
       await uploadToFirestoreWithData(finalFormData)
+      setSelectedImages([])
+      setImagePreviews([])
+      setSelectedVoiceNotes([])
+      setVoiceNotePreviews([])
 
       toast({
         title: "Success",
