@@ -26,13 +26,13 @@ export function ProgressFooter({
   if (progressStats.totalAssigned <= 0) return null
 
   return (
-    <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
-      <div className="container mx-auto flex items-center justify-between">
+    <div className="sticky bottom-0 p-6">
+      <div className="container mx-auto bg-white border border-green-200 rounded-lg shadow-sm p-4 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="text-sm">
             <span className="font-medium text-gray-900">Progress:</span>
             <span className="ml-2">
-              {progressStats.graded} / {progressStats.totalAssigned} graded
+              {progressStats.graded}/{progressStats.totalAssigned} graded
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export function ProgressFooter({
             onClick={onLoadMore}
             disabled={isLoadingSubmissions}
             variant="outline"
-            className="bg-transparent"
+            className="bg-white border-green-200 hover:bg-green-50"
           >
             {isLoadingSubmissions ? (
               <>
