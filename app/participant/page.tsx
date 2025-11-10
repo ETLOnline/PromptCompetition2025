@@ -320,6 +320,9 @@ export default function CompetitionsPage() {
   }
 
   const filteredCompetitions = competitions.filter((comp: Competition) => {
+    // First check if the competition is active
+    if (comp.isActive === false) return false
+    
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
     const status = getCompetitionStatus(comp)
