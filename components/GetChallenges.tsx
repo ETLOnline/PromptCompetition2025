@@ -257,23 +257,23 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                         variant="outline"
                         className={`px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                           isEnded 
-                            ? "bg-gray-50 border-gray-200 text-gray-800" 
-                            : isStarted 
                             ? "bg-red-50 border-red-200 text-red-800" 
-                            : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            : isStarted 
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-800" 
+                            : "bg-orange-50 border-orange-200 text-orange-800"
                         }`}
                       >
                         {isEnded ? (
                           <>
-                            <AlertCircle className="w-3 h-3 mr-1" /> Competition Ended
+                            <AlertCircle className="w-3 h-3 mr-1" /> Ended
                           </>
                         ) : isStarted ? (
                           <>
-                            <AlertCircle className="w-3 h-3 mr-1" /> Competition Started
+                            <CheckCircle className="w-3 h-3 mr-1" /> Active
                           </>
                         ) : (
                           <>
-                            <CheckCircle className="w-3 h-3 mr-1" /> Active
+                            <Clock className="w-3 h-3 mr-1" /> Upcoming
                           </>
                         )}
                       </Badge>
