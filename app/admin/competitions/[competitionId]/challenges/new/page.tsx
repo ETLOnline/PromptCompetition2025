@@ -244,7 +244,7 @@ export default function NewCompetitionPage() {
       }
 
       // Update state for UI
-      setFormData(finalFormData)
+      // setFormData(finalFormData)
 
       // Upload to Firestore with the complete data
       await uploadToFirestoreWithData(finalFormData)
