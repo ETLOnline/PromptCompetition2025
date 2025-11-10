@@ -243,7 +243,7 @@ export default function JudgeProgress({ competitionId }: JudgeProgressProps) {
                   <h4 className="text-lg font-bold text-gray-900">Challenge Breakdown</h4>
                   <div className="px-3 py-1 bg-gray-100 rounded-full">
                     <span className="text-sm font-medium text-gray-600">
-                      {judge.challengeProgress.length} Challenges
+                      {judge.challengeProgress.length} {judge.challengeProgress.length === 1 ? 'Challenge' : 'Challenges'}
                     </span>
                   </div>
                 </div>
