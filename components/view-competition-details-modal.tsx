@@ -102,7 +102,7 @@ export const ViewCompetitionDetailsModal = ({ isOpen, onClose, competition }: Vi
                     <Label className="text-base font-semibold text-yellow-900">Prize Money</Label>
                   </div>
                   <div className="text-sm text-gray-900 font-medium break-words overflow-wrap-anywhere">
-                    {competition.prizeMoney}
+                    PKR {competition.prizeMoney}
                   </div>
                 </div>
               )}

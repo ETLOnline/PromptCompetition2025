@@ -88,7 +88,7 @@ export default function JudgeProgress({ competitionId }: JudgeProgressProps) {
         })
 
         const displayName =
-          usersMap.get(judgeId)?.displayName || judgeId.slice(0, 8)
+          usersMap.get(judgeId)?.fullName || usersMap.get(judgeId)?.displayName || judgeId.slice(0, 8)
 
         judgesData.push({
           judgeId,

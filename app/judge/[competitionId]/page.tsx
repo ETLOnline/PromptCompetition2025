@@ -89,7 +89,7 @@ export default function CompetitionPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">  
       <Notifications notifications={notifications} removeNotification={removeNotification} />
 
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="container mx-auto px-6 space-y-6">
         {assignment && <CompetitionStats assignment={assignment} isLoading={isLoading} />}
 
         <ChallengeList

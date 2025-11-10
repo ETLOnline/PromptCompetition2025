@@ -1408,7 +1408,15 @@ const ChallengeCard = useCallback(
           </Card>
         ) : (
           <>
-            {state.viewMode === "cards" ? (
+            {filteredChallenges.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Layers className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No results match your search</h3>
+                  <p className="text-gray-600">Try removing filters or changing your search terms.</p>
+                </CardContent>
+              </Card>
+            ) : state.viewMode === "cards" ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredChallenges.map((challenge) => (
                   <ChallengeCard key={challenge.id} challenge={challenge} />

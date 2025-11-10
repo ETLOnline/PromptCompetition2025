@@ -9,7 +9,7 @@ const MODELS = LLM_CONFIG.models;
 // 4. Main exported function
 export async function runJudges(prompt: string, 
   rubric: any, problemStatement?: string,
-  competitionSystemPrompt?: string): Promise<EvaluationResult> {
+  competitionSystemPrompt?: string, challengeSystemPrompt?: string): Promise<EvaluationResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY environment variable is required");
@@ -19,7 +19,18 @@ export async function runJudges(prompt: string,
 
   const rubricArray = rubric;
   const DEFAULT_SYSTEM_PROMPT = createSystemPrompt(rubricArray)
-  const systemPrompt =  competitionSystemPrompt ?? DEFAULT_SYSTEM_PROMPT;
+  let systemPrompt = competitionSystemPrompt ?? DEFAULT_SYSTEM_PROMPT;
+  
+  // Add challenge system prompt as helper context if available
+  if (challengeSystemPrompt) {
+    console.log(`🎯 Adding challenge context (${challengeSystemPrompt.length} chars) for visual/audio clues`);
+    systemPrompt = `${systemPrompt}
+
+CHALLENGE CONTEXT (Visual/Audio Clues and Additional Information):
+${challengeSystemPrompt}
+
+Please use the above challenge context to better understand what visual and audio clues were provided to the participant when evaluating their submission.`;
+  }
   
   // Log system prompt for verification
   console.log(`📝 System Prompt (${systemPrompt.length} chars):`);

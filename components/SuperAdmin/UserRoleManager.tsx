@@ -356,6 +356,11 @@ export default function UserRoleManager() {
     role: "",
   })
   const [formError, setFormError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string
+    displayName?: string
+    role?: string
+  }>({})
   const [selectedExistingUsers, setSelectedExistingUsers] = useState<Set<string>>(new Set())
   const [roleToAssign, setRoleToAssign] = useState("")
   const [promoteSearchQuery, setPromoteSearchQuery] = useState("")
@@ -438,8 +443,8 @@ export default function UserRoleManager() {
     return u
   }, [allUsers, roleToAssign, promoteSearchQuery])
 
-  const promoteStart = (promoteCurrentPage - 1) * ITEMS_PER_PAGE
-  const promoteEnd = promoteStart + ITEMS_PER_PAGE
+  const promoteStart = 0 // Always start from the beginning
+  const promoteEnd = promoteCurrentPage * ITEMS_PER_PAGE
   const paginatedPromoteUsers = promoteUsers.slice(promoteStart, promoteEnd)
   const hasMorePromoteUsers = promoteUsers.length > promoteEnd
 
@@ -501,6 +506,62 @@ export default function UserRoleManager() {
       })
 
     return actions
+  }
+
+  // Validation helpers
+  const validateField = (field: keyof CreateUserForm, value: string) => {
+    const errors: { [key: string]: string } = {}
+    
+    switch (field) {
+      case 'email':
+        if (!value.trim()) {
+          errors.email = "Email address is required"
+        } else {
+          const emailError = validateEmail(value)
+          if (emailError) {
+            errors.email = emailError
+          }
+        }
+        break
+      case 'displayName':
+        if (!value.trim()) {
+          errors.displayName = "Display name is required"
+        } else if (value.trim().length < 2) {
+          errors.displayName = "Display name must be at least 2 characters"
+        }
+        break
+      case 'role':
+        const allowedRoles = ["judge", "admin", "superadmin"]
+        if (!value) {
+          errors.role = "Role selection is required"
+        } else if (!allowedRoles.includes(value)) {
+          errors.role = "Please select a valid role"
+        }
+        break
+    }
+    
+    setFieldErrors(prev => ({
+      ...prev,
+      [field]: errors[field] || undefined
+    }))
+    
+    return !errors[field]
+  }
+
+  const validateAllFields = () => {
+    const emailValid = validateField('email', createUserForm.email)
+    const nameValid = validateField('displayName', createUserForm.displayName)
+    const roleValid = validateField('role', createUserForm.role)
+    
+    return emailValid && nameValid && roleValid
+  }
+
+  const handleFieldChange = (field: keyof CreateUserForm, value: string) => {
+    setCreateUserForm(prev => ({ ...prev, [field]: value }))
+    // Clear any existing form error when user starts typing
+    if (formError) setFormError(null)
+    // Validate field after a brief delay to avoid excessive validation during typing
+    setTimeout(() => validateField(field, value), 300)
   }
 
   // --- API calls ---
@@ -637,19 +698,9 @@ export default function UserRoleManager() {
   }
 
   async function createUser() {
-    const allowedRoles = ["judge", "admin", "superadmin"]
-    if (
-      !createUserForm.displayName ||
-      !createUserForm.role ||
-      !allowedRoles.includes(createUserForm.role)
-    ) {
-      setFormError("Please fill in all required fields and select a valid role")
-      return
-    }
-
-    const emailError = validateEmail(createUserForm.email)
-    if (emailError) {
-      setFormError(emailError)
+    // Validate all fields first
+    if (!validateAllFields()) {
+      setFormError("Please fix the errors above before submitting")
       return
     }
 
@@ -664,6 +715,7 @@ export default function UserRoleManager() {
       const data = await res.json()
       if (res.ok) {
         setFormError(null)
+        setFieldErrors({})
         showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
         setCreateUserForm({ email: "", displayName: "", role: "" })
         setShowCreateUser(false)
@@ -1000,9 +1052,9 @@ export default function UserRoleManager() {
               <Label htmlFor="role">Role *</Label>
               <Select
                 value={createUserForm.role}
-                onValueChange={(value) => setCreateUserForm((f) => ({ ...f, role: value }))}
+                onValueChange={(value) => handleFieldChange('role', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className={fieldErrors.role ? "border-red-500 focus:ring-red-500" : ""}>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1011,6 +1063,12 @@ export default function UserRoleManager() {
                   <SelectItem value="superadmin">Super Admin</SelectItem>
                 </SelectContent>
               </Select>
+              {fieldErrors.role && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {fieldErrors.role}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="displayName">Display Name *</Label>
@@ -1018,8 +1076,15 @@ export default function UserRoleManager() {
                 id="displayName"
                 placeholder="Enter full name"
                 value={createUserForm.displayName}
-                onChange={(e) => setCreateUserForm((f) => ({ ...f, displayName: e.target.value }))}
+                onChange={(e) => handleFieldChange('displayName', e.target.value)}
+                className={fieldErrors.displayName ? "border-red-500 focus:ring-red-500" : ""}
               />
+              {fieldErrors.displayName && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {fieldErrors.displayName}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address *</Label>
@@ -1028,11 +1093,26 @@ export default function UserRoleManager() {
                 type="email"
                 placeholder="Enter email address"
                 value={createUserForm.email}
-                onChange={(e) => setCreateUserForm((f) => ({ ...f, email: e.target.value }))}
+                onChange={(e) => handleFieldChange('email', e.target.value)}
+                className={fieldErrors.email ? "border-red-500 focus:ring-red-500" : ""}
               />
+              {fieldErrors.email && (
+                <p className="text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
+            {formError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  {formError}
+                </p>
+              </div>
+            )}
           </div>
-          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2">
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -1042,34 +1122,29 @@ export default function UserRoleManager() {
                   role: ""
                 })
                 setFormError(null)
+                setFieldErrors({})
                 setShowCreateUser(false)
               }}
               disabled={loading.action}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <div className="flex items-center justify-end gap-2 sm:ml-auto sm:flex-row">
-              <Button
-                onClick={createUser}
-                disabled={loading.action}
-                className="whitespace-nowrap"
-              >
-                {loading.action ? "Creating..." : "Create User"}
-              </Button>
-              {formError && (
-                <p className="text-sm text-red-600 max-w-[200px] whitespace-normal">
-                  {formError}
-                </p>
-              )}
-            </div>
+            <Button
+              onClick={createUser}
+              disabled={loading.action}
+              className="w-full sm:w-auto"
+            >
+              {loading.action ? "Creating..." : "Create User"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Bulk Promote Dialog */}
       <Dialog open={showExistingUsers} onOpenChange={setShowExistingUsers}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5" />
               Promote Users to {ROLE_CONFIG[roleToAssign as keyof typeof ROLE_CONFIG]?.label}
@@ -1078,8 +1153,8 @@ export default function UserRoleManager() {
               Select users to promote to the {ROLE_CONFIG[roleToAssign as keyof typeof ROLE_CONFIG]?.label} role.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="relative">
+          <div className="flex flex-col space-y-4 flex-1 min-h-0">
+            <div className="relative flex-shrink-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search users to promote..."
@@ -1091,47 +1166,49 @@ export default function UserRoleManager() {
                 className="pl-10"
               />
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 max-h-96">
-              {paginatedPromoteUsers.map((u) => (
-                <div
-                  key={u.uid}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedExistingUsers.has(u.uid)
-                      ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100"
-                      : "bg-background border-border hover:border-muted-foreground"
-                  }`}
-                  onClick={() => {
-                    const s = new Set(selectedExistingUsers)
-                    s.has(u.uid) ? s.delete(u.uid) : s.add(u.uid)
-                    setSelectedExistingUsers(s)
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Checkbox checked={selectedExistingUsers.has(u.uid)} onChange={() => {}} />
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{(u.displayName || u.email).charAt(0).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{u.displayName || u.email}</p>
-                        <p className="text-sm text-muted-foreground">{u.email}</p>
+            <div className="flex-1 overflow-y-auto min-h-0 max-h-96">
+              <div className="space-y-2 pr-2">
+                {paginatedPromoteUsers.map((u) => (
+                  <div
+                    key={u.uid}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedExistingUsers.has(u.uid)
+                        ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100"
+                        : "bg-background border-border hover:border-muted-foreground"
+                    }`}
+                    onClick={() => {
+                      const s = new Set(selectedExistingUsers)
+                      s.has(u.uid) ? s.delete(u.uid) : s.add(u.uid)
+                      setSelectedExistingUsers(s)
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox checked={selectedExistingUsers.has(u.uid)} onChange={() => {}} />
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{(u.displayName || u.email).charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{u.displayName || u.email}</p>
+                          <p className="text-sm text-muted-foreground">{u.email}</p>
+                        </div>
                       </div>
+                      <Badge variant="outline">{ROLE_CONFIG[u.role as keyof typeof ROLE_CONFIG]?.label || u.role}</Badge>
                     </div>
-                    <Badge variant="outline">{ROLE_CONFIG[u.role as keyof typeof ROLE_CONFIG]?.label || u.role}</Badge>
                   </div>
-                </div>
-              ))}
-              {hasMorePromoteUsers && (
-                <Button variant="outline" onClick={() => setPromoteCurrentPage((p) => p + 1)} className="w-full">
-                  Load More ({promoteUsers.length - promoteEnd} remaining)
-                </Button>
-              )}
-              {!promoteUsers.length && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No users available for promotion</p>
-                </div>
-              )}
+                ))}
+                {hasMorePromoteUsers && (
+                  <Button variant="outline" onClick={() => setPromoteCurrentPage((p) => p + 1)} className="w-full">
+                    Load More ({promoteUsers.length - promoteEnd} remaining)
+                  </Button>
+                )}
+                {!promoteUsers.length && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No users available for promotion</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter className="border-t pt-4">

@@ -17,15 +17,22 @@ export function JudgeStats({ stats }: JudgeStatsProps) {
         iconColor: "text-blue-600",
         },
         {
-        title: "Submissions to Review",
+        title: "Total Submissions",
         value: stats.totalSubmissions,
         icon: Users,
         bgColor: "bg-emerald-50",
         iconColor: "text-emerald-600",
         },
         {
-        title: "Assigned Challenges",
-        value: stats.challenges,
+        title: "Evaluated Submissions",
+        value: stats.evaluatedSubmissions || 0,
+        icon: CheckCircle,
+        bgColor: "bg-green-50",
+        iconColor: "text-green-600",
+        },
+        {
+        title: "Pending Evaluation",
+        value: stats.totalSubmissions - (stats.evaluatedSubmissions || 0),
         icon: Scale,
         bgColor: "bg-amber-50",
         iconColor: "text-amber-600",
@@ -38,23 +45,13 @@ export function JudgeStats({ stats }: JudgeStatsProps) {
         iconColor: string;
     }>
 
-    if (typeof stats.evaluatedSubmissions === "number") {
-        statCards.push({
-            title: "Evaluated Submissions",
-            value: stats.evaluatedSubmissions,
-            icon: CheckCircle,
-            bgColor: "bg-indigo-50",
-            iconColor: "text-indigo-600",
-        })
-    }
-
     const percent = typeof stats.evaluatedSubmissions === "number" && stats.totalSubmissions > 0
         ? Math.round((stats.evaluatedSubmissions / stats.totalSubmissions) * 100)
         : 0
 
     return (
         <div className="space-y-4">
-            <div className={`grid grid-cols-1 ${statCards.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-6`}>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {statCards.map((stat) => {
                     const Icon = stat.icon
                     return (

@@ -17,7 +17,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/select-competition
     match: segs => segs.length === 2 && segs[0] === "admin" && segs[1] === "select-competition",
     getItems: () => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: null, isLast: true },
     ],
   },
@@ -25,7 +25,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/dashboard
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "dashboard",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Overview", href: null, isLast: true },
@@ -35,7 +35,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/challenges
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Challenges", href: null, isLast: true },
@@ -45,7 +45,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/challenges/new
     match: segs => segs.length === 5 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[4] === "new",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "New Challenge", href: null, isLast: true },
@@ -55,7 +55,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/challenges/[id]/edit
     match: segs => segs.length === 6 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[5] === "edit",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Edit Challenge", href: null, isLast: true },
@@ -65,7 +65,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/participants
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participants",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Participants", href: null, isLast: true },
@@ -75,7 +75,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/submissions
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "submissions",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Submissions", href: null, isLast: true },
@@ -85,7 +85,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/judge-evaluations
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "judge-evaluations",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Judge Evaluations", href: null, isLast: true },
@@ -95,7 +95,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/llm-evaluations
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "llm-evaluations",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "LLM Evaluations", href: null, isLast: true },
@@ -105,7 +105,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/participant-distribution
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participant-distribution",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Participant Distribution", href: null, isLast: true },
@@ -115,7 +115,7 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/competitions/{id}/leaderboard
     match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "leaderboard",
     getItems: (segs, competitionTitle, loadingTitle) => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
       { label: "Leaderboard", href: null, isLast: true },
@@ -125,7 +125,8 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     // /admin/manage-roles
     match: segs => segs.length === 2 && segs[0] === "admin" && segs[1] === "manage-roles",
     getItems: () => [
-      { label: "Home", href: "/admin", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: "Manage Roles", href: null, isLast: true },
     ],
   },

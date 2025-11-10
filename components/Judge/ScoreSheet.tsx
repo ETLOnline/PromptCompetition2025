@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Save, X, Award, ChevronDown } from "lucide-react"
 import { calculateWeightedTotal } from "@/lib/judge/utils"
 import type { Submission, Challenge, ScoreData } from "@/types/judge-submission"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 
 interface ScoreSheetProps {
   isOpen: boolean
@@ -17,6 +17,7 @@ interface ScoreSheetProps {
   submission: Submission | null
   challenge: Challenge | null
   scoreFormData: ScoreData
+  initialScoreFormData: ScoreData
   isSavingScore: boolean
   onScoreChange: (field: keyof ScoreData, value: any) => void
   onSave: () => void
@@ -28,11 +29,41 @@ export function ScoreSheet({
   submission,
   challenge,
   scoreFormData,
+  initialScoreFormData,
   isSavingScore,
   onScoreChange,
   onSave,
 }: ScoreSheetProps) {
   const [expandedCriteria, setExpandedCriteria] = useState<Set<number>>(new Set())
+  
+  // Check if current data differs from initial data
+  const hasChanges = useMemo(() => {
+    // Compare comment
+    if (scoreFormData.comment !== initialScoreFormData.comment) {
+      return true
+    }
+    
+    // Compare rubric scores
+    const currentRubricScores = scoreFormData.rubricScores || {}
+    const initialRubricScores = initialScoreFormData.rubricScores || {}
+    
+    // Check if we have different number of scored criteria
+    const currentKeys = Object.keys(currentRubricScores)
+    const initialKeys = Object.keys(initialRubricScores)
+    
+    if (currentKeys.length !== initialKeys.length) {
+      return true
+    }
+    
+    // Check if any score values are different
+    for (const key of currentKeys) {
+      if (currentRubricScores[key] !== initialRubricScores[key]) {
+        return true
+      }
+    }
+    
+    return false
+  }, [scoreFormData, initialScoreFormData])
   
   if (!submission || !challenge) return null
 
@@ -202,9 +233,14 @@ export function ScoreSheet({
 
           {/* Actions */}
           <DialogFooter className="gap-3 pt-6">
-            {!allCriteriaScored && rubricCount > 0 && (
+            {(!allCriteriaScored || !hasChanges) && rubricCount > 0 && (
               <div className="mr-auto text-xs text-gray-500">
-                Score all criteria to enable saving ({scoredCount}/{rubricCount} completed)
+                {!allCriteriaScored && (
+                  <>Score all criteria to enable saving ({scoredCount}/{rubricCount} completed)</>
+                )}
+                {allCriteriaScored && !hasChanges && (
+                  <>Make changes to enable saving</>
+                )}
               </div>
             )}
             <Button
@@ -218,7 +254,7 @@ export function ScoreSheet({
             </Button>
             <Button
               onClick={onSave}
-              disabled={isSavingScore || rubricCount === 0 || !allCriteriaScored}
+              disabled={isSavingScore || rubricCount === 0 || !allCriteriaScored || !hasChanges}
               className="bg-gray-900 hover:bg-gray-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
             >
               <Save className="h-4 w-4 mr-2" />

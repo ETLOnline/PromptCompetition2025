@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ChevronRight, AlertCircle, Target, Users, CheckCircle2, PlayCircle } from "lucide-react"
+import { useEffect, useState } from "react"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 import { getAvatarColor } from "@/lib/judge/utils"
 import type { CompetitionAssignment } from "@/types/judge-submission"
 
@@ -36,6 +39,44 @@ const ChallengeRowSkeleton = () => (
 )
 
 export function ChallengeList({ assignment, isLoading, competitionId, onNavigate }: ChallengeListProps) {
+  const [titles, setTitles] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!assignment || !competitionId) return
+
+    const challengeIds = Object.keys(assignment.assignedCountsByChallenge || {})
+
+    // Fetch titles for challenge IDs not already cached
+    const fetchTitles = async () => {
+      const updates: Record<string, string> = {}
+      await Promise.all(
+        challengeIds.map(async (id) => {
+          if (titles[id]) return
+          try {
+            const ref = doc(db, "competitions", competitionId, "challenges", id)
+            const snap = await getDoc(ref)
+            if (snap.exists()) {
+              const data = snap.data() as any
+              const title = data?.title ?? ""
+              updates[id] = title
+            } else {
+              updates[id] = ""
+            }
+          } catch (err) {
+            // ignore individual fetch errors and leave title empty
+            updates[id] = ""
+          }
+        })
+      )
+
+      if (Object.keys(updates).length > 0) {
+        setTitles((prev) => ({ ...prev, ...updates }))
+      }
+    }
+
+    fetchTitles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignment, competitionId])
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -86,7 +127,9 @@ export function ChallengeList({ assignment, isLoading, competitionId, onNavigate
                           </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                          <h3 className="text-lg font-semibold text-gray-900">Challenge {challengeId}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Challenge {challengeId}: {titles[challengeId] ? ` ${titles[challengeId]}` : ""}
+                          </h3>
                           <p className="text-sm text-gray-600">
                             {count} submission{count !== 1 ? "s" : ""} assigned to you
                           </p>

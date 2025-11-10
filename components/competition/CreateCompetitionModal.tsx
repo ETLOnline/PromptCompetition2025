@@ -36,10 +36,26 @@ export default function CreateCompetitionModal({
     systemPrompt: "", 
   })
   const [formError, setFormError] = useState<string | null>(null)
+  const [prizeMoneyError, setPrizeMoneyError] = useState<string | null>(null)
   const [touched, setTouched] = useState(false)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
 
+  const validatePrizeMoney = (value: string): boolean => {
+    // Allow only numbers and commas
+    const regex = /^[0-9,]*$/
+    return regex.test(value)
+  }
+
   const handleFormChange = (field: string, value: string) => {
+    if (field === "prizeMoney") {
+      if (!validatePrizeMoney(value)) {
+        setPrizeMoneyError("Only numbers and commas are allowed")
+        return
+      } else {
+        setPrizeMoneyError(null)
+      }
+    }
+    
     setFormData((prev) => ({ ...prev, [field]: value }))
     setFormError(null)
     setTouched(true)
@@ -130,6 +146,7 @@ export default function CreateCompetitionModal({
       venue: ""
     })
     setFormError(null)
+    setPrizeMoneyError(null)
     setTouched(false)
     onClose()
   }
@@ -219,9 +236,17 @@ export default function CreateCompetitionModal({
                     id="prizeMoney"
                     value={formData.prizeMoney}
                     onChange={(e) => handleFormChange("prizeMoney", e.target.value)}
-                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    className={`border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${
+                      prizeMoneyError ? "border-red-300 focus:border-red-500 focus:ring-red-500/20" : ""
+                    }`}
                     placeholder="e.g., $5,000"
                   />
+                  {prizeMoneyError && (
+                    <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {prizeMoneyError}
+                    </p>
+                  )}
                 </div>
 
                 <div>

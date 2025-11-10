@@ -38,6 +38,7 @@ export default function ChallengePage() {
   const [showScoreSheet, setShowScoreSheet] = useState(false)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [scoreFormData, setScoreFormData] = useState<ScoreData>({ score: 0, comment: "", rubricScores: {} })
+  const [initialScoreFormData, setInitialScoreFormData] = useState<ScoreData>({ score: 0, comment: "", rubricScores: {} })
   const [isSavingScore, setIsSavingScore] = useState(false)
 
   // Progress stats
@@ -249,12 +250,13 @@ export default function ChallengePage() {
         `${process.env.NEXT_PUBLIC_API_URL}/judge/score/${competitionId}/${submission.id}/${userUID}`
       )
 
-      if (existingScore) {
-        setScoreFormData(existingScore)
-      } else {
-        setScoreFormData({ score: 0, comment: "", rubricScores: {} })
-      }
+      const initialData = existingScore || { score: 0, comment: "", rubricScores: {} }
+      setScoreFormData(initialData)
+      setInitialScoreFormData(initialData)
     } catch (error) {
+      const defaultData = { score: 0, comment: "", rubricScores: {} }
+      setScoreFormData(defaultData)
+      setInitialScoreFormData(defaultData)
       addNotification("error", "Failed to load existing score")
     }
     setShowScoreSheet(true)
@@ -263,7 +265,9 @@ export default function ChallengePage() {
   const closeScoreSheet = () => {
     setShowScoreSheet(false)
     setSelectedSubmission(null)
-    setScoreFormData({ score: 0, comment: "", rubricScores: {} })
+    const defaultData = { score: 0, comment: "", rubricScores: {} }
+    setScoreFormData(defaultData)
+    setInitialScoreFormData(defaultData)
   }
 
   const handleScoreChange = (field: keyof ScoreData, value: any) => {
@@ -309,7 +313,7 @@ export default function ChallengePage() {
       {/* Notifications */}
       <NotificationList notifications={notifications} removeNotification={removeNotification} />
 
-      <div className="container mx-auto p-6 space-y-8">
+      <div className="container mx-auto px-6 space-y-6">
         {/* Challenge Header */}
         <Suspense fallback={<div>Loading challenge...</div>}>
           <ChallengeHeader challenge={challenge} isLoading={isLoadingChallenge} progressStats={progressStats} />
@@ -347,6 +351,7 @@ export default function ChallengePage() {
         submission={selectedSubmission}
         challenge={challenge}
         scoreFormData={scoreFormData}
+        initialScoreFormData={initialScoreFormData}
         isSavingScore={isSavingScore}
         onScoreChange={handleScoreChange}
         onSave={saveSubmissionScore}
