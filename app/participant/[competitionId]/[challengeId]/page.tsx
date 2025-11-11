@@ -18,7 +18,6 @@ import { CountdownDisplay } from "@/components/countdown-display"
 
 import { fetchWithAuth } from "@/lib/api"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
-import { ParticipantCacheContext } from "@/lib/participant-cache-context"
 
 import { useEffect, useState, useContext } from "react"
 
@@ -92,7 +91,7 @@ export default function ChallengePage() {
           fetchChallengeData(id, challengeId),
           fetchSubmissionPrompt(id, challengeId, profile.uid),
         ])
-        console.log("User submission:",hasPreviousSubmission)
+        // console.log("User submission:",hasPreviousSubmission)
       } catch (error) {
         console.error("Error in parallel fetch:", error)
       }
@@ -181,8 +180,8 @@ export default function ChallengePage() {
 
       const isCompetitionLocked =
         competitionData?.endDeadline &&
-        new Date() > new Date(competitionData.endDeadline.seconds * 1000)
-      
+        new Date() > new Date(competitionData.endDeadline)
+      // console.log("Is competition locked:", isCompetitionLocked)
       const enddead = competitionData?.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
       setCompetitionendDeadline(enddead || null) // Set the start deadline here
       // console.log("Competition start deadline:", enddead)
@@ -229,6 +228,15 @@ export default function ChallengePage() {
     } finally {
       setLoadingPrompt(false)
     }
+  }
+
+  const handleCompetitionExpiry = () => {
+    // Update the challenge state to reflect that the competition is now locked
+    if (challenge) {
+      setChallenge(prev => prev ? { ...prev, isCompetitionLocked: true } : null)
+    }
+    // Also update the local state
+    setIsCompetitionEnded(true)
   }
 
   if (!user) {
@@ -357,7 +365,10 @@ export default function ChallengePage() {
                   </Badge>
                   {challenge.endDeadline && competitionendDeadline && (
                     <div className="flex items-center gap-3 text-sm mt-2 sm:mt-0 sm:ml-auto bg-white rounded-xl px-4 py-2 border border-gray-200 shadow-sm">
-                      <CountdownDisplay targetDate={competitionendDeadline} />
+                      <CountdownDisplay 
+                        targetDate={competitionendDeadline} 
+                        onExpire={handleCompetitionExpiry}
+                      />
                     </div>
                   )}
                 </div>

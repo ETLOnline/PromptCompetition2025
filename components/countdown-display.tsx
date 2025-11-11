@@ -5,10 +5,12 @@ import { Clock } from "lucide-react"
 
 interface CountdownDisplayProps {
   targetDate: Date // Now expecting a Date object
+  onExpire?: () => void // Optional callback when timer expires
 }
 
-export function CountdownDisplay({ targetDate }: CountdownDisplayProps) {
+export function CountdownDisplay({ targetDate, onExpire }: CountdownDisplayProps) {
   // console.log("CountdownDisplay rendered with targetDate:", targetDate) // <-- Add this
+  const [hasExpired, setHasExpired] = useState(false)
 
   const calculateTimeRemaining = () => {
     const now = new Date().getTime()
@@ -28,13 +30,26 @@ export function CountdownDisplay({ targetDate }: CountdownDisplayProps) {
 
   const [timeRemaining, setTimeRemaining] = useState(calculateTimeRemaining())
 
+  // Reset hasExpired when targetDate changes
+  useEffect(() => {
+    const initialTime = calculateTimeRemaining()
+    setHasExpired(initialTime.expired) // Set to true if already expired on mount
+  }, [targetDate])
+
   useEffect(() => {
     // console.log("CountdownDisplay mounted") // <-- Logs only once on mount
     const timer = setInterval(() => {
-      setTimeRemaining(calculateTimeRemaining())
+      const newTime = calculateTimeRemaining()
+      setTimeRemaining(newTime)
+      
+      // Call onExpire callback only once when timer transitions to expired
+      if (newTime.expired && !hasExpired && onExpire) {
+        setHasExpired(true)
+        onExpire()
+      }
     }, 1000)
     return () => clearInterval(timer)
-  }, [targetDate])
+  }, [targetDate, onExpire, hasExpired])
 
   if (timeRemaining.expired) {
     return (
