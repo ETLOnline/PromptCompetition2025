@@ -28,6 +28,23 @@ export const ViewCompetitionDetailsModal = ({ isOpen, onClose, competition }: Vi
 
   const formattedSchedule = formatCompetitionDateTime(competition.startDeadline, competition.endDeadline)
 
+  // Function to determine competition status based on timeline
+  const getCompetitionStatus = () => {
+    const now = new Date()
+    const startDate = new Date(competition.startDeadline)
+    const endDate = new Date(competition.endDeadline)
+
+    if (now < startDate) {
+      return { status: "Upcoming", color: "bg-blue-400", bgColor: "bg-blue-50" }
+    } else if (now >= startDate && now <= endDate) {
+      return { status: "Active", color: "bg-green-400", bgColor: "bg-green-50" }
+    } else {
+      return { status: "Ended", color: "bg-red-400", bgColor: "bg-red-50" }
+    }
+  }
+
+  const competitionStatus = getCompetitionStatus()
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
@@ -107,23 +124,13 @@ export const ViewCompetitionDetailsModal = ({ isOpen, onClose, competition }: Vi
                 </div>
               )}
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <Label className="text-base font-semibold text-gray-900 mb-3 block">Status</Label>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${competition.isActive ? "bg-green-400" : "bg-red-400"}`}></div>
-                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                    {competition.isActive ? "Active" : "Inactive"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-3 h-3 rounded-full flex-shrink-0 ${competition.isLocked ? "bg-gray-400" : "bg-green-400"}`}
-                  ></div>
-                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                    {competition.isLocked ? "Locked" : "Unlocked"}
-                  </span>
-                </div>
+            <div className={`rounded-lg p-4 ${competitionStatus.bgColor}`}>
+              <Label className="text-base font-semibold text-gray-900 mb-3 block">Competition Status</Label>
+              <div className="flex items-center gap-3">
+                <div className={`w-4 h-4 rounded-full flex-shrink-0 ${competitionStatus.color}`}></div>
+                <span className="text-sm text-gray-900 font-medium">
+                  {competitionStatus.status}
+                </span>
               </div>
             </div>
           </div>

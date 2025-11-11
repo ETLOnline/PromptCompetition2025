@@ -121,7 +121,7 @@ export default function CompetitionsPage() {
               const challengesCompleted = participantData?.challengesCompleted || 0
               const challengeCount = competition.ChallengeCount || 0
 
-              console.log(`Checking competition ${competition.id}: challengesCompleted=${challengesCompleted}, challengeCount=${challengeCount}`)
+              // console.log(`Checking competition ${competition.id}: challengesCompleted=${challengesCompleted}, challengeCount=${challengeCount}`)
 
               if (challengesCompleted === challengeCount && challengeCount > 0) {
                 isCompleted = true
