@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Edit, Save, X, Info, Trash2, AlertCircle } from "lucide-react"
 import type { Competition, EditCompetitionData } from "@/types/competition"
 
@@ -485,23 +485,24 @@ export default function EditCompetitionModal({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="w-5 h-5" />
-              Confirm Deletion
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{competition?.title}</strong>?
-              <br />
-              <span className="text-destructive text-sm">This action cannot be undone.</span>
-            </DialogDescription>
+        <DialogContent className="sm:max-w-[425px] p-6">
+          <DialogHeader className="flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-red-100 text-red-600 mb-4">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Delete Competition</DialogTitle>
+            <p className="text-base text-gray-600 mt-2">
+              Are you sure you want to delete this competition? This action cannot be undone and all associated data
+              will be permanently removed.
+            </p>
           </DialogHeader>
-          <DialogFooter>
+
+          <DialogFooter className="flex gap-3 pt-4">
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteLoading}
+              className="flex-1"
             >
               Cancel
             </Button>
@@ -509,8 +510,9 @@ export default function EditCompetitionModal({
               variant="destructive"
               onClick={handleDeleteCompetition}
               disabled={deleteLoading}
+              className="flex-1 bg-red-600 hover:bg-red-700"
             >
-              {deleteLoading ? "Deleting..." : "Delete Competition"}
+              {deleteLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
