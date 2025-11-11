@@ -133,6 +133,15 @@ export default function ModernAdminHeader() {
 
             {/* Right Section - Badge and User Menu */}
             <div className="flex items-center space-x-4">
+              {/* Home Button */}
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/")}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+              >
+                Home
+              </Button>
+
               {/* Competitions Button */}
               <Button
                 variant="ghost"

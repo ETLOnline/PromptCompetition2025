@@ -17,7 +17,6 @@ const JUDGE_BREADCRUMB_PATHS: Array<{
     // /judge (dashboard)
     match: segs => segs.length === 1 && segs[0] === "judge",
     getItems: () => [
-      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Judge Dashboard", href: null, isLast: true },
     ],
   },
@@ -25,7 +24,6 @@ const JUDGE_BREADCRUMB_PATHS: Array<{
     // /judge/{competitionId}
     match: segs => segs.length === 2 && segs[0] === "judge",
     getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
-      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Dashboard", href: "/judge", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: null, isLast: true },
     ],
@@ -34,7 +32,6 @@ const JUDGE_BREADCRUMB_PATHS: Array<{
     // /judge/{competitionId}/{challengeId}
     match: segs => segs.length === 3 && segs[0] === "judge",
     getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
-      { label: "Home", href: "/", isLast: false, icon: <Home size={16} className="text-blue-500" /> },
       { label: "Dashboard", href: "/judge", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}`, isLast: false },
       { label: loadingTitle ? "..." : challengeTitle || "Challenge", href: null, isLast: true },
@@ -54,8 +51,6 @@ function BreadcrumbSkeleton() {
       aria-label="Breadcrumb"
       className="bg-gradient-to-r from-blue-50/20 to-gray-50/30 rounded-lg py-1.5 px-4 flex items-center gap-2 animate-pulse"
     >
-      <Home size={16} className="text-gray-400" />
-      <ChevronRight size={14} className="text-gray-300" />
       <div className="h-3 w-20 bg-gray-200 rounded" />
     </nav>
   )

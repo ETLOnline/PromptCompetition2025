@@ -1,6 +1,9 @@
 import React from "react";
 import { Home, ChevronRight } from "lucide-react";
 import { usePathname, useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import Link from "next/link";
 import clsx from "clsx";
 
@@ -11,8 +14,6 @@ function BreadcrumbSkeleton() {
       aria-label="Breadcrumb"
       className="bg-gradient-to-r from-blue-50/20 to-gray-50/30 rounded-lg py-1.5 px-4 flex items-center gap-2 animate-pulse"
     >
-      <Home size={16} className="text-gray-400" />
-      <ChevronRight size={14} className="text-gray-300" />
       <div className="h-3 w-20 bg-gray-200 rounded" />
     </nav>
   );
@@ -30,55 +31,48 @@ interface BreadcrumbItem {
   isCurrent?: boolean;
 }
 
-// Fetch competition and challenge names
-async function fetchCompetitionName(competitionId: string): Promise<string> {
-  // Replace with actual API call or import from lib
-  try {
-    const res = await fetch(`/api/competition/${competitionId}`);
-    if (!res.ok) throw new Error("Failed to fetch competition");
-    const data = await res.json();
-    return data.title || "Competition";
-  } catch {
-    return "Competition";
-  }
-}
-
-async function fetchChallengeName(competitionId: string, challengeId: string): Promise<string> {
-  // Replace with actual API call or import from lib
-  try {
-    const res = await fetch(`/api/competition/${competitionId}/challenge/${challengeId}`);
-    if (!res.ok) throw new Error("Failed to fetch challenge");
-    const data = await res.json();
-    return data.title || "Challenge";
-  } catch {
-    return "Challenge";
-  }
-}
-
 export default function ParticipantBreadcrumb() {
   const pathname = usePathname();
   const params = useParams();
   const router = useRouter();
-  const [loading, setLoading] = React.useState(true);
-  const [competitionName, setCompetitionName] = React.useState<string>("");
-  const [challengeName, setChallengeName] = React.useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [competitionName, setCompetitionName] = useState<string>("");
+  const [challengeName, setChallengeName] = useState<string>("");
 
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     async function loadNames() {
       setLoading(true);
-      if (params.competitionId) {
-        const compName = await fetchCompetitionName(params.competitionId as string);
-        if (mounted) setCompetitionName(compName);
+      try {
+        if (params.competitionId) {
+          const competitionRef = doc(db, "competitions", params.competitionId as string);
+          const competitionSnap = await getDoc(competitionRef);
+          if (competitionSnap.exists() && mounted) {
+            setCompetitionName(competitionSnap.data()?.title || "Competition");
+          } else if (mounted) {
+            setCompetitionName("Competition");
+          }
+        }
+        if (params.competitionId && params.challengeId) {
+          const challengeRef = doc(db, "competitions", params.competitionId as string, "challenges", params.challengeId as string);
+          const challengeSnap = await getDoc(challengeRef);
+          if (challengeSnap.exists() && mounted) {
+            setChallengeName(challengeSnap.data()?.title || "Challenge");
+          } else if (mounted) {
+            setChallengeName("Challenge");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching names:", error);
+        if (mounted) {
+          setCompetitionName("Competition");
+          setChallengeName("Challenge");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-      if (params.competitionId && params.challengeId) {
-        const chalName = await fetchChallengeName(
-          params.competitionId as string,
-          params.challengeId as string
-        );
-        if (mounted) setChallengeName(chalName);
-      }
-      setLoading(false);
     }
     loadNames();
     return () => {
@@ -88,11 +82,6 @@ export default function ParticipantBreadcrumb() {
 
   // Build breadcrumb items
   let items: BreadcrumbItem[] = [
-    {
-      label: "Home",
-      href: "/",
-      icon: <Home size={16} className="text-blue-500" />,
-    },
     {
       label: "Competitions",
       href: "/participant",
@@ -113,7 +102,7 @@ export default function ParticipantBreadcrumb() {
   } else if (params.competitionId) {
     items[items.length - 1].isCurrent = true;
   } else {
-    items[1].isCurrent = true;
+    items[0].isCurrent = true;
   }
 
   if (loading) return <BreadcrumbSkeleton />;

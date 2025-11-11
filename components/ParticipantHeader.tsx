@@ -105,6 +105,14 @@ export default function ParticipantHeader() {
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
+              onClick={() => router.push("/")}
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+            >
+              Home
+            </Button>
+
+            <Button
+              variant="ghost"
               onClick={() => router.push(`/participant`)}
               className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
             >
