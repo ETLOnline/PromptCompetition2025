@@ -93,7 +93,7 @@ export default function ModernCompetitionSelector() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "ended" | "upcoming">("all")
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "ended" | "upcoming" | "locked" | "inactive">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(9)
@@ -221,6 +221,16 @@ export default function ModernCompetitionSelector() {
 
     if (filterStatus === "all") return true
 
+    // Handle specific status filters that should check boolean properties directly
+    if (filterStatus === "locked") {
+      return comp.isLocked
+    }
+    
+    if (filterStatus === "inactive") {
+      return !comp.isActive
+    }
+
+    // For other statuses (active, upcoming, ended), use the existing logic
     const status = getCompetitionStatus(comp)
     return status.label.toLowerCase() === filterStatus
   })
@@ -365,6 +375,8 @@ export default function ModernCompetitionSelector() {
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="upcoming">Upcoming</SelectItem>
                   <SelectItem value="ended">Ended</SelectItem>
+                  <SelectItem value="locked">Locked</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
