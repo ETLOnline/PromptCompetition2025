@@ -485,24 +485,24 @@ export default function EditCompetitionModal({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-[425px] p-6">
-          <DialogHeader className="flex flex-col items-center text-center">
-            <div className="p-3 rounded-full bg-red-100 text-red-600 mb-4">
-              <Trash2 className="w-8 h-8" />
+        <DialogContent className="sm:max-w-[380px] p-5">
+          <DialogHeader className="flex flex-col items-center text-center space-y-3">
+            <div className="p-2.5 rounded-full bg-red-100 text-red-600">
+              <Trash2 className="w-6 h-6" />
             </div>
-            <DialogTitle className="text-2xl font-bold text-gray-900">Delete Competition</DialogTitle>
-            <p className="text-base text-gray-600 mt-2">
+            <DialogTitle className="text-lg font-semibold text-gray-900">Delete Competition</DialogTitle>
+            <p className="text-sm text-gray-600 leading-relaxed">
               Are you sure you want to delete this competition? This action cannot be undone and all associated data
               will be permanently removed.
             </p>
           </DialogHeader>
 
-          <DialogFooter className="flex gap-3 pt-4">
+          <DialogFooter className="flex gap-3 pt-3">
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteLoading}
-              className="flex-1"
+              className="flex-1 text-sm"
             >
               Cancel
             </Button>
@@ -510,7 +510,7 @@ export default function EditCompetitionModal({
               variant="destructive"
               onClick={handleDeleteCompetition}
               disabled={deleteLoading}
-              className="flex-1 bg-red-600 hover:bg-red-700"
+              className="flex-1 bg-red-600 hover:bg-red-700 text-sm"
             >
               {deleteLoading ? "Deleting..." : "Delete"}
             </Button>

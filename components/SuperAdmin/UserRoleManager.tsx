@@ -1238,20 +1238,24 @@ export default function UserRoleManager() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
-              Confirm Deletion
-            </DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-[380px] p-5">
+          <DialogHeader className="flex flex-col items-center text-center space-y-3">
+            <div className="p-2.5 rounded-full bg-red-100 text-red-600">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <DialogTitle className="text-lg font-semibold text-gray-900">Confirm Deletion</DialogTitle>
+            <p className="text-sm text-gray-600 leading-relaxed">
               Are you sure you want to delete <strong>{userToDelete?.email}</strong>?
               <br />
-              <span className="text-destructive text-sm">This action cannot be undone.</span>
-            </DialogDescription>
+              <span className="text-red-600 text-sm font-medium">This action cannot be undone.</span>
+            </p>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUserToDelete(null)}>
+          <DialogFooter className="flex gap-3 pt-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setUserToDelete(null)}
+              className="flex-1 text-sm"
+            >
               Cancel
             </Button>
             <Button
@@ -1262,6 +1266,7 @@ export default function UserRoleManager() {
                   setUserToDelete(null)
                 }
               }}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-sm"
             >
               Delete User
             </Button>
