@@ -39,7 +39,7 @@ import {
 } from "lucide-react"
 
 // Import our new components
-import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
+import { ViewCompetitionDetailsAdminModal } from "@/components/view-competition-details-admin-modal"
 import CompetitionGrid from "@/components/competition/CompetitionGrid"
 import CreateCompetitionModal from "@/components/competition/CreateCompetitionModal"
 import EditCompetitionModal from "@/components/competition/EditCompetitionModal"
@@ -525,8 +525,8 @@ export default function ModernCompetitionSelector() {
         )}
       </div>
 
-      {/* View Competition Details Modal */}
-      <ViewCompetitionDetailsModal
+      {/* View Competition Details Modal (Admin) */}
+      <ViewCompetitionDetailsAdminModal
         isOpen={isViewModalOpen}
         onClose={() => {
           setIsViewModalOpen(false)

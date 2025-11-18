@@ -239,7 +239,7 @@ export default function CreateCompetitionModal({
                     className={`border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${
                       prizeMoneyError ? "border-red-300 focus:border-red-500 focus:ring-red-500/20" : ""
                     }`}
-                    placeholder="e.g., $5,000"
+                    placeholder="e.g., PKR 5,000"
                   />
                   {prizeMoneyError && (
                     <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
