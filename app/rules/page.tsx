@@ -1,15 +1,14 @@
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle, AlertTriangle, Clock, Users, Trophy, Award } from "lucide-react"
+import { CheckCircle, Clock, Users, FileText, Scale, Calendar } from "lucide-react"
 
 export default function RulesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100">
       <Navbar />
       <main className="flex-grow">
-        <section className="py-16 px-4">
+        <section className="py-24 px-4">
           <div className="container mx-auto p-6 space-y-8">
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-4">
@@ -31,19 +30,47 @@ export default function RulesPage() {
                 <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Open to participants worldwide unless specified otherwise</p>
+                    <p className="text-muted-foreground">Open to students across Pakistan</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Age requirements vary by competition (will be specified in each competition)</p>
+                    <p className="text-muted-foreground">Participants must create original work. No copy-pasting or direct reliance on AI-generated content</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Individual participation only (no team submissions unless specified)</p>
+                    <p className="text-muted-foreground">Must follow prompt ethics, including creativity, neutrality, and authenticity</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Valid email address and account registration required</p>
+                  
+                  <div className="mt-4">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Requirements:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Submit a Visual Interpretation Narrative (VIN)</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Provide a final prompt</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Provide a Translation Rationale (explaining how VIN led to the final prompt)</p>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Availability:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Top 20 participants must be available for live Zoom sessions for Level 2</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Ability to join online sessions and share screen for real-time prompt building</p>
+                      </li>
+                    </ul>
                   </div>
                 </CardContent>
               </Card>
@@ -52,34 +79,61 @@ export default function RulesPage() {
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <CheckCircle className="h-6 w-6 text-emerald-500" />
+                    <FileText className="h-6 w-6 text-emerald-500" />
                     Submission Guidelines
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
-                      Submit both your crafted prompts
-                    </p>
+                  <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                    <p className="text-emerald-700 font-medium">Each participant must submit 3 complete sets of the following (for 3 challenges)</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">
-                      Prompts must be original and created specifically for the competition
-                    </p>
+                  
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-slate-700">Components per challenge:</h4>
+                    
+                    <div className="space-y-2">
+                      <h5 className="text-sm font-medium text-emerald-600">Visual Interpretation Narrative (VIN)</h5>
+                      <ul className="space-y-1 ml-6">
+                        <li className="text-muted-foreground text-sm">• 50–100 words</li>
+                        <li className="text-muted-foreground text-sm">• A written interpretation of the provided image</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h5 className="text-sm font-medium text-emerald-600">Final Version of the Prompt</h5>
+                      <ul className="space-y-1 ml-6">
+                        <li className="text-muted-foreground text-sm">• Clear, ethical, structured, reusable</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h5 className="text-sm font-medium text-emerald-600">Translation Rationale</h5>
+                      <ul className="space-y-1 ml-6">
+                        <li className="text-muted-foreground text-sm">• The "show your work" step</li>
+                        <li className="text-muted-foreground text-sm">• Explains how the VIN connects to the final prompt</li>
+                        <li className="text-muted-foreground text-sm">• Demonstrates reasoning and thought process</li>
+                      </ul>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Maximum one submission per participant per challenge</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Submissions can be updated until the competition deadline</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">All submissions must be in English unless specified otherwise</p>
+
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-slate-700">Originality Requirements:</h4>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-muted-foreground">Must follow ethical prompt creation practices</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-muted-foreground">No direct copy-paste from AI tools</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-muted-foreground">AI can be used for brainstorming, but the work must be the participant's own reasoning</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-muted-foreground">Creativity, clarity, neutrality, and structure are expected</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -88,34 +142,87 @@ export default function RulesPage() {
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <Award className="h-6 w-6 text-emerald-500" />
+                    <Scale className="h-6 w-6 text-emerald-500" />
                     Evaluation Process
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-emerald-600">Automated Evaluation</h3>
+                    <h3 className="text-lg font-semibold text-emerald-600">Level 1 — Online Judging</h3>
                     <p className="text-muted-foreground">
-                      All submissions are evaluated by multiple AI models for initial scoring and consistency checks
+                      Submissions evaluated by a multi-LLM automated system
                     </p>
-                  </div>
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-emerald-600">Expert Review</h3>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-slate-700">AI evaluates based on:</p>
+                      <ul className="space-y-1 ml-6">
+                        <li className="text-muted-foreground">• Clarity</li>
+                        <li className="text-muted-foreground">• Structure</li>
+                        <li className="text-muted-foreground">• Creativity</li>
+                        <li className="text-muted-foreground">• Neutrality</li>
+                      </ul>
+                    </div>
                     <p className="text-muted-foreground">
-                      High-scoring submissions are reviewed by expert judges for final ranking
+                      AI flags suspicious entries for human review
                     </p>
+                    <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                      <p className="text-emerald-700 font-medium text-sm">✓ Top 20 scorers move to Level 2</p>
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-emerald-600">Scoring Criteria</h3>
-                    <ul className="space-y-2 text-muted-foreground">
-                      <li>• Creativity and Innovation (25%)</li>
-                      <li>• Technical Accuracy (25%)</li>
-                      <li>• Problem-Solving Effectiveness (25%)</li>
-                      <li>• Output Quality and Relevance (25%)</li>
+
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-lg font-semibold text-emerald-600">Level 2 — Live Judging on Zoom</h3>
+                    <p className="text-muted-foreground">Participants must:</p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Join a live session</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Receive a new prompt challenge</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Share screen and build the prompt in real time</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Explain their reasoning and process</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Answer judge questions</p>
+                      </li>
                     </ul>
-                    <p className="text-sm text-muted-foreground italic">
-                      Note: Specific scoring criteria may vary by competition type
-                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-lg font-semibold text-emerald-600">Evaluation Criteria</h3>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Reusability & Clarity</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Creativity & Originality</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Bias & Neutrality Awareness</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Iteration Depth (Process Quality)</p>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-muted-foreground">Authenticity (Low AI Reliance)</p>
+                      </li>
+                    </ul>
+                    <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200 mt-3">
+                      <p className="text-emerald-700 font-medium text-sm">🏆 Judges then finalize top performers and select the Top 5 winners</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -124,7 +231,7 @@ export default function RulesPage() {
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <Clock className="h-6 w-6 text-slate-500" />
+                    <Calendar className="h-6 w-6 text-slate-500" />
                     Timeline & Deadlines
                   </CardTitle>
                 </CardHeader>
@@ -132,149 +239,33 @@ export default function RulesPage() {
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-foreground font-medium">Registration</p>
-                      <p className="text-muted-foreground">Registration opens when competition is announced and closes at the submission deadline</p>
+                      <p className="text-foreground font-medium">Marketing & Training Campaign</p>
+                      <p className="text-muted-foreground">1st Dec – 16th Jan</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-foreground font-medium">Submission Period</p>
-                      <p className="text-muted-foreground">Specific dates and times will be clearly stated for each competition</p>
+                      <p className="text-foreground font-medium">Level 1 Competition Date</p>
+                      <p className="text-muted-foreground">Saturday, 17th January</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-foreground font-medium">Results Announcement</p>
-                      <p className="text-muted-foreground">Results typically announced within 1-2 weeks after submission deadline</p>
+                      <p className="text-foreground font-medium">Level 2 Competition Dates</p>
+                      <p className="text-muted-foreground">18th January – 25th January (Daily live sessions)</p>
                     </div>
                   </div>
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <p className="text-blue-700 font-medium">⏰ All times are in UTC unless specified otherwise</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Prohibited Actions */}
-              <Card className="bg-white border-red-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <AlertTriangle className="h-6 w-6 text-red-500" />
-                    Prohibited Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Plagiarism or copying prompts from other sources</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Collaboration with other participants (unless team competition)</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Using automated tools to generate prompts</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Submitting inappropriate, offensive, or harmful content</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Creating multiple accounts or fake registrations</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Attempting to manipulate the evaluation system</p>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <p className="text-red-700 font-medium">⚠️ Violation of any rule may result in immediate disqualification</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Prizes and Recognition */}
-              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <Trophy className="h-6 w-6 text-yellow-500" />
-                    Prizes & Recognition
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border border-yellow-200">
-                    <h3 className="text-lg font-semibold text-yellow-700 mb-2">Prize Structure</h3>
-                    <p className="text-muted-foreground">
-                      Prize amounts and rewards vary by competition and will be clearly specified in each competition announcement.
-                    </p>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
-                      <h4 className="font-semibold text-emerald-700 mb-2">Recognition</h4>
-                      <ul className="space-y-1 text-muted-foreground text-sm">
-                        <li>• Digital certificates for winners</li>
-                        <li>• Public recognition on our platform</li>
-                        <li>• Featured showcase of winning submissions</li>
-                      </ul>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-700 mb-2">Additional Benefits</h4>
-                      <ul className="space-y-1 text-muted-foreground text-sm">
-                        <li>• Portfolio enhancement opportunities</li>
-                        <li>• Access to exclusive competitions</li>
-                        <li>• Community recognition and networking</li>
-                      </ul>
+                    <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-foreground font-medium">Winners Announcement</p>
+                      <p className="text-muted-foreground">28th January</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Fair Play & Integrity */}
-              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <Badge variant="outline" className="text-slate-700 border-slate-300">
-                      Fair Play & Integrity
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">We maintain a zero-tolerance policy for cheating and misconduct</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">All submissions are checked for originality and authenticity</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">Decisions made by the judging panel are final</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-muted-foreground">We reserve the right to modify rules with appropriate notice</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact & Support */}
-              <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-foreground">
-                    Questions or Concerns?
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">
-                    If you have any questions about these rules or need clarification about a specific competition, please don't hesitate to contact our support team.
-                  </p>
-                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    <p className="text-sm text-muted-foreground">
-                      Competition-specific details (dates, prizes, requirements) will be provided in each individual competition announcement.
-                    </p>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+                    <p className="text-blue-700 font-medium">📅 Mark your calendars and prepare to showcase your prompt engineering skills!</p>
                   </div>
                 </CardContent>
               </Card>
