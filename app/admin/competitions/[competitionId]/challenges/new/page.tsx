@@ -24,6 +24,109 @@ type RubricItem = {
   weight: number
 }
 
+type MultiAudioInputProps = {
+  label: string
+  description: string
+  existingUrls: string[]
+  selectedFiles: File[]
+  filePreviews: string[]
+  isRecording: boolean
+  recordingTime: number
+  onStartRecording: () => void
+  onStopRecording: () => void
+  onFileSelect: (files: FileList | null) => void
+  onRemoveFile: (index: number) => void
+  onRemoveExistingUrl: (index: number) => void
+  onPreview: (url: string) => void
+  inputId: string
+}
+
+// Multi Audio Input Component - Reusable helper for audio handling
+const MultiAudioInput: React.FC<MultiAudioInputProps> = ({
+  label,
+  description,
+  existingUrls,
+  selectedFiles,
+  filePreviews,
+  isRecording,
+  recordingTime,
+  onStartRecording,
+  onStopRecording,
+  onFileSelect,
+  onRemoveFile,
+  onRemoveExistingUrl,
+  onPreview,
+  inputId,
+}) => {
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div>
+      <Label className="text-sm font-medium text-gray-900 mb-2 block">{label}</Label>
+      <p className="text-xs text-gray-500 mb-3">{description}</p>
+
+      <div className="space-y-3">
+        {/* Recording controls */}
+        <div className="flex gap-2">
+          {!isRecording ? (
+            <Button type="button" variant="outline" onClick={onStartRecording} className="flex-1">
+              <Mic className="w-4 h-4 mr-2" />
+              Record Audio
+            </Button>
+          ) : (
+            <Button type="button" variant="destructive" onClick={onStopRecording} className="flex-1">
+              <Pause className="w-4 h-4 mr-2" />
+              Stop Recording ({formatTime(recordingTime)})
+            </Button>
+          )}
+          
+          <input id={inputId} type="file" accept="audio/*" multiple className="hidden" onChange={(e) => onFileSelect(e.target.files)} />
+          <Button type="button" variant="outline" onClick={() => document.getElementById(inputId)?.click()}>
+            <Plus className="w-4 h-4 mr-2" />
+            Upload
+          </Button>
+        </div>
+        
+        {/* Existing audio files from Firestore */}
+        {existingUrls.map((url, i) => (
+          <div key={`existing-audio-${i}`} className="bg-gray-50 border border-gray-200 rounded-md p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-gray-700">Audio File {i + 1}</div>
+              <button type="button" onClick={() => onRemoveExistingUrl(i)} className="text-red-500 hover:text-red-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <audio controls src={url} className="w-full h-8" onClick={() => onPreview(url)} />
+          </div>
+        ))}
+        
+        {/* New audio files to upload */}
+        {selectedFiles.map((file, idx) => (
+          <div key={`new-audio-${idx}`} className="bg-gray-50 border border-gray-200 rounded-md p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-gray-700">{file.name}</div>
+              <button type="button" onClick={() => onRemoveFile(idx)} className="text-red-500 hover:text-red-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <audio controls src={filePreviews[idx]} className="w-full h-8" onClick={() => onPreview(filePreviews[idx])} />
+          </div>
+        ))}
+        
+        {selectedFiles.length === 0 && existingUrls.length === 0 && !isRecording && (
+          <div className="text-center text-sm text-gray-400 py-4 border border-dashed border-gray-200 rounded-md">
+            No audio files added yet
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function NewCompetitionPage() {
   const router = useRouter()
   const params = useParams()
@@ -37,26 +140,47 @@ export default function NewCompetitionPage() {
     systemPrompt: "",
     rubric: [{ name: "", description: "", weight: 1.0 }] as RubricItem[],
     guidelines: "",
-    imageUrls: [] as string[],
-    voiceNoteUrls: [] as string[],
+    // Refactored: Specific URL arrays for each section
+    problemAudioUrls: [] as string[],
+    guidelinesAudioUrls: [] as string[],
+    visualClueUrls: [] as string[],
+    additionalImageUrls: [] as string[],
+    additionalVoiceUrls: [] as string[],
   })
   
   const [userUID, setUserID] = useState(null);
   
-  // Media states
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
-  const [selectedVoiceNotes, setSelectedVoiceNotes] = useState<File[]>([])
-  const [voiceNotePreviews, setVoiceNotePreviews] = useState<string[]>([])
-
-  const [uploadingImages, setUploadingImages] = useState(false)
-  const [uploadingVoice, setUploadingVoice] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
+  // ===== Problem Statement Audio States =====
+  const [problemAudioFiles, setProblemAudioFiles] = useState<File[]>([])
+  const [problemAudioPreviews, setProblemAudioPreviews] = useState<string[]>([])
+  const [isProblemRecording, setIsProblemRecording] = useState(false)
+  const [problemMediaRecorder, setProblemMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [problemRecordingTime, setProblemRecordingTime] = useState(0)
   
-  // Recording states
-  const [isRecording, setIsRecording] = useState(false)
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [recordingTime, setRecordingTime] = useState(0)
+  // ===== Guidelines Audio States =====
+  const [guidelinesAudioFiles, setGuidelinesAudioFiles] = useState<File[]>([])
+  const [guidelinesAudioPreviews, setGuidelinesAudioPreviews] = useState<string[]>([])
+  const [isGuidelinesRecording, setIsGuidelinesRecording] = useState(false)
+  const [guidelinesMediaRecorder, setGuidelinesMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [guidelinesRecordingTime, setGuidelinesRecordingTime] = useState(0)
+  
+  // ===== Visual Clues (Images Only) States =====
+  const [visualClueFiles, setVisualClueFiles] = useState<File[]>([])
+  const [visualCluePreviews, setVisualCluePreviews] = useState<string[]>([])
+  
+  // ===== Additional Resources Audio States =====
+  const [additionalVoiceFiles, setAdditionalVoiceFiles] = useState<File[]>([])
+  const [additionalVoicePreviews, setAdditionalVoicePreviews] = useState<string[]>([])
+  const [isAdditionalRecording, setIsAdditionalRecording] = useState(false)
+  const [additionalMediaRecorder, setAdditionalMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [additionalRecordingTime, setAdditionalRecordingTime] = useState(0)
+  
+  // ===== Additional Resources Image States =====
+  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([])
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([])
+
+  const [uploadingFiles, setUploadingFiles] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
   
   // Preview modal states
   const [previewImage, setPreviewImage] = useState<string | null>(null)
@@ -72,22 +196,47 @@ export default function NewCompetitionPage() {
 
   useEffect(() => {
     return () => {
-      // cleanup object URLs
-      imagePreviews.forEach((p) => URL.revokeObjectURL(p))
-      voiceNotePreviews.forEach((p) => URL.revokeObjectURL(p))
+      // cleanup object URLs for all preview types
+      problemAudioPreviews.forEach((p) => URL.revokeObjectURL(p))
+      guidelinesAudioPreviews.forEach((p) => URL.revokeObjectURL(p))
+      visualCluePreviews.forEach((p) => URL.revokeObjectURL(p))
+      additionalImagePreviews.forEach((p) => URL.revokeObjectURL(p))
+      additionalVoicePreviews.forEach((p) => URL.revokeObjectURL(p))
     }
-  }, [imagePreviews, voiceNotePreviews])
+  }, [problemAudioPreviews, guidelinesAudioPreviews, visualCluePreviews, additionalImagePreviews, additionalVoicePreviews])
   
-  // Recording timer
+  // Problem Statement Recording Timer
   useEffect(() => {
     let interval: NodeJS.Timeout
-    if (isRecording) {
+    if (isProblemRecording) {
       interval = setInterval(() => {
-        setRecordingTime((t) => t + 1)
+        setProblemRecordingTime((t) => t + 1)
       }, 1000)
     }
     return () => clearInterval(interval)
-  }, [isRecording])
+  }, [isProblemRecording])
+  
+  // Guidelines Recording Timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isGuidelinesRecording) {
+      interval = setInterval(() => {
+        setGuidelinesRecordingTime((t) => t + 1)
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isGuidelinesRecording])
+  
+  // Additional Resources Recording Timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isAdditionalRecording) {
+      interval = setInterval(() => {
+        setAdditionalRecordingTime((t) => t + 1)
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isAdditionalRecording])
   
   const checkAuthAndLoad = async () => {
     try {
@@ -142,11 +291,14 @@ export default function NewCompetitionPage() {
       batch.set(challengeRef, {
         title: data.title,
         problemStatement: data.problemStatement,
+        problemAudioUrls: data.problemAudioUrls || [],
         systemPrompt: data.systemPrompt,
         rubric: data.rubric,
         guidelines: data.guidelines,
-        imageUrls: data.imageUrls || [],
-        voiceNoteUrls: data.voiceNoteUrls || [],
+        guidelinesAudioUrls: data.guidelinesAudioUrls || [],
+        visualClueUrls: data.visualClueUrls || [],
+        additionalImageUrls: data.additionalImageUrls || [],
+        additionalVoiceUrls: data.additionalVoiceUrls || [],
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),
@@ -162,9 +314,12 @@ export default function NewCompetitionPage() {
       // Update maxScore of competition
       await getMaxScoreForCompetition(competitionId)
       
-      console.log("Successfully uploaded to Firestore with URLs:", {
-        images: data.imageUrls?.length || 0,
-        voices: data.voiceNoteUrls?.length || 0
+      console.log("Successfully uploaded to Firestore with all URLs:", {
+        problemAudio: data.problemAudioUrls?.length || 0,
+        guidelinesAudio: data.guidelinesAudioUrls?.length || 0,
+        visualClues: data.visualClueUrls?.length || 0,
+        additionalImages: data.additionalImageUrls?.length || 0,
+        additionalVoice: data.additionalVoiceUrls?.length || 0,
       })
     } catch (error: any) {
       console.log("Upload error:", error)
@@ -175,7 +330,7 @@ export default function NewCompetitionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation checks
+    // Validation checks for rubric
     if (formData.rubric.some(item => item.weight <= 0)) {
       toast({
         title: "Invalid Rubric",
@@ -194,64 +349,159 @@ export default function NewCompetitionPage() {
       return
     }
 
+    // Validation: Check mandatory audio requirements
+    const hasProblemAudio = (formData.problemAudioUrls?.length || 0) + problemAudioFiles.length > 0
+    const hasGuidelinesAudio = (formData.guidelinesAudioUrls?.length || 0) + guidelinesAudioFiles.length > 0
+    const hasVisualClues = (formData.visualClueUrls?.length || 0) + visualClueFiles.length > 0
+
+    if (!hasProblemAudio) {
+      toast({
+        title: "Missing Problem Audio",
+        description: "Please add at least one audio file for the problem statement section",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!hasGuidelinesAudio) {
+      toast({
+        title: "Missing Guidelines Audio",
+        description: "Please add at least one audio file for the guidelines section",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!hasVisualClues) {
+      toast({
+        title: "Missing Visual Clues",
+        description: "Please add at least one image for the visual clues section",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
     try {
-      // Collect all uploaded URLs
-      let finalImageUrls = [...(formData.imageUrls || [])]
-      let finalVoiceUrls = [...(formData.voiceNoteUrls || [])]
+      // Collect all uploaded URLs - Initialize with existing ones
+      let finalProblemAudioUrls = [...(formData.problemAudioUrls || [])]
+      let finalGuidelinesAudioUrls = [...(formData.guidelinesAudioUrls || [])]
+      let finalVisualClueUrls = [...(formData.visualClueUrls || [])]
+      let finalAdditionalImageUrls = [...(formData.additionalImageUrls || [])]
+      let finalAdditionalVoiceUrls = [...(formData.additionalVoiceUrls || [])]
 
-      // Upload images first (if any)
-      if (selectedImages.length > 0) {
-        setUploadingImages(true)
-        setUploadProgress({ current: 0, total: selectedImages.length })
-        
-        for (let i = 0; i < selectedImages.length; i++) {
-          const file = selectedImages[i]
-          try {
-            const url = await uploadFile(file, 'image')
-            finalImageUrls.push(url)
-            console.log("Uploaded image:", url)
-            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
-          } catch (err: any) {
-            throw new Error(`Image upload failed: ${err?.message || err}`)
-          }
-        }
-        setUploadingImages(false)
-      }
+      // Calculate total files to upload
+      const totalFilesToUpload = 
+        problemAudioFiles.length + 
+        guidelinesAudioFiles.length + 
+        visualClueFiles.length + 
+        additionalImageFiles.length + 
+        additionalVoiceFiles.length
 
-      // Upload voice notes (if any)
-      if (selectedVoiceNotes.length > 0) {
-        setUploadingVoice(true)
-        
-        for (let i = 0; i < selectedVoiceNotes.length; i++) {
-          const file = selectedVoiceNotes[i]
+      setUploadProgress({ current: 0, total: totalFilesToUpload })
+
+      // Upload Problem Audio Files
+      if (problemAudioFiles.length > 0) {
+        setUploadingFiles(true)
+        for (let i = 0; i < problemAudioFiles.length; i++) {
+          const file = problemAudioFiles[i]
           try {
             const url = await uploadFile(file, 'voice')
-            finalVoiceUrls.push(url)
-            console.log("Uploaded voice:", url)
+            finalProblemAudioUrls.push(url)
+            console.log("Uploaded problem audio:", url)
+            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
           } catch (err: any) {
-            throw new Error(`Voice upload failed: ${err?.message || err}`)
+            throw new Error(`Problem audio upload failed: ${err?.message || err}`)
           }
         }
-        setUploadingVoice(false)
+      }
+
+      // Upload Guidelines Audio Files
+      if (guidelinesAudioFiles.length > 0) {
+        for (let i = 0; i < guidelinesAudioFiles.length; i++) {
+          const file = guidelinesAudioFiles[i]
+          try {
+            const url = await uploadFile(file, 'voice')
+            finalGuidelinesAudioUrls.push(url)
+            console.log("Uploaded guidelines audio:", url)
+            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
+          } catch (err: any) {
+            throw new Error(`Guidelines audio upload failed: ${err?.message || err}`)
+          }
+        }
+      }
+
+      // Upload Visual Clue Images
+      if (visualClueFiles.length > 0) {
+        for (let i = 0; i < visualClueFiles.length; i++) {
+          const file = visualClueFiles[i]
+          try {
+            const url = await uploadFile(file, 'image')
+            finalVisualClueUrls.push(url)
+            console.log("Uploaded visual clue:", url)
+            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
+          } catch (err: any) {
+            throw new Error(`Visual clue upload failed: ${err?.message || err}`)
+          }
+        }
+      }
+
+      // Upload Additional Image Files
+      if (additionalImageFiles.length > 0) {
+        for (let i = 0; i < additionalImageFiles.length; i++) {
+          const file = additionalImageFiles[i]
+          try {
+            const url = await uploadFile(file, 'image')
+            finalAdditionalImageUrls.push(url)
+            console.log("Uploaded additional image:", url)
+            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
+          } catch (err: any) {
+            throw new Error(`Additional image upload failed: ${err?.message || err}`)
+          }
+        }
+      }
+
+      // Upload Additional Voice Files
+      if (additionalVoiceFiles.length > 0) {
+        for (let i = 0; i < additionalVoiceFiles.length; i++) {
+          const file = additionalVoiceFiles[i]
+          try {
+            const url = await uploadFile(file, 'voice')
+            finalAdditionalVoiceUrls.push(url)
+            console.log("Uploaded additional voice:", url)
+            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
+          } catch (err: any) {
+            throw new Error(`Additional voice upload failed: ${err?.message || err}`)
+          }
+        }
       }
 
       // Now update formData with all URLs and upload to Firestore
       const finalFormData = {
         ...formData,
-        imageUrls: finalImageUrls,
-        voiceNoteUrls: finalVoiceUrls
+        problemAudioUrls: finalProblemAudioUrls,
+        guidelinesAudioUrls: finalGuidelinesAudioUrls,
+        visualClueUrls: finalVisualClueUrls,
+        additionalImageUrls: finalAdditionalImageUrls,
+        additionalVoiceUrls: finalAdditionalVoiceUrls,
       }
-
-      // Update state for UI
-      // setFormData(finalFormData)
 
       // Upload to Firestore with the complete data
       await uploadToFirestoreWithData(finalFormData)
-      setSelectedImages([])
-      setImagePreviews([])
-      setSelectedVoiceNotes([])
-      setVoiceNotePreviews([])
+      
+      // Clear all file states
+      setProblemAudioFiles([])
+      setProblemAudioPreviews([])
+      setGuidelinesAudioFiles([])
+      setGuidelinesAudioPreviews([])
+      setVisualClueFiles([])
+      setVisualCluePreviews([])
+      setAdditionalImageFiles([])
+      setAdditionalImagePreviews([])
+      setAdditionalVoiceFiles([])
+      setAdditionalVoicePreviews([])
+
+      setUploadingFiles(false)
 
       toast({
         title: "Success",
@@ -267,6 +517,7 @@ export default function NewCompetitionPage() {
       console.error("Create error:", error)
     } finally {
       setLoading(false)
+      setUploadingFiles(false)
     }
   }
 
@@ -289,8 +540,150 @@ export default function NewCompetitionPage() {
     }
   }
 
-  // Selection handlers
-  const validateAndAddImages = (files: FileList | null) => {
+  // ===== Problem Statement Audio Handlers =====
+  const validateAndAddProblemAudio = (files: FileList | null) => {
+    if (!files) return
+    const arr = Array.from(files)
+    const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/webm','audio/x-m4a','audio/m4a']
+    
+    const toAdd: File[] = []
+    const previews: string[] = []
+    
+    for (const f of arr) {
+      if (!allowed.includes(f.type)) {
+        toast({ title: 'Invalid file', description: `${f.name} is not a supported audio`, variant: 'destructive' })
+        continue
+      }
+      toAdd.push(f)
+      previews.push(URL.createObjectURL(f))
+    }
+    
+    if (toAdd.length > 0) {
+      setProblemAudioFiles((s) => [...s, ...toAdd])
+      setProblemAudioPreviews((p) => [...p, ...previews])
+    }
+  }
+
+  const handleProblemAudioInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndAddProblemAudio(e.target.files)
+    e.target.value = ''
+  }
+
+  const removeProblemAudioFile = (index: number) => {
+    setProblemAudioFiles((s) => s.filter((_, i) => i !== index))
+    setProblemAudioPreviews((p) => {
+      const copy = [...p]
+      const url = copy.splice(index, 1)[0]
+      if (url) URL.revokeObjectURL(url)
+      return copy
+    })
+  }
+
+  const startProblemRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      const chunks: Blob[] = []
+      
+      recorder.ondataavailable = (e) => chunks.push(e.data)
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' })
+        const file = new File([blob], `problem-recording-${Date.now()}.webm`, { type: 'audio/webm' })
+        setProblemAudioFiles((s) => [...s, file])
+        setProblemAudioPreviews((p) => [...p, URL.createObjectURL(file)])
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      setProblemMediaRecorder(recorder)
+      recorder.start()
+      setIsProblemRecording(true)
+      setProblemRecordingTime(0)
+    } catch (err) {
+      toast({ title: 'Error', description: 'Could not access microphone', variant: 'destructive' })
+    }
+  }
+
+  const stopProblemRecording = () => {
+    if (problemMediaRecorder && isProblemRecording) {
+      problemMediaRecorder.stop()
+      setIsProblemRecording(false)
+      setProblemMediaRecorder(null)
+    }
+  }
+
+  // ===== Guidelines Audio Handlers =====
+  const validateAndAddGuidelinesAudio = (files: FileList | null) => {
+    if (!files) return
+    const arr = Array.from(files)
+    const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/webm','audio/x-m4a','audio/m4a']
+    
+    const toAdd: File[] = []
+    const previews: string[] = []
+    
+    for (const f of arr) {
+      if (!allowed.includes(f.type)) {
+        toast({ title: 'Invalid file', description: `${f.name} is not a supported audio`, variant: 'destructive' })
+        continue
+      }
+      toAdd.push(f)
+      previews.push(URL.createObjectURL(f))
+    }
+    
+    if (toAdd.length > 0) {
+      setGuidelinesAudioFiles((s) => [...s, ...toAdd])
+      setGuidelinesAudioPreviews((p) => [...p, ...previews])
+    }
+  }
+
+  const handleGuidelinesAudioInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndAddGuidelinesAudio(e.target.files)
+    e.target.value = ''
+  }
+
+  const removeGuidelinesAudioFile = (index: number) => {
+    setGuidelinesAudioFiles((s) => s.filter((_, i) => i !== index))
+    setGuidelinesAudioPreviews((p) => {
+      const copy = [...p]
+      const url = copy.splice(index, 1)[0]
+      if (url) URL.revokeObjectURL(url)
+      return copy
+    })
+  }
+
+  const startGuidelinesRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      const chunks: Blob[] = []
+      
+      recorder.ondataavailable = (e) => chunks.push(e.data)
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' })
+        const file = new File([blob], `guidelines-recording-${Date.now()}.webm`, { type: 'audio/webm' })
+        setGuidelinesAudioFiles((s) => [...s, file])
+        setGuidelinesAudioPreviews((p) => [...p, URL.createObjectURL(file)])
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      setGuidelinesMediaRecorder(recorder)
+      recorder.start()
+      setIsGuidelinesRecording(true)
+      setGuidelinesRecordingTime(0)
+    } catch (err) {
+      toast({ title: 'Error', description: 'Could not access microphone', variant: 'destructive' })
+    }
+  }
+
+  const stopGuidelinesRecording = () => {
+    if (guidelinesMediaRecorder && isGuidelinesRecording) {
+      guidelinesMediaRecorder.stop()
+      setIsGuidelinesRecording(false)
+      setGuidelinesMediaRecorder(null)
+    }
+  }
+
+  // ===== Visual Clues Image Handlers =====
+  const validateAndAddVisualClues = (files: FileList | null) => {
     if (!files) return
     const arr = Array.from(files)
     const allowed = [
@@ -310,20 +703,19 @@ export default function NewCompetitionPage() {
     }
 
     if (toAdd.length > 0) {
-      setSelectedImages((s) => [...s, ...toAdd])
-      setImagePreviews((p) => [...p, ...previews])
+      setVisualClueFiles((s) => [...s, ...toAdd])
+      setVisualCluePreviews((p) => [...p, ...previews])
     }
   }
 
-  const handleImageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    validateAndAddImages(e.target.files)
+  const handleVisualClueInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndAddVisualClues(e.target.files)
     e.target.value = ''
   }
 
-  const removeNewImage = (index: number) => {
-    // remove from selectedImages and imagePreviews
-    setSelectedImages((s) => s.filter((_, i) => i !== index))
-    setImagePreviews((p) => {
+  const removeVisualClueFile = (index: number) => {
+    setVisualClueFiles((s) => s.filter((_, i) => i !== index))
+    setVisualCluePreviews((p) => {
       const copy = [...p]
       const url = copy.splice(index, 1)[0]
       if (url) URL.revokeObjectURL(url)
@@ -331,7 +723,15 @@ export default function NewCompetitionPage() {
     })
   }
 
-  const validateAndAddVoiceNotes = (files: FileList | null) => {
+  const removeVisualClueUrl = (index: number) => {
+    setFormData((p) => ({
+      ...p,
+      visualClueUrls: (p.visualClueUrls || []).filter((_, i) => i !== index)
+    }))
+  }
+
+  // ===== Additional Resources Audio Handlers =====
+  const validateAndAddAdditionalAudio = (files: FileList | null) => {
     if (!files) return
     const arr = Array.from(files)
     const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/webm','audio/x-m4a','audio/m4a']
@@ -349,27 +749,34 @@ export default function NewCompetitionPage() {
     }
     
     if (toAdd.length > 0) {
-      setSelectedVoiceNotes((s) => [...s, ...toAdd])
-      setVoiceNotePreviews((p) => [...p, ...previews])
+      setAdditionalVoiceFiles((s) => [...s, ...toAdd])
+      setAdditionalVoicePreviews((p) => [...p, ...previews])
     }
   }
-  
-  const handleVoiceInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    validateAndAddVoiceNotes(e.target.files)
+
+  const handleAdditionalAudioInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndAddAdditionalAudio(e.target.files)
     e.target.value = ''
   }
-  
-  const removeVoiceNote = (index: number) => {
-    setSelectedVoiceNotes((s) => s.filter((_, i) => i !== index))
-    setVoiceNotePreviews((p) => {
+
+  const removeAdditionalAudioFile = (index: number) => {
+    setAdditionalVoiceFiles((s) => s.filter((_, i) => i !== index))
+    setAdditionalVoicePreviews((p) => {
       const copy = [...p]
       const url = copy.splice(index, 1)[0]
       if (url) URL.revokeObjectURL(url)
       return copy
     })
   }
-  
-  const startRecording = async () => {
+
+  const removeAdditionalAudioUrl = (index: number) => {
+    setFormData((p) => ({
+      ...p,
+      additionalVoiceUrls: (p.additionalVoiceUrls || []).filter((_, i) => i !== index)
+    }))
+  }
+
+  const startAdditionalRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const recorder = new MediaRecorder(stream)
@@ -378,33 +785,75 @@ export default function NewCompetitionPage() {
       recorder.ondataavailable = (e) => chunks.push(e.data)
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' })
-        const file = new File([blob], `recording-${Date.now()}.webm`, { type: 'audio/webm' })
-        setSelectedVoiceNotes((s) => [...s, file])
-        setVoiceNotePreviews((p) => [...p, URL.createObjectURL(file)])
+        const file = new File([blob], `additional-recording-${Date.now()}.webm`, { type: 'audio/webm' })
+        setAdditionalVoiceFiles((s) => [...s, file])
+        setAdditionalVoicePreviews((p) => [...p, URL.createObjectURL(file)])
         stream.getTracks().forEach(track => track.stop())
       }
       
-      setMediaRecorder(recorder)
+      setAdditionalMediaRecorder(recorder)
       recorder.start()
-      setIsRecording(true)
-      setRecordingTime(0)
+      setIsAdditionalRecording(true)
+      setAdditionalRecordingTime(0)
     } catch (err) {
       toast({ title: 'Error', description: 'Could not access microphone', variant: 'destructive' })
     }
   }
-  
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop()
-      setIsRecording(false)
-      setMediaRecorder(null)
+
+  const stopAdditionalRecording = () => {
+    if (additionalMediaRecorder && isAdditionalRecording) {
+      additionalMediaRecorder.stop()
+      setIsAdditionalRecording(false)
+      setAdditionalMediaRecorder(null)
     }
   }
-  
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+
+  // ===== Additional Resources Image Handlers =====
+  const validateAndAddAdditionalImages = (files: FileList | null) => {
+    if (!files) return
+    const arr = Array.from(files)
+    const allowed = [
+      'image/jpeg','image/jpg','image/png','image/gif','image/webp'
+    ]
+
+    const toAdd: File[] = []
+    const previews: string[] = []
+
+    for (const f of arr) {
+      if (!allowed.includes(f.type)) {
+        toast({ title: 'Invalid file', description: `${f.name} is not a supported image`, variant: 'destructive' })
+        continue
+      }
+      toAdd.push(f)
+      previews.push(URL.createObjectURL(f))
+    }
+
+    if (toAdd.length > 0) {
+      setAdditionalImageFiles((s) => [...s, ...toAdd])
+      setAdditionalImagePreviews((p) => [...p, ...previews])
+    }
+  }
+
+  const handleAdditionalImageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    validateAndAddAdditionalImages(e.target.files)
+    e.target.value = ''
+  }
+
+  const removeAdditionalImageFile = (index: number) => {
+    setAdditionalImageFiles((s) => s.filter((_, i) => i !== index))
+    setAdditionalImagePreviews((p) => {
+      const copy = [...p]
+      const url = copy.splice(index, 1)[0]
+      if (url) URL.revokeObjectURL(url)
+      return copy
+    })
+  }
+
+  const removeAdditionalImageUrl = (index: number) => {
+    setFormData((p) => ({
+      ...p,
+      additionalImageUrls: (p.additionalImageUrls || []).filter((_, i) => i !== index)
+    }))
   }
 
 
@@ -506,7 +955,7 @@ export default function NewCompetitionPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.1s_forwards]">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
-              <p className="text-sm text-gray-500 mt-1">Provide the core details for your challenge</p>
+              <p className="text-sm text-gray-500 mt-1">Provide the core detail for your challenge</p>
             </div>
             <div className="space-y-5">
               <div>
@@ -523,9 +972,21 @@ export default function NewCompetitionPage() {
                   required
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Problem Statement Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.15s_forwards]">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Problem Statement</h2>
+              <p className="text-sm text-gray-500 mt-1">Describe the problem and provide audio guidance (at least one audio file required)</p>
+            </div>
+
+            <div className="space-y-5">
+              {/* Text Area */}
               <div>
                 <Label htmlFor="problemStatement" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Problem Statement
+                  Problem Statement Text (optional)
                 </Label>
                 <Textarea
                   id="problemStatement"
@@ -535,146 +996,201 @@ export default function NewCompetitionPage() {
                   placeholder="Clearly describe the problem participants need to solve..."
                   rows={4}
                   className="border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
-                  required
                 />
               </div>
-              <div>
-                <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Evaluation Prompt
-                </Label>
-                <Textarea
-                  id="systemPrompt"
-                  name="systemPrompt"
-                  value={formData.systemPrompt}
-                  onChange={handleChange}
-                  placeholder="Enter the system prompt for evaluation (e.g. instructions for judges or LLM evaluators)"
-                  rows={3}
-                  className="border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
-                  required
-                />
-              </div>
+
+              {/* Audio Input */}
+              <MultiAudioInput
+                label="Problem Audio Files"
+                description="Upload or record audio explaining the problem"
+                existingUrls={formData.problemAudioUrls}
+                selectedFiles={problemAudioFiles}
+                filePreviews={problemAudioPreviews}
+                isRecording={isProblemRecording}
+                recordingTime={problemRecordingTime}
+                onStartRecording={startProblemRecording}
+                onStopRecording={stopProblemRecording}
+                onFileSelect={(files) => validateAndAddProblemAudio(files)}
+                onRemoveFile={removeProblemAudioFile}
+                onRemoveExistingUrl={(idx) => setFormData((p) => ({ ...p, problemAudioUrls: (p.problemAudioUrls || []).filter((_, i) => i !== idx) }))}
+                onPreview={setPreviewVoice}
+                inputId="problem-audio-input"
+              />
             </div>
           </div>
 
-          {/* Challenge Media */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.15s_forwards]">
+          {/* Guidelines Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.2s_forwards]">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Challenge Media</h2>
-              <p className="text-sm text-gray-500 mt-1">Add optional images and a voice note</p>
+              <h2 className="text-lg font-semibold text-gray-900">Guidelines & Instructions</h2>
+              <p className="text-sm text-gray-500 mt-1">Provide guidelines and instructions with required audio guidance (at least one audio file required)</p>
+            </div>
+
+            <div className="space-y-5">
+              {/* Text Area */}
+              <div>
+                <Label htmlFor="guidelines" className="text-sm font-medium text-gray-900 mb-2 block">
+                  Guidelines Text (optional)
+                </Label>
+                <Textarea
+                  id="guidelines"
+                  name="guidelines"
+                  value={formData.guidelines}
+                  onChange={handleChange}
+                  placeholder="Provide instructions to guide the participants..."
+                  rows={4}
+                  className="border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
+                />
+              </div>
+
+              {/* Audio Input */}
+              <MultiAudioInput
+                label="Guidelines Audio Files"
+                description="Upload or record audio explaining the guidelines"
+                existingUrls={formData.guidelinesAudioUrls}
+                selectedFiles={guidelinesAudioFiles}
+                filePreviews={guidelinesAudioPreviews}
+                isRecording={isGuidelinesRecording}
+                recordingTime={guidelinesRecordingTime}
+                onStartRecording={startGuidelinesRecording}
+                onStopRecording={stopGuidelinesRecording}
+                onFileSelect={(files) => validateAndAddGuidelinesAudio(files)}
+                onRemoveFile={removeGuidelinesAudioFile}
+                onRemoveExistingUrl={(idx) => setFormData((p) => ({ ...p, guidelinesAudioUrls: (p.guidelinesAudioUrls || []).filter((_, i) => i !== idx) }))}
+                onPreview={setPreviewVoice}
+                inputId="guidelines-audio-input"
+              />
+            </div>
+          </div>
+
+          {/* Visual Clues Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.25s_forwards]">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Visual Clues</h2>
+              <p className="text-sm text-gray-500 mt-1">Add reference images (at least one image is required)</p>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-900 mb-2 block">Challenge Images</Label>
+              <p className="text-xs text-gray-500 mb-3">Upload visual materials and reference images</p>
+
+              {visualCluePreviews.length === 0 && (formData.visualClueUrls || []).length === 0 ? (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-6 rounded-md text-gray-500 cursor-pointer hover:border-gray-300 transition-colors">
+                  <ImageIcon className="w-8 h-8 mb-2" />
+                  <span className="text-sm font-medium">Drag & drop or click to upload images</span>
+                  <span className="text-xs text-gray-400 mt-1">PNG, JPG, GIF, WebP</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleVisualClueInput} />
+                </label>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+                    {(formData.visualClueUrls || []).map((url, i) => (
+                      <div key={`existing-visual-${i}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '120px' }} onClick={() => setPreviewImage(url)}>
+                        <img src={url} alt={`visual-${i}`} className="w-full h-full object-cover pointer-events-none" />
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeVisualClueUrl(i) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {visualCluePreviews.map((src, idx) => (
+                      <div key={`new-visual-${idx}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '120px' }} onClick={() => setPreviewImage(src)}>
+                        <img src={src} alt={`visual-preview-${idx}`} className="w-full h-full object-cover pointer-events-none" />
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeVisualClueFile(idx) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <input id="visual-input" type="file" accept="image/*" multiple className="hidden" onChange={handleVisualClueInput} />
+                    <label htmlFor="visual-input">
+                      <Button type="button" variant="outline" className="px-3 py-2" onClick={(e) => { e.preventDefault(); document.getElementById('visual-input')?.click() }}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add More Images ({(formData.visualClueUrls||[]).length + visualCluePreviews.length})
+                      </Button>
+                    </label>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Resources Section */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.3s_forwards]">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Additional Resources</h2>
+              <p className="text-sm text-gray-500 mt-1">Add optional supplementary images and audio files</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Images */}
+              {/* Additional Images */}
               <div>
-                <Label className="text-sm font-medium text-gray-900 mb-2 block">Challenge Images (optional)</Label>
-                <p className="text-xs text-gray-500 mb-3">Add visual clues and reference materials</p>
+                <Label className="text-sm font-medium text-gray-900 mb-2 block">Additional Images (optional)</Label>
+                <p className="text-xs text-gray-500 mb-3">Upload supplementary reference materials</p>
 
-                {imagePreviews.length === 0 && (formData.imageUrls || []).length === 0 ? (
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-6 rounded-md text-gray-500 cursor-pointer">
+                {additionalImagePreviews.length === 0 && (formData.additionalImageUrls || []).length === 0 ? (
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-6 rounded-md text-gray-500 cursor-pointer hover:border-gray-300 transition-colors">
                     <ImageIcon className="w-6 h-6 mb-2" />
-                    <span className="text-sm">Drag & drop or click to upload images</span>
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageInput} />
+                    <span className="text-sm">Click to upload images</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleAdditionalImageInput} />
                   </label>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {(formData.imageUrls || []).map((url, i) => (
-                        <div key={`existing-${i}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '120px' }} onClick={() => setPreviewImage(url)}>
-                          <img src={url} alt={`img-${i}`} className="w-full h-full object-cover pointer-events-none" />
-                          <button type="button" onClick={(e) => { e.stopPropagation(); setFormData((p)=> ({ ...p, imageUrls: (p.imageUrls||[]).filter((_, idx)=> idx !== i) })) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                      {(formData.additionalImageUrls || []).map((url, i) => (
+                        <div key={`existing-add-img-${i}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '100px' }} onClick={() => setPreviewImage(url)}>
+                          <img src={url} alt={`add-img-${i}`} className="w-full h-full object-cover pointer-events-none" />
+                          <button type="button" onClick={(e) => { e.stopPropagation(); removeAdditionalImageUrl(i) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
 
-                      {imagePreviews.map((src, idx) => (
-                        <div key={`new-${idx}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '120px' }} onClick={() => setPreviewImage(src)}>
-                          <img src={src} alt={`preview-${idx}`} className="w-full h-full object-cover pointer-events-none" />
-                          <button type="button" onClick={(e) => { e.stopPropagation(); removeNewImage(idx) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100">
+                      {additionalImagePreviews.map((src, idx) => (
+                        <div key={`new-add-img-${idx}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '100px' }} onClick={() => setPreviewImage(src)}>
+                          <img src={src} alt={`add-preview-${idx}`} className="w-full h-full object-cover pointer-events-none" />
+                          <button type="button" onClick={(e) => { e.stopPropagation(); removeAdditionalImageFile(idx) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
                     </div>
 
-                    <div className="mt-3">
-                      <input id="image-input" type="file" accept="image/*" multiple className="hidden" onChange={handleImageInput} />
-                      <label htmlFor="image-input">
-                        <Button type="button" variant="outline" className="px-3 py-2" onClick={(e) => { e.preventDefault(); document.getElementById('image-input')?.click() }}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add More Images ({(formData.imageUrls||[]).length + imagePreviews.length})
-                        </Button>
-                      </label>
-                    </div>
+                    <input id="additional-image-input" type="file" accept="image/*" multiple className="hidden" onChange={handleAdditionalImageInput} />
+                    <Button type="button" variant="outline" size="sm" onClick={(e) => { e.preventDefault(); document.getElementById('additional-image-input')?.click() }} className="w-full">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add More
+                    </Button>
                   </>
                 )}
               </div>
 
-              {/* Voice Note */}
+              {/* Additional Audio */}
               <div>
-                <Label className="text-sm font-medium text-gray-900 mb-2 block">Voice Notes (optional)</Label>
-                <p className="text-xs text-gray-500 mb-3">Upload or record audio instructions</p>
-
-                <div className="space-y-3">
-                  {/* Recording controls */}
-                  <div className="flex gap-2">
-                    {!isRecording ? (
-                      <Button type="button" variant="outline" onClick={startRecording} className="flex-1">
-                        <Mic className="w-4 h-4 mr-2" />
-                        Record Voice Note
-                      </Button>
-                    ) : (
-                      <Button type="button" variant="destructive" onClick={stopRecording} className="flex-1">
-                        <Pause className="w-4 h-4 mr-2" />
-                        Stop Recording ({formatTime(recordingTime)})
-                      </Button>
-                    )}
-                    
-                    <input id="voice-input" type="file" accept="audio/*" multiple className="hidden" onChange={handleVoiceInput} />
-                    <Button type="button" variant="outline" onClick={() => document.getElementById('voice-input')?.click()}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Upload
-                    </Button>
-                  </div>
-                  
-                  {/* Existing voice notes from Firestore */}
-                  {(formData.voiceNoteUrls || []).map((url, i) => (
-                    <div key={`existing-voice-${i}`} className="bg-white border rounded-md p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-medium">Voice Note {i + 1}</div>
-                        <button type="button" onClick={() => setFormData((p)=> ({ ...p, voiceNoteUrls: (p.voiceNoteUrls||[]).filter((_, idx)=> idx !== i) }))} className="text-red-500 hover:text-red-700">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <audio controls src={url} className="w-full" onClick={() => setPreviewVoice(url)} />
-                    </div>
-                  ))}
-                  
-                  {/* New voice notes to upload */}
-                  {selectedVoiceNotes.map((file, idx) => (
-                    <div key={`new-voice-${idx}`} className="bg-white border rounded-md p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-medium">{file.name}</div>
-                        <button type="button" onClick={() => removeVoiceNote(idx)} className="text-red-500 hover:text-red-700">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <audio controls src={voiceNotePreviews[idx]} className="w-full" onClick={() => setPreviewVoice(voiceNotePreviews[idx])} />
-                    </div>
-                  ))}
-                  
-                  {selectedVoiceNotes.length === 0 && (formData.voiceNoteUrls || []).length === 0 && !isRecording && (
-                    <div className="text-center text-sm text-gray-400 py-4">
-                      No voice notes added yet
-                    </div>
-                  )}
-                </div>
+                <MultiAudioInput
+                  label="Additional Audio (optional)"
+                  description="Upload supplementary audio files"
+                  existingUrls={formData.additionalVoiceUrls}
+                  selectedFiles={additionalVoiceFiles}
+                  filePreviews={additionalVoicePreviews}
+                  isRecording={isAdditionalRecording}
+                  recordingTime={additionalRecordingTime}
+                  onStartRecording={startAdditionalRecording}
+                  onStopRecording={stopAdditionalRecording}
+                  onFileSelect={(files) => validateAndAddAdditionalAudio(files)}
+                  onRemoveFile={removeAdditionalAudioFile}
+                  onRemoveExistingUrl={removeAdditionalAudioUrl}
+                  onPreview={setPreviewVoice}
+                  inputId="additional-audio-input"
+                />
               </div>
             </div>
           </div>
 
           {/* Evaluation Rubric */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.2s_forwards]">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.35s_forwards]">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Evaluation Rubric</h2>
@@ -703,7 +1219,7 @@ export default function NewCompetitionPage() {
                 <div 
                   key={index} 
                   className="border border-gray-100 rounded-lg p-5 bg-gray-50/50 opacity-0 animate-[fadeIn_0.3s_ease-in-out_forwards]"
-                  style={{ animationDelay: `${0.3 + index * 0.1}s` }}
+                  style={{ animationDelay: `${0.35 + index * 0.1}s` }}
                 >
                   {/* Criterion Header */}
                   <div className="flex items-center justify-between mb-4">
@@ -806,23 +1322,23 @@ export default function NewCompetitionPage() {
             </div>
           </div>
 
-          {/* Guidelines */}
+          {/* System Prompt */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.4s_forwards]">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">How to craft your prompt</h2>
-              <p className="text-sm text-gray-500 mt-1">Provide clear instructions for participants</p>
+              <h2 className="text-lg font-semibold text-gray-900">Evaluation System Prompt</h2>
+              <p className="text-sm text-gray-500 mt-1">Instructions for judges or LLM evaluators</p>
             </div>
             
             <div>
-              <Label htmlFor="guidelines" className="text-sm font-medium text-gray-900 mb-2 block">
-                Guidelines
+              <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-900 mb-2 block">
+                Evaluation Prompt
               </Label>
               <Textarea
-                id="guidelines"
-                name="guidelines"
-                value={formData.guidelines}
+                id="systemPrompt"
+                name="systemPrompt"
+                value={formData.systemPrompt}
                 onChange={handleChange}
-                placeholder="Provide instructions to guide the participants..."
+                placeholder="Enter the system prompt for evaluation (e.g. instructions for judges or LLM evaluators)"
                 rows={4}
                 className="border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
                 required
@@ -831,7 +1347,7 @@ export default function NewCompetitionPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.5s_forwards]">
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.45s_forwards]">
             <Button
               type="button"
               variant="outline"
@@ -842,10 +1358,10 @@ export default function NewCompetitionPage() {
             </Button>
             <Button
               type="submit"
-              disabled={loading || uploadingImages || uploadingVoice || !weightValid}
+              disabled={loading || uploadingFiles || !weightValid}
               className="bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
             >
-              {uploadingImages ? `Uploading Images (${uploadProgress.current}/${uploadProgress.total})...` : uploadingVoice ? "Uploading Voice Note..." : (loading ? "Creating..." : "Create Challenge")}
+              {uploadingFiles ? `Uploading Files (${uploadProgress.current}/${uploadProgress.total})...` : (loading ? "Creating..." : "Create Challenge")}
             </Button>
           </div>
         </form>
