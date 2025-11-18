@@ -10,12 +10,14 @@ interface DashboardEvaluationProgressProps {
   competitionId: string
   onResume: () => void
   onPause: () => void
+  isCompetitionEnded: boolean
 }
 
 export default function DashboardEvaluationProgress({ 
   competitionId, 
   onResume,
-  onPause
+  onPause,
+  isCompetitionEnded,
 }: DashboardEvaluationProgressProps) {
   const { progress, isLoading: loading, error, refreshStatus: retry, isEvaluated, refreshStatus: forceRefresh } = useEvaluationStatus(competitionId)
   
@@ -170,34 +172,46 @@ export default function DashboardEvaluationProgress({
 
           {/* Control buttons */}
           {isPaused && hasUnevaluatedSubmissions && (
-            <Button
-              onClick={onResume}
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
-              disabled={isResuming}
-            >
-              {isResuming ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
+            isCompetitionEnded ? (
+              <Button
+                onClick={onResume}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={isResuming}
+              >
+                {isResuming ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" disabled title="Competition must end before evaluation">
                 <Play className="w-4 h-4" />
-              )}
-            </Button>
+              </Button>
+            )
           )}
 
           {isRunning && hasUnevaluatedSubmissions && (
-            <Button
-              onClick={onPause}
-              size="sm"
-              variant="outline"
-              className="border-orange-300 text-orange-600 hover:bg-orange-50"
-              disabled={isPausing}
-            >
-              {isPausing ? (
-                <Loader className="w-4 h-4 animate-spin" />
-              ) : (
+            isCompetitionEnded ? (
+              <Button
+                onClick={onPause}
+                size="sm"
+                variant="outline"
+                className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                disabled={isPausing}
+              >
+                {isPausing ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Pause className="w-4 h-4" />
+                )}
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" disabled title="Competition must end before evaluation">
                 <Pause className="w-4 h-4" />
-              )}
-            </Button>
+              </Button>
+            )
           )}
         </div>
       </div>

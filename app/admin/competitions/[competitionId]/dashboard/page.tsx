@@ -374,6 +374,7 @@ export default function AdminDashboard() {
           competitionId={competitionId} 
           onResume={handleResumeEvaluation}
           onPause={handlePauseEvaluation}
+          isCompetitionEnded={isCompetitionEnded}
         />
 
         {/* Challenges Section */}
