@@ -70,18 +70,18 @@ export const CompetitionCard = ({
           <div className="flex justify-between items-start mb-6">
             <div className="space-y-4 flex-1">
               <div className="flex items-center gap-2">
-                <Badge className={`${status.color} border font-medium px-3 py-1 hover:bg-transparent`}>
+                <Badge className={`${status.color} border font-medium text-[12px] px-1.5 py-0.5 hover:bg-transparent`}>
                   <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
                   {status.label}
                 </Badge>
                 {isRegistered && (
-                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium">
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium text-[12px] px-1.5 py-0.5">
                     <CheckCircle2 className="w-3 h-3 mr-1" />
                     Registered
                   </Badge>
                 )}
                 {isCompleted && (
-                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium">
+                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium text-[12px] px-1.5 py-0.5">
                     <Trophy className="w-3 h-3 mr-1" />
                     Completed
                   </Badge>
