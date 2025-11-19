@@ -231,34 +231,34 @@ export default function RulesPage() {
               <Card className="bg-white border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <CardTitle className="text-2xl text-foreground flex items-center gap-2">
-                    <Calendar className="h-6 w-6 text-slate-500" />
+                    <Calendar className="h-6 w-6 text-emerald-500" />
                     Timeline & Deadlines
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <Clock className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-foreground font-medium">Marketing & Training Campaign</p>
                       <p className="text-muted-foreground">1st Dec – 16th Jan</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <Clock className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-foreground font-medium">Level 1 Competition Date</p>
                       <p className="text-muted-foreground">Saturday, 17th January</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <Clock className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-foreground font-medium">Level 2 Competition Dates</p>
                       <p className="text-muted-foreground">18th January – 25th January (Daily live sessions)</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Clock className="h-5 w-5 text-slate-500 mt-0.5 flex-shrink-0" />
+                    <Clock className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-foreground font-medium">Winners Announcement</p>
                       <p className="text-muted-foreground">28th January</p>

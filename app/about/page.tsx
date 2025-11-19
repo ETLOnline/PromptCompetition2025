@@ -7,11 +7,11 @@ export default function AboutPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100">
       <Navbar />
-      <main className="flex-grow">
-        <section className="py-16 px-4">
-          <div className="container mx-auto p-6 max-w-4xl">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+            <main className="flex-grow">
+              <section className="py-24 px-4">
+                <div className="container mx-auto p-6 space-y-8">
+                  <div className="text-center mb-12">
+                    <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-4">
                 About Our Platform
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">

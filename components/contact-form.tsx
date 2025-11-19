@@ -74,7 +74,17 @@ export default function ContactForm() {
           </p>
           <Button
             className="text-black bg-gray-200 gap-2 px-8 py-4 h-14 text-lg rounded-xl"
-            onClick={() => setIsSubmitted(false)}
+            onClick={() => {
+              setIsSubmitted(false);
+              setFormData({
+                firstName: "",
+                lastName: "",
+                email: "",
+                company: "",
+                role: "",
+                message: "",
+              });
+            }}
           >
             Submit Another Inquiry
           </Button>
@@ -188,6 +198,7 @@ export default function ContactForm() {
               rows={4}
               value={formData.message}
               onChange={handleChange}
+              required
               className="text-black"
             />
           </div>
