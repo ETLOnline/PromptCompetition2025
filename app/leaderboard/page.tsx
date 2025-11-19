@@ -108,7 +108,10 @@ export default function LeaderboardPage() {
     page = 1,
     lastDoc?: QueryDocumentSnapshot<FinalLeaderboardEntry>
   ) => {
-    setLoading(true)
+    // Only set loading for initial load or pagination, not competition switching
+    if (page === 1 && !lastDoc) {
+      setLoading(true)
+    }
     try {
       const leaderboardRef = collection(db, `competitions/${competitionId}/finalLeaderboard`)
       let q = query(leaderboardRef, orderBy("rank", "asc"), limit(PAGE_SIZE))

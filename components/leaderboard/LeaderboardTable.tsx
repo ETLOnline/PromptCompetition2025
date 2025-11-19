@@ -121,13 +121,13 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <span className="inline-flex items-center bg-gray-100 text-gray-800 px-3 py-1.5 rounded-lg text-sm font-mono font-medium border border-gray-200">
+                        <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
                           {entry.llmScore.toFixed(2)}
                         </span>
                       </td>
                       <td className="px-6 py-5 text-center">
                         {entry.judgeScore !== null ? (
-                          <span className="inline-flex items-center bg-gradient-to-r from-gray-700 to-gray-600 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
+                          <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
                             {entry.judgeScore.toFixed(2)}
                           </span>
                         ) : (
@@ -140,7 +140,7 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                             inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-mono font-medium
                             ${
                               entry.rank <= 3
-                                ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white shadow-sm"
+                                ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-sm"
                                 : "bg-gray-100 text-gray-800 border border-gray-200"
                             }
                           `}
@@ -199,7 +199,7 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                   <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                     LLM
                   </div>
-                  <span className="inline-flex items-center bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-mono font-medium border border-gray-200">
+                  <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-2 py-1 rounded text-xs font-mono font-medium shadow-sm">
                     {entry.llmScore.toFixed(2)}
                   </span>
                 </div>
@@ -208,7 +208,7 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                     Judge
                   </div>
                   {entry.judgeScore !== null ? (
-                    <span className="inline-flex items-center bg-gradient-to-r from-gray-700 to-gray-600 text-white px-2 py-1 rounded text-xs font-mono font-medium shadow-sm">
+                    <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-2 py-1 rounded text-xs font-mono font-medium shadow-sm">
                       {entry.judgeScore.toFixed(2)}
                     </span>
                   ) : (
@@ -224,7 +224,7 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                       inline-flex items-center px-2 py-1 rounded text-xs font-mono font-medium
                       ${
                         entry.rank <= 3
-                          ? "bg-gradient-to-r from-gray-700 to-gray-600 text-white shadow-sm"
+                          ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-sm"
                           : "bg-gray-100 text-gray-800 border border-gray-200"
                       }
                     `}
