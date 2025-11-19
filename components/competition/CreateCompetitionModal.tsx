@@ -254,7 +254,7 @@ export default function CreateCompetitionModal({
                     Competition Mode
                   </Label>
                   <Select value={formData.mode} onValueChange={(value) => handleFormChange("mode", value)}>
-                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20">
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 text-left">
                       <SelectValue placeholder="Select mode" />
                     </SelectTrigger>
                     <SelectContent>
