@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { FileText, Target, Eye, Send } from "lucide-react"
+import { FileText, Target, Eye, Send, Headphones, Image as ImageIcon, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -11,6 +11,11 @@ interface Challenge {
   description?: string
   problemStatement: string
   guidelines: string
+  problemAudioUrls?: string[]
+  guidelinesAudioUrls?: string[]
+  visualClueUrls?: string[]
+  additionalImageUrls?: string[]
+  additionalVoiceUrls?: string[]
   difficulty?: string
   points?: number
   timeLimit?: number
@@ -33,6 +38,7 @@ export const ViewChallengeDetailsModal = ({
 }: ViewChallengeDetailsModalProps) => {
   const [userSubmission, setUserSubmission] = useState<string>("")
   const [loadingSubmission, setLoadingSubmission] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen && challenge) {
@@ -108,11 +114,33 @@ export const ViewChallengeDetailsModal = ({
               <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
               <Label className="text-base font-semibold text-blue-900">Problem Statement</Label>
             </div>
-            <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border">
-              <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
-                {challenge.problemStatement}
-              </p>
-            </div>
+            
+            {/* Problem Statement Text */}
+            {challenge.problemStatement && (
+              <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                  {challenge.problemStatement}
+                </p>
+              </div>
+            )}
+            
+            {/* Problem Audio Files */}
+            {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  {/* <Headphones className="w-4 h-4 text-blue-600 flex-shrink-0" /> */}
+                  {/* <Label className="text-sm font-medium text-blue-800">Problem Audio ({challenge.problemAudioUrls.length})</Label> */}
+                </div>
+                <div className="space-y-3">
+                  {challenge.problemAudioUrls.map((url, index) => (
+                    <div key={index} className="bg-white rounded-md p-3 border">
+                      <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                      <audio controls src={url} className="w-full h-8" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Guidelines */}
@@ -121,12 +149,120 @@ export const ViewChallengeDetailsModal = ({
               <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
               <Label className="text-base font-semibold text-green-900">Guidelines</Label>
             </div>
-            <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border">
-              <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
-                {challenge.guidelines}
-              </p>
-            </div>
+            
+            {/* Guidelines Text */}
+            {challenge.guidelines && (
+              <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                  {challenge.guidelines}
+                </p>
+              </div>
+            )}
+            
+            {/* Guidelines Audio Files */}
+            {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  {/* <Headphones className="w-4 h-4 text-green-600 flex-shrink-0" /> */}
+                  {/* <Label className="text-sm font-medium text-green-800">Guidelines Audio ({challenge.guidelinesAudioUrls.length})</Label> */}
+                </div>
+                <div className="space-y-3">
+                  {challenge.guidelinesAudioUrls.map((url, index) => (
+                    <div key={index} className="bg-white rounded-md p-3 border">
+                      <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                      <audio controls src={url} className="w-full h-8" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Visual Clues */}
+          {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
+            <div className="bg-amber-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <ImageIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <Label className="text-base font-semibold text-amber-900">Visual Clues ({challenge.visualClueUrls.length})</Label>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {challenge.visualClueUrls.map((url, index) => (
+                  <div 
+                    key={index} 
+                    className="relative group cursor-pointer"
+                    onClick={() => setPreviewImage(url)}
+                  >
+                    <div className="aspect-square overflow-hidden rounded-md border border-amber-200">
+                      <img 
+                        src={url} 
+                        alt={`Visual clue ${index + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all">
+                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Additional Resources */}
+          {((challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0) || 
+            (challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0)) && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <Label className="text-base font-semibold text-gray-900 mb-3 block">Additional Resources</Label>
+              
+              {/* Additional Images */}
+              {challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ImageIcon className="w-4 h-4 text-gray-600" />
+                    <Label className="text-sm font-medium text-gray-700">Additional Images ({challenge.additionalImageUrls.length})</Label>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {challenge.additionalImageUrls.map((url, index) => (
+                      <div 
+                        key={index} 
+                        className="relative group cursor-pointer"
+                        onClick={() => setPreviewImage(url)}
+                      >
+                        <div className="aspect-square overflow-hidden rounded-md border border-gray-200">
+                          <img 
+                            src={url} 
+                            alt={`Additional image ${index + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all">
+                          <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Additional Voice Files */}
+              {challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Headphones className="w-4 h-4 text-gray-600" />
+                    <Label className="text-sm font-medium text-gray-700">Additional Audio ({challenge.additionalVoiceUrls.length})</Label>
+                  </div>
+                  <div className="space-y-3">
+                    {challenge.additionalVoiceUrls.map((url, index) => (
+                      <div key={index} className="bg-white rounded-md p-3 border">
+                        <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                        <audio controls src={url} className="w-full h-8" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* User Submission */}
           <div className="bg-purple-50 rounded-lg p-4">
@@ -180,6 +316,22 @@ export const ViewChallengeDetailsModal = ({
           )}
         </div>
       </DialogContent>
+      
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
+          </div>
+        </div>
+      )}
     </Dialog>
   )
 }

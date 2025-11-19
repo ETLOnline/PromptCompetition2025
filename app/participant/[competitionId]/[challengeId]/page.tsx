@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-// import { submitPrompt } from "@/lib/firebase/submissions"
 import { submitPrompt, checkExistingSubmission } from "@/lib/api"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
@@ -15,11 +14,9 @@ import { doc, getDoc } from "firebase/firestore"
 import { useRouter, useParams } from "next/navigation"
 import type { Timestamp } from "firebase/firestore"
 import { CountdownDisplay } from "@/components/countdown-display"
-
 import { fetchWithAuth } from "@/lib/api"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
-
-import { useEffect, useState, useContext } from "react"
+import { useEffect, useState } from "react"
 
 interface Challenge {
   id: string
@@ -28,15 +25,19 @@ interface Challenge {
   guidelines: string
   endDeadline: Timestamp
   isCompetitionLocked: boolean
-  imageUrls?: string[]
-  voiceNoteUrls?: string[]
+  problemAudioUrls: string[]
+  guidelinesAudioUrls: string[]
+  visualClueUrls: string[]
+  additionalImageUrls: string[]
+  additionalVoiceUrls: string[]
 }
+
 interface UserProfile {
-  uid: string;
-  email: string;
-  role: string;
-  displayName?: string | null;
-  photoURL?: string | null;
+  uid: string
+  email: string
+  role: string
+  displayName?: string | null
+  photoURL?: string | null
 }
 
 export default function ChallengePage() {
@@ -50,34 +51,28 @@ export default function ChallengePage() {
   const [loading, setLoading] = useState(false)
   const [hasPreviousSubmission, setHasPreviousSubmission] = useState(false)
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
-  const [competitionendDeadline, setCompetitionendDeadline] = useState<Date | null>(null) // New state for start deadline
+  const [competitionendDeadline, setCompetitionendDeadline] = useState<Date | null>(null)
   const [submissionType, setSubmissionType] = useState<'new' | 'update' | null>(null)
   
   const [loadingPrompt, setLoadingPrompt] = useState<boolean>(false)
   const [loadingChallenge, setLoadingChallenge] = useState<boolean>(true)
   const [compid, setCompid] = useState<string | null>(null)
-  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle'); // New state for submission status
-  const [submissionError, setSubmissionError] = useState<string>(''); // Add this new state
+  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [submissionError, setSubmissionError] = useState<string>('')
 
-  
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
   const [isCompetitionActive, setIsCompetitionActive] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
-
-
   useEffect(() => {
     const init = async () => {
-      // Authenticate user first
       const profile = await checkAuth()
       if (!profile) return
 
-      // Get params
       const { competitionId: id } = routeParams
       setCompid(id)
 
-      // Check participant existence
       const participantRef = doc(db, "competitions", id, "participants", profile.uid)
       const participantSnap = await getDoc(participantRef)
       if (!participantSnap.exists()) {
@@ -85,30 +80,25 @@ export default function ChallengePage() {
         return
       }
 
-      // Parallel fetches after checks
       try {
         await Promise.all([
           fetchChallengeData(id, challengeId),
           fetchSubmissionPrompt(id, challengeId, profile.uid),
         ])
-        // console.log("User submission:",hasPreviousSubmission)
       } catch (error) {
         console.error("Error in parallel fetch:", error)
       }
-      
     }
+    
     const checkEnd = async () => {
       const ended = await checkCompetitionEnded()
       setIsCompetitionEnded(ended)
-   }
+    }
+    
     init()
-
     checkEnd()
-
   }, [router, routeParams, challengeId])
 
-  
-    
   const checkAuth = async (): Promise<UserProfile | null> => {
     try {
       const profile = await fetchWithAuth(
@@ -136,15 +126,12 @@ export default function ChallengePage() {
       if (competitionDoc.exists()) {
         const data = competitionDoc.data()
         const endDeadline = data.endDeadline || null
-        const isCompetitionActive= data.isActive || false
+        const isCompetitionActive = data.isActive || false
         setIsCompetitionActive(isCompetitionActive)
 
         if (endDeadline) {
-          // Ensure proper Date object
           const endDate = new Date(endDeadline)
           const now = new Date()
-          // Compare full datetime (both date and time)
-          // console.log(now.getTime() > endDate.getTime())
           return now.getTime() > endDate.getTime()
         }
       }
@@ -160,7 +147,6 @@ export default function ChallengePage() {
     try {
       setLoadingChallenge(true)
 
-      // Fetch challenge basic data
       const challengeRef = doc(db, "competitions", competitionId, "challenges", challengeId)
       const challengeSnap = await getDoc(challengeRef)
       if (!challengeSnap.exists()) {
@@ -169,7 +155,6 @@ export default function ChallengePage() {
       }
       const challengeDataRaw = challengeSnap.data()
 
-      // Fetch competition deadlines
       const competitionRef = doc(db, "competitions", competitionId)
       const competitionSnap = await getDoc(competitionRef)
       if (!competitionSnap.exists()) {
@@ -181,11 +166,9 @@ export default function ChallengePage() {
       const isCompetitionLocked =
         competitionData?.endDeadline &&
         new Date() > new Date(competitionData.endDeadline)
-      // console.log("Is competition locked:", isCompetitionLocked)
+      
       const enddead = competitionData?.endDeadline?.toDate?.() ?? new Date(competitionData.endDeadline)
-      setCompetitionendDeadline(enddead || null) // Set the start deadline here
-      // console.log("Competition start deadline:", enddead)
-
+      setCompetitionendDeadline(enddead || null)
 
       const challengeData: Challenge & { endDeadline?: Timestamp } = {
         id: challengeId,
@@ -193,9 +176,12 @@ export default function ChallengePage() {
         problemStatement: challengeDataRaw.problemStatement,
         guidelines: challengeDataRaw.guidelines,
         isCompetitionLocked: isCompetitionLocked,
-        endDeadline: competitionData.endDeadline, // from competition, not challenge
-        imageUrls: challengeDataRaw.imageUrls || [],
-        voiceNoteUrls: challengeDataRaw.voiceNoteUrls || [],
+        endDeadline: competitionData.endDeadline,
+        problemAudioUrls: challengeDataRaw.problemAudioUrls || [],
+        guidelinesAudioUrls: challengeDataRaw.guidelinesAudioUrls || [],
+        visualClueUrls: challengeDataRaw.visualClueUrls || [],
+        additionalImageUrls: challengeDataRaw.additionalImageUrls || [],
+        additionalVoiceUrls: challengeDataRaw.additionalVoiceUrls || (challengeDataRaw.voiceNoteUrls || []),
       }
 
       setChallenge(challengeData)
@@ -231,11 +217,9 @@ export default function ChallengePage() {
   }
 
   const handleCompetitionExpiry = () => {
-    // Update the challenge state to reflect that the competition is now locked
     if (challenge) {
       setChallenge(prev => prev ? { ...prev, isCompetitionLocked: true } : null)
     }
-    // Also update the local state
     setIsCompetitionEnded(true)
   }
 
@@ -256,13 +240,11 @@ export default function ChallengePage() {
       {loadingChallenge ? (
         <>
           <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
-            {/* Loading skeleton */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-6">
               <div className="h-8 w-64 bg-gray-200 rounded-xl animate-pulse" />
               <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
               <div className="h-5 w-48 bg-gray-200 rounded-xl animate-pulse sm:ml-auto" />
             </div>
-            {/* Challenge Details Card Skeleton */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
                 <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
@@ -279,7 +261,6 @@ export default function ChallengePage() {
                 <div className="h-4 w-3/4 bg-gray-200 rounded-xl animate-pulse" />
               </CardContent>
             </Card>
-            {/* Guidelines Card Skeleton */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
                 <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
@@ -295,7 +276,6 @@ export default function ChallengePage() {
                 <div className="h-4 w-2/3 bg-gray-200 rounded-xl animate-pulse" />
               </CardContent>
             </Card>
-            {/* Solution Card Skeleton */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
                 <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
@@ -375,37 +355,62 @@ export default function ChallengePage() {
               </CardHeader>
             </Card>
 
-            {/* Challenge Details Card */}
-            <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
-                <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
-                  <FileText className="h-6 w-6 text-blue-700" />
-                  Challenge Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div>
-                  <h3 className="font-bold text-gray-900 mb-4 text-lg">Problem Statement</h3>
-                  <p className="text-gray-700 leading-relaxed">{challenge.problemStatement}</p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Problem Statement Card */}
+            {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
+              <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                  <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
+                    <FileText className="h-6 w-6 text-blue-700" />
+                    Problem Statement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  {challenge.problemStatement && (
+                    <div>
+                      <p className="text-gray-700 leading-relaxed">{challenge.problemStatement}</p>
+                    </div>
+                  )}
+                  
+                  {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <Volume2 className="h-5 w-5 text-orange-600" />
+                        Audio Instructions
+                      </h4>
+                      {challenge.problemAudioUrls.map((audioUrl, index) => (
+                        <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <div className="text-sm font-medium text-gray-700 mb-2">
+                            Audio {index + 1}
+                          </div>
+                          <audio controls className="w-full">
+                            <source src={audioUrl} type="audio/mpeg" />
+                            <source src={audioUrl} type="audio/wav" />
+                            <source src={audioUrl} type="audio/ogg" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Image Clues Card */}
-            {challenge.imageUrls && challenge.imageUrls.length > 0 && (
+            {/* Visual Clues Card */}
+            {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
               <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
                   <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
                     <ImageIcon className="h-6 w-6 text-purple-600" />
-                    Image Clues
+                    Visual Clues
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                  {challenge.imageUrls.map((imageUrl, index) => (
+                  {challenge.visualClueUrls.map((imageUrl, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
                       <img
                         src={imageUrl}
-                        alt={`Image clue ${index + 1}`}
+                        alt={`Visual clue ${index + 1}`}
                         className="max-w-full max-h-96 mx-auto cursor-pointer hover:opacity-90 transition-opacity object-contain"
                         onClick={() => setPreviewImage(imageUrl)}
                       />
@@ -415,45 +420,110 @@ export default function ChallengePage() {
               </Card>
             )}
 
-            {/* Audio Instructions Card */}
-            {challenge.voiceNoteUrls && challenge.voiceNoteUrls.length > 0 && (
+            {/* Guidelines & Instructions Card */}
+            {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
               <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
                 <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
                   <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
-                    <Volume2 className="h-6 w-6 text-orange-600" />
-                    Audio Instructions
+                    <Target className="h-6 w-6 text-emerald-600" />
+                    Guidelines & Instructions
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  {challenge.voiceNoteUrls.map((audioUrl, index) => (
-                    <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="text-sm font-medium text-gray-700 mb-2">
-                        Audio Note {index + 1}
-                      </div>
-                      <audio controls className="w-full">
-                        <source src={audioUrl} type="audio/mpeg" />
-                        <source src={audioUrl} type="audio/wav" />
-                        <source src={audioUrl} type="audio/ogg" />
-                        Your browser does not support the audio element.
-                      </audio>
+                <CardContent className="p-6 space-y-6">
+                  {challenge.guidelines && (
+                    <div>
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">{challenge.guidelines}</div>
                     </div>
-                  ))}
+                  )}
+                  
+                  {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <Volume2 className="h-5 w-5 text-orange-600" />
+                        Audio Guidelines
+                      </h4>
+                      {challenge.guidelinesAudioUrls.map((audioUrl, index) => (
+                        <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <div className="text-sm font-medium text-gray-700 mb-2">
+                            Audio {index + 1}
+                          </div>
+                          <audio controls className="w-full">
+                            <source src={audioUrl} type="audio/mpeg" />
+                            <source src={audioUrl} type="audio/wav" />
+                            <source src={audioUrl} type="audio/ogg" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            {/* Guidelines Card */}
-            <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
-                <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
-                  <Target className="h-6 w-6 text-emerald-600" />
-                  How to Craft Your Prompt
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">{challenge.guidelines}</div>
-              </CardContent>
-            </Card>
+            {/* Additional Resources Card */}
+            {((challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0) || 
+              (challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0)) && (
+              <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                  <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
+                    <FileText className="h-6 w-6 text-indigo-600" />
+                    Additional Resources
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Additional Images */}
+                    {challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <ImageIcon className="h-5 w-5 text-purple-600" />
+                          Reference Images
+                        </h4>
+                        <div className="space-y-4">
+                          {challenge.additionalImageUrls.map((imageUrl, index) => (
+                            <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                              <img
+                                src={imageUrl}
+                                alt={`Additional image ${index + 1}`}
+                                className="max-w-full max-h-64 mx-auto cursor-pointer hover:opacity-90 transition-opacity object-contain"
+                                onClick={() => setPreviewImage(imageUrl)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Additional Audio */}
+                    {challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <Volume2 className="h-5 w-5 text-orange-600" />
+                          Supplementary Audio
+                        </h4>
+                        <div className="space-y-4">
+                          {challenge.additionalVoiceUrls.map((audioUrl, index) => (
+                            <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                              <div className="text-sm font-medium text-gray-700 mb-2">
+                                Audio {index + 1}
+                              </div>
+                              <audio controls className="w-full">
+                                <source src={audioUrl} type="audio/mpeg" />
+                                <source src={audioUrl} type="audio/wav" />
+                                <source src={audioUrl} type="audio/ogg" />
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Solution Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
               <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
@@ -534,10 +604,10 @@ export default function ChallengePage() {
                       </div>
                       <Button
                         onClick={() => {
-                          setSubmissionType(hasPreviousSubmission ? 'update' : 'new');
-                          setIsConfirmModalOpen(true);
+                          setSubmissionType(hasPreviousSubmission ? 'update' : 'new')
+                          setIsConfirmModalOpen(true)
                         }}
-                        disabled={!prompt.trim() || isCompetitionEnded || loading || !isCompetitionActive}   // ✅ added challenge.isCompetitionLocked here
+                        disabled={!prompt.trim() || isCompetitionEnded || loading || !isCompetitionActive}
                         title={
                           isCompetitionEnded 
                             ? "Submission time is over" 
@@ -559,6 +629,7 @@ export default function ChallengePage() {
                           : "Submit Prompt"}
                       </Button>
                     </div>
+                    
                     {/* Confirmation Modal */}
                     {isConfirmModalOpen && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -575,17 +646,16 @@ export default function ChallengePage() {
                               : "Are you ready to submit your solution?"}
                           </p>
 
-                           <div className="flex justify-center gap-3">
+                          <div className="flex justify-center gap-3">
                             <Button
                               className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
                               onClick={async () => {
-                                // Check if competition has ended before submission
-                                const hasEnded = await checkCompetitionEnded();
+                                const hasEnded = await checkCompetitionEnded()
                                 if (hasEnded) {
-                                  setIsConfirmModalOpen(false);
-                                  setSubmissionStatus("error");
-                                  setSubmissionError("Submission time is over. You can no longer submit responses for this challenge.");
-                                  return;
+                                  setIsConfirmModalOpen(false)
+                                  setSubmissionStatus("error")
+                                  setSubmissionError("Submission time is over. You can no longer submit responses for this challenge.")
+                                  return
                                 }
 
                                 setLoading(true)
@@ -593,32 +663,27 @@ export default function ChallengePage() {
                                 setSubmissionStatus("submitting")
 
                                 try {
-                                  // const result = await submitPrompt(routeParams.competitionId, user.uid, routeParams.challengeId, prompt)
                                   const result = await submitPrompt(routeParams.competitionId, routeParams.challengeId, prompt)
-                                  // console.log("Submission result:", result)
                                   if (!result.success) {
-                                    // Handle specific error messages from backend
-                                    let errorMessage = result.error || "Unknown error occurred";
+                                    let errorMessage = result.error || "Unknown error occurred"
                                     
-                                    // Transform backend error messages to user-friendly ones
                                     if (errorMessage.includes("Competition has ended")) {
-                                      errorMessage = "Submission time is over. You can no longer submit responses for this challenge.";
+                                      errorMessage = "Submission time is over. You can no longer submit responses for this challenge."
                                     } else if (errorMessage.includes("Competition has not started yet")) {
-                                      errorMessage = "The competition has not started yet. Please wait until it begins.";
+                                      errorMessage = "The competition has not started yet. Please wait until it begins."
                                     } else if (errorMessage.includes("Competition is not active")) {
-                                      errorMessage = "This competition is currently not active. Please contact the administrator.";
+                                      errorMessage = "This competition is currently not active. Please contact the administrator."
                                     } else if (errorMessage.includes("Rate limit exceeded")) {
-                                      errorMessage = "You're submitting too quickly. Please wait a moment and try again.";
+                                      errorMessage = "You're submitting too quickly. Please wait a moment and try again."
                                     } else if (errorMessage.includes("size exceeds")) {
-                                      errorMessage = "Your submission is too large. Please reduce the size and try again.";
+                                      errorMessage = "Your submission is too large. Please reduce the size and try again."
                                     }
                                     
-                                    setSubmissionError(errorMessage);
+                                    setSubmissionError(errorMessage)
                                     setSubmissionStatus("error")
                                     return
                                   }
 
-                                  
                                   setSubmissionStatus("success")
                                   toast({
                                     title: "Submission Successful",
@@ -630,29 +695,28 @@ export default function ChallengePage() {
                                 } catch (error: any) {
                                   console.error("Error submitting prompt:", error)
                                   
-                                  // Handle network or other errors
-                                  let errorMessage = "Error submitting prompt. Please try again later.";
+                                  let errorMessage = "Error submitting prompt. Please try again later."
                                   
                                   if (error.message && error.message.includes("Competition has ended")) {
-                                    errorMessage = "Submission time is over. You can no longer submit responses for this challenge.";
+                                    errorMessage = "Submission time is over. You can no longer submit responses for this challenge."
                                   } else if (error.message && error.message.includes("network")) {
-                                    errorMessage = "Network error. Please check your connection and try again.";
+                                    errorMessage = "Network error. Please check your connection and try again."
                                   }
                                   
-                                  setSubmissionStatus("error") 
-                                  setSubmissionError(errorMessage);                             
+                                  setSubmissionStatus("error")
+                                  setSubmissionError(errorMessage)
                                 } finally {
                                   setLoading(false)
                                 }
                               }}
                             >
-                                {loading
-                                  ? hasPreviousSubmission
-                                    ? "Updating..."
-                                    : "Submitting..."
-                                  : hasPreviousSubmission
-                                  ? "Update"
-                                  : "Submit"}
+                              {loading
+                                ? hasPreviousSubmission
+                                  ? "Updating..."
+                                  : "Submitting..."
+                                : hasPreviousSubmission
+                                ? "Update"
+                                : "Submit"}
                             </Button>
 
                             <Button
@@ -666,6 +730,7 @@ export default function ChallengePage() {
                         </div>
                       </div>
                     )}
+                    
                     {/* Success Modal */}
                     {submissionStatus === 'success' && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -692,27 +757,28 @@ export default function ChallengePage() {
                         </div>
                       </div>
                     )}
+                    
                     {/* Error Modal */}
                     {submissionStatus === 'error' && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                      <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
-                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <AlertCircle className="w-8 h-8 text-red-600" />
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="w-8 h-8 text-red-600" />
+                          </div>
+                          <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Failed</h2>
+                          <p className="text-gray-600 mb-6">{submissionError}</p>
+                          <Button
+                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                            onClick={() => {
+                              setSubmissionStatus('idle')
+                              setSubmissionError('')
+                            }}
+                          >
+                            Close
+                          </Button>
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Failed</h2>
-                        <p className="text-gray-600 mb-6">{submissionError}</p> {/* Show specific error */}
-                        <Button
-                          className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
-                          onClick={() => {
-                            setSubmissionStatus('idle');
-                            setSubmissionError(''); // Clear error when closing
-                          }}
-                        >
-                          Close
-                        </Button>
                       </div>
-                    </div>
-                  )}
+                    )}
                   </>
                 )}
               </CardContent>
