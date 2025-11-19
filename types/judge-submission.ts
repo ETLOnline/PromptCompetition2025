@@ -64,7 +64,6 @@ export interface Submission {
   }
 }
 
-
 export interface Notification {
   id: string
   message: string
@@ -96,6 +95,12 @@ export interface Challenge {
   }[]
   createdAt: any
   updatedAt: any
+  // NEW MULTIMEDIA FIELDS
+  problemAudioUrls?: string[]
+  guidelinesAudioUrls?: string[]
+  visualClueUrls?: string[]
+  additionalImageUrls?: string[]
+  additionalVoiceUrls?: string[]
 }
 
 export interface ScoreData {

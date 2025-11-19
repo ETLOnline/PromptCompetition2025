@@ -85,6 +85,11 @@ export interface Challenge {
   description: string
   problemStatement: string
   guidelines?: string
+  problemAudioUrls?: string[]
+  guidelinesAudioUrls?: string[]
+  visualClueUrls?: string[]
+  additionalImageUrls?: string[]
+  additionalVoiceUrls?: string[]
   competitionId: string
   maxScore: number
   rubric: {
