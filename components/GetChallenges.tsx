@@ -61,8 +61,6 @@ type Challenge = {
   problemAudioUrls: string[]
   guidelinesAudioUrls: string[]
   visualClueUrls: string[]
-  additionalImageUrls: string[]
-  additionalVoiceUrls: string[]
   startDeadline: Timestamp
   endDeadline: Timestamp
   lastupdatetime: Timestamp
@@ -140,9 +138,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
           hasSystemPrompt: !!c.systemPrompt,
           problemAudioCount: c.problemAudioUrls?.length || 0,
           guidelinesAudioCount: c.guidelinesAudioUrls?.length || 0,
-          visualClueCount: c.visualClueUrls?.length || 0,
-          additionalImageCount: c.additionalImageUrls?.length || 0,
-          additionalVoiceCount: c.additionalVoiceUrls?.length || 0
+          visualClueCount: c.visualClueUrls?.length || 0
         })))
 
         setChallenges(fetched)
@@ -454,58 +450,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                             </div>
                           )}
 
-                          {/* Additional Resources */}
-                          {((challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0) || 
-                            (challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0)) && (
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                <Plus className="w-4 h-4" />
-                                Additional Resources
-                              </h4>
-                              
-                              {/* Additional Images */}
-                              {challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0 && (
-                                <div className="mb-4">
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Additional Images ({challenge.additionalImageUrls.length})</h5>
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {challenge.additionalImageUrls.map((url, index) => (
-                                      <div 
-                                        key={index} 
-                                        className="relative group cursor-pointer"
-                                        onClick={() => setPreviewImage(url)}
-                                      >
-                                        <div className="aspect-square overflow-hidden rounded-md border border-gray-200">
-                                          <img 
-                                            src={url} 
-                                            alt={`Additional image ${index + 1}`}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                          />
-                                        </div>
-                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all">
-                                          <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100" />
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Additional Voice Files */}
-                              {challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0 && (
-                                <div>
-                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Additional Audio Files ({challenge.additionalVoiceUrls.length})</h5>
-                                  <div className="grid grid-cols-1 gap-3">
-                                    {challenge.additionalVoiceUrls.map((url, index) => (
-                                      <div key={index} className="bg-white rounded-md p-3 border border-gray-200">
-                                        <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
-                                        <audio controls src={url} className="w-full h-8" />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
+
 
                           {/* Rubric */}
                           {challenge.rubric && challenge.rubric.length > 0 && (

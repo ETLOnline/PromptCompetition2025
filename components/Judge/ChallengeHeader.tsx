@@ -24,8 +24,7 @@ export function ChallengeHeader({ challenge, isLoading, progressStats }: Challen
   const [isProblemExpanded, setIsProblemExpanded] = useState(true)
   const [isGuidelinesExpanded, setIsGuidelinesExpanded] = useState(false)
   const [isVisualCluesExpanded, setIsVisualCluesExpanded] = useState(false)
-  const [isAdditionalImagesExpanded, setIsAdditionalImagesExpanded] = useState(false)
-  const [isAdditionalAudioExpanded, setIsAdditionalAudioExpanded] = useState(false)
+
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   if (isLoading) {
@@ -47,8 +46,6 @@ export function ChallengeHeader({ challenge, isLoading, progressStats }: Challen
   const hasProblemContent = challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)
   const hasGuidelinesContent = challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)
   const hasVisualClues = challenge.visualClueUrls && challenge.visualClueUrls.length > 0
-  const hasAdditionalImages = challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0
-  const hasAdditionalAudio = challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0
 
   return (
     <>
@@ -215,76 +212,9 @@ export function ChallengeHeader({ challenge, isLoading, progressStats }: Challen
           </CardContent>
         )}
 
-        {/* Additional Images Section */}
-        {hasAdditionalImages && (
-          <CardContent className="pt-0">
-            <Collapsible open={isAdditionalImagesExpanded} onOpenChange={setIsAdditionalImagesExpanded}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between bg-transparent">
-                  <span className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-indigo-600" />
-                    Additional Reference Images ({challenge.additionalImageUrls?.length || 0})
-                  </span>
-                  {isAdditionalImagesExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50">
-                  {challenge.additionalImageUrls?.map((imageUrl, index) => (
-                    <div 
-                      key={index} 
-                      className="border border-gray-200 rounded-lg overflow-hidden bg-white cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => setPreviewImage(imageUrl)}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`Additional image ${index + 1}`}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-2 text-xs text-gray-600 text-center">
-                        Image {index + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        )}
 
-        {/* Additional Audio Section */}
-        {hasAdditionalAudio && (
-          <CardContent className="pt-0">
-            <Collapsible open={isAdditionalAudioExpanded} onOpenChange={setIsAdditionalAudioExpanded}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between bg-transparent">
-                  <span className="flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-orange-600" />
-                    Additional Audio Resources ({challenge.additionalVoiceUrls?.length || 0})
-                  </span>
-                  {isAdditionalAudioExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4">
-                <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
-                  {challenge.additionalVoiceUrls?.map((audioUrl, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-3">
-                      <div className="text-sm font-medium text-gray-700 mb-2">
-                        Audio {index + 1}
-                      </div>
-                      <audio controls className="w-full">
-                        <source src={audioUrl} type="audio/mpeg" />
-                        <source src={audioUrl} type="audio/wav" />
-                        <source src={audioUrl} type="audio/ogg" />
-                        Your browser does not support the audio element.
-                      </audio>
-                    </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        )}
+
+
 
         {/* Rubric Section */}
         {challenge.rubric.length > 0 && (

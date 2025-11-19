@@ -88,8 +88,6 @@ export interface Challenge {
   problemAudioUrls?: string[]
   guidelinesAudioUrls?: string[]
   visualClueUrls?: string[]
-  additionalImageUrls?: string[]
-  additionalVoiceUrls?: string[]
   competitionId: string
   maxScore: number
   rubric: {

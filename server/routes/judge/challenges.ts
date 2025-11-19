@@ -34,8 +34,6 @@ export async function fetchChallenge(
       problemAudioUrls: data.problemAudioUrls || [],
       guidelinesAudioUrls: data.guidelinesAudioUrls || [],
       visualClueUrls: data.visualClueUrls || [],
-      additionalImageUrls: data.additionalImageUrls || [],
-      additionalVoiceUrls: data.additionalVoiceUrls || [],
       rubric: data.rubric || [],
       maxScore: data.maxScore || 100,
       competitionId: data.competitionId,

@@ -135,8 +135,6 @@ export default function EditChallengePage() {
     problemAudioUrls: [] as string[],
     guidelinesAudioUrls: [] as string[],
     visualClueUrls: [] as string[],
-    additionalImageUrls: [] as string[],
-    additionalVoiceUrls: [] as string[],
   })
   
   const [userUID, setUserID] = useState<string | null>(null)
@@ -159,16 +157,7 @@ export default function EditChallengePage() {
   const [visualClueFiles, setVisualClueFiles] = useState<File[]>([])
   const [visualCluePreviews, setVisualCluePreviews] = useState<string[]>([])
   
-  // Additional Resources Audio States
-  const [additionalVoiceFiles, setAdditionalVoiceFiles] = useState<File[]>([])
-  const [additionalVoicePreviews, setAdditionalVoicePreviews] = useState<string[]>([])
-  const [isAdditionalRecording, setIsAdditionalRecording] = useState(false)
-  const [additionalMediaRecorder, setAdditionalMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [additionalRecordingTime, setAdditionalRecordingTime] = useState(0)
-  
-  // Additional Resources Image States
-  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([])
-  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([])
+
 
   const [uploadingFiles, setUploadingFiles] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 })
@@ -190,10 +179,8 @@ export default function EditChallengePage() {
       problemAudioPreviews.forEach((p) => URL.revokeObjectURL(p))
       guidelinesAudioPreviews.forEach((p) => URL.revokeObjectURL(p))
       visualCluePreviews.forEach((p) => URL.revokeObjectURL(p))
-      additionalImagePreviews.forEach((p) => URL.revokeObjectURL(p))
-      additionalVoicePreviews.forEach((p) => URL.revokeObjectURL(p))
     }
-  }, [problemAudioPreviews, guidelinesAudioPreviews, visualCluePreviews, additionalImagePreviews, additionalVoicePreviews])
+  }, [problemAudioPreviews, guidelinesAudioPreviews, visualCluePreviews])
   
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -214,16 +201,6 @@ export default function EditChallengePage() {
     }
     return () => clearInterval(interval)
   }, [isGuidelinesRecording])
-  
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isAdditionalRecording) {
-      interval = setInterval(() => {
-        setAdditionalRecordingTime((t) => t + 1)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [isAdditionalRecording])
 
   const checkAuthAndLoad = async () => {
     try {
@@ -253,7 +230,6 @@ export default function EditChallengePage() {
           problemAudioCount: data.problemAudioUrls?.length || 0,
           guidelinesAudioCount: data.guidelinesAudioUrls?.length || 0,
           visualClueCount: data.visualClueUrls?.length || 0,
-          additionalImageCount: data.additionalImageUrls?.length || 0,
           additionalVoiceCount: (data.additionalVoiceUrls || data.voiceNoteUrls || []).length
         })
         
@@ -266,8 +242,6 @@ export default function EditChallengePage() {
           problemAudioUrls: data.problemAudioUrls || [],
           guidelinesAudioUrls: data.guidelinesAudioUrls || [],
           visualClueUrls: data.visualClueUrls || [],
-          additionalImageUrls: data.additionalImageUrls || [],
-          additionalVoiceUrls: data.additionalVoiceUrls || (data.voiceNoteUrls || []),
         })
       } else {
         console.warn('⚠️ Challenge document not found')
@@ -512,124 +486,7 @@ export default function EditChallengePage() {
     }))
   }
 
-  // Additional Audio Handlers
-  const validateAndAddAdditionalAudio = (files: FileList | null) => {
-    if (!files) return
-    const arr = Array.from(files)
-    const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/webm','audio/x-m4a','audio/m4a']
-    
-    const toAdd: File[] = []
-    const previews: string[] = []
-    
-    for (const f of arr) {
-      if (!allowed.includes(f.type)) {
-        toast({ title: 'Invalid file', description: `${f.name} is not a supported audio`, variant: 'destructive' })
-        continue
-      }
-      toAdd.push(f)
-      previews.push(URL.createObjectURL(f))
-    }
-    
-    if (toAdd.length > 0) {
-      setAdditionalVoiceFiles((s) => [...s, ...toAdd])
-      setAdditionalVoicePreviews((p) => [...p, ...previews])
-    }
-  }
 
-  const removeAdditionalAudioFile = (index: number) => {
-    setAdditionalVoiceFiles((s) => s.filter((_, i) => i !== index))
-    setAdditionalVoicePreviews((p) => {
-      const copy = [...p]
-      const url = copy.splice(index, 1)[0]
-      if (url) URL.revokeObjectURL(url)
-      return copy
-    })
-  }
-
-  const removeAdditionalAudioUrl = (index: number) => {
-    setFormData((p) => ({
-      ...p,
-      additionalVoiceUrls: (p.additionalVoiceUrls || []).filter((_, i) => i !== index)
-    }))
-  }
-
-  const startAdditionalRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream)
-      const chunks: Blob[] = []
-      
-      recorder.ondataavailable = (e) => chunks.push(e.data)
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' })
-        const file = new File([blob], `additional-recording-${Date.now()}.webm`, { type: 'audio/webm' })
-        setAdditionalVoiceFiles((s) => [...s, file])
-        setAdditionalVoicePreviews((p) => [...p, URL.createObjectURL(file)])
-        stream.getTracks().forEach(track => track.stop())
-      }
-      
-      setAdditionalMediaRecorder(recorder)
-      recorder.start()
-      setIsAdditionalRecording(true)
-      setAdditionalRecordingTime(0)
-    } catch (err) {
-      toast({ title: 'Error', description: 'Could not access microphone', variant: 'destructive' })
-    }
-  }
-
-  const stopAdditionalRecording = () => {
-    if (additionalMediaRecorder && isAdditionalRecording) {
-      additionalMediaRecorder.stop()
-      setIsAdditionalRecording(false)
-      setAdditionalMediaRecorder(null)
-    }
-  }
-
-  // Additional Images Handlers
-  const validateAndAddAdditionalImages = (files: FileList | null) => {
-    if (!files) return
-    const arr = Array.from(files)
-    const allowed = ['image/jpeg','image/jpg','image/png','image/gif','image/webp']
-
-    const toAdd: File[] = []
-    const previews: string[] = []
-
-    for (const f of arr) {
-      if (!allowed.includes(f.type)) {
-        toast({ title: 'Invalid file', description: `${f.name} is not a supported image`, variant: 'destructive' })
-        continue
-      }
-      toAdd.push(f)
-      previews.push(URL.createObjectURL(f))
-    }
-
-    if (toAdd.length > 0) {
-      setAdditionalImageFiles((s) => [...s, ...toAdd])
-      setAdditionalImagePreviews((p) => [...p, ...previews])
-    }
-  }
-
-  const handleAdditionalImageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    validateAndAddAdditionalImages(e.target.files)
-    e.target.value = ''
-  }
-
-  const removeAdditionalImageFile = (index: number) => {
-    setAdditionalImageFiles((s) => s.filter((_, i) => i !== index))
-    setAdditionalImagePreviews((p) => {
-      const copy = [...p]
-      const url = copy.splice(index, 1)[0]
-      if (url) URL.revokeObjectURL(url)
-      return copy
-    })
-  }
-
-  const removeAdditionalImageUrl = (index: number) => {
-    setFormData((p) => ({
-      ...p,
-      additionalImageUrls: (p.additionalImageUrls || []).filter((_, i) => i !== index)
-    }))
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({
@@ -743,22 +600,16 @@ export default function EditChallengePage() {
       let finalProblemAudioUrls = [...(formData.problemAudioUrls || [])]
       let finalGuidelinesAudioUrls = [...(formData.guidelinesAudioUrls || [])]
       let finalVisualClueUrls = [...(formData.visualClueUrls || [])]
-      let finalAdditionalImageUrls = [...(formData.additionalImageUrls || [])]
-      let finalAdditionalVoiceUrls = [...(formData.additionalVoiceUrls || [])]
 
       const totalFilesToUpload = 
         problemAudioFiles.length + 
         guidelinesAudioFiles.length + 
-        visualClueFiles.length + 
-        additionalImageFiles.length + 
-        additionalVoiceFiles.length
+        visualClueFiles.length
 
       console.log('📤 Upload process starting:', {
         problemAudio: problemAudioFiles.length,
         guidelinesAudio: guidelinesAudioFiles.length,
         visualClues: visualClueFiles.length,
-        additionalImages: additionalImageFiles.length,
-        additionalVoice: additionalVoiceFiles.length,
         totalFiles: totalFilesToUpload
       })
 
@@ -808,31 +659,7 @@ export default function EditChallengePage() {
         }
       }
 
-      if (additionalImageFiles.length > 0) {
-        for (let i = 0; i < additionalImageFiles.length; i++) {
-          const file = additionalImageFiles[i]
-          try {
-            const url = await uploadFile(file, 'image')
-            finalAdditionalImageUrls.push(url)
-            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
-          } catch (err: any) {
-            throw new Error(`Additional image upload failed: ${err?.message || err}`)
-          }
-        }
-      }
 
-      if (additionalVoiceFiles.length > 0) {
-        for (let i = 0; i < additionalVoiceFiles.length; i++) {
-          const file = additionalVoiceFiles[i]
-          try {
-            const url = await uploadFile(file, 'voice')
-            finalAdditionalVoiceUrls.push(url)
-            setUploadProgress((p) => ({ ...p, current: p.current + 1 }))
-          } catch (err: any) {
-            throw new Error(`Additional voice upload failed: ${err?.message || err}`)
-          }
-        }
-      }
 
       const updateData = {
         title: formData.title,
@@ -843,8 +670,6 @@ export default function EditChallengePage() {
         problemAudioUrls: finalProblemAudioUrls,
         guidelinesAudioUrls: finalGuidelinesAudioUrls,
         visualClueUrls: finalVisualClueUrls,
-        additionalImageUrls: finalAdditionalImageUrls,
-        additionalVoiceUrls: finalAdditionalVoiceUrls,
         emailoflatestupdate: email,
         nameoflatestupdate: fullName,
         lastupdatetime: Timestamp.now(),
@@ -856,8 +681,6 @@ export default function EditChallengePage() {
         problemAudioCount: finalProblemAudioUrls.length,
         guidelinesAudioCount: finalGuidelinesAudioUrls.length,
         visualClueCount: finalVisualClueUrls.length,
-        additionalImageCount: finalAdditionalImageUrls.length,
-        additionalVoiceCount: finalAdditionalVoiceUrls.length
       })
 
       await updateDoc(doc(db, "competitions", competitionId, "challenges", challengeId), updateData)
@@ -874,10 +697,6 @@ export default function EditChallengePage() {
       setGuidelinesAudioPreviews([])
       setVisualClueFiles([])
       setVisualCluePreviews([])
-      setAdditionalImageFiles([])
-      setAdditionalImagePreviews([])
-      setAdditionalVoiceFiles([])
-      setAdditionalVoicePreviews([])
 
       setUploadingFiles(false)
 
@@ -1116,74 +935,7 @@ export default function EditChallengePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.3s_forwards]">
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Additional Resources</h2>
-              <p className="text-sm text-gray-500 mt-1">Update optional supplementary images and audio files</p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-2 block">Additional Images (optional)</Label>
-                <p className="text-xs text-gray-500 mb-3">Upload supplementary reference materials</p>
-
-                {additionalImagePreviews.length === 0 && (formData.additionalImageUrls || []).length === 0 ? (
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-6 rounded-md text-gray-500 cursor-pointer hover:border-gray-300 transition-colors">
-                    <ImageIcon className="w-6 h-6 mb-2" />
-                    <span className="text-sm">Click to upload images</span>
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleAdditionalImageInput} />
-                  </label>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                      {(formData.additionalImageUrls || []).map((url, i) => (
-                        <div key={`existing-add-img-${i}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '100px' }} onClick={() => setPreviewImage(url)}>
-                          <img src={url} alt={`add-img-${i}`} className="w-full h-full object-cover pointer-events-none" />
-                          <button type="button" onClick={(e) => { e.stopPropagation(); removeAdditionalImageUrl(i) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-
-                      {additionalImagePreviews.map((src, idx) => (
-                        <div key={`new-add-img-${idx}`} className="relative overflow-hidden rounded-lg border cursor-pointer hover:opacity-90 transition-opacity" style={{ height: '100px' }} onClick={() => setPreviewImage(src)}>
-                          <img src={src} alt={`add-preview-${idx}`} className="w-full h-full object-cover pointer-events-none" />
-                          <button type="button" onClick={(e) => { e.stopPropagation(); removeAdditionalImageFile(idx) }} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <input id="additional-image-input" type="file" accept="image/*" multiple className="hidden" onChange={handleAdditionalImageInput} />
-                    <Button type="button" variant="outline" size="sm" onClick={(e) => { e.preventDefault(); document.getElementById('additional-image-input')?.click() }} className="w-full">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add More
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              <div>
-                <MultiAudioInput
-                  label="Additional Audio (optional)"
-                  description="Upload supplementary audio files"
-                  existingUrls={formData.additionalVoiceUrls}
-                  selectedFiles={additionalVoiceFiles}
-                  filePreviews={additionalVoicePreviews}
-                  isRecording={isAdditionalRecording}
-                  recordingTime={additionalRecordingTime}
-                  onStartRecording={startAdditionalRecording}
-                  onStopRecording={stopAdditionalRecording}
-                  onFileSelect={(files) => validateAndAddAdditionalAudio(files)}
-                  onRemoveFile={removeAdditionalAudioFile}
-                  onRemoveExistingUrl={removeAdditionalAudioUrl}
-                  onPreview={setPreviewVoice}
-                  inputId="additional-audio-input"
-                />
-              </div>
-            </div>
-          </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.4s_forwards]">
             <div className="mb-6">

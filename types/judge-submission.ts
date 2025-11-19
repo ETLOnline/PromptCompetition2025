@@ -98,9 +98,7 @@ export interface Challenge {
   // NEW MULTIMEDIA FIELDS
   problemAudioUrls?: string[]
   guidelinesAudioUrls?: string[]
-  visualClueUrls?: string[]
-  additionalImageUrls?: string[]
-  additionalVoiceUrls?: string[]
+  visualClueUrls: string[]
 }
 
 export interface ScoreData {

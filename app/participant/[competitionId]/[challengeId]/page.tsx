@@ -28,9 +28,8 @@ interface Challenge {
   problemAudioUrls: string[]
   guidelinesAudioUrls: string[]
   visualClueUrls: string[]
-  additionalImageUrls: string[]
-  additionalVoiceUrls: string[]
 }
+
 
 interface UserProfile {
   uid: string
@@ -180,8 +179,6 @@ export default function ChallengePage() {
         problemAudioUrls: challengeDataRaw.problemAudioUrls || [],
         guidelinesAudioUrls: challengeDataRaw.guidelinesAudioUrls || [],
         visualClueUrls: challengeDataRaw.visualClueUrls || [],
-        additionalImageUrls: challengeDataRaw.additionalImageUrls || [],
-        additionalVoiceUrls: challengeDataRaw.additionalVoiceUrls || (challengeDataRaw.voiceNoteUrls || []),
       }
 
       setChallenge(challengeData)
@@ -461,68 +458,7 @@ export default function ChallengePage() {
               </Card>
             )}
 
-            {/* Additional Resources Card */}
-            {((challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0) || 
-              (challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0)) && (
-              <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
-                  <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
-                    <FileText className="h-6 w-6 text-indigo-600" />
-                    Additional Resources
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Additional Images */}
-                    {challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <ImageIcon className="h-5 w-5 text-purple-600" />
-                          Reference Images
-                        </h4>
-                        <div className="space-y-4">
-                          {challenge.additionalImageUrls.map((imageUrl, index) => (
-                            <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                              <img
-                                src={imageUrl}
-                                alt={`Additional image ${index + 1}`}
-                                className="max-w-full max-h-64 mx-auto cursor-pointer hover:opacity-90 transition-opacity object-contain"
-                                onClick={() => setPreviewImage(imageUrl)}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Additional Audio */}
-                    {challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <Volume2 className="h-5 w-5 text-orange-600" />
-                          Supplementary Audio
-                        </h4>
-                        <div className="space-y-4">
-                          {challenge.additionalVoiceUrls.map((audioUrl, index) => (
-                            <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                              <div className="text-sm font-medium text-gray-700 mb-2">
-                                Audio {index + 1}
-                              </div>
-                              <audio controls className="w-full">
-                                <source src={audioUrl} type="audio/mpeg" />
-                                <source src={audioUrl} type="audio/wav" />
-                                <source src={audioUrl} type="audio/ogg" />
-                                Your browser does not support the audio element.
-                              </audio>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+
 
             {/* Solution Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
