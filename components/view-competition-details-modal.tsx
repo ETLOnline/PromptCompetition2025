@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Calendar, Eye, MapPin, DollarSign } from "lucide-react"
+import { Calendar, Eye, MapPin, DollarSign, Trophy } from "lucide-react"
 import { formatCompetitionDateTime } from "@/lib/format-competition-date-time"
 
 interface Competition {
@@ -115,7 +115,7 @@ export const ViewCompetitionDetailsModal = ({ isOpen, onClose, competition }: Vi
               {competition.prizeMoney && (
                 <div className="bg-yellow-50 rounded-lg p-4 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                    <Trophy className="w-5 h-5 text-yellow-600 flex-shrink-0" />
                     <Label className="text-base font-semibold text-yellow-900">Prize Money</Label>
                   </div>
                   <div className="text-sm text-gray-900 font-medium break-words overflow-wrap-anywhere">
