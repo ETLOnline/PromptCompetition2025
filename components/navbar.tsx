@@ -23,11 +23,11 @@ export default function Navbar() {
 
   const navItems = [
     { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
     { label: "Events", href: "/#events" },
     { label: "Rules", href: "/rules" },
     { label: "Leaderboard", href: "/leaderboard" },
     { label: "Contact Us", href: "/#contact" },
-    { label: "About", href: "/about" },
   ]
 
   return (

@@ -15,7 +15,7 @@ export default function AboutPage() {
                 About Our Platform
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Empowering the next generation of AI innovators through prompt engineering excellence
+                Nurturing the next generation of AI talent through prompt engineering excellence among Pakistani students
               </p>
             </div>
             <div className="space-y-8">
@@ -29,9 +29,9 @@ export default function AboutPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-lg leading-relaxed">
-                    We aim to identify, nurture, and celebrate the most talented prompt engineers worldwide. 
+                    We aim to identify, nurture, and celebrate the most talented prompt engineering students across Pakistan. 
                     Our platform provides a competitive environment where creativity meets technical excellence, 
-                    fostering innovation in the critical field of human-AI interaction through expertly crafted prompts.
+                    fostering innovation in the critical field of human-AI interaction through expertly crafted prompts and visual interpretation skills.
                   </p>
                 </CardContent>
               </Card>
@@ -46,10 +46,10 @@ export default function AboutPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-lg leading-relaxed">
-                    To create a global community of prompt engineering excellence, where talented individuals 
+                    To create a vibrant community of prompt engineering excellence among students in Pakistan, where talented individuals 
                     can showcase their skills, learn from each other, and push the boundaries of what's possible 
                     in AI communication. We envision a future where effective human-AI collaboration drives 
-                    innovation across all industries.
+                    innovation and prepares the next generation for AI-integrated careers.
                   </p>
                 </CardContent>
               </Card>
@@ -122,68 +122,68 @@ export default function AboutPage() {
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-slate-700">Competitive Challenges</h3>
+                      <h3 className="text-lg font-semibold text-slate-700">Visual Interpretation Challenges</h3>
                       <p className="text-muted-foreground">
-                        Regular competitions designed to test various aspects of prompt engineering, from creative 
-                        writing to technical problem-solving.
+                        Unique competitions that test your ability to interpret visual content and translate insights 
+                        into effective prompts through Visual Interpretation Narratives (VIN).
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-slate-700">Fair Evaluation</h3>
+                      <h3 className="text-lg font-semibold text-slate-700">Two-Level Evaluation</h3>
                       <p className="text-muted-foreground">
-                        Advanced AI-powered evaluation combined with expert human judgment ensures fair and 
-                        comprehensive assessment of submissions.
+                        Multi-LLM automated evaluation for initial screening, followed by live Zoom sessions 
+                        for top 20 participants with real-time prompt building and expert judging.
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-slate-700">Global Community</h3>
+                      <h3 className="text-lg font-semibold text-slate-700">Student Community</h3>
                       <p className="text-muted-foreground">
-                        Connect with prompt engineers from around the world, share knowledge, and learn from 
-                        the best in the field.
+                        Connect with talented prompt engineering students from across Pakistan, share knowledge, 
+                        and learn from peers in an academic-focused environment.
                       </p>
                     </div>
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-slate-700">Recognition & Rewards</h3>
                       <p className="text-muted-foreground">
-                        Win prizes, earn certificates, and gain recognition for your prompt engineering skills 
-                        and creativity.
+                        Win prizes, earn certificates, and gain recognition for your prompt engineering skills, 
+                        creativity, and analytical thinking abilities.
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Competition Types */}
+              {/* Competition Format */}
               <Card className="bg-white shadow-md rounded-lg transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
                 <CardHeader>
                   <CardTitle className="text-2xl bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                    Competition Categories
+                    Competition Format
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h3 className="text-lg font-semibold text-blue-700 mb-2">Creative Writing</h3>
+                      <h3 className="text-lg font-semibold text-blue-700 mb-2">Visual Interpretation Narrative (VIN)</h3>
                       <p className="text-muted-foreground">
-                        Craft prompts that generate compelling stories, poems, and creative content.
+                        Create a 50-100 word written interpretation of provided images, demonstrating your analytical and creative thinking skills.
                       </p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <h3 className="text-lg font-semibold text-green-700 mb-2">Technical Problem Solving</h3>
+                      <h3 className="text-lg font-semibold text-green-700 mb-2">Final Prompt Creation</h3>
                       <p className="text-muted-foreground">
-                        Design prompts for coding, analysis, and complex technical challenges.
+                        Develop clear, ethical, structured, and reusable prompts based on your visual interpretation and understanding.
                       </p>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <h3 className="text-lg font-semibold text-purple-700 mb-2">Business Applications</h3>
+                      <h3 className="text-lg font-semibold text-purple-700 mb-2">Translation Rationale</h3>
                       <p className="text-muted-foreground">
-                        Create prompts for marketing, strategy, and professional communication.
+                        Explain your reasoning process - how your VIN connects to your final prompt, demonstrating your thought process and methodology.
                       </p>
                     </div>
                     <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                      <h3 className="text-lg font-semibold text-orange-700 mb-2">Educational Content</h3>
+                      <h3 className="text-lg font-semibold text-orange-700 mb-2">Live Evaluation (Top 20)</h3>
                       <p className="text-muted-foreground">
-                        Develop prompts that generate effective learning materials and explanations.
+                        Top performers participate in live Zoom sessions with real-time prompt building, screen sharing, and direct interaction with judges.
                       </p>
                     </div>
                   </div>
@@ -200,21 +200,33 @@ export default function AboutPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground leading-relaxed mb-6">
-                    Our platform is open to prompt engineering enthusiasts from all backgrounds and experience levels. 
-                    Whether you're a student, professional, researcher, or hobbyist, there's a place for you here.
+                    Our competition is exclusively open to students across Pakistan. This focused approach allows us to 
+                    nurture the next generation of AI talent and provide targeted educational opportunities in prompt engineering.
                   </p>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-slate-50 rounded-lg">
-                      <div className="text-2xl font-bold text-slate-700 mb-2">Students</div>
-                      <p className="text-sm text-muted-foreground">Learn and compete while building your portfolio</p>
-                    </div>
-                    <div className="text-center p-4 bg-slate-50 rounded-lg">
-                      <div className="text-2xl font-bold text-slate-700 mb-2">Professionals</div>
-                      <p className="text-sm text-muted-foreground">Showcase your expertise and stay current</p>
-                    </div>
-                    <div className="text-center p-4 bg-slate-50 rounded-lg">
-                      <div className="text-2xl font-bold text-slate-700 mb-2">Researchers</div>
-                      <p className="text-sm text-muted-foreground">Test new techniques and methodologies</p>
+                  <div className="space-y-4">
+                    <div className="bg-emerald-50 p-6 rounded-lg border border-emerald-200">
+                      <h3 className="text-xl font-bold text-emerald-700 mb-3">📚 Students in Pakistan</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Open to all students currently enrolled in educational institutions across Pakistan
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-slate-700">Requirements:</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            <li>• Must create original work</li>
+                            <li>• Follow ethical prompt practices</li>
+                            <li>• Available for live Zoom sessions (if top 20)</li>
+                          </ul>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-slate-700">Benefits:</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
+                            <li>• Learn cutting-edge AI skills</li>
+                            <li>• Build your portfolio</li>
+                            <li>• Win prizes and recognition</li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -229,29 +241,29 @@ export default function AboutPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    We're continuously evolving our platform to provide better experiences and opportunities for 
-                    the prompt engineering community. Here's what's coming next:
+                    We're continuously evolving our competition platform to provide better experiences and learning 
+                    opportunities for Pakistani students. Here's what's coming in future editions:
                   </p>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-slate-700 rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-muted-foreground">Advanced AI evaluation models for more nuanced scoring</p>
+                      <p className="text-muted-foreground">Enhanced multi-LLM evaluation models for more nuanced VIN scoring</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-slate-700 rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-muted-foreground">Interactive learning modules and tutorials</p>
+                      <p className="text-muted-foreground">Interactive prompt engineering workshops and training sessions</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-slate-700 rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-muted-foreground">Mentorship programs connecting beginners with experts</p>
+                      <p className="text-muted-foreground">Mentorship programs connecting top performers with industry experts</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-slate-700 rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-muted-foreground">Industry partnerships for real-world challenge scenarios</p>
+                      <p className="text-muted-foreground">University partnerships for academic integration and recognition</p>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-slate-700 rounded-full mt-2 flex-shrink-0"></div>
-                      <p className="text-muted-foreground">Mobile app for participating in competitions on-the-go</p>
+                      <p className="text-muted-foreground">Mobile app for easier participation and real-time updates</p>
                     </div>
                   </div>
                 </CardContent>
