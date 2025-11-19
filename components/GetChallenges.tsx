@@ -27,6 +27,11 @@ import {
   FileText,
   Target,
   Scale,
+  Headphones,
+  Image as ImageIcon,
+  Eye,
+  Play,
+  X,
 } from "lucide-react"
 import { db } from "@/lib/firebase"
 import {
@@ -46,12 +51,18 @@ type Challenge = {
   id: string
   title: string
   problemStatement: string
+  systemPrompt: string
   guidelines: string
   rubric: Array<{
     name: string
     description: string
     weight: number
   }>
+  problemAudioUrls: string[]
+  guidelinesAudioUrls: string[]
+  visualClueUrls: string[]
+  additionalImageUrls: string[]
+  additionalVoiceUrls: string[]
   startDeadline: Timestamp
   endDeadline: Timestamp
   lastupdatetime: Timestamp
@@ -71,6 +82,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [challengeToDelete, setChallengeToDelete] = useState<string | null>(null)
   const [expandedChallenges, setExpandedChallenges] = useState<Set<string>>(new Set())
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -121,6 +133,17 @@ export default function GetChallenges({ competitionId }: { competitionId: string
           id: doc.id,
           ...(doc.data() as Omit<Challenge, "id">),
         }))
+
+        console.log('🎯 Challenges loaded:', fetched.map(c => ({
+          id: c.id,
+          title: c.title,
+          hasSystemPrompt: !!c.systemPrompt,
+          problemAudioCount: c.problemAudioUrls?.length || 0,
+          guidelinesAudioCount: c.guidelinesAudioUrls?.length || 0,
+          visualClueCount: c.visualClueUrls?.length || 0,
+          additionalImageCount: c.additionalImageUrls?.length || 0,
+          additionalVoiceCount: c.additionalVoiceUrls?.length || 0
+        })))
 
         setChallenges(fetched)
       } catch (error) {
@@ -343,6 +366,24 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                             </div>
                           )}
 
+                          {/* Problem Audio Files */}
+                          {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
+                            <div className="bg-indigo-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Headphones className="w-4 h-4" />
+                                Problem Audio Files ({challenge.problemAudioUrls.length})
+                              </h4>
+                              <div className="grid grid-cols-1 gap-3">
+                                {challenge.problemAudioUrls.map((url, index) => (
+                                  <div key={index} className="bg-white rounded-md p-3 border border-indigo-200">
+                                    <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                                    <audio controls src={url} className="w-full h-8" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Guidelines */}
                           {challenge.guidelines && (
                             <div className="bg-green-50 rounded-lg p-4">
@@ -351,6 +392,118 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                                 Guidelines
                               </h4>
                               <p className="text-gray-700 whitespace-pre-wrap">{challenge.guidelines}</p>
+                            </div>
+                          )}
+
+                          {/* Guidelines Audio Files */}
+                          {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
+                            <div className="bg-emerald-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Headphones className="w-4 h-4" />
+                                Guidelines Audio Files ({challenge.guidelinesAudioUrls.length})
+                              </h4>
+                              <div className="grid grid-cols-1 gap-3">
+                                {challenge.guidelinesAudioUrls.map((url, index) => (
+                                  <div key={index} className="bg-white rounded-md p-3 border border-emerald-200">
+                                    <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                                    <audio controls src={url} className="w-full h-8" />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Visual Clues */}
+                          {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
+                            <div className="bg-amber-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <ImageIcon className="w-4 h-4" />
+                                Visual Clues ({challenge.visualClueUrls.length})
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {challenge.visualClueUrls.map((url, index) => (
+                                  <div 
+                                    key={index} 
+                                    className="relative group cursor-pointer"
+                                    onClick={() => setPreviewImage(url)}
+                                  >
+                                    <div className="aspect-square overflow-hidden rounded-md border border-amber-200">
+                                      <img 
+                                        src={url} 
+                                        alt={`Visual clue ${index + 1}`}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                      />
+                                    </div>
+                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all">
+                                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100" />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* System Prompt */}
+                          {challenge.systemPrompt && (
+                            <div className="bg-slate-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <FileText className="w-4 h-4" />
+                                System Prompt
+                              </h4>
+                              <p className="text-gray-700 whitespace-pre-wrap font-mono text-sm bg-white p-3 rounded border">{challenge.systemPrompt}</p>
+                            </div>
+                          )}
+
+                          {/* Additional Resources */}
+                          {((challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0) || 
+                            (challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0)) && (
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                Additional Resources
+                              </h4>
+                              
+                              {/* Additional Images */}
+                              {challenge.additionalImageUrls && challenge.additionalImageUrls.length > 0 && (
+                                <div className="mb-4">
+                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Additional Images ({challenge.additionalImageUrls.length})</h5>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {challenge.additionalImageUrls.map((url, index) => (
+                                      <div 
+                                        key={index} 
+                                        className="relative group cursor-pointer"
+                                        onClick={() => setPreviewImage(url)}
+                                      >
+                                        <div className="aspect-square overflow-hidden rounded-md border border-gray-200">
+                                          <img 
+                                            src={url} 
+                                            alt={`Additional image ${index + 1}`}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                          />
+                                        </div>
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all">
+                                          <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100" />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Additional Voice Files */}
+                              {challenge.additionalVoiceUrls && challenge.additionalVoiceUrls.length > 0 && (
+                                <div>
+                                  <h5 className="text-sm font-medium text-gray-700 mb-2">Additional Audio Files ({challenge.additionalVoiceUrls.length})</h5>
+                                  <div className="grid grid-cols-1 gap-3">
+                                    {challenge.additionalVoiceUrls.map((url, index) => (
+                                      <div key={index} className="bg-white rounded-md p-3 border border-gray-200">
+                                        <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                                        <audio controls src={url} className="w-full h-8" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -592,6 +745,22 @@ export default function GetChallenges({ competitionId }: { competitionId: string
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
