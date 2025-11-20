@@ -166,9 +166,10 @@ export default function CompetitionsPage() {
 
   const checkAuth = async (): Promise<UserProfile | null> => {
     try {
+      // console.log("Checking authentication...")
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`)
       setUser(profile)
-
+      // console.log("Authenticated user profile:", profile)
       if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
         router.push("/")
         return null

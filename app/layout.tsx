@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth-provider"
+import { ClerkProvider } from "@clerk/nextjs"
 import { ParticipantCacheProvider } from "@/lib/participant-cache-context"
 import { CompetitionCacheProvider } from "@/lib/competition-cache-context"
 
@@ -26,17 +27,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <AuthProvider>
-          <ParticipantCacheProvider>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={inter.className}>
+          <AuthProvider>
             <CompetitionCacheProvider>
-              {children}
-              <Toaster />
+              <ParticipantCacheProvider>
+                {children}
+                  </ParticipantCacheProvider>
             </CompetitionCacheProvider>
-          </ParticipantCacheProvider>
-        </AuthProvider>
-      </body>
-    </html>
+                <Toaster />
+          </AuthProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

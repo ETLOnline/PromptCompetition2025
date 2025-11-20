@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express"
-import { admin } from "../config/firebase-admin.js"  
+import { clerkClient } from "../config/firebase-admin.js"
+import { verifyToken } from "@clerk/backend"
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     uid: string;
     email?: string;
-    role?: "judge" | "admin" | "superadmin";
+    role?: "judge" | "admin" | "superadmin" | "participant";
   };
 }
 
@@ -18,13 +19,18 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   const idToken = authHeader.split("Bearer ")[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // Verify Clerk token using @clerk/backend verifyToken function
+    const sessionClaims = await verifyToken(idToken, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    });
 
-    const role = decodedToken.role as "judge" | "admin" | "superadmin" | undefined;
+    // Extract role from publicMetadata (set during profile setup)
+    const metadata = sessionClaims.publicMetadata as any;
+    const role = metadata?.role as "judge" | "admin" | "superadmin" | "participant" | undefined;
 
     req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
+      uid: sessionClaims.sub, // Clerk uses 'sub' for user ID
+      email: sessionClaims.email as string,
       role,
     };
 
@@ -35,12 +41,12 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   }
 }
 
-export function authorizeRoles(allowedRoles: ("judge" | "admin" | "superadmin")[]) {
+export function authorizeRoles(allowedRoles: ("judge" | "admin" | "superadmin" | "participant")[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized: No user info" });
     }
-    if (!allowedRoles.includes(req.user.role!)) {
+    if (!req.user.role || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
     }
     next();
@@ -57,15 +63,24 @@ export async function verifySuperAdmin(
     return res.status(401).json({ error: "Unauthorized: No token provided." })
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken)
-    const role = (decodedToken as any).role
+    // Verify Clerk token using @clerk/backend verifyToken function
+    const sessionClaims = await verifyToken(idToken, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    })
+    const metadata = sessionClaims.publicMetadata as any;
+    const role = metadata?.role
+    
     if (role !== "superadmin") {
       return res
         .status(403)
         .json({ error: "Forbidden: Superadmin access required." })
     }
 
-    req.user = decodedToken
+    req.user = {
+      uid: sessionClaims.sub,
+      email: sessionClaims.email as string,
+      role: role as "superadmin"
+    }
     next()
   } catch (err: any) {
     return res

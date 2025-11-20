@@ -1,6 +1,6 @@
 import express from "express";
 import { AuthenticatedRequest, authenticateToken, authorizeRoles } from "../utils/auth.js";
-import { admin } from "../config/firebase-admin.js";
+import { clerkClient } from "../config/firebase-admin.js";
 
 const router = express.Router();
 
@@ -10,14 +10,16 @@ router.get("/profile", authenticateToken, async (req: AuthenticatedRequest, res)
     }
 
     try {
-        const userRecord = await admin.auth().getUser(req.user.uid);
+        // Fetch user from Clerk
+        const user = await clerkClient.users.getUser(req.user.uid);
+        // console.log("user email:",req.user?.uid);
 
         res.json({
             uid: req.user?.uid,
-            email: req.user?.email,
-            role: req.user?.role,
-            displayName: userRecord.displayName || null,
-            photoURL: userRecord.photoURL || null,
+            email: user.emailAddresses[0]?.emailAddress,
+            role: user.publicMetadata?.role || req.user?.role,
+            displayName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || null,
+            photoURL: user.imageUrl || null,
         });
     } 
     catch (err) 

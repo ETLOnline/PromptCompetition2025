@@ -1,7 +1,7 @@
 import express, { Response, NextFunction } from "express";
-import { admin, auth, db } from "../config/firebase-admin.js";
+import { clerkClient, db } from "../config/firebase-admin.js";
 import { Request } from "express";
-// import { sendEmailVerification } from "firebase/auth"
+import { verifyToken } from "@clerk/backend";
 import { transporter } from "../config/email.js";
 
 const router = express.Router();
@@ -26,14 +26,23 @@ async function verifySuperAdmin(req: RequestWithUser, res: Response, next: NextF
   }
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userRole = (decodedToken as any).role;
+    // Verify Clerk token
+    const sessionClaims = await verifyToken(idToken, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    });
+
+    const metadata = sessionClaims.publicMetadata as any;
+    const userRole = metadata?.role;
 
     if (userRole !== "superadmin") {
       return res.status(403).json({ error: "Forbidden: Superadmin access required." });
     }
 
-    req.user = decodedToken;
+    req.user = {
+      uid: sessionClaims.sub,
+      email: sessionClaims.email as string,
+      role: userRole,
+    };
     next();
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -49,15 +58,15 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
   }
 
   // Validate role
-  const validRoles = ["admin", "judge", "superadmin", "user"];
+  const validRoles = ["admin", "judge", "superadmin", "participant"];
   if (!validRoles.includes(role)) {
     return res.status(400).json({ error: "Invalid role specified" });
   }
 
   try {
-    // Fetch target user
-    const userRecord = await auth.getUser(uid);
-    const targetRole = userRecord.customClaims?.role;
+    // Fetch target user from Clerk
+    const user = await clerkClient.users.getUser(uid);
+    const targetRole = (user.publicMetadata as any)?.role;
 
     // Prevent *any* superadmin from modifying *another* superadmin
     if (targetRole === "superadmin" && req.user?.uid !== uid) {
@@ -73,16 +82,17 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
       });
     }
 
-    // Finally, apply the new role
-    await auth.setCustomUserClaims(uid, { role });
-    await auth.revokeRefreshTokens(uid);
+    // Update role in Clerk publicMetadata
+    await clerkClient.users.updateUserMetadata(uid, {
+      publicMetadata: { role }
+    });
   
     return res.status(200).json({
-      message: `Role '${role}' assigned to user ${userRecord.email || uid}`,
+      message: `Role '${role}' assigned to user ${user.emailAddresses[0]?.emailAddress || uid}`,
       user: {
-        uid: userRecord.uid,
-        email: userRecord.email || "",
-        displayName: userRecord.displayName || "",
+        uid: user.id,
+        email: user.emailAddresses[0]?.emailAddress || "",
+        displayName: user.fullName || "",
         role
       }
     });
@@ -107,9 +117,9 @@ router.post(
     }
 
     try {
-      // Fetch target user
-      const userRecord = await auth.getUser(uid);
-      const targetRole = userRecord.customClaims?.role;
+      // Fetch target user from Clerk
+      const user = await clerkClient.users.getUser(uid);
+      const targetRole = (user.publicMetadata as any)?.role;
 
       // 1) No superadmin may touch another superadmin
       if (targetRole === "superadmin" && req.user?.uid !== uid) {
@@ -125,17 +135,18 @@ router.post(
           .json({ error: "Forbidden: Cannot revoke your own superadmin role." });
       }
 
-      // Demote to "user"
-      await auth.setCustomUserClaims(uid, { role: "user" });
-      await auth.revokeRefreshTokens(uid);
+      // Demote to "participant" (default role)
+      await clerkClient.users.updateUserMetadata(uid, {
+        publicMetadata: { role: "participant" }
+      });
 
       return res.status(200).json({
-        message: `Role revoked for user ${userRecord.email || uid}`,
+        message: `Role revoked for user ${user.emailAddresses[0]?.emailAddress || uid}`,
         user: {
-          uid: userRecord.uid,
-          email: userRecord.email || "",
-          displayName: userRecord.displayName || "",
-          role: "user",
+          uid: user.id,
+          email: user.emailAddresses[0]?.emailAddress || "",
+          displayName: user.fullName || "",
+          role: "participant",
         },
       });
     } catch (err: unknown) {
@@ -158,9 +169,9 @@ router.delete(
     }
 
     try {
-      // Fetch target user
-      const userRecord = await auth.getUser(uid);
-      const targetRole = userRecord.customClaims?.role;
+      // Fetch target user from Clerk
+      const user = await clerkClient.users.getUser(uid);
+      const targetRole = (user.publicMetadata as any)?.role;
 
       // 1) No superadmin may delete another superadmin
       if (targetRole === "superadmin" && req.user?.uid !== uid) {
@@ -176,9 +187,11 @@ router.delete(
           .json({ error: "Forbidden: Cannot delete your own superadmin account." });
       }
 
-      await auth.deleteUser(uid);
+      // Delete user from Clerk
+      await clerkClient.users.deleteUser(uid);
+      
       return res.status(200).json({
-        message: `User ${userRecord.email || uid} has been deleted successfully`,
+        message: `User ${user.emailAddresses[0]?.emailAddress || uid} has been deleted successfully`,
       });
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : String(err);
@@ -195,7 +208,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
 
   const allowedRoles = ["superadmin", "admin", "judge"];
 
-  // Basic presence check (no password now)
+  // Basic presence check
   if (!email || !displayName || !role) {
     return res.status(400).json({ error: "Required: email, displayName, role" });
   }
@@ -212,77 +225,74 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
   }
 
   try {
-    // 1) Create user WITHOUT password
-    const userRecord = await auth.createUser({
-      email,
-      displayName: displayName || email.split("@")[0],
-      emailVerified: true,
-      disabled: false,
+    // 1) Create user in Clerk with an invitation
+    // Clerk will send invitation email automatically
+    const user = await clerkClient.users.createUser({
+      emailAddress: [email],
+      firstName: displayName.split(" ")[0] || displayName,
+      lastName: displayName.split(" ").slice(1).join(" ") || "",
+      publicMetadata: { role },
+      skipPasswordRequirement: true, // User will set password via invitation
     });
 
-    // 2) Assign custom role claim
-    await auth.setCustomUserClaims(userRecord.uid, { role });
-
-    // 3) Create Firestore profile
-    await db.collection("users").doc(userRecord.uid).set({
-      displayName,
+    // 2) Create Firestore profile
+    await db.collection("users").doc(user.id).set({
+      fullName: displayName,
       email,
       institution: "",
       createdAt: new Date().toISOString(),
     });
 
-    // 4) Generate one-time password reset link (acts as "set initial password")
-    let resetLink: string | null = null;
+    // 3) Create and send invitation via Clerk
+    let inviteSent = false;
     try {
-      const origin = process.env.APP_ORIGIN;
-      const actionCodeSettings = {
-        url: `${origin}/auth/login`,   // or your post-completion route
-        handleCodeInApp: false,     // use Firebase hosted page; set true if you handle link in-app
-      };
-      resetLink = await auth.generatePasswordResetLink(email, actionCodeSettings as any);
-    } catch (e: any) {
-      console.error("Reset link generation failed:", e?.code, e?.message);
-    }
-
-    // 5) Send invite email
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_SENDER,
-        to: email,
-        subject: "Your account is ready — set your password",
-        html: `
-          <p>Hi ${displayName},</p>
-          <p>An administrator has created a <strong>${role}</strong> account for you on our platform.</p>
-          <p><strong>Username:</strong> ${email}</p>
-          <p>To activate your account, please click the link below to set your password:</p>
-          <p><a href="${resetLink}" style="color: #2563eb; text-decoration: underline;">Set Your Password</a></p>
-          <p>Once your password is set, you can log in via the admin portal.</p>
-          <p>If you did not expect this invitation, you can safely ignore this email.</p>
-        `,
+      await clerkClient.invitations.createInvitation({
+        emailAddress: email,
+        publicMetadata: { role },
+        redirectUrl: `${process.env.APP_ORIGIN}/auth/login`,
       });
-    } catch (emailErr: any) {
-      console.error("❌ Failed to send invite email:", emailErr);
+      inviteSent = true;
+    } catch (inviteErr: any) {
+      console.error("❌ Failed to send Clerk invitation:", inviteErr);
+      // You can optionally send a custom email here
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL_SENDER,
+          to: email,
+          subject: "Your account is ready",
+          html: `
+            <p>Hi ${displayName},</p>
+            <p>An administrator has created a <strong>${role}</strong> account for you on our platform.</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p>Please visit <a href="${process.env.APP_ORIGIN}/auth/login">the login page</a> to set up your account.</p>
+            <p>If you did not expect this invitation, you can safely ignore this email.</p>
+          `,
+        });
+        inviteSent = true;
+      } catch (emailErr: any) {
+        console.error("❌ Failed to send custom email:", emailErr);
+      }
     }
 
     return res.status(201).json({
-      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created and invite sent to ${email}`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created${inviteSent ? ' and invitation sent' : ''} to ${email}`,
       user: {
-        uid: userRecord.uid,
-        email: userRecord.email || "",
-        displayName: userRecord.displayName || "",
+        uid: user.id,
+        email: email,
+        displayName: displayName,
         role,
-        inviteSent: Boolean(resetLink),
+        inviteSent,
       },
     });
   } catch (err: any) {
-    // If the email already exists, you can optionally "re-invite" by generating a reset link
-    if (err.code === "auth/email-already-exists") {
+    // Handle Clerk-specific errors
+    if (err.errors && err.errors[0]?.code === "form_identifier_exists") {
       return res.status(409).json({ error: "Email already exists" });
     }
-    if (err.code === "auth/invalid-email") {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-    return res.status(400).json({ error: "Failed to create user account", detail: err.message });
+    return res.status(400).json({ 
+      error: "Failed to create user account", 
+      detail: err.message || String(err)
+    });
   }
 });
 
@@ -292,31 +302,26 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
 router.get("/users", verifySuperAdmin, async (req, res) => {
   try {
     const { role, limit = "50" } = req.query
-    const maxResults = Math.min(parseInt(limit as string, 10) || 50, 1000)
+    const maxResults = Math.min(parseInt(limit as string, 10) || 50, 500)
 
-    let users: any[] = []
-    let pageToken: string | undefined = undefined
+    // Fetch users from Clerk with pagination
+    const clerkUsers = await clerkClient.users.getUserList({
+      limit: maxResults,
+      // offset can be used for pagination if needed
+    });
 
-    // Keep fetching until we reach the requested limit or run out of users
-    do {
-      const list = await auth.listUsers(maxResults, pageToken)
-      users.push(...list.users.map(u => ({
-        uid: u.uid,
-        email: u.email || "",
-        displayName: u.displayName || "",
-        role: (u.customClaims as any)?.role || "user",
-        createdAt: u.metadata.creationTime,
-        lastSignIn: u.metadata.lastSignInTime,
-        emailVerified: u.emailVerified,
-      })))
+    // Map Clerk users to our format
+    let users: any[] = clerkUsers.data.map(u => ({
+      uid: u.id,
+      email: u.emailAddresses[0]?.emailAddress || "",
+      displayName: u.fullName || u.firstName || "",
+      role: (u.publicMetadata as any)?.role || "participant",
+      createdAt: new Date(u.createdAt).toISOString(),
+      lastSignIn: u.lastSignInAt ? new Date(u.lastSignInAt).toISOString() : null,
+      emailVerified: u.emailAddresses[0]?.verification?.status === "verified",
+    }))
 
-      pageToken = list.pageToken
-
-      // Stop if we already have enough users
-      if (users.length >= maxResults) break
-    } while (pageToken)
-
-    // Filter by role early if provided
+    // Filter by role if provided
     if (role && role !== "all") {
       users = users.filter(u => u.role === role)
     }
@@ -336,8 +341,8 @@ router.get("/users", verifySuperAdmin, async (req, res) => {
       }
     })
 
-    // Sort
-    const rolePriority = { superadmin: 0, admin: 1, judge: 2, user: 3 }
+    // Sort by role priority and creation date
+    const rolePriority = { superadmin: 0, admin: 1, judge: 2, participant: 3 }
     users.sort((a, b) => {
       const ap = rolePriority[a.role as keyof typeof rolePriority] ?? 4
       const bp = rolePriority[b.role as keyof typeof rolePriority] ?? 4
@@ -346,10 +351,9 @@ router.get("/users", verifySuperAdmin, async (req, res) => {
     })
 
     res.json({
-      users: users.slice(0, maxResults), // in case we fetched more than needed
-      total: users.length,
-      hasNextPage: Boolean(pageToken),
-      nextPageToken: pageToken || null
+      users: users.slice(0, maxResults),
+      total: clerkUsers.totalCount,
+      hasNextPage: clerkUsers.totalCount > maxResults,
     })
   } catch (err: any) {
     res.status(500).json({ error: "❌ Failed to fetch users", detail: err.message || String(err) })
@@ -367,16 +371,25 @@ router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res:
   }
 
   try {
-    const userRecord = await auth.getUserByEmail(email);
+    // Search for user by email in Clerk
+    const clerkUsers = await clerkClient.users.getUserList({
+      emailAddress: [email],
+    });
+
+    if (clerkUsers.data.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const clerkUser = clerkUsers.data[0];
     const user = {
-      uid: userRecord.uid,
-      email: userRecord.email || "",
-      displayName: userRecord.displayName || "",
-      role: userRecord.customClaims?.role || "user",
-      createdAt: userRecord.metadata.creationTime,
-      lastSignIn: userRecord.metadata.lastSignInTime,
-      emailVerified: userRecord.emailVerified,
-      disabled: userRecord.disabled
+      uid: clerkUser.id,
+      email: clerkUser.emailAddresses[0]?.emailAddress || "",
+      displayName: clerkUser.fullName || clerkUser.firstName || "",
+      role: (clerkUser.publicMetadata as any)?.role || "participant",
+      createdAt: new Date(clerkUser.createdAt).toISOString(),
+      lastSignIn: clerkUser.lastSignInAt ? new Date(clerkUser.lastSignInAt).toISOString() : null,
+      emailVerified: clerkUser.emailAddresses[0]?.verification?.status === "verified",
+      disabled: clerkUser.locked || false
     };
 
     return res.status(200).json(user);
@@ -388,18 +401,22 @@ router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res:
 // GET /superadmin/stats
 router.get("/stats", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   try {
-    const listUsersResult = await auth.listUsers(1000);
-    const users = listUsersResult.users.map((userRecord) => ({
-      role: userRecord.customClaims?.role || "user",
-      disabled: userRecord.disabled
+    // Fetch all users from Clerk (may need pagination for large datasets)
+    const clerkUsers = await clerkClient.users.getUserList({
+      limit: 500, // Adjust as needed
+    });
+
+    const users = clerkUsers.data.map((user) => ({
+      role: (user.publicMetadata as any)?.role || "participant",
+      disabled: user.locked || false
     }));
 
     const stats = {
-      total: users.length,
+      total: clerkUsers.totalCount,
       superadmins: users.filter(u => u.role === "superadmin").length,
       admins: users.filter(u => u.role === "admin").length,
       judges: users.filter(u => u.role === "judge").length,
-      users: users.filter(u => u.role === "user").length,
+      participants: users.filter(u => u.role === "participant").length,
       disabled: users.filter(u => u.disabled).length,
       active: users.filter(u => !u.disabled).length
     };

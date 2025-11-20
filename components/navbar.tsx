@@ -6,6 +6,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, LogIn, UserPlus, X, ChevronDown } from "lucide-react"
+import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -85,33 +86,50 @@ export default function Navbar() {
             <div className="flex items-center gap-4 ml-auto">
               {/* Desktop Auth Buttons */}
               <div className="hidden lg:flex items-center gap-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden"
-                >
+                <SignedOut>
                   <Link href="/auth/login">
-                    {/* Subtle slide-up background */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                    <LogIn className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
-                    <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">Login</span>
+                    <Button
+                      variant="outline"
+                      className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden"
+                    >
+                      {/* Subtle slide-up background */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                      <LogIn className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                      <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">Login</span>
+                    </Button>
                   </Link>
-                </Button>
 
-                <Button
-                  asChild
-                  className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
-                  style={{ backgroundColor: '#10142c' }}
-                >
                   <Link href="/auth/register">
-                    {/* Gradient overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    {/* Light shine effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                    <UserPlus className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
-                    <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
+                    <Button
+                      className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
+                      style={{ backgroundColor: '#10142c' }}
+                    >
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      {/* Light shine effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                      <UserPlus className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                      <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
+                    </Button>
                   </Link>
-                </Button>
+                </SignedOut>
+
+                <SignedIn>
+                  <UserButton 
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: {
+                          width: "40px",
+                          height: "40px",
+                          backgroundColor: "#0f172a",
+                        },
+                        userButtonPopoverCard: "shadow-xl",
+                        userButtonPopoverActionButton: "hover:bg-gray-100",
+                      },
+                    }}
+                  />
+                </SignedIn>
               </div>
 
               {/* Mobile Menu Trigger */}
@@ -131,6 +149,7 @@ export default function Navbar() {
 
                 {/* Mobile Menu Content */}
                 <SheetContent
+                  id="mobile-sheet"
                   side="right"
                   className="bg-white/98 backdrop-blur-xl w-80 p-0 overflow-hidden"
                 >
@@ -197,42 +216,64 @@ export default function Navbar() {
                         </h3>
                       </div>
                       <div className="space-y-3">
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-gray-700 hover:bg-white/80 hover:shadow-sm transition-all duration-300 group relative overflow-hidden"
-                        >
+                        <SignedOut>
                           <Link href="/auth/login" onClick={() => setIsOpen(false)}>
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
-                            <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 relative z-10">
-                              <LogIn className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-300" />
-                            </div>
-                            <div className="relative z-10">
-                              <p className="font-medium">Login</p>
-                              <p className="text-xs text-gray-500">Access your account</p>
-                            </div>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-gray-700 hover:bg-white/80 hover:shadow-sm transition-all duration-300 group relative overflow-hidden"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                              <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center group-hover:from-blue-50 group-hover:to-indigo-50 transition-all duration-300 relative z-10">
+                                <LogIn className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-300" />
+                              </div>
+                              <div className="relative z-10">
+                                <p className="font-medium">Login</p>
+                                <p className="text-xs text-gray-500">Access your account</p>
+                              </div>
+                            </Button>
                           </Link>
-                        </Button>
 
-                        <Button
-                          asChild
-                          className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
-                          style={{ backgroundColor: '#10142c' }}
-                        >
                           <Link href="/auth/register" onClick={() => setIsOpen(false)}>
-                            {/* Gradient overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            {/* Shine effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center transition-all duration-300 relative z-10">
-                              <UserPlus className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="relative z-10">
-                              <p className="font-medium">Sign Up</p>
-                              <p className="text-xs text-blue-100">Create new account</p>
-                            </div>
+                            <Button
+                              className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
+                              style={{ backgroundColor: '#10142c' }}
+                            >
+                              {/* Gradient overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              {/* Shine effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center transition-all duration-300 relative z-10">
+                                <UserPlus className="h-5 w-5 text-white" />
+                              </div>
+                              <div className="relative z-10">
+                                <p className="font-medium">Sign Up</p>
+                                <p className="text-xs text-blue-100">Create new account</p>
+                              </div>
+                            </Button>
                           </Link>
-                        </Button>
+                        </SignedOut>
+
+                        <SignedIn>
+                          <div className="flex flex-col items-center justify-center p-6 bg-white/60 rounded-lg border border-gray-200">
+                            <UserButton 
+                              afterSignOutUrl="/"
+                              appearance={{
+                                elements: {
+                                  avatarBox: {
+                                    width: "64px",
+                                    height: "64px",
+                                    backgroundColor: "#0f172a",
+                                  },
+                                  userButtonPopoverCard: "shadow-xl",
+                                  userButtonPopoverActionButton: "hover:bg-gray-100",
+                                },
+                              }}
+                            />
+                            <p className="mt-3 text-sm text-gray-600 font-medium">
+                              Click to manage your account
+                            </p>
+                          </div>
+                        </SignedIn>
                       </div>
                     </div>
 
