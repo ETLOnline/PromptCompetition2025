@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation"
 import { useUser, useClerk } from "@clerk/nextjs"
 import { User, Building, MapPin, Map, GraduationCap, Briefcase, Linkedin, FileText, X } from "lucide-react"
 import CustomDropdown from "@/components/CustomDropdown"
+import { useUserProfile } from "@/hooks/useUserProfile"
 
 export default function ProfileSetupPage() {
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
+  const { userProfile, loading: profileLoading } = useUserProfile()
   const router = useRouter()
 
   // State for form fields
@@ -41,10 +43,9 @@ export default function ProfileSetupPage() {
 
   // Pre-populate form with user data and check if already completed
   useEffect(() => {
-    if (isLoaded && user) {
+    if (isLoaded && user && !profileLoading) {
       // Check if user has already completed profile setup
-      const publicMetadata = user.publicMetadata as { role?: string } | undefined
-      if (publicMetadata?.role) {
+      if (userProfile?.role) {
         // User has already completed profile, redirect to participant dashboard
         router.push('/participant')
         return
@@ -52,7 +53,7 @@ export default function ProfileSetupPage() {
 
       setFullName(user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim())
     }
-  }, [isLoaded, user, router])
+  }, [isLoaded, user, userProfile, profileLoading, router])
 
   // Validation Functions
   const validateFullName = (name: string): string | null => {

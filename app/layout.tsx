@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/auth-provider"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ParticipantCacheProvider } from "@/lib/participant-cache-context"
 import { CompetitionCacheProvider } from "@/lib/competition-cache-context"
+import { ProfileCompletionGuard } from "@/components/ProfileCompletionGuard"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -31,12 +32,14 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <AuthProvider>
-            <CompetitionCacheProvider>
-              <ParticipantCacheProvider>
-                {children}
-                  </ParticipantCacheProvider>
-            </CompetitionCacheProvider>
-                <Toaster />
+            <ProfileCompletionGuard>
+              <CompetitionCacheProvider>
+                <ParticipantCacheProvider>
+                  {children}
+                </ParticipantCacheProvider>
+              </CompetitionCacheProvider>
+            </ProfileCompletionGuard>
+            <Toaster />
           </AuthProvider>
         </body>
       </html>

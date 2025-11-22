@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher, clerkClient } from '@clerk/nextjs/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 // Define your public routes
@@ -50,24 +50,12 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // If user is logged in, check if they need to complete profile
+  // We handle this check in the layout component instead of middleware
+  // to avoid Edge Runtime limitations with Firebase Admin SDK
   if (userId && !isProfileSetupRoute(req)) {
-    try {
-      // Fetch user data directly from Clerk to get the latest metadata
-      const clerk = await clerkClient()
-      const user = await clerk.users.getUser(userId)
-
-      // Check if user has completed profile setup (has role in metadata)
-      const publicMetadata = user.publicMetadata as { role?: string } | undefined
-      const hasCompletedProfile = Boolean(publicMetadata?.role)
-
-      // If profile not completed and not on profile-setup page, redirect there
-      if (!hasCompletedProfile && !req.nextUrl.pathname.startsWith('/profile-setup')) {
-        return NextResponse.redirect(new URL('/profile-setup', req.url))
-      }
-    } catch (error) {
-      console.error('Error checking user profile in middleware:', error)
-      // On error, allow the request to proceed to avoid blocking the user
-    }
+    // For now, let the request proceed and handle profile checks in the app
+    // The profile completion check will be done client-side in the layout
+    return NextResponse.next()
   }
 
   return NextResponse.next()

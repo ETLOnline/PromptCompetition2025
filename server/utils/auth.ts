@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from "express"
-import { clerkClient } from "../config/firebase-admin.js"
-import { verifyToken } from "@clerk/backend"
+import { Request, Response, NextFunction } from "express";
+import { verifyToken } from "@clerk/backend";
+import { getUserRole } from "./userService.js";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -19,18 +19,20 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   const idToken = authHeader.split("Bearer ")[1];
 
   try {
-    // Verify Clerk token using @clerk/backend verifyToken function
+    // Verify Clerk token
     const sessionClaims = await verifyToken(idToken, {
       secretKey: process.env.CLERK_SECRET_KEY!,
     });
 
-    // Extract role from publicMetadata (set during profile setup)
-    const metadata = sessionClaims.publicMetadata as any;
-    const role = metadata?.role as "judge" | "admin" | "superadmin" | "participant" | undefined;
+    const uid = sessionClaims.sub;
+    const email = sessionClaims.email as string;
+
+    // Fetch role using our unified userService
+    const role = await getUserRole(uid);
 
     req.user = {
-      uid: sessionClaims.sub, // Clerk uses 'sub' for user ID
-      email: sessionClaims.email as string,
+      uid,
+      email,
       role,
     };
 
@@ -58,33 +60,39 @@ export async function verifySuperAdmin(
   res: Response,
   next: NextFunction
 ) {
-  const idToken = req.headers.authorization?.split("Bearer ")[1]
-  if (!idToken)
-    return res.status(401).json({ error: "Unauthorized: No token provided." })
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized: No token provided." });
+  }
+
+  const idToken = authHeader.split("Bearer ")[1];
 
   try {
-    // Verify Clerk token using @clerk/backend verifyToken function
     const sessionClaims = await verifyToken(idToken, {
       secretKey: process.env.CLERK_SECRET_KEY!,
-    })
-    const metadata = sessionClaims.publicMetadata as any;
-    const role = metadata?.role
+    });
+
+    const uid = sessionClaims.sub;
+    
+    // Use the unified getUserRole function from userService
+    const role = await getUserRole(uid);
     
     if (role !== "superadmin") {
       return res
         .status(403)
-        .json({ error: "Forbidden: Superadmin access required." })
+        .json({ error: "Forbidden: Superadmin access required." });
     }
 
     req.user = {
-      uid: sessionClaims.sub,
+      uid,
       email: sessionClaims.email as string,
-      role: role as "superadmin"
-    }
-    next()
+      role: "superadmin"
+    };
+    
+    next();
   } catch (err: any) {
     return res
       .status(401)
-      .json({ error: "Invalid token", detail: err.message })
+      .json({ error: "Invalid token", detail: err.message });
   }
 }

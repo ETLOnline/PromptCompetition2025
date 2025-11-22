@@ -17,7 +17,7 @@ router.get("/profile", authenticateToken, async (req: AuthenticatedRequest, res)
         res.json({
             uid: req.user?.uid,
             email: user.emailAddresses[0]?.emailAddress,
-            role: user.publicMetadata?.role || req.user?.role,
+            role: req.user?.role, // Use role from auth middleware (already fetched from Firestore)
             displayName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || null,
             photoURL: user.imageUrl || null,
         });

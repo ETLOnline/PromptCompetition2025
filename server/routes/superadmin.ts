@@ -3,6 +3,7 @@ import { clerkClient, db } from "../config/firebase-admin.js";
 import { Request } from "express";
 import { verifyToken } from "@clerk/backend";
 import { transporter } from "../config/email.js";
+import { getUserRole } from "../utils/userService.js";
 
 const router = express.Router();
 
@@ -31,15 +32,17 @@ async function verifySuperAdmin(req: RequestWithUser, res: Response, next: NextF
       secretKey: process.env.CLERK_SECRET_KEY!,
     });
 
-    const metadata = sessionClaims.publicMetadata as any;
-    const userRole = metadata?.role;
+    const uid = sessionClaims.sub;
+    
+    // Get user role from Firestore
+    const userRole = await getUserRole(uid);
 
     if (userRole !== "superadmin") {
       return res.status(403).json({ error: "Forbidden: Superadmin access required." });
     }
 
     req.user = {
-      uid: sessionClaims.sub,
+      uid,
       email: sessionClaims.email as string,
       role: userRole,
     };
@@ -66,7 +69,10 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
   try {
     // Fetch target user from Clerk
     const user = await clerkClient.users.getUser(uid);
-    const targetRole = (user.publicMetadata as any)?.role;
+    
+    // Get user role from Firestore
+    const userDoc = await db.collection("users").doc(uid).get();
+    const targetRole = userDoc.exists ? userDoc.data()?.role : null;
 
     // Prevent *any* superadmin from modifying *another* superadmin
     if (targetRole === "superadmin" && req.user?.uid !== uid) {
@@ -82,9 +88,9 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
       });
     }
 
-    // Update role in Clerk publicMetadata
-    await clerkClient.users.updateUserMetadata(uid, {
-      publicMetadata: { role }
+    // Update role in Firestore
+    await db.collection("users").doc(uid).update({
+      role: role
     });
   
     return res.status(200).json({
@@ -119,7 +125,10 @@ router.post(
     try {
       // Fetch target user from Clerk
       const user = await clerkClient.users.getUser(uid);
-      const targetRole = (user.publicMetadata as any)?.role;
+      
+      // Get user role from Firestore
+      const userDoc = await db.collection("users").doc(uid).get();
+      const targetRole = userDoc.exists ? userDoc.data()?.role : null;
 
       // 1) No superadmin may touch another superadmin
       if (targetRole === "superadmin" && req.user?.uid !== uid) {
@@ -135,9 +144,9 @@ router.post(
           .json({ error: "Forbidden: Cannot revoke your own superadmin role." });
       }
 
-      // Demote to "participant" (default role)
-      await clerkClient.users.updateUserMetadata(uid, {
-        publicMetadata: { role: "participant" }
+      // Demote to "participant" (default role) in Firestore
+      await db.collection("users").doc(uid).update({
+        role: "participant"
       });
 
       return res.status(200).json({
@@ -171,7 +180,10 @@ router.delete(
     try {
       // Fetch target user from Clerk
       const user = await clerkClient.users.getUser(uid);
-      const targetRole = (user.publicMetadata as any)?.role;
+      
+      // Get user role from Firestore
+      const userDoc = await db.collection("users").doc(uid).get();
+      const targetRole = userDoc.exists ? userDoc.data()?.role : null;
 
       // 1) No superadmin may delete another superadmin
       if (targetRole === "superadmin" && req.user?.uid !== uid) {
@@ -189,6 +201,13 @@ router.delete(
 
       // Delete user from Clerk
       await clerkClient.users.deleteUser(uid);
+      
+      // Also delete user document from Firestore
+      try {
+        await db.collection("users").doc(uid).delete();
+      } catch (deleteError) {
+        console.warn("Could not delete user document from Firestore:", deleteError);
+      }
       
       return res.status(200).json({
         message: `User ${user.emailAddresses[0]?.emailAddress || uid} has been deleted successfully`,
@@ -231,15 +250,23 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       emailAddress: [email],
       firstName: displayName.split(" ")[0] || displayName,
       lastName: displayName.split(" ").slice(1).join(" ") || "",
-      publicMetadata: { role },
       skipPasswordRequirement: true, // User will set password via invitation
     });
 
-    // 2) Create Firestore profile
+    // 2) Create Firestore profile with role
     await db.collection("users").doc(user.id).set({
       fullName: displayName,
       email,
       institution: "",
+      gender: "",
+      city: "",
+      province: "",
+      majors: "",
+      category: "Uni Students",
+      linkedin: "",
+      bio: "",
+      consent: false,
+      role,
       createdAt: new Date().toISOString(),
     });
 
@@ -248,7 +275,6 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
     try {
       await clerkClient.invitations.createInvitation({
         emailAddress: email,
-        publicMetadata: { role },
         redirectUrl: `${process.env.APP_ORIGIN}/auth/login`,
       });
       inviteSent = true;
@@ -315,7 +341,7 @@ router.get("/users", verifySuperAdmin, async (req, res) => {
       uid: u.id,
       email: u.emailAddresses[0]?.emailAddress || "",
       displayName: u.fullName || u.firstName || "",
-      role: (u.publicMetadata as any)?.role || "participant",
+      role: "participant", // Default role, will be updated from Firestore query below
       createdAt: new Date(u.createdAt).toISOString(),
       lastSignIn: u.lastSignInAt ? new Date(u.lastSignInAt).toISOString() : null,
       emailVerified: u.emailAddresses[0]?.verification?.status === "verified",
@@ -385,7 +411,7 @@ router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res:
       uid: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || "",
       displayName: clerkUser.fullName || clerkUser.firstName || "",
-      role: (clerkUser.publicMetadata as any)?.role || "participant",
+      role: "participant", // Default role, will be updated from Firestore query
       createdAt: new Date(clerkUser.createdAt).toISOString(),
       lastSignIn: clerkUser.lastSignInAt ? new Date(clerkUser.lastSignInAt).toISOString() : null,
       emailVerified: clerkUser.emailAddresses[0]?.verification?.status === "verified",
@@ -407,7 +433,7 @@ router.get("/stats", verifySuperAdmin, async (req: RequestWithUser, res: Respons
     });
 
     const users = clerkUsers.data.map((user) => ({
-      role: (user.publicMetadata as any)?.role || "participant",
+      role: "participant", // Default role, will be updated from Firestore query
       disabled: user.locked || false
     }));
 

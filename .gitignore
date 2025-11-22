@@ -69,3 +69,5 @@ __azurite_db_queue_extent__.json
 __azurite_db_table__.json
 # clerk configuration (can include secrets)
 /.clerk/
+
+MIGRATION_SUMMARY.md

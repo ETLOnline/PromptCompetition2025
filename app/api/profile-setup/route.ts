@@ -37,32 +37,9 @@ export async function POST(req: Request) {
       consent
     } = data
 
+    // Get user email from Clerk
     console.log("Getting Clerk client...")
     const clerk = await clerkClient()
-
-    console.log("Updating user name...")
-    await clerk.users.updateUser(userId, {
-      firstName,
-      lastName
-    })
-
-    console.log("Updating user metadata...")
-    await clerk.users.updateUserMetadata(userId, {
-      publicMetadata: {
-        role: 'participant',
-        institution,
-        gender,
-        city,
-        province,
-        majors,
-        category,
-        linkedin: linkedin || '',
-        bio: bio || '',
-        consent
-      }
-    })
-
-    // Get user email from Clerk
     const clerkUser = await clerk.users.getUser(userId)
     const email = clerkUser.emailAddresses[0]?.emailAddress || ''
     console.log("User email:", email)
@@ -82,6 +59,7 @@ export async function POST(req: Request) {
       bio: bio || "",
       consent: !!consent,
       createdAt: new Date().toISOString(),
+      role: "participant"
     })
 
     console.log("Profile update successful!")

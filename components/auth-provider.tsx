@@ -1,19 +1,19 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext } from "react"
 import { useUser, useClerk } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { db } from "@/lib/firebase"
-import { doc, getDoc } from "firebase/firestore"
-
-type Role = "participant" | "admin" | "superadmin" | "judge" | null
+import { useUserProfile } from "@/hooks/useUserProfile"
+import type { Role } from "@/types/auth"
 
 interface AuthContextType {
   user: any | null
   fullName: string | null
-  role: Role
+  role: Role | null
   logout: () => Promise<void>
   loading: boolean
+  profileError: string | null
+  refetchProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,38 +23,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user: clerkUser, isLoaded } = useUser()
   const { signOut } = useClerk()
   
-  const [fullName, setFullName] = useState<string | null>(null)
-  const [role, setRole] = useState<Role>(null)
-
-  useEffect(() => {
-    if (isLoaded && clerkUser) {
-      // Get full name from Clerk user
-      setFullName(clerkUser.fullName || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null)
-      
-      // Get role from Clerk public metadata
-      const publicMetadata = clerkUser.publicMetadata as { role?: Role } | undefined
-      setRole(publicMetadata?.role || null)
-    } else if (isLoaded && !clerkUser) {
-      setFullName(null)
-      setRole(null)
-    }
-  }, [isLoaded, clerkUser])
+  // Use new Firestore-based user profile hook
+  const { userProfile, loading: profileLoading, error: profileError, refetch: refetchProfile } = useUserProfile()
 
   const logout = async () => {
     await signOut()
-    setFullName(null)
-    setRole(null)
     router.push("/")
   }
+
+  // Determine loading state - wait for both Clerk and Firestore
+  const loading = !isLoaded || profileLoading
 
   return (
     <AuthContext.Provider
       value={{ 
         user: clerkUser, 
-        fullName, 
-        role, 
+        fullName: userProfile?.fullName || null,
+        role: userProfile?.role || null,
         logout, 
-        loading: !isLoaded 
+        loading,
+        profileError,
+        refetchProfile
       }}
     >
       {children}

@@ -1,3 +1,21 @@
+export type Role = "participant" | "judge" | "admin" | "superadmin"
+
+export interface UserDocument {
+  fullName: string
+  email: string
+  institution: string
+  gender: string
+  city: string
+  province: string
+  majors: string
+  category: string
+  linkedin: string
+  bio: string
+  consent: boolean
+  createdAt: string
+  role: Role
+}
+
 export interface User {
   id: string
   email: string

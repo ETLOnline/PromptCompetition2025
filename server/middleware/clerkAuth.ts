@@ -1,17 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { clerkClient } from "../config/firebase-admin.js";
 import { verifyToken } from "@clerk/backend";
+import { getUserRole } from "../utils/userService.js";
 
 /**
  * Middleware to verify Clerk JWT tokens
- * Similar to Firebase verifyIdToken, but for Clerk
+ * Uses Firestore users collection for role information instead of publicMetadata
  * 
  * Usage:
  * import { verifyClerkToken } from "./middleware/clerkAuth";
  * app.get("/api/protected", verifyClerkToken, (req, res) => {
  *   console.log(req.userId); // Clerk user ID
  *   console.log(req.userEmail); // User email
- *   console.log(req.userRole); // User role from publicMetadata
+ *   console.log(req.userRole); // User role from Firestore
  * });
  */
 
@@ -55,9 +56,8 @@ export async function verifyClerkToken(
     req.userId = sessionClaims.sub; // User ID
     req.userEmail = sessionClaims.email as string;
     
-    // Get role from publicMetadata (if set during profile setup)
-    const metadata = sessionClaims.publicMetadata as any;
-    req.userRole = metadata?.role;
+    // Get role from Firestore users collection
+    req.userRole = await getUserRole(req.userId);
 
     // Optionally, fetch full user details if needed
     // const user = await clerkClient.users.getUser(req.userId);
