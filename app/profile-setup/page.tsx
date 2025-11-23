@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser, useClerk } from "@clerk/nextjs"
-import { User, Building, MapPin, Map, GraduationCap, Briefcase, Linkedin, FileText, X } from "lucide-react"
+import Image from "next/image"
+import { User, Building, MapPin, Map, GraduationCap, Briefcase, Linkedin, FileText, X, CheckCircle, AlertTriangle } from "lucide-react"
 import CustomDropdown from "@/components/CustomDropdown"
 import { useUserProfile } from "@/hooks/useUserProfile"
 
@@ -20,10 +21,15 @@ export default function ProfileSetupPage() {
   const [city, setCity] = useState("")
   const [province, setProvince] = useState("")
   const [majors, setMajors] = useState("")
-  const [category, setCategory] = useState("Uni Students")
+  // Changed default from "Uni Students" to "Student"
+  const [category, setCategory] = useState("Student")
   const [linkedin, setLinkedin] = useState("")
   const [bio, setBio] = useState("")
   const [consent, setConsent] = useState(false)
+  
+  // Modal State
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [formData, setFormData] = useState<any>(null)
 
   // Error states
   const [nameError, setNameError] = useState<string | null>(null)
@@ -44,13 +50,10 @@ export default function ProfileSetupPage() {
   // Pre-populate form with user data and check if already completed
   useEffect(() => {
     if (isLoaded && user && !profileLoading) {
-      // Check if user has already completed profile setup
       if (userProfile?.role) {
-        // User has already completed profile, redirect to participant dashboard
         router.push('/participant')
         return
       }
-
       setFullName(user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim())
     }
   }, [isLoaded, user, userProfile, profileLoading, router])
@@ -58,85 +61,32 @@ export default function ProfileSetupPage() {
   // Validation Functions
   const validateFullName = (name: string): string | null => {
     const trimmedName = name.trim()
-
-    if (!trimmedName || trimmedName.length === 0) {
-      return "Full name is required."
-    }
-
-    if (trimmedName.length < 3) {
-      return "Full name must be at least 3 characters long."
-    }
-
-    if (trimmedName.length > 50) {
-      return "Full name must not exceed 50 characters."
-    }
-
+    if (!trimmedName || trimmedName.length === 0) return "Full name is required."
+    if (trimmedName.length < 3) return "Full name must be at least 3 characters long."
+    if (trimmedName.length > 50) return "Full name must not exceed 50 characters."
+    
     const validNameRegex = /^[A-Za-z]+(\s[A-Za-z]+)*$/
-    if (!validNameRegex.test(trimmedName)) {
-      return "Full name must contain only English letters and single spaces between words."
-    }
-
-    if (/\d/.test(trimmedName)) {
-      return "Full name cannot contain numbers."
-    }
-
-    if (/[!@#$%^&*(),.?":{}|<>[\]\\/_+=`~;'-]/.test(trimmedName)) {
-      return "Full name cannot contain special characters."
-    }
-
-    if (/[^\x00-\x7F]/.test(trimmedName)) {
-      return "Full name must contain only English letters."
-    }
-
-    const htmlTagRegex = /<[^>]*>/g
-    if (htmlTagRegex.test(trimmedName)) {
-      return "Invalid input detected."
-    }
-
-    if (/\s{2,}/.test(trimmedName)) {
-      return "Full name cannot contain multiple consecutive spaces."
-    }
-
+    if (!validNameRegex.test(trimmedName)) return "Full name must contain only English letters and single spaces between words."
+    if (/\d/.test(trimmedName)) return "Full name cannot contain numbers."
+    if (/[!@#$%^&*(),.?":{}|<>[\]\\/_+=`~;'-]/.test(trimmedName)) return "Full name cannot contain special characters."
+    if (/[^\x00-\x7F]/.test(trimmedName)) return "Full name must contain only English letters."
+    if (/<[^>]*>/g.test(trimmedName)) return "Invalid input detected."
+    if (/\s{2,}/.test(trimmedName)) return "Full name cannot contain multiple consecutive spaces."
     return null
   }
 
   const validateInstitution = (inst: string): string | null => {
     const trimmedInst = inst.trim()
-
-    if (!trimmedInst || trimmedInst.length === 0) {
-      return "Institution/Organization is required."
-    }
-
-    if (trimmedInst.length < 3) {
-      return "Institution name must be at least 3 characters long."
-    }
-
-    if (trimmedInst.length > 100) {
-      return "Institution name must not exceed 100 characters."
-    }
-
+    if (!trimmedInst || trimmedInst.length === 0) return "Institution/Organization is required."
+    if (trimmedInst.length < 3) return "Institution name must be at least 3 characters long."
+    if (trimmedInst.length > 100) return "Institution name must not exceed 100 characters."
+    
     const validInstRegex = /^[A-Za-z\s.\-&']+$/
-    if (!validInstRegex.test(trimmedInst)) {
-      return "Institution name can only contain letters, spaces, dots, hyphens, ampersands, and apostrophes."
-    }
-
-    if (/[^\x00-\x7F]/.test(trimmedInst)) {
-      return "Institution name must contain only English characters."
-    }
-
-    const htmlTagRegex = /<[^>]*>/g
-    if (htmlTagRegex.test(trimmedInst)) {
-      return "Invalid input detected."
-    }
-
-    if (/\s{2,}/.test(trimmedInst)) {
-      return "Institution name cannot contain multiple consecutive spaces."
-    }
-
-    if (/[!@#$%^*()_+={}[\]|\\:;"<>?,/~`]/.test(trimmedInst)) {
-      return "Institution name contains invalid special characters."
-    }
-
+    if (!validInstRegex.test(trimmedInst)) return "Institution name can only contain letters, spaces, dots, hyphens, ampersands, and apostrophes."
+    if (/[^\x00-\x7F]/.test(trimmedInst)) return "Institution name must contain only English characters."
+    if (/<[^>]*>/g.test(trimmedInst)) return "Invalid input detected."
+    if (/\s{2,}/.test(trimmedInst)) return "Institution name cannot contain multiple consecutive spaces."
+    if (/[!@#$%^*()_+={}[\]|\\:;"<>?,/~`]/.test(trimmedInst)) return "Institution name contains invalid special characters."
     return null
   }
 
@@ -188,8 +138,9 @@ export default function ProfileSetupPage() {
 
   const validateCategory = (cat: string): string | null => {
     if (!cat) return "Category is required."
-    if (cat === "Professional") return "This event is only for uni students."
-    if (cat !== "Uni Students") return "Invalid category selection."
+    // Updated validation message and logic for "Student"
+    if (cat === "Professional") return "This event is only for students."
+    if (cat !== "Student") return "Invalid category selection."
     return null
   }
 
@@ -212,7 +163,8 @@ export default function ProfileSetupPage() {
   }
 
   const validateConsent = (c: boolean): string | null => {
-    if (!c) return "You must confirm you are a university student to register."
+    // Updated consent message
+    if (!c) return "You must confirm you are a student to register."
     return null
   }
 
@@ -220,24 +172,15 @@ export default function ProfileSetupPage() {
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     const allowedCharsRegex = /^[A-Za-z\s]*$/
-    
-    if (!allowedCharsRegex.test(value)) {
-      return
-    }
-
+    if (!allowedCharsRegex.test(value)) return
     setFullName(value)
     setNameError(validateFullName(value))
   }
 
   const handleInstitutionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    
     const allowedCharsRegex = /^[A-Za-z\s.\-&']*$/
-    
-    if (!allowedCharsRegex.test(value)) {
-      return
-    }
-
+    if (!allowedCharsRegex.test(value)) return
     setInstitution(value)
     setInstitutionError(validateInstitution(value))
   }
@@ -296,7 +239,7 @@ export default function ProfileSetupPage() {
     setConsentError(validateConsent(checked))
   }
 
-  // Form submission
+  // Form submission - show confirmation modal first
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -305,109 +248,68 @@ export default function ProfileSetupPage() {
     // Validate all fields
     const trimmedName = fullName.trim()
     const nameValidationError = validateFullName(trimmedName)
-    if (nameValidationError) {
-      setNameError(nameValidationError)
-      setFormError(nameValidationError)
-      setLoading(false)
-      return
-    }
+    if (nameValidationError) { setNameError(nameValidationError); setFormError(nameValidationError); setLoading(false); return }
 
     const trimmedInst = institution.trim()
     const instValidationError = validateInstitution(trimmedInst)
-    if (instValidationError) {
-      setInstitutionError(instValidationError)
-      setFormError(instValidationError)
-      setLoading(false)
-      return
-    }
+    if (instValidationError) { setInstitutionError(instValidationError); setFormError(instValidationError); setLoading(false); return }
 
     const genderValidationError = validateGender(gender)
-    if (genderValidationError) {
-      setGenderError(genderValidationError)
-      setFormError(genderValidationError)
-      setLoading(false)
-      return
-    }
+    if (genderValidationError) { setGenderError(genderValidationError); setFormError(genderValidationError); setLoading(false); return }
 
     const cityValidationError = validateCity(city)
-    if (cityValidationError) {
-      setCityError(cityValidationError)
-      setFormError(cityValidationError)
-      setLoading(false)
-      return
-    }
+    if (cityValidationError) { setCityError(cityValidationError); setFormError(cityValidationError); setLoading(false); return }
 
     const provinceValidationError = validateProvince(province)
-    if (provinceValidationError) {
-      setProvinceError(provinceValidationError)
-      setFormError(provinceValidationError)
-      setLoading(false)
-      return
-    }
+    if (provinceValidationError) { setProvinceError(provinceValidationError); setFormError(provinceValidationError); setLoading(false); return }
 
     const majorsValidationError = validateMajors(majors)
-    if (majorsValidationError) {
-      setMajorsError(majorsValidationError)
-      setFormError(majorsValidationError)
-      setLoading(false)
-      return
-    }
+    if (majorsValidationError) { setMajorsError(majorsValidationError); setFormError(majorsValidationError); setLoading(false); return }
 
     const categoryValidationError = validateCategory(category)
-    if (categoryValidationError) {
-      setCategoryError(categoryValidationError)
-      setFormError(categoryValidationError)
-      setLoading(false)
-      return
-    }
+    if (categoryValidationError) { setCategoryError(categoryValidationError); setFormError(categoryValidationError); setLoading(false); return }
 
     const linkedInValidationError = validateLinkedIn(linkedin)
-    if (linkedInValidationError) {
-      setLinkedinError(linkedInValidationError)
-      setFormError(linkedInValidationError)
-      setLoading(false)
-      return
-    }
+    if (linkedInValidationError) { setLinkedinError(linkedInValidationError); setFormError(linkedInValidationError); setLoading(false); return }
 
     const bioValidationError = validateBio(bio)
-    if (bioValidationError) {
-      setBioError(bioValidationError)
-      setFormError(bioValidationError)
-      setLoading(false)
-      return
-    }
+    if (bioValidationError) { setBioError(bioValidationError); setFormError(bioValidationError); setLoading(false); return }
 
     const consentValidationError = validateConsent(consent)
-    if (consentValidationError) {
-      setConsentError(consentValidationError)
-      setFormError(consentValidationError)
-      setLoading(false)
-      return
-    }
+    if (consentValidationError) { setConsentError(consentValidationError); setFormError(consentValidationError); setLoading(false); return }
 
-    // Update Clerk user via API
+    // Store form data and show confirmation modal
+    const data = {
+      firstName: trimmedName.split(' ')[0],
+      lastName: trimmedName.split(' ').slice(1).join(' '),
+      institution: institution.trim(),
+      gender: gender,
+      city: city.trim(),
+      province: province.trim(),
+      majors: majors.trim(),
+      category: category,
+      linkedin: linkedin.trim() || '',
+      bio: bio.trim() || '',
+      consent: consent
+    }
+    
+    setFormData(data)
+    setLoading(false)
+    setShowConfirmModal(true)
+  }
+
+  // Handle actual API call after user confirms
+  const handleConfirmSubmit = async () => {
+    setLoading(true)
+    setShowConfirmModal(false)
+    
     try {
       const response = await fetch('/api/profile-setup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          firstName: trimmedName.split(' ')[0],
-          lastName: trimmedName.split(' ').slice(1).join(' '),
-          institution: institution.trim(),
-          gender: gender,
-          city: city.trim(),
-          province: province.trim(),
-          majors: majors.trim(),
-          category: category,
-          linkedin: linkedin.trim() || '',
-          bio: bio.trim() || '',
-          consent: consent
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       })
 
-      // Check if response is JSON
       const contentType = response.headers.get("content-type")
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text()
@@ -421,11 +323,9 @@ export default function ProfileSetupPage() {
         throw new Error(result.error || "Failed to update profile")
       }
 
-      // Profile updated successfully! Sign out the user so they can sign back in with updated profile
-      // console.log("Profile updated successfully! Signing out and redirecting to login...")
-      
-      // Sign out and redirect to login page
+      // Redirect directly to login after successful profile completion
       await signOut({ redirectUrl: '/auth/login?message=profile-complete' })
+
     } catch (err: any) {
       console.error("Error updating user profile:", err)
       setFormError(err.message || "An error occurred. Please try again.")
@@ -434,45 +334,102 @@ export default function ProfileSetupPage() {
   }
 
   // Check if all required fields are valid
-  const isFormValid =
-    fullName.trim().length > 0 &&
-    institution.trim().length > 0 &&
-    gender.trim().length > 0 &&
-    city.trim().length > 0 &&
-    province.trim().length > 0 &&
-    majors.trim().length > 0 &&
-    category.trim().length > 0 &&
-    consent &&
-    !validateFullName(fullName) &&
-    !validateInstitution(institution) &&
-    !validateGender(gender) &&
-    !validateCity(city) &&
-    !validateProvince(province) &&
-    !validateMajors(majors) &&
-    !validateCategory(category) &&
-    !validateLinkedIn(linkedin) &&
-    !validateBio(bio) &&
-    !validateConsent(consent) &&
-    !nameError &&
-    !institutionError &&
-    !genderError &&
-    !cityError &&
-    !provinceError &&
-    !majorsError &&
-    !categoryError &&
-    !linkedinError &&
-    !bioError &&
-    !consentError
+  const isFormValid = () => {
+    // Check if all required fields have values
+    const hasRequiredFields = 
+      fullName.trim().length > 0 &&
+      institution.trim().length > 0 &&
+      gender.length > 0 &&
+      city.trim().length > 0 &&
+      province.trim().length > 0 &&
+      majors.trim().length > 0 &&
+      category.length > 0 &&
+      consent
+
+    // Check if there are any validation errors
+    const hasErrors = 
+      nameError ||
+      institutionError ||
+      genderError ||
+      cityError ||
+      provinceError ||
+      majorsError ||
+      categoryError ||
+      linkedinError ||
+      bioError ||
+      consentError
+
+    return hasRequiredFields && !hasErrors
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6 relative">
+      
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="p-8 text-center space-y-6">
+              <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="w-8 h-8 text-amber-600" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-900">Important Notice</h3>
+              
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-left">
+                <div className="flex gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 leading-relaxed">
+                    After the first round, the top 20 contestants' student status will be checked. Candidates found not to be students will be disqualified immediately.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-gray-600 text-sm">
+                By proceeding, you confirm that all information provided is accurate and that you are a student.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-xl hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                >
+                  Go Back
+                </button>
+                <button
+                  onClick={handleConfirmSubmit}
+                  disabled={loading}
+                  className="flex-1 bg-[#10142c] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#1a1f3d] transition-colors focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 disabled:opacity-50"
+                >
+                  {loading ? 'Processing...' : 'Continue'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="p-8 space-y-6">
-            {/* Header */}
-            <div className="text-center mb-8 space-y-4">
-              <h1 className="text-3xl font-bold text-gray-900">Complete Your Profile</h1>
-              <p className="text-gray-600">Just a few more details to get you started.</p>
+            
+            {/* Header with Logo and Text */}
+            <div className="flex flex-col items-center mb-8 space-y-4">
+              <div className="flex items-center justify-center gap-3">
+                <Image
+                  src="/images/logotextspark.png"
+                  alt="Spark Logo"
+                  width={150}
+                  height={50}
+                  className="object-contain"
+                  priority
+                />
+                {/* <span className="text-4xl font-bold tracking-widest text-[#10142c]">SPARK</span> */}
+              </div>
+              <div className="text-center">
+                <h1 className="text-3xl font-bold text-gray-900">Complete Your Profile</h1>
+                <p className="text-gray-600 mt-2">Just a few more details to get you started.</p>
+              </div>
             </div>
 
             {/* Form Error Message */}
@@ -639,7 +596,7 @@ export default function ProfileSetupPage() {
                 )}
               </div>
 
-              {/* Category */}
+              {/* Category - Updates: "Uni Students" changed to "Student" */}
               <div className="space-y-2">
                 <label htmlFor="category" className="text-sm font-medium text-slate-700">Category</label>
                 <CustomDropdown
@@ -647,7 +604,7 @@ export default function ProfileSetupPage() {
                   value={category}
                   onChange={handleCategoryChange}
                   options={[
-                    { value: 'Uni Students', label: 'Uni Students' },
+                    { value: 'Student', label: 'Student' },
                     { value: 'Professional', label: 'Professional' }
                   ]}
                   placeholder="Select category"
@@ -656,7 +613,7 @@ export default function ProfileSetupPage() {
                   disabled={loading}
                   required
                 />
-                <p className="text-xs text-slate-500">Note: This event is only for uni students.</p>
+                <p className="text-xs text-slate-500">Note: This event is only for students.</p>
                 {categoryError && (
                   <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                     <X className="h-3 w-3" />
@@ -665,9 +622,9 @@ export default function ProfileSetupPage() {
                 )}
               </div>
 
-              {/* LinkedIn (optional) */}
+              {/* LinkedIn - Update: Removed "(optional)" text */}
               <div className="space-y-2">
-                <label htmlFor="linkedin" className="text-sm font-medium text-slate-700">LinkedIn (optional)</label>
+                <label htmlFor="linkedin" className="text-sm font-medium text-slate-700">LinkedIn</label>
                 <div className="relative">
                   <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <input
@@ -685,9 +642,9 @@ export default function ProfileSetupPage() {
                 )}
               </div>
 
-              {/* Bio (optional) */}
+              {/* Bio - Update: Removed "(optional)" text */}
               <div className="space-y-2">
-                <label htmlFor="bio" className="text-sm font-medium text-slate-700">Profile bio (optional)</label>
+                <label htmlFor="bio" className="text-sm font-medium text-slate-700">Profile bio</label>
                 <div className="relative">
                   <FileText className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                   <textarea
@@ -706,7 +663,7 @@ export default function ProfileSetupPage() {
                 )}
               </div>
 
-              {/* Consent */}
+              {/* Consent - Update: Changed text to "student" */}
               <div className="space-y-2">
                 <div className="flex items-start gap-3">
                   <input
@@ -719,7 +676,7 @@ export default function ProfileSetupPage() {
                     required
                   />
                   <label htmlFor="consent" className="text-sm text-slate-700">
-                    I am a university student and eligible to participate in this event.
+                    I am a student and eligible to participate in this event.
                   </label>
                 </div>
                 {consentError && (
@@ -730,10 +687,10 @@ export default function ProfileSetupPage() {
               {/* Submit Button */}
               <button 
                 type="submit"
-                disabled={!isFormValid || loading}
+                disabled={!isFormValid() || loading}
                 className={`w-full font-semibold gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2
                   ${
-                    !isFormValid || loading
+                    !isFormValid() || loading
                       ? "bg-[#4B4F63] text-gray-300 cursor-not-allowed"
                       : "bg-[#10142c] text-white hover:shadow-xl hover:-translate-y-1"
                   }`}

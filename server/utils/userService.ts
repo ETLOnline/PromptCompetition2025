@@ -1,5 +1,5 @@
 import { db } from "../config/firebase-admin.js"
-import type { UserDocument, Role } from "../../types/auth.js"
+import type { UserDocument, Role } from "../types/auth.js"
 
 // Simple in-memory cache for user profiles
 // For production, consider using Redis or a more robust caching solution
