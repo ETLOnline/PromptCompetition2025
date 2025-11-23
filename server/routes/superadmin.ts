@@ -353,32 +353,12 @@ router.get("/users", verifySuperAdmin, async (req, res) => {
     ))
     const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]))
 
-    // Debug logging for specific user
-    const debugUid = "user_35qqi64sDONinj64dvTbC2qQ4Wo"
-    if (users.some(u => u.uid === debugUid)) {
-      const debugDoc = docs.find(d => d.id === debugUid)
-      console.log(`Debug - User ${debugUid} exists in Firestore:`, debugDoc?.exists)
-      if (debugDoc?.exists) {
-        const debugData = debugDoc.data()
-        console.log(`Debug - User ${debugUid} role from Firestore:`, debugData?.role)
-        console.log(`Debug - User ${debugUid} full profile:`, debugData)
-      }
-    }
-
     users = users.map(u => {
       const p = profileByUid.get(u.uid) || {}
-      const finalRole = p.role || "participant"
-      
-      // Debug logging for specific user
-      if (u.uid === debugUid) {
-        console.log(`Debug - Final role assigned to ${debugUid}:`, finalRole)
-        console.log(`Debug - Profile data for ${debugUid}:`, p)
-      }
-      
       return {
         ...u,
         displayName: u.displayName || (p.fullName ?? ""),
-        role: finalRole, // Use Firestore role or default to participant
+        role: p.role || "participant", // Use Firestore role or default to participant
         participations: p.participations ?? {},
       }
     })
