@@ -51,6 +51,8 @@ jobs:
           NEXT_PUBLIC_USER_AUTH=${{ secrets.NEXT_PUBLIC_USER_AUTH }}
           AZURE_STORAGE_ACCOUNT_NAME=${{ secrets.AZURE_STORAGE_ACCOUNT_NAME }}
           CONTAINER_NAME=${{ secrets.CONTAINER_NAME }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
         
     - name: Build and push backend image to ACR
       uses: docker/build-push-action@v5
