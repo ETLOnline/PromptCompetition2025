@@ -176,7 +176,7 @@ export default function ModernAdminHeader() {
                     </Avatar>
                     <div className="hidden sm:block text-left">
                       <p className="text-sm font-semibold text-gray-900 leading-tight">{displayFullName}</p>
-                      <p className="text-xs text-gray-500 leading-tight">{user?.email || "admin@example.com"}</p>
+                      <p className="text-xs text-gray-500 leading-tight">{user?.primaryEmailAddress?.emailAddress || "admin@example.com"}</p>
                     </div>
                     <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   </Button>
@@ -191,7 +191,7 @@ export default function ModernAdminHeader() {
                       </Avatar>
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-semibold leading-none text-gray-900">{displayFullName}</p>
-                        <p className="text-xs leading-none text-gray-500">{user?.email || "admin@example.com"}</p>
+                        <p className="text-xs leading-none text-gray-500">{user?.primaryEmailAddress?.emailAddress || "admin@example.com"}</p>
                         {(role === "superadmin" || role === "admin") && (
                           <Badge
                             variant="secondary"

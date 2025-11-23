@@ -1,14 +1,22 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState, useMemo, useCallback } from "react"
-import { Search, Users, X, CheckCircle2, XCircle, AlertTriangle, Crown, Shield, Scale, Eye, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, AlertCircle, CheckCircle, Filter, UserPlus, Trash2, TrendingUp, Zap, EyeOff, Trophy, Target, Award } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { validateEmail} from "@/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
+import {
+  Button,
+} from "@/components/ui/button"
+import {
+  Input,
+} from "@/components/ui/input"
+import {
+  Label,
+} from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
@@ -17,11 +25,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +52,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Users,
+  Shield,
+  Scale,
+  Crown,
+  UserPlus,
+  Search,
+  ChevronDown,
+  Eye,
+  MoreHorizontal,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  CheckCircle,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  AlertTriangle,
+  TrendingUp,
+  RefreshCw,
+  Filter,
+  Zap,
+  Trophy,
+  Award,
+  Target,
+  X,
+} from "lucide-react"
+import { validateEmail } from "@/lib/utils"
+import { useAuth } from "@clerk/nextjs"
+import { fetchWithAuth } from "@/lib/api"
 
 // --- Types ------------------------------------------------------------------
 export interface User {
@@ -55,7 +108,7 @@ export interface Stats {
   superadmins: number
   admins: number
   judges: number
-  users: number
+  participants: number
   disabled: number
   active: number
 }
@@ -109,7 +162,7 @@ export const ROLE_CONFIG = {
     borderColor: "border-emerald-200",
     badgeVariant: "outline" as const,
   },
-  user: {
+  participant: {
     label: "Contestant",
     pluralLabel: "Contestants",
     icon: Users,
@@ -185,7 +238,7 @@ interface UserRowProps {
 }
 
 const UserRow: React.FC<UserRowProps> = ({ user, formatDate, getRoleActions, onViewDetails, onDelete }) => {
-  const cfg = ROLE_CONFIG[user.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.user
+  const cfg = ROLE_CONFIG[user.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.participant
   const actions = getRoleActions(user)
 
   return (
@@ -327,6 +380,9 @@ const PaginationComponent: React.FC<PaginationProps> = ({
 
 // --- Main Component ---------------------------------------------------------
 export default function UserRoleManager() {
+  // --- Clerk Auth Hook ---
+  const { getToken, isLoaded, isSignedIn } = useAuth()
+
   // --- State ---
   const [stats, setStats] = useState<Stats | null>(null)
   const [allUsers, setAllUsers] = useState<User[]>([])
@@ -419,7 +475,7 @@ export default function UserRoleManager() {
     }
 
     return filtered.sort((a, b) => {
-      const roleOrder = { superadmin: 0, admin: 1, judge: 2, user: 3 }
+      const roleOrder = { superadmin: 0, admin: 1, judge: 2, participant: 3 }
       const aOrder = roleOrder[a.role as keyof typeof roleOrder] ?? 4
       const bOrder = roleOrder[b.role as keyof typeof roleOrder] ?? 4
       if (aOrder !== bOrder) return aOrder - bOrder
@@ -449,7 +505,7 @@ export default function UserRoleManager() {
   const hasMorePromoteUsers = promoteUsers.length > promoteEnd
 
   const showNotification = useCallback((type: NotificationState["type"], title: string, message: string) => {
-    const id = Date.now().toString()
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const notification: NotificationState = { id, type, title, message }
     setNotifications((prev) => [...prev, notification])
     setTimeout(() => {
@@ -497,10 +553,10 @@ export default function UserRoleManager() {
         icon: Crown,
       })
 
-    if (u.role !== "user")
+    if (u.role !== "participant")
       actions.push({
         label: "Remove Role",
-        action: () => updateRole(u.uid, "user"),
+        action: () => updateRole(u.uid, "participant"),
         color: "text-gray-600 hover:text-gray-700",
         icon: Users,
       })
@@ -568,14 +624,12 @@ export default function UserRoleManager() {
   async function fetchStats() {
     try {
       setLoading((p) => ({ ...p, stats: true }))
-      const token = await getIdToken()
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setStats(data)
-      }
+      const data = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/stats`,
+        {},
+        getToken
+      )
+      setStats(data)
     } catch (error) {
       showNotification("error", "Data Loading Error", "Failed to load user statistics")
     } finally {
@@ -597,7 +651,6 @@ export default function UserRoleManager() {
         setAllUsers([])
       }
 
-      const token = await getIdToken()
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users`)
       url.searchParams.set('limit', '200')
       
@@ -605,29 +658,25 @@ export default function UserRoleManager() {
         url.searchParams.set('pageToken', serverPagination.nextPageToken)
       }
 
-      const res = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (res.ok) {
-        const data: UsersResponse = await res.json()
+      const data: UsersResponse = await fetchWithAuth(
+        url.toString(),
+        {},
+        getToken
+      )
         
-        if (isInitial) {
-          setAllUsers(data.users || [])
-        } else {
-          // Append new users to existing ones
-          setAllUsers(prev => [...prev, ...(data.users || [])])
-        }
-
-        setServerPagination({
-          nextPageToken: data.nextPageToken,
-          hasNextPage: data.hasNextPage,
-          totalUsers: data.total,
-          loading: false,
-        })
+      if (isInitial) {
+        setAllUsers(data.users || [])
       } else {
-        showNotification("error", "Data Loading Error", "Failed to load users")
+        // Append new users to existing ones
+        setAllUsers(prev => [...prev, ...(data.users || [])])
       }
+
+      setServerPagination({
+        nextPageToken: data.nextPageToken,
+        hasNextPage: data.hasNextPage,
+        totalUsers: data.total,
+        loading: false,
+      })
     } catch (error) {
       showNotification("error", "Data Loading Error", "Failed to load users")
       setServerPagination(prev => ({ ...prev, loading: false }))
@@ -648,25 +697,24 @@ export default function UserRoleManager() {
   async function updateRole(uid: string, newRole: string) {
     try {
       setLoading((p) => ({ ...p, action: true }))
-      const token = await getIdToken()
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/assign-role`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ uid, role: newRole }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        showNotification("success", "Role Updated", "User role updated successfully")
-        // Update the user in local state
-        setAllUsers(prev => prev.map(user => 
-          user.uid === uid ? { ...user, role: newRole } : user
-        ))
-        fetchStats()
-      } else {
-        showNotification("error", "Update Failed", data.error || "Failed to update role")
-      }
-    } catch (error) {
-      showNotification("error", "Update Failed", "Failed to update role")
+      const data = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/assign-role`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid, role: newRole }),
+        },
+        getToken
+      )
+      showNotification("success", "Role Updated", "User role updated successfully")
+      // Update the user in local state
+      setAllUsers(prev => prev.map(user => 
+        user.uid === uid ? { ...user, role: newRole } : user
+      ))
+      fetchStats()
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to update role"
+      showNotification("error", "Update Failed", errorMessage)
     } finally {
       setLoading((p) => ({ ...p, action: false }))
     }
@@ -675,23 +723,22 @@ export default function UserRoleManager() {
   async function deleteUser(uid: string, email: string) {
     try {
       setLoading((p) => ({ ...p, action: true }))
-      const token = await getIdToken()
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/delete-user`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ uid }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        showNotification("success", "User Deleted", "User deleted successfully")
-        // Remove user from local state
-        setAllUsers(prev => prev.filter(user => user.uid !== uid))
-        fetchStats()
-      } else {
-        showNotification("error", "Delete Failed", data.error || "Failed to delete user")
-      }
-    } catch (error) {
-      showNotification("error", "Delete Failed", "Failed to delete user")
+      const data = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/delete-user`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid }),
+        },
+        getToken
+      )
+      showNotification("success", "User Deleted", "User deleted successfully")
+      // Remove user from local state
+      setAllUsers(prev => prev.filter(user => user.uid !== uid))
+      fetchStats()
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to delete user"
+      showNotification("error", "Delete Failed", errorMessage)
     } finally {
       setLoading((p) => ({ ...p, action: false }))
     }
@@ -706,27 +753,26 @@ export default function UserRoleManager() {
 
     try {
       setLoading((p) => ({ ...p, action: true }))
-      const token = await getIdToken()
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/create-user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(createUserForm),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setFormError(null)
-        setFieldErrors({})
-        showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
-        setCreateUserForm({ email: "", displayName: "", role: "" })
-        setShowCreateUser(false)
-        // Refresh data
-        fetchAllUsers(true)
-        fetchStats()
-      } else {
-        setFormError(data.error || "Failed to create user")
-      }
-    } catch (error) {
-      setFormError("Failed to create user")
+      const data = await fetchWithAuth(
+        `${process.env.NEXT_PUBLIC_API_URL}/superadmin/create-user`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(createUserForm),
+        },
+        getToken
+      )
+      setFormError(null)
+      setFieldErrors({})
+      showNotification("success", "User Created", `${createUserForm.displayName} has been successfully created`)
+      setCreateUserForm({ email: "", displayName: "", role: "" })
+      setShowCreateUser(false)
+      // Refresh data
+      fetchAllUsers(true)
+      fetchStats()
+    } catch (error: any) {
+      const errorMessage = error.message || "Failed to create user"
+      setFormError(errorMessage)
     } finally {
       setLoading((p) => ({ ...p, action: false }))
     }
@@ -740,18 +786,21 @@ export default function UserRoleManager() {
 
     try {
       setLoading((p) => ({ ...p, action: true }))
-      const token = await getIdToken()
       const results = await Promise.all(
         Array.from(selectedExistingUsers).map((uid) =>
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/assign-role`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ uid, role: roleToAssign }),
-          }),
+          fetchWithAuth(
+            `${process.env.NEXT_PUBLIC_API_URL}/superadmin/assign-role`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ uid, role: roleToAssign }),
+            },
+            getToken
+          ).then(() => ({ ok: true })).catch(() => ({ ok: false }))
         ),
       )
 
-      if (results.every((r) => r.ok)) {
+      if (results.every((r: { ok: boolean }) => r.ok)) {
         showNotification("success", "Roles Updated", `Roles updated for ${selectedExistingUsers.size} user(s)`)
         // Update users in local state
         setAllUsers(prev => prev.map(user => 
@@ -814,7 +863,7 @@ export default function UserRoleManager() {
 
   // Calculate role counts from loaded users
   const roleStats = useMemo(() => {
-    const counts = { superadmin: 0, admin: 0, judge: 0, user: 0 }
+    const counts = { superadmin: 0, admin: 0, judge: 0, participant: 0 }
     allUsers.forEach(user => {
       if (counts.hasOwnProperty(user.role)) {
         counts[user.role as keyof typeof counts]++
@@ -822,6 +871,18 @@ export default function UserRoleManager() {
     })
     return counts
   }, [allUsers])
+
+  // --- Loading and Auth Checks ---
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-gray-600">Authenticating user access</p>
+        </div>
+      </div>
+    )
+  }
 
   // --- Render ---
   return (
@@ -1405,10 +1466,4 @@ export default function UserRoleManager() {
   )
 }
 
-// --- Firebase helper --------------------------------------------------------
-async function getIdToken(): Promise<string> {
-  const { getAuth } = await import("firebase/auth")
-  const user = getAuth().currentUser
-  if (!user) throw new Error("No user signed in")
-  return await user.getIdToken()
-}
+

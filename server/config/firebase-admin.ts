@@ -1,4 +1,5 @@
 import admin from "firebase-admin"
+import { createClerkClient } from "@clerk/backend"
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -17,8 +18,15 @@ if (!admin.apps.length) {
   })
 }
 
-// ✅ Export Firestore and Auth from Admin SDK
+// ✅ Export Firestore (for database) - Firebase
 const db = admin.firestore()
-const auth = admin.auth()
 
-export { db, auth, admin }
+// ✅ Initialize Clerk Client (for authentication) - Clerk
+// Make sure CLERK_SECRET_KEY is in your .env file
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+})
+
+// Usage: await clerkClient.users.getUser(userId)
+//        await clerkClient.verifyToken(token)
+export { db, clerkClient, admin }
