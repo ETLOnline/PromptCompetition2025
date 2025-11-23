@@ -6,7 +6,7 @@ import Image from "next/image"
 
 export default function RegisterPage() {
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative">
       {/* Back to home button */}
       <div className="absolute top-4 left-4 z-10">
         <Link 
@@ -28,11 +28,11 @@ export default function RegisterPage() {
       </div>
 
       {/* Main content */}
-      <div className="relative h-full flex items-center justify-center px-4 py-8">
+      <div className="relative min-h-screen px-4 py-8">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-6 items-center">
+          <div className="grid lg:grid-cols-2 gap-6">
             {/* Left side - Branding and Information */}
-            <div className="hidden lg:flex flex-col justify-center space-y-4 p-6">
+            <div className="hidden lg:flex flex-col space-y-4 p-6 pt-16">
               {/* Logos */}
               <div className="flex items-center gap-4 mb-1">
                 <Link href="/" className="inline-flex">
@@ -121,7 +121,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Right side - Clerk Sign Up Component */}
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center min-h-screen">
               {/* Mobile logo */}
               <div className="lg:hidden mb-6">
                 <Link href="/" className="inline-flex items-center">

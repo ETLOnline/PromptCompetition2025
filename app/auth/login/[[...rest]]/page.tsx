@@ -222,7 +222,7 @@ export default function LoginPage() {
               <div className="w-full max-w-md">
                 <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100">
                   {/* Header */}
-                  <div className="text-center pt-6 pb-4 px-6">
+                  {/* <div className="text-center pt-6 pb-4 px-6">
                     <Image
                       src="/images/sparklogo.png"
                       alt="Spark Logo"
@@ -232,7 +232,7 @@ export default function LoginPage() {
                       priority
                     />
                     <h2 className="text-xl font-bold text-gray-900">Sign in to Spark</h2>
-                  </div>
+                  </div> */}
 
                   {/* Clerk component */}
                   <div className="px-6 pb-6">
