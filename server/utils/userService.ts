@@ -4,7 +4,7 @@ import type { UserDocument, Role } from "../types/auth.js"
 // Simple in-memory cache for user profiles
 // For production, consider using Redis or a more robust caching solution
 const userProfileCache = new Map<string, { data: UserDocument | null; timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const CACHE_TTL = 0 // 5 minutes
 
 /**
  * Get user profile from Firestore with caching (Server-side with admin SDK)
