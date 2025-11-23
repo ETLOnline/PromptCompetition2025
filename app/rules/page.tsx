@@ -239,7 +239,7 @@ export default function RulesPage() {
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-foreground font-medium">Marketing & Training Campaign</p>
+                      <p className="text-foreground font-medium">Marketing & Training Campaigns</p>
                       <p className="text-muted-foreground">1st Dec – 16th Jan</p>
                     </div>
                   </div>
