@@ -1,11 +1,12 @@
-import { Request, Response, NextFunction } from "express"
-import { admin } from "../config/firebase-admin.js"  
+import { Request, Response, NextFunction } from "express";
+import { verifyToken } from "@clerk/backend";
+import { getUserRole } from "./userService.js";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     uid: string;
     email?: string;
-    role?: "judge" | "admin" | "superadmin";
+    role?: "judge" | "admin" | "superadmin" | "participant";
   };
 }
 
@@ -18,13 +19,20 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   const idToken = authHeader.split("Bearer ")[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // Verify Clerk token
+    const sessionClaims = await verifyToken(idToken, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    });
 
-    const role = decodedToken.role as "judge" | "admin" | "superadmin" | undefined;
+    const uid = sessionClaims.sub;
+    const email = sessionClaims.email as string;
+
+    // Fetch role using our unified userService
+    const role = await getUserRole(uid);
 
     req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
+      uid,
+      email,
       role,
     };
 
@@ -35,12 +43,12 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   }
 }
 
-export function authorizeRoles(allowedRoles: ("judge" | "admin" | "superadmin")[]) {
+export function authorizeRoles(allowedRoles: ("judge" | "admin" | "superadmin" | "participant")[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized: No user info" });
     }
-    if (!allowedRoles.includes(req.user.role!)) {
+    if (!req.user.role || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ error: "Forbidden: Insufficient permissions" });
     }
     next();
@@ -52,24 +60,39 @@ export async function verifySuperAdmin(
   res: Response,
   next: NextFunction
 ) {
-  const idToken = req.headers.authorization?.split("Bearer ")[1]
-  if (!idToken)
-    return res.status(401).json({ error: "Unauthorized: No token provided." })
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized: No token provided." });
+  }
+
+  const idToken = authHeader.split("Bearer ")[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken)
-    const role = (decodedToken as any).role
+    const sessionClaims = await verifyToken(idToken, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+    });
+
+    const uid = sessionClaims.sub;
+    
+    // Use the unified getUserRole function from userService
+    const role = await getUserRole(uid);
+    
     if (role !== "superadmin") {
       return res
         .status(403)
-        .json({ error: "Forbidden: Superadmin access required." })
+        .json({ error: "Forbidden: Superadmin access required." });
     }
 
-    req.user = decodedToken
-    next()
+    req.user = {
+      uid,
+      email: sessionClaims.email as string,
+      role: "superadmin"
+    };
+    
+    next();
   } catch (err: any) {
     return res
       .status(401)
-      .json({ error: "Invalid token", detail: err.message })
+      .json({ error: "Invalid token", detail: err.message });
   }
 }

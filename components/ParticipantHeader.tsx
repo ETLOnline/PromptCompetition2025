@@ -61,8 +61,11 @@ export default function ParticipantHeader() {
       .toUpperCase()
   }
 
-  const displayName = fullName || user?.email?.split("@")[0] || "Participant"
-  const userInitials = getUserInitials(user?.displayName || user?.email || "Participant")
+  // Get email from Clerk user object
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress || user?.primaryEmailAddress?.emailAddress || ""
+  
+  const displayName = fullName || userEmail.split("@")[0] || "Participant"
+  const userInitials = getUserInitials(fullName || userEmail || "Participant")
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -132,7 +135,7 @@ export default function ParticipantHeader() {
                   </Avatar>
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-semibold text-gray-900">{displayName}</p>
-                    <p className="text-xs text-gray-500">{user?.email || "participant@example.com"}</p>
+                    <p className="text-xs text-gray-500">{userEmail || "participant@example.com"}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </Button>
@@ -147,7 +150,7 @@ export default function ParticipantHeader() {
                     </Avatar>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
-                      <p className="text-xs leading-none text-gray-500">{user?.email || "participant@example.com"}</p>
+                      <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
                       <Badge
                         variant="secondary"
                         className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"

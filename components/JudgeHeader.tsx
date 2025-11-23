@@ -60,7 +60,7 @@ export default function JudgeHeader() {
   }
 
   // Use fullName from context, fallback to email username
-  const displayFullName = fullName || user?.email?.split("@")[0] || "Judge"
+  const displayFullName = fullName || user?.primaryEmailAddress?.emailAddress?.split("@")[0] || "Judge"
   const userInitials = getUserInitials(displayFullName)
 
   return (
@@ -142,7 +142,7 @@ export default function JudgeHeader() {
                   </Avatar>
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-semibold text-gray-900">{displayFullName}</p>
-                    <p className="text-xs text-gray-500">{user?.email || "judge@example.com"}</p>
+                    <p className="text-xs text-gray-500">{user?.primaryEmailAddress?.emailAddress || "judge@example.com"}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </Button>
@@ -157,7 +157,7 @@ export default function JudgeHeader() {
                     </Avatar>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayFullName}</p>
-                      <p className="text-xs leading-none text-gray-500">{user?.email || "judge@example.com"}</p>
+                      <p className="text-xs leading-none text-gray-500">{user?.primaryEmailAddress?.emailAddress || "judge@example.com"}</p>
                                           <Badge
                         variant="secondary"
                         className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"

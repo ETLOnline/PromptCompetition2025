@@ -4,8 +4,10 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth-provider"
+import { ClerkProvider } from "@clerk/nextjs"
 import { ParticipantCacheProvider } from "@/lib/participant-cache-context"
 import { CompetitionCacheProvider } from "@/lib/competition-cache-context"
+import { ProfileCompletionGuard } from "@/components/ProfileCompletionGuard"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -26,17 +28,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <AuthProvider>
-          <ParticipantCacheProvider>
-            <CompetitionCacheProvider>
-              {children}
-              <Toaster />
-            </CompetitionCacheProvider>
-          </ParticipantCacheProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={inter.className}>
+          <AuthProvider>
+            <ProfileCompletionGuard>
+              <CompetitionCacheProvider>
+                <ParticipantCacheProvider>
+                  {children}
+                </ParticipantCacheProvider>
+              </CompetitionCacheProvider>
+            </ProfileCompletionGuard>
+            <Toaster />
+          </AuthProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

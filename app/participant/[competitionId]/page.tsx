@@ -124,6 +124,7 @@ export default function DashboardPage() {
     const init = async () => {
       const profile = await checkAuth()
       if (!profile) return
+      // console.log("Authenticated user profile:", profile)
 
       await checkParticipantAndLoadData(profile)
     }
@@ -133,28 +134,35 @@ export default function DashboardPage() {
 
   const checkAuth = async (): Promise<UserProfile | null> => {
     try {
+      // console.log("Checking authentication...")
       const profile = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`
       )
       setUser(profile)
+      // console.log("User profile:", profile)
 
       if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
+        console.log("Unauthorized access attempt. Redirecting to home.")
         router.push("/")
         return null
       }
 
       return profile
     } catch (error) {
+      console.error("Error during authentication check:", error)
       router.push("/")
       return null
     }
   }
 
   const checkParticipantAndLoadData = async (profile: UserProfile) => {
+    // console.log("Checking participant and loading data...")
     try {
+      // console.log("Checking participant status for competition")
       const participantData = await checkParticipantAndGetData(id, profile.uid)
 
       if (!participantData.exists) {
+        console.log("Participant does not exist for this competition. Redirecting.")
         router.push("/participant")
         return
       }
@@ -177,7 +185,7 @@ export default function DashboardPage() {
       ])
     } catch (err) {
       console.error("Error checking participant and loading data:", err)
-      router.push("/participant")
+      // router.push("/participant")
     }
   }
 
