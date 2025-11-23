@@ -1,4 +1,3 @@
-# Dockerfile.frontend
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -22,7 +21,7 @@ ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ARG CLERK_SECRET_KEY
 ARG CLERK_PUBLISHABLE_KEY
 
-# Set environment variables from build arguments (only for build process)
+# Set environment variables from build arguments
 ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY
 ENV NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
 ENV NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -60,6 +59,9 @@ COPY tailwind.config.ts ./
 COPY postcss.config.js ./
 COPY tsconfig.json ./
 COPY components.json ./
+
+# COPY MIDDLEWARE (Critical for Clerk)
+COPY middleware.ts ./
 
 # Build the application with environment variables
 RUN npm run build
