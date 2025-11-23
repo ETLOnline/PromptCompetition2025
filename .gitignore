@@ -73,3 +73,5 @@ __azurite_db_table__.json
 /.clerk/
 
 MIGRATION_SUMMARY.md
+
+CLERK_DEPLOYMENT_FIX.md

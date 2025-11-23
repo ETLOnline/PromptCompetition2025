@@ -1,61 +1,39 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-// Define your public routes
+// Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
   '/',
   '/about(.*)',
   '/rules(.*)',
   '/leaderboard(.*)',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/api/webhooks(.*)', // Clerk webhooks should be public
 ])
 
-// Define auth routes that should be accessible without authentication
-const isAuthRoute = createRouteMatcher([
-  '/auth/login(.*)',
-  '/auth/register(.*)',
-  '/auth/reset-password(.*)',
+// Define routes that should be protected
+const isProtectedRoute = createRouteMatcher([
+  '/admin(.*)',
+  '/judge(.*)',
+  '/participant(.*)',
+  '/profile-setup(.*)',
 ])
 
-// Define API routes that need authentication
-const isApiRoute = createRouteMatcher([
-  '/api(.*)',
-])
-
-const isProfileSetupRoute = createRouteMatcher(['/profile-setup'])
-
-export default clerkMiddleware(async (auth, req) => {
+export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { userId } = await auth()
 
-  // Allow public routes to be accessed
+  // Allow public routes
   if (isPublicRoute(req)) {
     return NextResponse.next()
   }
 
-  // Allow auth routes to be accessed without authentication
-  if (isAuthRoute(req)) {
-    return NextResponse.next()
-  }
-
-  // For API routes, require authentication but don't redirect
-  if (isApiRoute(req)) {
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-    return NextResponse.next()
-  }
-
-  // If user is not logged in and not on a public or auth route, redirect to login
-  if (!userId && !isPublicRoute(req) && !isAuthRoute(req)) {
-    return NextResponse.redirect(new URL('/auth/login', req.url))
-  }
-
-  // If user is logged in, check if they need to complete profile
-  // We handle this check in the layout component instead of middleware
-  // to avoid Edge Runtime limitations with Firebase Admin SDK
-  if (userId && !isProfileSetupRoute(req)) {
-    // For now, let the request proceed and handle profile checks in the app
-    // The profile completion check will be done client-side in the layout
-    return NextResponse.next()
+  // Protect routes that require authentication
+  if (isProtectedRoute(req) && !userId) {
+    const signInUrl = new URL('/sign-in', req.url)
+    signInUrl.searchParams.set('redirect_url', req.url)
+    return NextResponse.redirect(signInUrl)
   }
 
   return NextResponse.next()
@@ -63,9 +41,14 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - images in public folder
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
