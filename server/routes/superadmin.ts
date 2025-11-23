@@ -347,25 +347,46 @@ router.get("/users", verifySuperAdmin, async (req, res) => {
       emailVerified: u.emailAddresses[0]?.verification?.status === "verified",
     }))
 
-    // Filter by role if provided
-    if (role && role !== "all") {
-      users = users.filter(u => u.role === role)
-    }
-
-    // Merge Firestore profile for these users
+    // Merge Firestore profile for these users FIRST to get correct roles
     const docs = await Promise.all(users.map(u =>
       db.collection("users").doc(u.uid).get()
     ))
     const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]))
 
+    // Debug logging for specific user
+    const debugUid = "user_35qqi64sDONinj64dvTbC2qQ4Wo"
+    if (users.some(u => u.uid === debugUid)) {
+      const debugDoc = docs.find(d => d.id === debugUid)
+      console.log(`Debug - User ${debugUid} exists in Firestore:`, debugDoc?.exists)
+      if (debugDoc?.exists) {
+        const debugData = debugDoc.data()
+        console.log(`Debug - User ${debugUid} role from Firestore:`, debugData?.role)
+        console.log(`Debug - User ${debugUid} full profile:`, debugData)
+      }
+    }
+
     users = users.map(u => {
       const p = profileByUid.get(u.uid) || {}
+      const finalRole = p.role || "participant"
+      
+      // Debug logging for specific user
+      if (u.uid === debugUid) {
+        console.log(`Debug - Final role assigned to ${debugUid}:`, finalRole)
+        console.log(`Debug - Profile data for ${debugUid}:`, p)
+      }
+      
       return {
         ...u,
         displayName: u.displayName || (p.fullName ?? ""),
+        role: finalRole, // Use Firestore role or default to participant
         participations: p.participations ?? {},
       }
     })
+
+    // Filter by role if provided AFTER merging Firestore data
+    if (role && role !== "all") {
+      users = users.filter(u => u.role === role)
+    }
 
     // Sort by role priority and creation date
     const rolePriority = { superadmin: 0, admin: 1, judge: 2, participant: 3 }
@@ -407,11 +428,16 @@ router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res:
     }
 
     const clerkUser = clerkUsers.data[0];
+    
+    // Fetch user role from Firestore
+    const userDoc = await db.collection("users").doc(clerkUser.id).get();
+    const userProfile = userDoc.exists ? userDoc.data() : {};
+    
     const user = {
       uid: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || "",
-      displayName: clerkUser.fullName || clerkUser.firstName || "",
-      role: "participant", // Default role, will be updated from Firestore query
+      displayName: clerkUser.fullName || clerkUser.firstName || userProfile.fullName || "",
+      role: userProfile.role || "participant", // Use Firestore role or default to participant
       createdAt: new Date(clerkUser.createdAt).toISOString(),
       lastSignIn: clerkUser.lastSignInAt ? new Date(clerkUser.lastSignInAt).toISOString() : null,
       emailVerified: clerkUser.emailAddresses[0]?.verification?.status === "verified",
@@ -432,19 +458,36 @@ router.get("/stats", verifySuperAdmin, async (req: RequestWithUser, res: Respons
       limit: 500, // Adjust as needed
     });
 
+    // Map Clerk users and get their Firestore roles
     const users = clerkUsers.data.map((user) => ({
-      role: "participant", // Default role, will be updated from Firestore query
+      uid: user.id,
+      role: "participant", // Default role, will be updated from Firestore query below
       disabled: user.locked || false
     }));
 
+    // Fetch Firestore roles for all users
+    const docs = await Promise.all(users.map(u =>
+      db.collection("users").doc(u.uid).get()
+    ));
+    const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]));
+
+    // Update users with correct roles from Firestore
+    const usersWithRoles = users.map(u => {
+      const p = profileByUid.get(u.uid) || {};
+      return {
+        ...u,
+        role: p.role || "participant", // Use Firestore role or default to participant
+      };
+    });
+
     const stats = {
       total: clerkUsers.totalCount,
-      superadmins: users.filter(u => u.role === "superadmin").length,
-      admins: users.filter(u => u.role === "admin").length,
-      judges: users.filter(u => u.role === "judge").length,
-      participants: users.filter(u => u.role === "participant").length,
-      disabled: users.filter(u => u.disabled).length,
-      active: users.filter(u => !u.disabled).length
+      superadmins: usersWithRoles.filter(u => u.role === "superadmin").length,
+      admins: usersWithRoles.filter(u => u.role === "admin").length,
+      judges: usersWithRoles.filter(u => u.role === "judge").length,
+      participants: usersWithRoles.filter(u => u.role === "participant").length,
+      disabled: usersWithRoles.filter(u => u.disabled).length,
+      active: usersWithRoles.filter(u => !u.disabled).length
     };
 
     return res.status(200).json(stats);
