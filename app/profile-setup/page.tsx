@@ -380,7 +380,7 @@ export default function ProfileSetupPage() {
                 <div className="flex gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-800 leading-relaxed">
-                    After the first round, the top 20 contestants' student status will be checked. Candidates found not to be students will be disqualified immediately.
+                    After the first round, the top 20 participants status will be checked. Candidates found not to be students will be disqualified immediately.
                   </p>
                 </div>
               </div>
