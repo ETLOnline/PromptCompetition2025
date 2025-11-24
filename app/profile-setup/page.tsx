@@ -46,6 +46,7 @@ export default function ProfileSetupPage() {
   // Global form state
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   // Pre-populate form with user data and check if already completed
   useEffect(() => {
@@ -244,6 +245,7 @@ export default function ProfileSetupPage() {
     e.preventDefault()
     setLoading(true)
     setFormError(null)
+    setSuccess(false) // Clear any previous success state
 
     // Validate all fields
     const trimmedName = fullName.trim()
@@ -323,11 +325,40 @@ export default function ProfileSetupPage() {
         throw new Error(result.error || "Failed to update profile")
       }
 
-      // Redirect directly to login after successful profile completion
-      await signOut({ redirectUrl: '/auth/login?message=profile-complete' })
+      // Redirect to role-based page after successful profile completion
+      const userRole = result.role || 'participant'
+      let redirectUrl = '/participant'
+      
+      console.log('Profile setup successful, redirecting user with role:', userRole)
+      
+      switch (userRole) {
+        case 'admin':
+        case 'superadmin':
+          redirectUrl = '/admin'
+          break
+        case 'judge':
+          redirectUrl = '/judge'
+          break
+        case 'participant':
+        default:
+          redirectUrl = '/participant'
+          break
+      }
+      
+      console.log('Redirecting to:', redirectUrl)
+      
+      // Show success message and small delay to ensure Firestore document is propagated
+      setFormError(null) // Clear any previous errors
+      setSuccess(true) // Show success message
+      setLoading(false) // Stop the loading spinner
+      
+      setTimeout(() => {
+        router.push(redirectUrl)
+      }, 1500) // Increased to 1.5s to give user time to see success
 
     } catch (err: any) {
       console.error("Error updating user profile:", err)
+      setSuccess(false) // Reset success state
       setFormError(err.message || "An error occurred. Please try again.")
       setLoading(false)
     }
@@ -437,6 +468,14 @@ export default function ProfileSetupPage() {
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
                 <X className="h-5 w-5" />
                 <span className="text-sm">{formError}</span>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span className="text-sm">Profile created successfully! Redirecting you to your dashboard...</span>
               </div>
             )}
 

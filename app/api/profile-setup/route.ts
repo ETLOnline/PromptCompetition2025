@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     })
 
     console.log("Profile update successful!")
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, role: "participant" })
   } catch (error: any) {
     console.error("Errorrrs updating user profile:", error)
     console.error("Error details:", {
