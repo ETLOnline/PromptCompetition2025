@@ -158,7 +158,7 @@ export default function LoginPage() {
                   Welcome Back to Spark!
                 </h1>
                 <p className="text-base text-gray-600">
-                  Sign in to access your Spark profile and continue your learning and growth journey.
+                  Sign in to access your Spark profile and continue your learning and growth journey
                 </p>
               </div>
 
