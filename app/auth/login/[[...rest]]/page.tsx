@@ -142,10 +142,10 @@ export default function LoginPage() {
                 </Link>
                 <Link href="https://spark.etlonline.org/">
                   <Image
-                    src="/images/sparkwithtext.png"
+                    src="/images/logotextspark.png"
                     alt="Spark Logo"
                     width={160}
-                    height={160}
+                    height={180}
                     className="object-contain"
                     priority
                   />
@@ -220,7 +220,7 @@ export default function LoginPage() {
 
               {/* Sign in card wrapper */}
               <div className="w-full max-w-md">
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100">
+                {/* <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100"> */}
                   {/* Header */}
                   {/* <div className="text-center pt-6 pb-4 px-6">
                     <Image
@@ -234,39 +234,48 @@ export default function LoginPage() {
                     <h2 className="text-xl font-bold text-gray-900">Sign in to Spark</h2>
                   </div> */}
 
-                  {/* Clerk component */}
+                  {/* Clerk component with Loading */}
                   <div className="px-6 pb-6">
-                    <SignIn
-                      routing="path"
-                      path="/auth/login"
-                      afterSignInUrl="/auth/login"
-                      redirectUrl="/auth/login"
-                      appearance={{
-                        elements: {
-                          formButtonPrimary: 
-                            "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition-all duration-300 normal-case",
-                          card: "shadow-none border-0 bg-transparent",
-                          headerTitle: "hidden",
-                          headerSubtitle: "hidden",
-                          socialButtonsBlockButton: 
-                            "border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm",
-                          formFieldInput: 
-                            "rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm",
-                          footerActionLink: 
-                            "text-indigo-600 hover:text-indigo-700 font-medium",
-                          identityPreviewText: "text-gray-700",
-                          formFieldLabel: "text-gray-700 font-medium text-sm",
-                          formFieldInputShowPasswordButton: "text-gray-500 hover:text-gray-700",
-                          footerAction: "text-sm",
-                          dividerLine: "bg-gray-300",
-                          dividerText: "text-gray-500 text-sm",
-                          socialButtonsBlockButtonText: "text-gray-700 font-medium text-sm",
-                        },
-                      }}
-                      signUpUrl="/auth/register"
-                    />
+                    {!isLoaded ? (
+                      <div className="flex items-center justify-center min-h-[400px]">
+                        <div className="flex flex-col items-center space-y-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#10152f]"></div>
+                          <p className="text-sm text-gray-600">Loading...</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <SignIn
+                        routing="path"
+                        path="/auth/login"
+                        afterSignInUrl="/auth/login"
+                        redirectUrl="/auth/login"
+                        appearance={{
+                          elements: {
+                            formButtonPrimary: 
+                              "bg-[#10152f] hover:bg-[#0d1228] text-white shadow-lg transition-all duration-300 normal-case",
+                            card: "shadow-none border-0 bg-transparent",
+                            headerTitle: "hidden",
+                            headerSubtitle: "hidden",
+                            socialButtonsBlockButton: 
+                              "border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm",
+                            formFieldInput: 
+                              "rounded-lg border-gray-300 focus:border-[#10152f] focus:ring-[#10152f] text-sm",
+                            footerActionLink: 
+                              "text-[#10152f] hover:text-[#0d1228] font-medium",
+                            identityPreviewText: "text-gray-700",
+                            formFieldLabel: "text-gray-700 font-medium text-sm",
+                            formFieldInputShowPasswordButton: "text-gray-500 hover:text-gray-700",
+                            footerAction: "text-sm",
+                            dividerLine: "bg-gray-300",
+                            dividerText: "text-gray-500 text-sm",
+                            socialButtonsBlockButtonText: "text-gray-700 font-medium text-sm",
+                          },
+                        }}
+                        signUpUrl="/auth/register"
+                      />
+                    )}
                   </div>
-                </div>
+                {/* </div> */}
               </div>
             </div>
           </div>

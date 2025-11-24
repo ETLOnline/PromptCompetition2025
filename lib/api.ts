@@ -149,6 +149,18 @@ export const submitContactForm = async (formData: any) => {
   return res.json();
 };
 
+//----------------- welcome email API  ---------------------
+export const sendWelcomeEmail = async (email: string, fullName: string, getToken?: () => Promise<string | null>) => {
+  console.log(`API: sendWelcomeEmail called for ${email}`); 
+  return await fetchWithAuth(`${API_URL}/welcome`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, fullName }),
+  }, getToken);
+};
+
 // ---------------- competition results ----------------
 export const fetchCompetitionResults = async (competitionId: string, getToken?: () => Promise<string | null>) => {
   if (!competitionId) {

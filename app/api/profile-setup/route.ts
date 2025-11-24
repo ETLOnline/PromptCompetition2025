@@ -10,10 +10,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    console.log("Profile setup API called")
+    // console.log("Profile setup API called")
     
     const { userId } = await auth()
-    console.log("User ID:", userId)
+    // console.log("User ID:", userId)
     
     if (!userId) {
       console.error("No user ID found - unauthorized")
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     const data = await req.json()
-    console.log("Received data:", JSON.stringify(data, null, 2))
+    // console.log("Received data:", JSON.stringify(data, null, 2))
     
     const {
       firstName,
@@ -42,9 +42,9 @@ export async function POST(req: Request) {
     const clerk = await clerkClient()
     const clerkUser = await clerk.users.getUser(userId)
     const email = clerkUser.emailAddresses[0]?.emailAddress || ''
-    console.log("User email:", email)
+    // console.log("User email:", email)
 
-    console.log("Creating/updating Firestore document...")
+    // console.log("Creating/updating Firestore document...")
     // Create user document in Firestore with Clerk userId
     await setDoc(doc(collection(db, "users"), userId), {
       fullName: `${firstName} ${lastName}`.trim(),
@@ -62,7 +62,32 @@ export async function POST(req: Request) {
       role: "participant"
     })
 
-    console.log("Profile update successful!")
+    // console.log("Profile update successful!")
+
+    // Send welcome email
+    try {
+      // console.log("Sending welcome email to:", email)
+      const welcomeEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/send-welcome-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          fullName: `${firstName} ${lastName}`.trim()
+        }),
+      });
+
+      if (welcomeEmailResponse.ok) {
+        console.log("Welcome email sent successfully")
+      } else {
+        console.warn("Failed to send welcome email, but profile creation was successful")
+      }
+    } catch (emailError) {
+      console.warn("Error sending welcome email:", emailError)
+      // Don't fail the profile creation if email fails
+    }
+
     return NextResponse.json({ success: true, role: "participant" })
   } catch (error: any) {
     console.error("Errorrrs updating user profile:", error)

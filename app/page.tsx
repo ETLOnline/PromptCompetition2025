@@ -367,6 +367,85 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+        
+        {/* Separator */}
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+        
+        {/* Prize Pool Section */}
+        <section className="py-20 bg-white">
+          <div className="container mx-auto p-6 space-y-8">
+            <div className="text-center max-w-3xl mx-auto space-y-4">
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 rounded-xl px-4 py-2 mb-4">
+                <Trophy className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Prize Pool</span>
+              </div>
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                Prize Pool – Compete & Win Big!
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Showcase your talent, rise to the challenge, and claim your share of an exciting cash prize pool. Whether you're aiming for the top spot or simply want to test your skills, every position counts!
+              </p>
+            </div>
+            
+            <div className="max-w-4xl mx-auto">
+              <Card className="bg-white shadow-lg rounded-xl">
+                <CardHeader className="text-center p-8">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <Trophy className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    Cash Prizes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8 pt-0">
+                  <div className="grid gap-4">
+                    {[
+                      { position: "1st Prize", amount: "PKR 100,000", rank: 1 },
+                      { position: "2nd Prize", amount: "PKR 75,000", rank: 2 },
+                      { position: "3rd Prize", amount: "PKR 50,000", rank: 3 },
+                      { position: "4th Prize", amount: "PKR 30,000", rank: 4 },
+                      { position: "5th Prize", amount: "PKR 20,000", rank: 5 },
+                    ].map((prize, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                        className="flex items-center justify-between p-4 rounded-lg border-2 border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-[#10152f] text-white rounded-lg flex items-center justify-center font-bold">
+                            {prize.rank}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-slate-900">{prize.position}</h3>
+                            <p className="text-sm text-muted-foreground">Achievement Award</p>
+                          </div>
+                        </div>
+                        <div className="text-xl font-bold text-slate-900">
+                          {prize.amount}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-8 text-center p-6 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Trophy className="h-5 w-5 text-emerald-600" />
+                      <span className="text-lg font-bold text-slate-900">Total Prize Pool</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900">
+                      PKR 275,000
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">Plus certificates and recognition for all winners!</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Features Section */}
         <section className="py-20 bg-white">
           <div className="container mx-auto p-6 space-y-8">

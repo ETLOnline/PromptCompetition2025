@@ -109,6 +109,7 @@ import judgeRouter from "./routes/judge/index.js";
 import llmRouter from "./routes/llmevaluations.js";
 
 import lastRouter from "./routes/leaderboard.js";
+import welcomeRouter from "./routes/welcome.js";
 
 
 console.log("2. Starting server setup...");
@@ -147,6 +148,7 @@ app.use("/submissions", submissionsRouter);
 
 app.use("/last", lastRouter);
 app.use("/upload", uploadRouter);
+app.use("/welcome", welcomeRouter);
 
 
 
