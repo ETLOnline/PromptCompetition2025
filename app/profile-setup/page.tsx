@@ -147,7 +147,7 @@ export default function ProfileSetupPage() {
   const validateLinkedIn = (url: string): string | null => {
     const trimmed = url.trim()
     if (!trimmed) return null
-    if (trimmed.length > 200) return "LinkedIn URL must not exceed 200 characters."
+    if (trimmed.length > 200) return "LinkedIn URL must not exceed 150 characters."
     const linkedInRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?$/
     if (!linkedInRegex.test(trimmed)) return "Please enter a valid LinkedIn profile URL (e.g., https://www.linkedin.com/in/username)."
     if (/<[^>]*>/g.test(trimmed)) return "Invalid input detected."

@@ -30,8 +30,6 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
   }
 
   // Protect routes that require authentication
-  // Note: We generally avoid redirecting API routes to sign-in pages (returns HTML to a JSON client),
-  // but since your isProtectedRoute list mostly targets pages, this logic is fine.
   if (isProtectedRoute(req) && !userId) {
     const signInUrl = new URL('/sign-in', req.url)
     signInUrl.searchParams.set('redirect_url', req.url)
@@ -43,14 +41,9 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images in public folder
-     * * FIXED: Removed 'api|' from the exclusion list below so middleware runs on API routes.
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
   ],
 }
