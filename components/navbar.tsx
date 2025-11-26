@@ -64,10 +64,10 @@ export default function Navbar() {
                     variant="outline"
                     size="sm"
                     aria-label="Open Menu"
-                    className="p-2 rounded-lg transition-all duration-300 group relative overflow-hidden"
+                    className="p-1.5 sm:p-2 rounded-lg transition-all duration-300 group relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gray-50 transform scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300"></div>
-                    <Menu className="h-5 w-5 text-gray-600 transition-all duration-300 group-hover:scale-110 relative z-10" />
+                    <Menu className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600 transition-all duration-300 group-hover:scale-110 relative z-10" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>
                 </SheetTrigger>
@@ -91,8 +91,8 @@ export default function Navbar() {
                       <Image
                         src="/images/Logo-for-Picton-Blue.png"
                         alt="Empowerment Through Learning Logo"
-                        width={150}
-                        height={120}
+                        width={120}
+                        height={96}
                         className="object-contain"
                       />
                     </a>
@@ -101,19 +101,19 @@ export default function Navbar() {
                   <div className="relative p-6 space-y-6">
                     <div>
                       <div className="flex items-center gap-2 mb-4">
-                        <h2 className="text-lg font-bold text-gray-900">Navigation</h2>
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                        <h2 className="text-base font-bold text-gray-900">Navigation</h2>
+                        <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
                       </div>
                       <nav className="space-y-2" aria-label="Mobile Navigation">
                         {navItems.map((item, index) => (
                           <Link
                             key={index}
                             href={item.href}
-                            className="flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
+                            className="flex items-center px-3 py-2.5 text-xs sm:text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
                             onClick={() => setIsOpen(false)}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
-                            <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-125 relative z-10"></div>
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full mr-2 sm:mr-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-125 relative z-10"></div>
                             <span className="relative z-10">{item.label}</span>
                           </Link>
                         ))}
@@ -121,28 +121,28 @@ export default function Navbar() {
                     </div>
                     <div className="pt-6">
                       <div className="flex items-center gap-2 mb-4">
-                        <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wide">Account</h3>
+                        <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wide">Account</h3>
                       </div>
                       <div className="space-y-3">
                         <SignedOut>
                           <Link href="/auth/login" onClick={() => setIsOpen(false)}>
                             <Button
                               variant="outline"
-                              className="w-full gap-2 px-6 py-2.5 text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden mb-3"
+                              className="w-full gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden mb-3"
                             >
                               <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                              <LogIn className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                              <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
                               <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">Login</span>
                             </Button>
                           </Link>
                           <Link href="/auth/register" onClick={() => setIsOpen(false)}>
                             <Button
-                              className="w-full gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
+                              className="w-full gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
                               style={{ backgroundColor: '#0f172a' }}
                             >
                               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                              <UserPlus className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                              <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
                               <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
                             </Button>
                           </Link>
@@ -154,12 +154,12 @@ export default function Navbar() {
                           <Link href={getDashboardUrl()} onClick={() => setIsOpen(false)}>
                             <Button
                               disabled={loading}
-                              className="w-full gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                               style={{ backgroundColor: '#0f172a' }}
                             >
                               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                              <LayoutDashboard className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                              <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
                               <span className="relative z-10 transition-all duration-300 group-hover:text-white">Dashboard</span>
                             </Button>
                           </Link>
@@ -168,7 +168,7 @@ export default function Navbar() {
                     </div>
                     <div className="pt-6">
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 mb-2">© 2024 Empowerment Through Learning</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-2">© 2024 Empowerment Through Learning</p>
                         <div className="flex justify-center">
                           <div className="w-12 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full"></div>
                         </div>
@@ -204,7 +204,7 @@ export default function Navbar() {
                   <Link
                     key={index}
                     href={item.href}
-                    className="relative px-5 py-2.5 text-sm font-medium text-gray-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 group overflow-hidden rounded-lg"
+                    className="relative px-3 lg:px-5 py-2 lg:py-2.5 text-xs lg:text-sm font-medium text-gray-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 group overflow-hidden rounded-lg"
                   >
                     {/* Subtle background that slides in */}
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-indigo-50 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-lg"></div>
