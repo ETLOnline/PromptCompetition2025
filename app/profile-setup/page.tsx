@@ -337,9 +337,9 @@ export default function ProfileSetupPage() {
         const fullName = `${formData.firstName} ${formData.lastName}`.trim()
         
         if (userEmail && fullName) {
-          console.log('Attempting to send welcome email to:', userEmail)
+          // console.log('Attempting to send welcome email to:', userEmail)
           await sendWelcomeEmail(userEmail, fullName, getToken)
-          console.log('✅ Welcome email sent successfully to:', userEmail)
+          // console.log('✅ Welcome email sent successfully to:', userEmail)
         } else {
           console.warn('⚠️ Missing email or name, skipping welcome email:', { userEmail, fullName })
         }
@@ -354,7 +354,7 @@ export default function ProfileSetupPage() {
       const userRole = result.role || 'participant'
       let redirectUrl = '/participant'
       
-      console.log('Profile setup successful, redirecting user with role:', userRole)
+      // console.log('Profile setup successful, redirecting user with role:', userRole)
       
       switch (userRole) {
         case 'admin':
@@ -370,7 +370,7 @@ export default function ProfileSetupPage() {
           break
       }
       
-      console.log('Redirecting to:', redirectUrl)
+      // console.log('Redirecting to:', redirectUrl)
       
       // Show success popup instead of redirecting immediately
       setFormError(null) // Clear any previous errors

@@ -196,7 +196,7 @@ This is an automated message. Please do not reply to this email.
       ],
     });
 
-    console.log(`✅ Welcome email sent successfully to: ${email}`);
+    // console.log(`✅ Welcome email sent successfully to: ${email}`);
     return res.status(200).json({ 
       success: true, 
       message: "Welcome email sent successfully" 

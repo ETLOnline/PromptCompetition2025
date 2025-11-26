@@ -3,7 +3,7 @@
 
 //----------------- welcome email API  ---------------------
 export const sendWelcomeEmail = async (email: string, fullName: string, getToken?: () => Promise<string | null>) => {
-  console.log(`🔄 Client: Attempting to send welcome email to ${email}`); 
+  // console.log(`🔄 Client: Attempting to send welcome email to ${email}`); 
   try {
     // Get the token if available (client-side call)
     let token = null;
