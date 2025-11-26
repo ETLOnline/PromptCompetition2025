@@ -24,9 +24,9 @@ export const SearchAndFilters = ({
 }: SearchAndFiltersProps) => {
   return (
     <div className="py-3 sm:py-6">
-      <div className="flex flex-col gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full">
-          <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-1">
+          <div className="relative flex-1 sm:max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search competitions..."
@@ -48,24 +48,22 @@ export const SearchAndFilters = ({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center justify-center gap-2 border border-gray-200 rounded-lg p-1 w-full sm:w-auto sm:self-end">
+        <div className="hidden sm:flex items-center gap-2 border border-gray-200 rounded-lg p-1">
           <Button
             variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("grid")}
-            className="h-8 flex-1 sm:flex-none sm:w-8 sm:p-0"
+            className="h-8 w-8 p-0"
           >
             <Grid3X3 className="w-4 h-4" />
-            <span className="ml-2 sm:hidden">Grid</span>
           </Button>
           <Button
             variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("list")}
-            className="h-8 flex-1 sm:flex-none sm:w-8 sm:p-0"
+            className="h-8 w-8 p-0"
           >
             <List className="w-4 h-4" />
-            <span className="ml-2 sm:hidden">List</span>
           </Button>
         </div>
       </div>

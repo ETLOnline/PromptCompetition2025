@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     try {
       // console.log("Sending welcome email to:", email)
       await sendWelcomeEmail(email, `${firstName} ${lastName}`.trim())
-      // console.log("Welcome email sent successfully")
+      console.log("Welcome email sent successfully")
     } catch (emailError) {
       console.warn("Error sending welcome email:", emailError)
       // Don't fail the profile creation if email fails

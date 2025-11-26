@@ -74,7 +74,7 @@ const prompts = [
 
         <div className="relative">
           <Input
-            className="pr-20 py-6 text-base rounded-xl backdrop-blur-md border-2 focus-visible:ring-0 focus-visible:ring-offset-0 
+            className="pr-12 sm:pr-16 md:pr-20 py-3 sm:py-4 md:py-6 text-xs sm:text-sm md:text-base rounded-lg sm:rounded-xl backdrop-blur-md border-2 focus-visible:ring-0 focus-visible:ring-offset-0 
             dark:bg-background/20 dark:border-white/5 dark:text-white
             bg-white/80 border-primary/10 text-gray-800 shadow-[0_4px_20px_rgba(36,101,237,0.2)]"
             placeholder=""
@@ -83,11 +83,11 @@ const prompts = [
           />
           <Button
             size="icon"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 
+            className="absolute right-1.5 sm:right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 
             bg-primary/90 hover:bg-primary backdrop-blur-md shadow-md"
             aria-label="Send message"
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
           </Button>
         </div>
       </div>

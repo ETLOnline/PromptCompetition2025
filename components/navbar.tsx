@@ -54,9 +54,9 @@ export default function Navbar() {
       {/* Main Navigation Container */}
       <div className="transition-all duration-300 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto max-w-7xl">
-          <div className="flex h-20 items-center justify-between px-6">
+          <div className="flex h-20 items-center justify-between px-2 sm:px-6">
             {/* Left Section: Mobile Trigger + Logo */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Mobile Menu Trigger (left) */}
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild className="lg:hidden">
@@ -64,7 +64,7 @@ export default function Navbar() {
                     variant="outline"
                     size="sm"
                     aria-label="Open Menu"
-                    className="p-2.5 rounded-lg transition-all duration-300 group relative overflow-hidden"
+                    className="p-2 rounded-lg transition-all duration-300 group relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gray-50 transform scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300"></div>
                     <Menu className="h-5 w-5 text-gray-600 transition-all duration-300 group-hover:scale-110 relative z-10" />
@@ -184,13 +184,13 @@ export default function Navbar() {
                 className="flex items-center transition-opacity duration-300 hover:opacity-80"
                 aria-label="Empowerment Through Learning Homepage"
               >
-                <div className="relative rounded-xl p-2">
+                <div className="relative rounded-xl p-0.5 sm:p-1">
                   <Image
                     src="/images/Logo-for-Picton-Blue.png"
                     alt="Empowerment Through Learning Logo"
                     width={120}
                     height={96}
-                    className="object-contain w-[100px] sm:w-[150px] h-auto"
+                    className="object-contain w-[70px] sm:w-[100px] lg:w-[150px] h-auto"
                     priority
                   />
                 </div>
@@ -216,72 +216,70 @@ export default function Navbar() {
               </div>
             </nav>
 
-            {/* Auth Buttons - Right Aligned (desktop) */}
-            <div className="flex items-center gap-4 ml-auto">
-              {/* Desktop Auth Buttons */}
-              <div className="hidden lg:flex items-center gap-3">
-                <SignedOut>
-                  <Link href="/auth/login">
-                    <Button
-                      variant="outline"
-                      className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden"
-                    >
-                      {/* Subtle slide-up background */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                      <LogIn className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
-                      <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">Login</span>
-                    </Button>
-                  </Link>
+            {/* Auth Buttons - Right Aligned (mobile + desktop) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-2">
+              {/* Auth Buttons - Visible on all screen sizes */}
+              <SignedOut>
+                {/* Login Button - Compact on mobile with text, full on larger screens */}
+                <Link href="/auth/login">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 px-2 py-1.5 sm:px-4 lg:gap-2 lg:px-6 lg:py-2.5 text-xs sm:text-sm font-medium rounded-lg border-gray-200 text-gray-700 hover:border-gray-300 transition-all duration-300 group relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-50 to-transparent transform translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                    <span className="relative z-10 group-hover:text-gray-900 transition-colors duration-300">Login</span>
+                  </Button>
+                </Link>
 
-                  <Link href="/auth/register">
-                    <Button
-                      className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
-                      style={{ backgroundColor: '#0f172a' }}
-                    >
-                      {/* Gradient overlay on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      {/* Light shine effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                      <UserPlus className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
-                      <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
-                    </Button>
-                  </Link>
-                </SignedOut>
+                {/* Sign Up Button - Compact on mobile with text, full on larger screens */}
+                <Link href="/auth/register">
+                  <Button
+                    size="sm"
+                    className="gap-1 px-2 py-1.5 sm:px-4 lg:gap-2 lg:px-6 lg:py-2.5 text-xs sm:text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden"
+                    style={{ backgroundColor: '#0f172a' }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                    <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                    <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
+                  </Button>
+                </Link>
+              </SignedOut>
 
-                <SignedIn>
-                  <UserButton 
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: {
-                          width: "40px",
-                          height: "40px",
-                          backgroundColor: "#0f172a",
-                        },
-                        userButtonPopoverCard: "shadow-xl",
-                        userButtonPopoverActionButton: "hover:bg-gray-100",
+              <SignedIn>
+                {/* User Avatar Button */}
+                <UserButton 
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: {
+                        width: "28px",
+                        height: "28px",
+                        backgroundColor: "#0f172a",
                       },
-                    }}
-                  />
+                      userButtonPopoverCard: "shadow-xl",
+                      userButtonPopoverActionButton: "hover:bg-gray-100",
+                    },
+                  }}
+                />
 
-                  <Link href={getDashboardUrl()}>
-                    <Button
-                      disabled={loading}
-                      className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ backgroundColor: '#0f172a' }}
-                    >
-                      {/* Gradient overlay on hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      {/* Light shine effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
-                      <LayoutDashboard className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
-                      <span className="relative z-10 transition-all duration-300 group-hover:text-white">Dashboard</span>
-                    </Button>
-                  </Link>
-                </SignedIn>
-              </div>
-
-              {/* Mobile trigger moved to left; no trigger here */}
+                {/* Dashboard Button - Compact on mobile with text, full on larger screens */}
+                <Link href={getDashboardUrl()}>
+                  <Button
+                    disabled={loading}
+                    size="sm"
+                    className="gap-1 px-2 py-1.5 sm:px-4 lg:gap-2 lg:px-6 lg:py-2.5 text-xs sm:text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: '#0f172a' }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                    <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                    <span className="relative z-10 transition-all duration-300 group-hover:text-white">Dashboard</span>
+                  </Button>
+                </Link>
+              </SignedIn>
             </div>
           </div>
         </div>

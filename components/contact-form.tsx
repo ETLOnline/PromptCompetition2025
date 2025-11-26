@@ -66,14 +66,14 @@ export default function ContactForm() {
     return (
       <Card className="bg-white text-black">
         <CardContent className="pt-6 flex flex-col items-center justify-center min-h-[400px] text-center">
-          <CheckCircle2 className="h-16 w-16 text-black mb-4" />
-          <h3 className="text-2xl font-bold mb-2">Thank You!</h3>
-          <p className="text-sm mb-6">
+          <CheckCircle2 className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-black mb-4" />
+          <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">Thank You!</h3>
+          <p className="text-xs sm:text-sm mb-6">
             Your inquiry has been received. Our enterprise team will contact you shortly to discuss your specific
             requirements.
           </p>
           <Button
-            className="text-black bg-gray-200 gap-2 px-8 py-4 h-14 text-lg rounded-xl"
+            className="text-black bg-gray-200 gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg rounded-lg sm:rounded-xl"
             onClick={() => {
               setIsSubmitted(false);
               setFormData({
@@ -96,8 +96,8 @@ export default function ContactForm() {
   return (
     <Card className="bg-white text-black">
       <CardHeader>
-        <CardTitle className="text-black">Contact Our Enterprise Team</CardTitle>
-        <CardDescription className="text-sm text-black">
+        <CardTitle className="text-base sm:text-lg md:text-xl text-black">Contact Our Enterprise Team</CardTitle>
+        <CardDescription className="text-xs sm:text-sm text-black">
           Fill out the form below to discuss your organization's needs and receive a custom quote.
         </CardDescription>
       </CardHeader>
@@ -105,7 +105,7 @@ export default function ContactForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-black">First Name</Label>
+              <Label htmlFor="firstName" className="text-xs sm:text-sm text-black">First Name</Label>
               <Input
                 id="firstName"
                 name="firstName"
@@ -117,7 +117,7 @@ export default function ContactForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-black">Last Name</Label>
+              <Label htmlFor="lastName" className="text-xs sm:text-sm text-black">Last Name</Label>
               <Input
                 id="lastName"
                 name="lastName"
@@ -131,7 +131,7 @@ export default function ContactForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-black">Work Email</Label>
+            <Label htmlFor="email" className="text-xs sm:text-sm text-black">Work Email</Label>
             <Input
               id="email"
               name="email"
@@ -145,7 +145,7 @@ export default function ContactForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company" className="text-black">Company/Educational Organization</Label>
+            <Label htmlFor="company" className="text-xs sm:text-sm text-black">Company/Educational Organization</Label>
             <Input
               id="company"
               name="company"
@@ -158,7 +158,7 @@ export default function ContactForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-black">Your Role</Label>
+            <Label htmlFor="role" className="text-xs sm:text-sm text-black">Your Role</Label>
             <Input
               id="role"
               name="role"
@@ -190,7 +190,7 @@ export default function ContactForm() {
           </div> */}
 
           <div className="space-y-2">
-            <Label htmlFor="message" className="text-black">How can we help?</Label>
+            <Label htmlFor="message" className="text-xs sm:text-sm text-black">How can we help?</Label>
             <Textarea
               id="message"
               name="message"
@@ -204,13 +204,13 @@ export default function ContactForm() {
           </div>
           <Button
             type="submit"
-            className="w-full justify-center gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="w-full justify-center gap-1.5 sm:gap-2 px-4 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Submitting..." : "Request Information"}
           </Button>
 
-          <p className="text-xs text-black text-center">
+          <p className="text-[10px] sm:text-xs text-black text-center">
             By submitting this form, you agree to our privacy policy and terms of service.
           </p>
         </form>

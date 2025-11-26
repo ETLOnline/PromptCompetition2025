@@ -13,8 +13,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Competition Info */}
           <div className="space-y-4 md:col-span-1">
-            <h3 className="text-xl font-bold text-gray-900">All Pakistan Prompt Engineering Competition</h3>
-            <p className="text-sm font-medium text-gray-700 leading-relaxed">
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900">All Pakistan Prompt Engineering Competition</h3>
+            <p className="text-xs sm:text-sm font-medium text-gray-700 leading-relaxed">
               The premier national competition for prompt engineering skills, organized by ETL Online. 
               Empowering the next generation of AI professionals across Pakistan.
             </p>
@@ -23,7 +23,7 @@ export default function Footer() {
                 href="https://www.etlonline.org/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200 underline-offset-4 hover:underline"
+                className="text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors duration-200 underline-offset-4 hover:underline"
               >
                 Visit ETL Online →
               </a>
@@ -32,9 +32,9 @@ export default function Footer() {
 
           {/* Competition Links */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-900">Competition</h3>
+            <h3 className="text-sm sm:text-base font-bold text-gray-900">Competition</h3>
             <nav aria-label="Competition Navigation">
-              <ul className="space-y-3 text-sm">
+              <ul className="space-y-3 text-xs sm:text-sm">
                 <li>
                   <Link
                     href="/#events"
@@ -65,9 +65,9 @@ export default function Footer() {
 
           {/* Support & Info Links */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-900">Support & Info</h3>
+            <h3 className="text-sm sm:text-base font-bold text-gray-900">Support & Info</h3>
             <nav aria-label="Support Navigation">
-              <ul className="space-y-3 text-sm">
+              <ul className="space-y-3 text-xs sm:text-sm">
                 <li>
                   <Link
                     href="/about"
@@ -92,10 +92,10 @@ export default function Footer() {
         {/* Bottom Section */}
         <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-xs sm:text-sm font-medium text-gray-700">
               © {currentYear} ETL Online. All rights reserved.
             </p>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-[10px] sm:text-xs text-gray-600 mt-1">
               Powered by Enlight AI
             </p>
           </div>
@@ -109,7 +109,7 @@ export default function Footer() {
               className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
               aria-label="LinkedIn"
             >
-              <Linkedin className="h-7 w-7 text-blue-600 group-hover:text-blue-800 transition-colors duration-200" />
+              <Linkedin className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-600 group-hover:text-blue-800 transition-colors duration-200" />
             </Link>
 
             <Link
@@ -119,7 +119,7 @@ export default function Footer() {
               className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-green-600/20"
               aria-label="WhatsApp Group"
             >
-              <MessageCircle className="h-7 w-7 text-green-600 group-hover:text-green-700 transition-colors duration-200" />
+              <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-green-600 group-hover:text-green-700 transition-colors duration-200" />
             </Link>
 
             <Link
@@ -129,7 +129,7 @@ export default function Footer() {
               className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-pink-600/20"
               aria-label="Instagram"
             >
-              <Instagram className="h-7 w-7 text-pink-600 group-hover:text-pink-700 transition-colors duration-200" />
+              <Instagram className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-pink-600 group-hover:text-pink-700 transition-colors duration-200" />
             </Link>
 
             <Link
@@ -139,7 +139,7 @@ export default function Footer() {
               className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-700/20"
               aria-label="Facebook"
             >
-              <Facebook className="h-7 w-7 text-blue-700 group-hover:text-blue-800 transition-colors duration-200" />
+              <Facebook className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-blue-700 group-hover:text-blue-800 transition-colors duration-200" />
             </Link>
 
             <Link
@@ -149,7 +149,7 @@ export default function Footer() {
               className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-600/20"
               aria-label="YouTube"
             >
-              <Youtube className="h-7 w-7 text-red-600 group-hover:text-red-700 transition-colors duration-200" />
+              <Youtube className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-600 group-hover:text-red-700 transition-colors duration-200" />
             </Link>
 
             <Link
@@ -159,7 +159,7 @@ export default function Footer() {
               className="group transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-gray-700/20"
               aria-label="GitHub"
             >
-              <Github className="h-7 w-7 text-gray-800 group-hover:text-black transition-colors duration-200" />
+              <Github className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-gray-800 group-hover:text-black transition-colors duration-200" />
             </Link>
           </div>
 
