@@ -11,7 +11,13 @@ export const sendWelcomeEmail = async (email: string, fullName: string, getToken
       token = await getToken();
     }
 
-    const response = await fetch('/api/welcome-email', {
+    // Call backend directly (same pattern as superadmin create-user)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    if (!API_URL) {
+      throw new Error("API URL not configured");
+    }
+
+    const response = await fetch(`${API_URL}/welcome`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
