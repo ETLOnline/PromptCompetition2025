@@ -363,7 +363,7 @@ export default function CompetitionsPage() {
         competition={selectedCompetition}
       />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto">
         <SearchAndFilters
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -374,7 +374,7 @@ export default function CompetitionsPage() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pb-12 bg-white rounded-xl shadow-sm mb-8">
+      <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto pb-12 bg-white sm:rounded-xl sm:shadow-sm mb-8">
         <div className="py-6">
           {loadingInitialFetch && competitions.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

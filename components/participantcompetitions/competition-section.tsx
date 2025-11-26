@@ -76,10 +76,10 @@ export const CompetitionSection = ({
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`w-3 h-3 ${dotColor} rounded-full`}></div>
-        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-        <Badge className={`${badgeColor} border font-medium`}>{competitions.length}</Badge>
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className={`w-2 h-2 sm:w-3 sm:h-3 ${dotColor} rounded-full`}></div>
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h3>
+        <Badge className={`${badgeColor} border font-medium text-xs`}>{competitions.length}</Badge>
       </div>
       <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
         {competitions.map((competition) => {

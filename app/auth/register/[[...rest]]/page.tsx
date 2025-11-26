@@ -8,7 +8,7 @@ export default function RegisterPage() {
   const { isLoaded } = useUser()
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-y-auto">
       {/* Back to home button */}
       <div className="absolute top-4 left-4 z-10">
         <Link 
@@ -30,9 +30,9 @@ export default function RegisterPage() {
       </div>
 
       {/* Main content */}
-      <div className="relative min-h-screen px-4 py-8">
+      <div className="relative min-h-screen flex items-center justify-center px-2 py-20 sm:py-8 overflow-y-auto">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
             {/* Left side - Branding and Information */}
             <div className="hidden lg:flex flex-col space-y-4 p-6 pt-16">
               {/* Logos */}
@@ -57,7 +57,6 @@ export default function RegisterPage() {
                     priority
                   />
                 </Link>
-
               </div>
 
               {/* Welcome text */}
@@ -123,22 +122,10 @@ export default function RegisterPage() {
             </div>
 
             {/* Right side - Clerk Sign Up Component */}
-            <div className="flex flex-col items-center justify-center min-h-screen">
-              {/* Mobile logo */}
-              <div className="lg:hidden mb-6">
-                <Link href="/" className="inline-flex items-center">
-                  <Image
-                    src="/images/Logo-for-Picton-Blue.png"
-                    alt="Empowerment Through Learning Logo"
-                    width={140}
-                    height={56}
-                    className="object-contain"
-                    priority
-                  />
-                </Link>
-              </div>
-
+            <div className="flex flex-col items-center justify-center w-full">
               {/* Sign up card wrapper */}
+              <div className="w-full max-w-md mx-auto">
+                <div className="px-2 sm:px-6 pb-6">
                 {/* <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-gray-100"> */}
                   {/* Spark Logo and Heading */}
                   {/* <div className="text-center mb-4">
@@ -169,14 +156,14 @@ export default function RegisterPage() {
                         appearance={{
                           elements: {
                             formButtonPrimary: 
-                              "bg-[#10152f] hover:bg-[#0d1228] text-white shadow-lg transition-all duration-300 normal-case",
+                              "bg-[#10152f] hover:bg-[#0d1228] text-white shadow-lg transition-all duration-300 normal-case w-full text-base py-2 rounded-lg",
                             card: "shadow-none border-0 bg-transparent",
                           headerTitle: "hidden",
                           headerSubtitle: "hidden",
                           socialButtonsBlockButton: 
-                            "border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm",
+                            "border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm w-full py-2 rounded-lg",
                           formFieldInput: 
-                            "rounded-lg border-gray-300 focus:border-[#10152f] focus:ring-[#10152f] text-sm",
+                            "rounded-lg border-gray-300 focus:border-[#10152f] focus:ring-[#10152f] text-sm w-full",
                           footerActionLink: 
                             "text-[#10152f] hover:text-[#0d1228] font-medium",
                           identityPreviewText: "text-gray-700",
@@ -191,7 +178,8 @@ export default function RegisterPage() {
                       signInUrl="/auth/login"
                     />
                   )}
-                {/* </div> */}
+                </div>
+              </div>
             </div>
           </div>
         </div>

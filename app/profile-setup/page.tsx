@@ -400,83 +400,99 @@ export default function ProfileSetupPage() {
       
       {/* Success Modal with PDF Preview */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col h-full max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col h-full max-h-[95vh] sm:max-h-[90vh]">
               {/* Header */}
-              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900">Welcome to APPEC Competition!</h3>
-                    <p className="text-sm text-gray-600 mt-1">Your registration is complete</p>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Welcome to APPEC Competition!</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Your registration is complete</p>
                   </div>
                 </div>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
-                  <p className="text-gray-800 leading-relaxed">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
+                <div className="bg-blue-50 border border-blue-100 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5">
+                  <p className="text-sm sm:text-base text-gray-800 leading-relaxed">
                     Thank you for registering for the <span className="font-semibold">APPEC Competition</span>! We're excited to have you on board.
                   </p>
-                  <p className="text-gray-800 leading-relaxed mt-3">
+                  <p className="text-sm sm:text-base text-gray-800 leading-relaxed mt-2 sm:mt-3">
                     Our objective is to empower participants with real-world prompt engineering skills and identify the next generation of top emerging AI talent across Pakistan.
                   </p>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
-                  <div className="flex gap-3">
-                    <FileText className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="bg-amber-50 border border-amber-100 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5">
+                  <div className="flex gap-2 sm:gap-3">
+                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Preparation Resources</h4>
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        Below is the attached document for your reference. You can review it to prepare for the competition. It includes prompt engineering techniques, AI concepts, and practical applications.
+                      <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 sm:mb-2">Preparation Resources</h4>
+                      <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                        We've attached a comprehensive preparation guide to help you excel in the competition. Click below to view or download the document.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* PDF Preview */}
-                <div className="border-2 border-gray-200 rounded-xl overflow-hidden bg-gray-50">
-                  <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        Competition Preparation Guide
-                      </p>
-                      <a 
-                        href="/email.pdf" 
-                        download="APPEC_Preparation_Guide.pdf"
-                        className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                {/* PDF Attachment */}
+                <div className="border border-gray-200 rounded-lg sm:rounded-xl overflow-hidden bg-white hover:shadow-md transition-shadow duration-200">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                         </svg>
-                        Download PDF
-                      </a>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                          APPEC Preparation Guide
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
+                          PDF Document
+                        </p>
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <a 
+                          href="/email.pdf" 
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 sm:gap-1.5"
+                        >
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View
+                        </a>
+                        <a 
+                          href="/email.pdf" 
+                          download="APPEC_Preparation_Guide.pdf"
+                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-1 sm:gap-1.5"
+                        >
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                  <div className="h-[400px] bg-white">
-                    <iframe
-                      src="/email.pdf"
-                      className="w-full h-full"
-                      title="Competition Preparation Guide"
-                    />
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="p-3 sm:p-4 md:p-6 border-t border-gray-200 bg-gray-50">
                 <button
                   onClick={handleSuccessContinue}
-                  className="w-full bg-[#10142c] text-white font-semibold py-4 px-6 rounded-xl hover:bg-[#1a1f3d] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                  className="w-full bg-[#10142c] text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 text-sm sm:text-base rounded-lg sm:rounded-xl hover:bg-[#1a1f3d] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
                 >
                   Continue to Dashboard
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </button>

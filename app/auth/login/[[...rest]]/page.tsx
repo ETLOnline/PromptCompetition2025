@@ -82,7 +82,7 @@ export default function LoginPage() {
   }, [message])
   
   return (
-    <div className="h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 relative overflow-y-auto">
       {/* Back to home button */}
       <div className="absolute top-4 left-4 z-10">
         <Link 
@@ -123,9 +123,9 @@ export default function LoginPage() {
       </div>
 
       {/* Main content */}
-      <div className="relative h-full flex items-center justify-center px-4 py-8">
+      <div className="relative min-h-screen flex items-center justify-center px-2 py-20 sm:py-8 overflow-y-auto">
         <div className="w-full max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-6 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
             {/* Left side - Branding and Information */}
             <div className="hidden lg:flex flex-col justify-center space-y-4 p-6">
               {/* Logos */}
@@ -203,23 +203,9 @@ export default function LoginPage() {
             </div>
 
             {/* Right side - Clerk Sign In Component */}
-            <div className="flex flex-col items-center justify-center">
-              {/* Mobile logo */}
-              <div className="lg:hidden mb-6">
-                <Link href="/" className="inline-flex items-center">
-                  <Image
-                    src="/images/Logo-for-Picton-Blue.png"
-                    alt="Empowerment Through Learning Logo"
-                    width={140}
-                    height={56}
-                    className="object-contain"
-                    priority
-                  />
-                </Link>
-              </div>
-
+            <div className="flex flex-col items-center justify-center w-full">
               {/* Sign in card wrapper */}
-              <div className="w-full max-w-md">
+              <div className="w-full max-w-md mx-auto">
                 {/* <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100"> */}
                   {/* Header */}
                   {/* <div className="text-center pt-6 pb-4 px-6">
@@ -235,7 +221,7 @@ export default function LoginPage() {
                   </div> */}
 
                   {/* Clerk component with Loading */}
-                  <div className="px-6 pb-6">
+                  <div className="px-2 sm:px-6 pb-6">
                     {!isLoaded ? (
                       <div className="flex items-center justify-center min-h-[400px]">
                         <div className="flex flex-col items-center space-y-4">
@@ -252,14 +238,14 @@ export default function LoginPage() {
                         appearance={{
                           elements: {
                             formButtonPrimary: 
-                              "bg-[#10152f] hover:bg-[#0d1228] text-white shadow-lg transition-all duration-300 normal-case",
+                              "bg-[#10152f] hover:bg-[#0d1228] text-white shadow-lg transition-all duration-300 normal-case w-full text-base py-2 rounded-lg",
                             card: "shadow-none border-0 bg-transparent",
                             headerTitle: "hidden",
                             headerSubtitle: "hidden",
                             socialButtonsBlockButton: 
-                              "border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm",
+                              "border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm w-full py-2 rounded-lg",
                             formFieldInput: 
-                              "rounded-lg border-gray-300 focus:border-[#10152f] focus:ring-[#10152f] text-sm",
+                              "rounded-lg border-gray-300 focus:border-[#10152f] focus:ring-[#10152f] text-sm w-full",
                             footerActionLink: 
                               "text-[#10152f] hover:text-[#0d1228] font-medium",
                             identityPreviewText: "text-gray-700",

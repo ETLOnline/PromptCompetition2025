@@ -12,7 +12,7 @@ function BreadcrumbSkeleton() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="bg-gradient-to-r from-blue-50/20 to-gray-50/30 rounded-lg py-1.5 px-4 flex items-center gap-2 animate-pulse"
+      className="bg-gradient-to-r from-blue-50/20 to-gray-50/30 rounded-lg py-1.5 px-2 sm:px-4 flex items-center gap-2 animate-pulse"
     >
       <div className="h-3 w-20 bg-gray-200 rounded" />
     </nav>
@@ -110,16 +110,16 @@ export default function ParticipantBreadcrumb() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="bg-gradient-to-r from-blue-50/20 to-gray-50/30 rounded-lg py-1.5 px-4 flex items-center gap-1.5"
+      className="bg-gradient-to-r from-blue-50/20 to-gray-50/30 rounded-lg py-1.5 px-2 sm:px-4 flex items-center gap-1 sm:gap-1.5 overflow-x-auto"
     >
       {items.map((item, idx) => (
         <React.Fragment key={idx}>
-          {item.icon}
+          <span className="shrink-0">{item.icon}</span>
           {item.isCurrent ? (
             <span
               className={clsx(
-                "font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500",
-                "truncate max-w-[120px] md:max-w-none"
+                "font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-500 text-xs sm:text-sm",
+                "truncate max-w-[70px] sm:max-w-[120px] md:max-w-none"
               )}
               aria-current="page"
             >
@@ -128,14 +128,17 @@ export default function ParticipantBreadcrumb() {
           ) : (
             <Link
               href={item.href || "#"}
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium px-1.5 py-0.5 rounded-md hover:bg-blue-50/40 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium px-1 sm:px-1.5 py-0.5 rounded-md hover:bg-blue-50/40 focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-sm"
               aria-label={`Go to ${item.label}`}
             >
-              <span className="truncate max-w-[100px] md:max-w-none">{item.label}</span>
+              <span className="truncate max-w-[60px] sm:max-w-[100px] md:max-w-none">{item.label}</span>
             </Link>
           )}
           {idx < items.length - 1 && (
-            <ChevronRight size={14} className="text-gray-300" />
+            <ChevronRight size={12} className="text-gray-300 shrink-0 sm:hidden" />
+          )}
+          {idx < items.length - 1 && (
+            <ChevronRight size={14} className="text-gray-300 shrink-0 hidden sm:block" />
           )}
         </React.Fragment>
       ))}

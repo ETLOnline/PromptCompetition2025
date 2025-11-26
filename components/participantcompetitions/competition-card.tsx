@@ -56,8 +56,8 @@ export const CompetitionCard = ({
   };
 
   const getButtonIcon = () => {
-    if (status.status === "ENDED" || isRegistered) return <Trophy className="h-5 w-5" />;
-    return <UserPlus className="h-5 w-5" />;
+    if (status.status === "ENDED" || isRegistered) return <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />;
+    return <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />;
   };
 
   return (
@@ -66,32 +66,32 @@ export const CompetitionCard = ({
     >
       <div className="relative h-full">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
-        <CardContent className="p-8 relative flex flex-col h-full">
-          <div className="flex justify-between items-start mb-6">
-            <div className="space-y-4 flex-1">
-              <div className="flex items-center gap-2">
-                <Badge className={`${status.color} border font-medium text-[12px] px-1.5 py-0.5 hover:bg-transparent`}>
-                  <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+        <CardContent className="p-4 sm:p-6 md:p-8 relative flex flex-col h-full">
+          <div className="flex justify-between items-start mb-4 sm:mb-6">
+            <div className="space-y-2 sm:space-y-4 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <Badge className={`${status.color} border font-medium text-[10px] sm:text-[12px] px-1 sm:px-1.5 py-0.5 hover:bg-transparent`}>
+                  <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 ${status.dotColor} rounded-full mr-1 sm:mr-1.5`}></div>
                   {status.label}
                 </Badge>
                 {isRegistered && (
-                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium text-[12px] px-1.5 py-0.5">
-                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium text-[10px] sm:text-[12px] px-1 sm:px-1.5 py-0.5">
+                    <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                     Registered
                   </Badge>
                 )}
                 {isCompleted && (
-                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium text-[12px] px-1.5 py-0.5">
-                    <Trophy className="w-3 h-3 mr-1" />
+                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 border font-medium text-[10px] sm:text-[12px] px-1 sm:px-1.5 py-0.5">
+                    <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                     Completed
                   </Badge>
                 )}
               </div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight line-clamp-2 min-h-[3.5rem]">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent leading-tight line-clamp-2 min-h-[2.5rem] sm:min-h-[3.5rem]">
                 {competition.title}
               </h3>
             </div>
-            <div className="ml-4">
+            <div className="ml-2 sm:ml-4">
               <button
                 type="button"
                 className="focus:outline-none"
@@ -101,18 +101,18 @@ export const CompetitionCard = ({
                 }}
                 aria-label="View competition details"
               >
-                <Eye className="h-5 w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
+                <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 hover:text-blue-600 transition-colors duration-200" />
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-6 flex-1">
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-blue-600" />
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 flex-1">
+            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Date</p>
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Date</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
                   {startDateTime.date === endDateTime.date
                     ? startDateTime.date
                     : `${startDateTime.date} - ${endDateTime.date}`}
@@ -120,43 +120,43 @@ export const CompetitionCard = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
-              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Clock className="h-4 w-4 text-emerald-600" />
+            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Time</p>
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Time</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
                   {startDateTime.time} → {endDateTime.time}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <MapPin className="h-4 w-4 text-purple-600" />
+            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Mode</p>
-                <p className="text-sm font-semibold text-slate-900">{competition.mode || "Online"}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Mode</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">{competition.mode || "Online"}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-lg">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                <Trophy className="h-4 w-4 text-amber-600" />
+            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Prize</p>
-                <p className="text-sm font-semibold text-slate-900">PKR {competition.prizeMoney || "TBD"}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Prize</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">PKR {competition.prizeMoney || "TBD"}</p>
               </div>
             </div>
           </div>
 
           {showButton && (
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-3 sm:pt-4 border-t border-slate-100">
               <Button
-                className="w-full gap-2 px-8 py-4 h-14 text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
+                className="w-full gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-4 h-11 sm:h-14 text-sm sm:text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
                 disabled={isButtonLoading}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -165,7 +165,7 @@ export const CompetitionCard = ({
               >
                 {isButtonLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span className="font-semibold">Loading...</span>
                   </>
                 ) : (
