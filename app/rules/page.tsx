@@ -254,7 +254,7 @@ export default function RulesPage() {
                     <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-sm sm:text-base text-foreground font-medium">Level 2 Competition Dates</p>
-                      <p className="text-xs sm:text-sm text-muted-foreground">18th January – 25th January (Daily live sessions)</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">18th January – 25th January (Daily live sessions for <span className="font-bold">top 20 participants</span>)</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

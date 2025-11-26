@@ -95,9 +95,6 @@ export default function Footer() {
             <p className="text-xs sm:text-sm font-medium text-gray-700">
               © {currentYear} ETL Online. All rights reserved.
             </p>
-            <p className="text-[10px] sm:text-xs text-gray-600 mt-1">
-              Powered by Enlight AI
-            </p>
           </div>
 
           {/* Social Links */}

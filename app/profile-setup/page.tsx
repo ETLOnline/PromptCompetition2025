@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useUser, useClerk } from "@clerk/nextjs"
+import { useUser, useAuth } from "@clerk/nextjs"
 import Image from "next/image"
 import { User, Building, MapPin, Map, GraduationCap, Briefcase, Linkedin, FileText, X, CheckCircle, AlertTriangle } from "lucide-react"
 import CustomDropdown from "@/components/CustomDropdown"
 import { useUserProfile } from "@/hooks/useUserProfile"
-import { sendWelcomeEmail } from "@/lib/api"
+import { sendWelcomeEmail } from "@/lib/client-api"
 
 
 export default function ProfileSetupPage() {
   const { user, isLoaded } = useUser()
-  const { signOut, getToken } = useClerk()
+  const { getToken } = useAuth()
   const { userProfile, loading: profileLoading } = useUserProfile()
   const router = useRouter()
 
@@ -679,8 +679,7 @@ export default function ProfileSetupPage() {
                   onChange={handleGenderChange}
                   options={[
                     { value: 'male', label: 'Male' },
-                    { value: 'female', label: 'Female' },
-                    { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+                    { value: 'female', label: 'Female' }
                   ]}
                   placeholder="Select gender"
                   icon={User}

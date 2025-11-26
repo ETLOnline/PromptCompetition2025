@@ -620,17 +620,6 @@ export default function HomePage() {
                       bgColor: "bg-purple-100",
                       iconColor: "text-purple-600",
                     },
-                    {
-                      icon: Globe,
-                      title: "Digital First",
-                      details: [
-                        "Fully online services",
-                        "Remote collaboration ready",
-                        "Global accessibility",
-                      ],
-                      bgColor: "bg-slate-100",
-                      iconColor: "text-slate-600",
-                    },
                   ].map((contact, index) => (
                     <div key={index} className="flex items-start gap-2.5 sm:gap-3 md:gap-4 p-2.5 sm:p-3 md:p-4 rounded-xl bg-white shadow">
                       <div
