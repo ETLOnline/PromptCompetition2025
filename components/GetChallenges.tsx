@@ -45,7 +45,7 @@ import {
   updateDoc,
   increment,
 } from "firebase/firestore"
-import { getAuth } from "firebase/auth"
+import { useAuth as useAppAuth } from "@/components/auth-provider"
 
 type Challenge = {
   id: string
@@ -69,6 +69,7 @@ type Challenge = {
 }
 
 export default function GetChallenges({ competitionId }: { competitionId: string }) {
+  const { role: authRole, loading: authLoading } = useAppAuth()
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -97,14 +98,17 @@ export default function GetChallenges({ competitionId }: { competitionId: string
     })
   }
 
+  // Sync role from AuthProvider (Firestore-backed)
   useEffect(() => {
-    const fetchUserRoleAndChallenges = async () => {
-      try {
-        const auth = getAuth()
-        const tokenResult = await auth.currentUser?.getIdTokenResult()
-        const role = (tokenResult?.claims?.role as string) || null
-        setUserRole(role)
+    if (!authLoading) {
+      setUserRole(authRole ?? null)
+    }
+  }, [authRole, authLoading])
 
+  // Fetch competition info and challenges from Firestore
+  useEffect(() => {
+    const fetchCompetitionAndChallenges = async () => {
+      try {
         const compDocRef = doc(db, "competitions", competitionId)
         const compSnap = await getDoc(compDocRef)
         if (compSnap.exists()) {
@@ -112,9 +116,8 @@ export default function GetChallenges({ competitionId }: { competitionId: string
           const endTimestamp = compSnap.data()?.endDeadline
           const competitionlocked = compSnap.data()?.isLocked
           setCompetitionLock(competitionlocked)
-          // console.log("Competition Lock Status:", competitionlocked)
           if (startTimestamp) {
-            const startDate = new Date(startTimestamp) // ← simple conversion
+            const startDate = new Date(startTimestamp)
             setCompetitionStartTime(startDate)
           }
           if (endTimestamp) {
@@ -124,7 +127,6 @@ export default function GetChallenges({ competitionId }: { competitionId: string
         }
 
         const challengesQuery = query(collection(db, "competitions", competitionId, "challenges"))
-
         const challengesSnap = await getDocs(challengesQuery)
 
         const fetched: Challenge[] = challengesSnap.docs.map((doc) => ({
@@ -132,22 +134,13 @@ export default function GetChallenges({ competitionId }: { competitionId: string
           ...(doc.data() as Omit<Challenge, "id">),
         }))
 
-        console.log('🎯 Challenges loaded:', fetched.map(c => ({
-          id: c.id,
-          title: c.title,
-          hasSystemPrompt: !!c.systemPrompt,
-          problemAudioCount: c.problemAudioUrls?.length || 0,
-          guidelinesAudioCount: c.guidelinesAudioUrls?.length || 0,
-          visualClueCount: c.visualClueUrls?.length || 0
-        })))
-
         setChallenges(fetched)
       } catch (error) {
         console.error("Error fetching challenges:", error)
       }
     }
 
-    fetchUserRoleAndChallenges()
+    fetchCompetitionAndChallenges()
   }, [competitionId])
 
   // const handleDelete = async (challengeId: string) => {

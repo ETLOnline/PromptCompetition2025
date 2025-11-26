@@ -45,9 +45,8 @@ import {
   Settings,
 } from "lucide-react"
 
-import { getAuth, onAuthStateChanged, type User } from "firebase/auth"
-import { getIdTokenResult } from "firebase/auth"
-import { getIdToken } from "@/lib/firebaseAuth"
+import { useAuth } from "@clerk/nextjs"
+import { useAuth as useAuthContext } from "@/components/auth-provider"
 
 
 interface Judge {
@@ -120,12 +119,12 @@ interface AppState {
   showChallengeDrawer: boolean
 
   // Auth state
-  currentUser: User | null
+  currentUserId: string | null
   isAuthenticated: boolean
 }
 
 type AppAction =
-  | { type: "SET_AUTH"; payload: { user: User | null; isAuthenticated: boolean } }
+  | { type: "SET_AUTH"; payload: { userId: string | null; isAuthenticated: boolean } }
   | { type: "SET_PARTICIPANTS"; payload: number }
   | { type: "SET_JUDGES"; payload: Judge[] }
   | { type: "SET_CHALLENGES"; payload: Challenge[] }
@@ -175,7 +174,7 @@ const initialState: AppState = {
   showDistributeDialog: false,
   showConfirmDialog: false,
   showChallengeDrawer: false,
-  currentUser: null,
+  currentUserId: null,
   isAuthenticated: false,
   maxPerJudge: null
 }
@@ -183,7 +182,7 @@ const initialState: AppState = {
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case "SET_AUTH":
-      return { ...state, currentUser: action.payload.user, isAuthenticated: action.payload.isAuthenticated }
+      return { ...state, currentUserId: action.payload.userId, isAuthenticated: action.payload.isAuthenticated }
     case "SET_PARTICIPANTS":
       return { ...state, totalParticipants: action.payload, isLoadingParticipants: false }
     case "SET_JUDGES":
@@ -420,7 +419,8 @@ export default function ParticipantDistributionTable() {
   const params = useParams()
   const competitionId = params?.competitionId as string
 
-  const auth = useMemo(() => getAuth(), [])
+  const { getToken, isLoaded, isSignedIn, userId } = useAuth()
+  const { role } = useAuthContext()
   const [state, dispatch] = useReducer(appReducer, initialState)
 
   const [expandedChallengeIds, setExpandedChallengeIds] = useState<Set<string>>(new Set())
@@ -521,7 +521,8 @@ export default function ParticipantDistributionTable() {
   const fetchCompetitionMeta = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: true } })
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/meta`
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -540,14 +541,15 @@ export default function ParticipantDistributionTable() {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingCompetitionMeta", value: false } })
       return ""
     }
-  }, [competitionId, showNotification])
+  }, [competitionId, showNotification, getToken])
 
 
   // Data fetching functions
   const fetchParticipantsCount = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingParticipants", value: true } })
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/participants-count`
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -563,12 +565,13 @@ export default function ParticipantDistributionTable() {
       showNotification("error", "Error", error instanceof Error ? error.message : "Failed to fetch participants count")
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingParticipants", value: false } })
     }
-  }, [competitionId])
+  }, [competitionId, getToken, showNotification])
 
   const fetchJudges = useCallback(async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingJudges", value: true } })
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/superadmin/users?role=judge`
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -597,7 +600,7 @@ export default function ParticipantDistributionTable() {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingJudges", value: false } })
       return []
     }
-  }, [competitionId, showNotification])
+  }, [getToken, showNotification])
 
   const fetchChallengesAndSubmissions = useCallback(async () => {
     try {
@@ -611,7 +614,8 @@ export default function ParticipantDistributionTable() {
         return
       }
 
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/challenges-submissions?topN=${state.selectedTopN}`
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -632,7 +636,7 @@ export default function ParticipantDistributionTable() {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingChallenges", value: false } })
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingSubmissions", value: false } })
     }
-  }, [competitionId, state.selectedTopN, showNotification])
+  }, [competitionId, state.selectedTopN, showNotification, getToken])
 
 
 
@@ -642,7 +646,8 @@ export default function ParticipantDistributionTable() {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: true } })
 
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/config`
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -677,12 +682,12 @@ export default function ParticipantDistributionTable() {
       console.error("Error fetching global config:", e)
       dispatch({ type: "SET_LOADING", payload: { key: "isLoadingConfig", value: false } })
     }
-  }, [competitionId])
+  }, [competitionId, getToken])
 
 
   // Progressive data loading
   const initializeData = useCallback(
-    async (user: User) => {
+    async () => {
       const criticalDataPromises = [fetchParticipantsCount(), fetchJudges(), fetchCompetitionMeta()]
       try {
         const [, judgesData] = await Promise.allSettled(criticalDataPromises)
@@ -699,27 +704,21 @@ export default function ParticipantDistributionTable() {
 
   // Auth effect
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/")
-        return
-      }
-      try {
-        const idTokenResult = await getIdTokenResult(user, true)
-        const role = idTokenResult.claims.role
-        if (role !== "superadmin") {
-          router.push("/")
-          return
-        }
-        dispatch({ type: "SET_AUTH", payload: { user, isAuthenticated: true } })
-        initializeData(user)
-      } catch (error) {
-        console.error("Auth error:", error)
-        router.push("/auth/login/admin")
-      }
-    })
-    return () => unsubscribe()
-  }, [auth, router, initializeData])
+    if (!isLoaded) return
+
+    if (!isSignedIn || !userId) {
+      router.push("/")
+      return
+    }
+
+    if (role !== "superadmin") {
+      router.push("/")
+      return
+    }
+
+    dispatch({ type: "SET_AUTH", payload: { userId, isAuthenticated: true } })
+    initializeData()
+  }, [isLoaded, isSignedIn, userId, role, router, initializeData])
 
   // Fetch challenges when selectedTopN changes
   useEffect(() => {
@@ -734,7 +733,8 @@ export default function ParticipantDistributionTable() {
     try {
       dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: true } })
       
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/config`
       const res = await fetch(url, {
         method: 'POST',
@@ -765,11 +765,11 @@ export default function ParticipantDistributionTable() {
     } finally {
       dispatch({ type: "SET_LOADING", payload: { key: "isSavingConfig", value: false } })
     }
-  }, [competitionId, state.selectedTopN, state.maxPerJudge,state.currentUser?.uid, showNotification])
+  }, [competitionId, state.selectedTopN, state.maxPerJudge, showNotification, getToken])
 
 
   const handleSaveConfig = useCallback(async () => {
-    if (!state.currentUser) return
+    if (!state.currentUserId) return
     if (!topNValidation.ok) {
       showNotification("warning", "Invalid number", topNValidation.msg)
       return
@@ -780,7 +780,7 @@ export default function ParticipantDistributionTable() {
     }
     await saveConfigToFirestore()
   }, [
-    state.currentUser,
+    state.currentUserId,
     state.savedConfig,
     state.selectedTopN,
     topNValidation,
@@ -816,7 +816,8 @@ export default function ParticipantDistributionTable() {
     dispatch({ type: "SET_LOADING", payload: { key: "isDistributing", value: true } })
 
     try {
-      const token = await getIdToken()
+      const token = await getToken()
+      if (!token) throw new Error("No authentication token available")
       const url = `${process.env.NEXT_PUBLIC_API_URL}/challenge-distribution/${competitionId}/distribute`
       
       const res = await fetch(url, {
@@ -854,10 +855,11 @@ export default function ParticipantDistributionTable() {
     competitionId,
     state.assignmentMatrix,
     state.challengeBuckets,
-    state.judges,
     state.selectedTopN,
+    state.competitionTitle,
     globalSummary.hasOverflow,
     showNotification,
+    getToken,
   ])
 
   // Matrix cell update handler
@@ -1702,7 +1704,7 @@ const ChallengeCard = useCallback(
             </Button>
             <Button
               onClick={async () => {
-                if (state.currentUser) {
+                if (state.currentUserId) {
                   await saveConfigToFirestore()
                   dispatch({ type: "SET_DIALOG", payload: { dialog: "confirm", open: false } })
                 }

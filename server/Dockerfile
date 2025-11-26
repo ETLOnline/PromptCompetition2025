@@ -45,6 +45,9 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/index.js ./index.js
 
+# Copy email attachment PDF
+COPY --from=builder /app/email.pdf ./email.pdf
+
 # If you have other runtime assets (e.g., email templates) not in dist,
 # copy them explicitly here, e.g.:
 # COPY --from=builder /app/templates ./templates

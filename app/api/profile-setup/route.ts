@@ -2,6 +2,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import { db } from "@/lib/firebase"
 import { doc, setDoc, collection } from "firebase/firestore"
+import { sendWelcomeEmail } from "@/lib/api"
 
 // Test GET handler to verify route works
 export async function GET() {
@@ -67,22 +68,8 @@ export async function POST(req: Request) {
     // Send welcome email
     try {
       // console.log("Sending welcome email to:", email)
-      const welcomeEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/send-welcome-email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          fullName: `${firstName} ${lastName}`.trim()
-        }),
-      });
-
-      if (welcomeEmailResponse.ok) {
-        console.log("Welcome email sent successfully")
-      } else {
-        console.warn("Failed to send welcome email, but profile creation was successful")
-      }
+      await sendWelcomeEmail(email, `${firstName} ${lastName}`.trim())
+      // console.log("Welcome email sent successfully")
     } catch (emailError) {
       console.warn("Error sending welcome email:", emailError)
       // Don't fail the profile creation if email fails

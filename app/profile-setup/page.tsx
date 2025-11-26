@@ -29,7 +29,9 @@ export default function ProfileSetupPage() {
   
   // Modal State
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [formData, setFormData] = useState<any>(null)
+  const [completedSubmission, setCompletedSubmission] = useState(false)
 
   // Error states
   const [nameError, setNameError] = useState<string | null>(null)
@@ -51,13 +53,14 @@ export default function ProfileSetupPage() {
   // Pre-populate form with user data and check if already completed
   useEffect(() => {
     if (isLoaded && user && !profileLoading) {
-      if (userProfile?.role) {
+      // Only auto-redirect if profile exists AND user didn't just complete submission
+      if (userProfile?.role && !completedSubmission) {
         router.push('/participant')
         return
       }
       setFullName(user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim())
     }
-  }, [isLoaded, user, userProfile, profileLoading, router])
+  }, [isLoaded, user, userProfile, profileLoading, router, completedSubmission])
 
   // Validation Functions
   const validateFullName = (name: string): string | null => {
@@ -300,6 +303,12 @@ export default function ProfileSetupPage() {
     setShowConfirmModal(true)
   }
 
+  // Handle continue from success modal
+  const handleSuccessContinue = () => {
+    setShowSuccessModal(false)
+    router.push('/participant')
+  }
+
   // Handle actual API call after user confirms
   const handleConfirmSubmit = async () => {
     setLoading(true)
@@ -347,14 +356,12 @@ export default function ProfileSetupPage() {
       
       console.log('Redirecting to:', redirectUrl)
       
-      // Show success message and small delay to ensure Firestore document is propagated
+      // Show success popup instead of redirecting immediately
       setFormError(null) // Clear any previous errors
       setSuccess(true) // Show success message
       setLoading(false) // Stop the loading spinner
-      
-      setTimeout(() => {
-        router.push(redirectUrl)
-      }, 1500) // Increased to 1.5s to give user time to see success
+      setCompletedSubmission(true) // Mark that user just completed submission
+      setShowSuccessModal(true) // Show success popup
 
     } catch (err: any) {
       console.error("Error updating user profile:", err)
@@ -396,6 +403,94 @@ export default function ProfileSetupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6 relative">
       
+      {/* Success Modal with PDF Preview */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col h-full max-h-[90vh]">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">Welcome to APPEC Competition!</h3>
+                    <p className="text-sm text-gray-600 mt-1">Your registration is complete</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+                  <p className="text-gray-800 leading-relaxed">
+                    Thank you for registering for the <span className="font-semibold">APPEC Competition</span>! We're excited to have you on board.
+                  </p>
+                  <p className="text-gray-800 leading-relaxed mt-3">
+                    Our objective is to empower participants with real-world prompt engineering skills and identify the next generation of top emerging AI talent across Pakistan.
+                  </p>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+                  <div className="flex gap-3">
+                    <FileText className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Preparation Resources</h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        Below is the attached document for your reference. You can review it to prepare for the competition. It includes prompt engineering techniques, AI concepts, and practical applications.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PDF Preview */}
+                <div className="border-2 border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+                  <div className="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Competition Preparation Guide
+                      </p>
+                      <a 
+                        href="/email.pdf" 
+                        download="APPEC_Preparation_Guide.pdf"
+                        className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download PDF
+                      </a>
+                    </div>
+                  </div>
+                  <div className="h-[400px] bg-white">
+                    <iframe
+                      src="/email.pdf"
+                      className="w-full h-full"
+                      title="Competition Preparation Guide"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={handleSuccessContinue}
+                  className="w-full bg-[#10142c] text-white font-semibold py-4 px-6 rounded-xl hover:bg-[#1a1f3d] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#10142c] focus:ring-offset-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                >
+                  Continue to Dashboard
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">

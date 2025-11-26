@@ -151,7 +151,7 @@ export const submitContactForm = async (formData: any) => {
 
 //----------------- welcome email API  ---------------------
 export const sendWelcomeEmail = async (email: string, fullName: string, getToken?: () => Promise<string | null>) => {
-  console.log(`API: sendWelcomeEmail called for ${email}`); 
+  // console.log(`API: sendWelcomeEmail called for ${email}`); 
   return await fetchWithAuth(`${API_URL}/welcome`, {
     method: "POST",
     headers: {

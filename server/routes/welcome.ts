@@ -1,6 +1,11 @@
 import express, { Request, Response } from "express";
 import { transporter } from "../config/email.js";
 import { verifyClerkToken } from "../middleware/clerkAuth.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -15,6 +20,7 @@ router.post("/", verifyClerkToken, async (req: Request, res: Response) => {
       });
     }
     console.log(`Preparing to send welcome email to: ${email}`);
+    
     // Build welcome email HTML
     const htmlContent = `
       <!DOCTYPE html>
@@ -22,7 +28,7 @@ router.post("/", verifyClerkToken, async (req: Request, res: Response) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to Spark!</title>
+        <title>Welcome to APPEC Prompt Engineering Competition</title>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -31,106 +37,106 @@ router.post("/", verifyClerkToken, async (req: Request, res: Response) => {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
+          }
+          .email-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           }
           .header {
             text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0f172a;
             color: white;
             padding: 40px 20px;
-            border-radius: 10px 10px 0 0;
           }
           .header h1 {
             margin: 0;
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
           }
           .content {
-            background: white;
             padding: 40px 30px;
-            border: 1px solid #e1e1e1;
-            border-top: none;
           }
-          .highlight {
-            background: #f8f9fa;
+          .content p {
+            margin: 16px 0;
+            color: #444;
+          }
+          .highlight-box {
+            background: #f8fafc;
             padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #667eea;
-          }
-          .button {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
             border-radius: 6px;
+            margin: 24px 0;
+            border-left: 4px solid #0f172a;
+          }
+          .highlight-box h3 {
+            margin-top: 0;
+            color: #0f172a;
+            font-size: 16px;
             font-weight: 600;
+          }
+          .attachment-notice {
+            background: #f0f9ff;
+            border: 1px solid #0f172a;
+            padding: 15px;
+            border-radius: 6px;
             margin: 20px 0;
+          }
+          .attachment-notice strong {
+            color: #0f172a;
           }
           .footer {
             text-align: center;
             padding: 30px;
             background: #f8f9fa;
-            border-radius: 0 0 10px 10px;
             color: #666;
             font-size: 14px;
+            border-top: 1px solid #e1e1e1;
           }
-          .logo {
-            margin-bottom: 20px;
+          .signature {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e1e1;
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="logo">
-            <h1>🌟 SPARK</h1>
-          </div>
-          <h1>Welcome to the Spark Ecosystem!</h1>
-          <p>Your journey of learning and innovation begins now</p>
-        </div>
-        
-        <div class="content">
-          <h2>Hello ${fullName}! 👋</h2>
-          
-          <p>Welcome to <strong>Spark</strong> - where learning meets opportunity! We're thrilled to have you join our growing community of students, innovators, and future leaders.</p>
-          
-          <div class="highlight">
-            <h3>🚀 What's Next?</h3>
-            <p>Your Spark account is now active! Here's what you can explore:</p>
-            <ul>
-              <li><strong>Competitions:</strong> Participate in exciting challenges and showcase your skills</li>
-              <li><strong>Learning Resources:</strong> Access curated content tailored for your growth</li>
-              <li><strong>Community:</strong> Connect with like-minded peers and mentors</li>
-              <li><strong>Achievements:</strong> Track your progress and celebrate milestones</li>
-            </ul>
+        <div class="email-container">
+          <div class="header">
+            <h1>Welcome to the APPEC Prompt Engineering Competition</h1>
           </div>
           
-          <p>Ready to dive in? Visit your dashboard to explore available competitions and start your Spark journey!</p>
-          
-          <center>
-            <a href="${process.env.NEXT_PUBLIC_API_URL || 'https://spark.etlonline.org'}/participant" class="button">
-              Go to Your Dashboard
-            </a>
-          </center>
-          
-          <div class="highlight">
-            <h3>💡 Need Help?</h3>
-            <p>If you have any questions or need assistance, don't hesitate to reach out:</p>
-            <ul>
-              <li>📧 Email us at: <a href="mailto:support@etlonline.org">support@etlonline.org</a></li>
-              <li>🌐 Visit our main website: <a href="https://spark.etlonline.org">spark.etlonline.org</a></li>
-            </ul>
+          <div class="content">
+            <p>Dear ${fullName},</p>
+            
+            <p>Thank you for registering for the <strong>APPEC Prompt Engineering Competition</strong>. We're excited to have you on board.</p>
+            
+            <div class="highlight-box">
+              <h3>🎯 Competition Objectives</h3>
+              <p>This competition aims to equip participants with practical, real-world prompt engineering skills while identifying the next generation of emerging AI talent across Pakistan. You are now part of a growing community of innovators who will learn, experiment, and compete using modern AI techniques and best practices.</p>
+            </div>
+            
+            <div class="attachment-notice">
+              <strong>📎 Important Reference Document Attached</strong>
+              <p style="margin: 8px 0 0 0;">We have attached a detailed reference document that includes key concepts in prompt engineering, essential AI techniques, and practical guidance that will support you throughout the competition. We encourage you to review it thoroughly so you can make the most of this experience.</p>
+            </div>
+            
+            <p>If you have any questions or need assistance at any stage, feel free to reach out.</p>
+            
+            <p>We look forward to seeing your creativity and expertise in action.</p>
+            
+            <div class="signature">
+              <p style="margin: 4px 0;"><strong>Best regards,</strong></p>
+              <p style="margin: 4px 0;"><strong>APPEC Competition Team</strong></p>
+            </div>
           </div>
           
-          <p>We're excited to see what amazing things you'll accomplish within the Spark ecosystem!</p>
-          
-          <p>Best regards,<br>
-          <strong>The Spark Team</strong><br>
-          <em>Empowerment Through Learning</em></p>
-        </div>
-        
-        <div class="footer">
-          <p>This email was sent from the Spark platform by Empowerment Through Learning.</p>
-          <p>© ${new Date().getFullYear()} Empowerment Through Learning. All rights reserved.</p>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} APPEC - All Pakistan Prompt Engineering Competition</p>
+            <p style="margin-top: 8px; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
+          </div>
         </div>
       </body>
       </html>
@@ -138,38 +144,44 @@ router.post("/", verifyClerkToken, async (req: Request, res: Response) => {
 
     // Create plain text version for email clients that don't support HTML
     const textContent = `
-Welcome to Spark, ${fullName}!
+Welcome to the APPEC Prompt Engineering Competition
 
-We're thrilled to have you join our growing community of students, innovators, and future leaders.
+Dear ${fullName},
 
-Your Spark account is now active! Here's what you can explore:
-- Competitions: Participate in exciting challenges and showcase your skills
-- Learning Resources: Access curated content tailored for your growth  
-- Community: Connect with like-minded peers and mentors
-- Achievements: Track your progress and celebrate milestones
+Thank you for registering for the APPEC Prompt Engineering Competition. We're excited to have you on board.
 
-Ready to dive in? Visit your dashboard to explore available competitions and start your Spark journey!
+This competition aims to equip participants with practical, real-world prompt engineering skills while identifying the next generation of emerging AI talent across Pakistan. You are now part of a growing community of innovators who will learn, experiment, and compete using modern AI techniques and best practices.
 
-Dashboard: ${process.env.NEXT_PUBLIC_API_URL || 'https://spark.etlonline.org'}/participant
+To help you prepare, we have attached a detailed reference document. It includes key concepts in prompt engineering, essential AI techniques, and practical guidance that will support you throughout the competition. We encourage you to review it thoroughly so you can make the most of this experience.
 
-Need help?
-- Email: support@etlonline.org
-- Website: https://spark.etlonline.org
+If you have any questions or need assistance at any stage, feel free to reach out.
 
-We're excited to see what amazing things you'll accomplish within the Spark ecosystem!
+We look forward to seeing your creativity and expertise in action.
 
 Best regards,
-The Spark Team
-Empowerment Through Learning
+APPEC Competition Team
+
+---
+© ${new Date().getFullYear()} APPEC - All Pakistan Prompt Engineering Competition
+This is an automated message. Please do not reply to this email.
     `;
 
-    // Send welcome email
+    // Path to the PDF attachment
+    const pdfPath = path.join(__dirname, "..", "email.pdf");
+
+    // Send welcome email with attachment
     await transporter.sendMail({
-      from: `"Spark Team" <${process.env.EMAIL_SENDER}>`,
+      from: `"APPEC Competition Team" <${process.env.EMAIL_SENDER}>`,
       to: email,
-      subject: "🌟 Welcome to Spark - Your Learning Journey Begins!",
+      subject: "Welcome to the APPEC Prompt Engineering Competition",
       html: htmlContent,
       text: textContent,
+      attachments: [
+        {
+          filename: "APPEC_Prompt_Engineering_Guide.pdf",
+          path: pdfPath,
+        },
+      ],
     });
 
     console.log(`✅ Welcome email sent successfully to: ${email}`);

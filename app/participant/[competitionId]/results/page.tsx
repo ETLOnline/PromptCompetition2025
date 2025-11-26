@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { getAuth, onAuthStateChanged } from "firebase/auth"
-import { fetchCompetitionResults } from "@/lib/api" // <-- using your API helper
+import { useAuth } from "@clerk/nextjs"
+import { fetchCompetitionResults } from "@/lib/api"
 import { AlertCircle, Trophy, Clock, FileX, User, ArrowLeft, RefreshCw } from "lucide-react"
 
 interface Submission {
@@ -33,28 +33,18 @@ interface Competition {
 export default function ResultsPage() {
   const { competitionId } = useParams() 
   const router = useRouter()
+    const { getToken, isLoaded, isSignedIn, userId } = useAuth()
+  
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [authLoading, setAuthLoading] = useState(true)
-
-  // Auth state management
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(getAuth(), (currentUser) => {
-      setUser(currentUser)
-      setAuthLoading(false)
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   useEffect(() => {
-    if (authLoading) return
+    if (!isLoaded) return
 
-    if (!user) {
-      router.push("/login")
+    if (!isSignedIn || !userId) {
+      router.push("/sign-in")
       return
     }
 
@@ -68,7 +58,7 @@ export default function ResultsPage() {
         }
 
         // 🔹 Call backend API instead of Firestore directly
-        const { competition, submissions } = await fetchCompetitionResults(competitionId) 
+        const { competition, submissions } = await fetchCompetitionResults(competitionId, getToken)
 
         setCompetition(competition)
         setSubmissions(submissions)
@@ -81,16 +71,28 @@ export default function ResultsPage() {
     }
 
     fetchData()
-  }, [competitionId, user, authLoading, router])
+  }, [competitionId, isLoaded, isSignedIn, userId, router, getToken])
   
-  const handleRetry = () => {
-    if (!user) return
+  const handleRetry = async () => {
+    if (!isSignedIn || !userId) return
 
-    setLoading(true)
-    setError(null)
+    try {
+      setLoading(true)
+      setError(null)
 
-    const event = new CustomEvent("retry-fetch")
-    window.dispatchEvent(event)
+      if (!competitionId || typeof competitionId !== "string") {
+        throw new Error("Invalid competition ID")
+      }
+
+      const { competition, submissions } = await fetchCompetitionResults(competitionId, getToken)
+      setCompetition(competition)
+      setSubmissions(submissions)
+    } catch (err: any) {
+      console.error("Error fetching results:", err)
+      setError(err.message || "Failed to load results")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const formatDate = (timestamp: any) => {
@@ -152,7 +154,7 @@ export default function ResultsPage() {
   }
 
   // Loading states
-  if (authLoading) {
+  if (!isLoaded) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center space-y-4">
