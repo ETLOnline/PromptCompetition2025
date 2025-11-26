@@ -50,17 +50,12 @@ export default function ProfileSetupPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  // Pre-populate form with user data and check if already completed
+  // Pre-populate form with user data; navigation is controlled by submit flow
   useEffect(() => {
     if (isLoaded && user && !profileLoading) {
-      // Only auto-redirect if profile exists AND user didn't just complete submission
-      if (userProfile?.role && !completedSubmission) {
-        router.push('/participant')
-        return
-      }
       setFullName(user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim())
     }
-  }, [isLoaded, user, userProfile, profileLoading, router, completedSubmission])
+  }, [isLoaded, user, profileLoading])
 
   // Validation Functions
   const validateFullName = (name: string): string | null => {

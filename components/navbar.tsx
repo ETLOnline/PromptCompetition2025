@@ -5,13 +5,14 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, LogIn, UserPlus, X, ChevronDown } from "lucide-react"
+import { Menu, LogIn, UserPlus, X, ChevronDown, LayoutDashboard } from "lucide-react"
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
+import { useAuth } from "@/components/auth-provider"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  // const { user } = useAuth() // Uncomment if useAuth is implemented and needed
+  const { role, loading } = useAuth()
 
   // Handle scroll effect
   useEffect(() => {
@@ -30,6 +31,23 @@ export default function Navbar() {
     { label: "Leaderboard", href: "/leaderboard" },
     { label: "Contact Us", href: "/#contact" },
   ]
+
+  // Get dashboard URL based on user role
+  const getDashboardUrl = () => {
+    if (!role) return "/profile-setup"
+    
+    switch (role) {
+      case "admin":
+      case "superadmin":
+        return "/admin"
+      case "judge":
+        return "/judge"
+      case "participant":
+        return "/participant"
+      default:
+        return "/profile-setup"
+    }
+  }
 
   return (
     <header className="w-full fixed top-0 z-50 transition-all duration-300">
@@ -129,6 +147,21 @@ export default function Navbar() {
                       },
                     }}
                   />
+
+                  <Link href={getDashboardUrl()}>
+                    <Button
+                      disabled={loading}
+                      className="gap-2 px-6 py-2.5 text-sm font-medium rounded-lg text-white shadow-lg transition-all duration-300 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ backgroundColor: '#10142c' }}
+                    >
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      {/* Light shine effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                      <LayoutDashboard className="h-4 w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
+                      <span className="relative z-10 transition-all duration-300 group-hover:text-white">Go to Dashboard</span>
+                    </Button>
+                  </Link>
                 </SignedIn>
               </div>
 
@@ -254,6 +287,26 @@ export default function Navbar() {
                         </SignedOut>
 
                         <SignedIn>
+                          <Link href={getDashboardUrl()} onClick={() => setIsOpen(false)}>
+                            <Button
+                              disabled={loading}
+                              className="w-full justify-start gap-4 px-4 py-4 text-sm font-medium rounded-lg text-white shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                              style={{ backgroundColor: '#10142c' }}
+                            >
+                              {/* Gradient overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              {/* Shine effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
+                              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center transition-all duration-300 relative z-10">
+                                <LayoutDashboard className="h-5 w-5 text-white" />
+                              </div>
+                              <div className="relative z-10">
+                                <p className="font-medium">Go to Dashboard</p>
+                                <p className="text-xs text-blue-100">Access your workspace</p>
+                              </div>
+                            </Button>
+                          </Link>
+
                           <div className="flex flex-col items-center justify-center p-6 bg-white/60 rounded-lg border border-gray-200">
                             <UserButton 
                               afterSignOutUrl="/"

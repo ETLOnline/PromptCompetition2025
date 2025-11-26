@@ -282,17 +282,168 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
       console.error("❌ Failed to send Clerk invitation:", inviteErr);
       // You can optionally send a custom email here
       try {
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Your APPEC Account Has Been Created</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+              }
+              .email-container {
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              }
+              .header {
+                text-align: center;
+                background: #0f172a;
+                color: white;
+                padding: 40px 20px;
+              }
+              .header h1 {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+              }
+              .content {
+                padding: 40px 30px;
+              }
+              .content p {
+                margin: 16px 0;
+                color: #444;
+              }
+              .highlight-box {
+                background: #f8fafc;
+                padding: 20px;
+                border-radius: 6px;
+                margin: 24px 0;
+                border-left: 4px solid #0f172a;
+              }
+              .highlight-box h3 {
+                margin-top: 0;
+                color: #0f172a;
+                font-size: 16px;
+                font-weight: 600;
+              }
+              .info-box {
+                background: #f0f9ff;
+                border: 1px solid #0f172a;
+                padding: 15px;
+                border-radius: 6px;
+                margin: 20px 0;
+              }
+              .info-box strong {
+                color: #0f172a;
+              }
+              .footer {
+                text-align: center;
+                padding: 30px;
+                background: #f8f9fa;
+                color: #666;
+                font-size: 14px;
+                border-top: 1px solid #e1e1e1;
+              }
+              .signature {
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e1e1e1;
+              }
+              .cta-button {
+                display: inline-block;
+                background: #0f172a;
+                color: white !important;
+                padding: 12px 30px;
+                text-decoration: none;
+                border-radius: 6px;
+                margin: 20px 0;
+                font-weight: 600;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="email-container">
+              <div class="header">
+                <h1>Your APPEC Account Has Been Created</h1>
+              </div>
+              
+              <div class="content">
+                <p>Dear ${displayName},</p>
+                
+                <p>An administrator has created a <strong>${role.charAt(0).toUpperCase() + role.slice(1)}</strong> account for you on the APPEC platform.</p>
+                
+                <div class="info-box">
+                  <strong>📧 Your Account Details</strong>
+                  <p style="margin: 8px 0 0 0;"><strong>Email:</strong> ${email}</p>
+                  <p style="margin: 8px 0 0 0;"><strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}</p>
+                </div>
+                
+                <div class="highlight-box">
+                  <h3>🔐 Next Steps</h3>
+                  <p>To access your account, please log in with your credentials at the link below:</p>
+                  <div style="text-align: center;">
+                    <a href="${process.env.APP_ORIGIN}/auth/login" class="cta-button">Login to Your Account</a>
+                  </div>
+                </div>
+                
+                <p>If you did not expect this invitation or have any questions, please contact the platform administrator.</p>
+                
+                <div class="signature">
+                  <p style="margin: 4px 0;"><strong>Best regards,</strong></p>
+                  <p style="margin: 4px 0;"><strong>APPEC Competition Team</strong></p>
+                </div>
+              </div>
+              
+              <div class="footer">
+                <p>© ${new Date().getFullYear()} APPEC - All Pakistan Prompt Engineering Competition</p>
+                <p style="margin-top: 8px; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const textContent = `
+Your APPEC Account Has Been Created
+
+Dear ${displayName},
+
+An administrator has created a ${role.charAt(0).toUpperCase() + role.slice(1)} account for you on the APPEC platform.
+
+Your Account Details:
+- Email: ${email}
+- Role: ${role.charAt(0).toUpperCase() + role.slice(1)}
+
+Next Steps:
+To access your account, please log in with your credentials at: ${process.env.APP_ORIGIN}/auth/login
+
+If you did not expect this invitation or have any questions, please contact the platform administrator.
+
+Best regards,
+APPEC Competition Team
+
+---
+© ${new Date().getFullYear()} APPEC - All Pakistan Prompt Engineering Competition
+This is an automated message. Please do not reply to this email.
+        `;
+
         await transporter.sendMail({
-          from: process.env.EMAIL_SENDER,
+          from: `"APPEC Competition Team" <${process.env.EMAIL_SENDER}>`,
           to: email,
-          subject: "Your account is ready",
-          html: `
-            <p>Hi ${displayName},</p>
-            <p>An administrator has created a <strong>${role}</strong> account for you on our platform.</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p>Please visit <a href="${process.env.APP_ORIGIN}/auth/login">the login page</a> to set up your account.</p>
-            <p>If you did not expect this invitation, you can safely ignore this email.</p>
-          `,
+          subject: "Your APPEC Account Has Been Created",
+          html: htmlContent,
+          text: textContent,
         });
         inviteSent = true;
       } catch (emailErr: any) {
