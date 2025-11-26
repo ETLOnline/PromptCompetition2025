@@ -14,12 +14,13 @@ router.post("/", verifyClerkToken, async (req: Request, res: Response) => {
     const { email, fullName } = req.body;
 
     if (!email || !fullName) {
+      console.error("❌ Missing required fields:", { email: !!email, fullName: !!fullName });
       return res.status(400).json({ 
         success: false, 
         error: "Email and full name are required" 
       });
     }
-    console.log(`Preparing to send welcome email to: ${email}`);
+    console.log(`📧 Preparing to send welcome email to: ${email}`);
     
     // Build welcome email HTML
     const htmlContent = `
@@ -168,8 +169,19 @@ This is an automated message. Please do not reply to this email.
 
     // Path to the PDF attachment
     const pdfPath = path.join(__dirname, "..", "email.pdf");
+    console.log(`📎 PDF attachment path: ${pdfPath}`);
+
+    // Verify email configuration
+    if (!process.env.EMAIL_SENDER || !process.env.EMAIL_APP_PASSWORD) {
+      console.error("❌ Email configuration missing:", { 
+        EMAIL_SENDER: !!process.env.EMAIL_SENDER, 
+        EMAIL_APP_PASSWORD: !!process.env.EMAIL_APP_PASSWORD 
+      });
+      throw new Error("Email service not configured properly");
+    }
 
     // Send welcome email with attachment
+    console.log(`📤 Sending email from: ${process.env.EMAIL_SENDER} to: ${email}`);
     await transporter.sendMail({
       from: `"APPEC Competition Team" <${process.env.EMAIL_SENDER}>`,
       to: email,
@@ -192,9 +204,16 @@ This is an automated message. Please do not reply to this email.
     
   } catch (err: any) {
     console.error("❌ Failed to send welcome email:", err);
+    console.error("Error details:", {
+      message: err.message,
+      code: err.code,
+      command: err.command,
+      response: err.response
+    });
     return res.status(500).json({ 
       success: false, 
-      error: "Failed to send welcome email" 
+      error: "Failed to send welcome email",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });

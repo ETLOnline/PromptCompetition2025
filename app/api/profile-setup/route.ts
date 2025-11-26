@@ -2,8 +2,6 @@ import { auth, clerkClient } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import { db } from "@/lib/firebase"
 import { doc, setDoc, collection } from "firebase/firestore"
-import { sendWelcomeEmail } from "@/lib/api"
-
 // Test GET handler to verify route works
 export async function GET() {
   return NextResponse.json({ message: "Profile setup API is working!" })
@@ -64,16 +62,6 @@ export async function POST(req: Request) {
     })
 
     // console.log("Profile update successful!")
-
-    // Send welcome email
-    try {
-      // console.log("Sending welcome email to:", email)
-      await sendWelcomeEmail(email, `${firstName} ${lastName}`.trim())
-      console.log("Welcome email sent successfully")
-    } catch (emailError) {
-      console.warn("Error sending welcome email:", emailError)
-      // Don't fail the profile creation if email fails
-    }
 
     return NextResponse.json({ success: true, role: "participant" })
   } catch (error: any) {

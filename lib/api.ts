@@ -151,14 +151,21 @@ export const submitContactForm = async (formData: any) => {
 
 //----------------- welcome email API  ---------------------
 export const sendWelcomeEmail = async (email: string, fullName: string, getToken?: () => Promise<string | null>) => {
-  // console.log(`API: sendWelcomeEmail called for ${email}`); 
-  return await fetchWithAuth(`${API_URL}/welcome`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, fullName }),
-  }, getToken);
+  console.log(`🔄 API: Attempting to send welcome email to ${email}`); 
+  try {
+    const result = await fetchWithAuth(`${API_URL}/welcome`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, fullName }),
+    }, getToken);
+    console.log(`✅ API: Welcome email request successful for ${email}`);
+    return result;
+  } catch (error: any) {
+    console.error(`❌ API: Failed to send welcome email to ${email}:`, error.message || error);
+    throw error;
+  }
 };
 
 // ---------------- competition results ----------------

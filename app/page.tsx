@@ -438,7 +438,7 @@ export default function HomePage() {
                     <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
                       PKR 275,000
                     </p>
-                    <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-2">Plus certificates and recognition for all winners!</p>
+                    <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-2">Plus certificates and recognition for all winners</p>
                   </div>
                 </CardContent>
               </Card>

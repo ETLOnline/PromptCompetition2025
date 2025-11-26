@@ -7,10 +7,12 @@ import Image from "next/image"
 import { User, Building, MapPin, Map, GraduationCap, Briefcase, Linkedin, FileText, X, CheckCircle, AlertTriangle } from "lucide-react"
 import CustomDropdown from "@/components/CustomDropdown"
 import { useUserProfile } from "@/hooks/useUserProfile"
+import { sendWelcomeEmail } from "@/lib/api"
+
 
 export default function ProfileSetupPage() {
   const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
+  const { signOut, getToken } = useClerk()
   const { userProfile, loading: profileLoading } = useUserProfile()
   const router = useRouter()
 
@@ -328,6 +330,25 @@ export default function ProfileSetupPage() {
       if (!response.ok) {
         throw new Error(result.error || "Failed to update profile")
       }
+
+      // Send welcome email (don't block profile creation if it fails)
+      try {
+        const userEmail = user?.primaryEmailAddress?.emailAddress
+        const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+        
+        if (userEmail && fullName) {
+          console.log('Attempting to send welcome email to:', userEmail)
+          await sendWelcomeEmail(userEmail, fullName, getToken)
+          console.log('✅ Welcome email sent successfully to:', userEmail)
+        } else {
+          console.warn('⚠️ Missing email or name, skipping welcome email:', { userEmail, fullName })
+        }
+      } catch (emailError: any) {
+        console.error('❌ Failed to send welcome email:', emailError)
+        console.error('Email error details:', emailError.message || emailError)
+        // Don't fail the profile creation if email fails
+      }
+
 
       // Redirect to role-based page after successful profile completion
       const userRole = result.role || 'participant'

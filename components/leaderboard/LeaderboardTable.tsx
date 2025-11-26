@@ -54,8 +54,8 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
   }
 
   return (
-    <div className="overflow-hidden">
-      <div className="p-3">
+    <div className="overflow-hidden w-full">
+      <div className="p-1 sm:p-3">
         
         {/* Desktop Table */}
         <div className="hidden md:block">
@@ -157,24 +157,24 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
         </div>
 
         {/* Mobile Cards */}
-        <div className="md:hidden space-y-4">
+        <div className="md:hidden space-y-3 sm:space-y-4">
           {data.map((entry, index) => (
             <div
               key={`mobile-${entry.rank}-${entry.name}`}
               className={`
                 ${getRowBackgroundStyle(entry.rank)}
-                rounded-xl p-4 shadow-sm border border-gray-200 
-                hover:shadow-md transition-all duration-200
+                rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-sm border border-gray-200 
+                hover:shadow-md transition-all duration-200 w-full
               `}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
+              <div className="flex items-start justify-between mb-2 sm:mb-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className="flex-shrink-0">
                     {getRankIcon(entry.rank)}
                   </div>
                   <span
                     className={`
-                      inline-flex items-center justify-center min-w-[2rem] h-7 px-3 rounded-lg text-sm font-bold
+                      inline-flex items-center justify-center min-w-[1.75rem] sm:min-w-[2rem] h-6 sm:h-7 px-2 sm:px-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold
                       ${getRankBadgeStyle(entry.rank)}
                     `}
                   >
@@ -182,46 +182,46 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                   </span>
                 </div>
                 {entry.rank <= topN && (
-                  <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded-lg text-xs font-bold uppercase tracking-wide">
+                  <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide">
                     Top {topN}
                   </span>
                 )}
               </div>
               
-              <div className="mb-4">
-                <div className="text-base font-bold text-gray-900 mb-1">
+              <div className="mb-3 sm:mb-4">
+                <div className="text-sm sm:text-base font-bold text-gray-900 mb-1 break-words">
                   {entry.name}
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
                 <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                     LLM
                   </div>
-                  <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-2 py-1 rounded text-xs font-mono font-medium shadow-sm">
+                  <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium shadow-sm">
                     {entry.llmScore.toFixed(2)}
                   </span>
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                     Judge
                   </div>
                   {entry.judgeScore !== null ? (
-                    <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-2 py-1 rounded text-xs font-mono font-medium shadow-sm">
+                    <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium shadow-sm">
                       {entry.judgeScore.toFixed(2)}
                     </span>
                   ) : (
-                    <span className="text-gray-400 text-sm">—</span>
+                    <span className="text-gray-400 text-xs sm:text-sm">—</span>
                   )}
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                     Final
                   </div>
                   <span
                     className={`
-                      inline-flex items-center px-2 py-1 rounded text-xs font-mono font-medium
+                      inline-flex items-center px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium
                       ${
                         entry.rank <= 3
                           ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-sm"
