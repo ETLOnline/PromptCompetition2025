@@ -527,7 +527,7 @@ export default function HomePage() {
                 <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-center bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-8 sm:mb-12">
                   How It Works
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
                   <div className="text-center group">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 hover:scale-110 transition-all duration-200">
                       <span className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">1</span>
@@ -554,6 +554,15 @@ export default function HomePage() {
                       Get Evaluated
                     </h3>
                     <p className="text-xs sm:text-sm text-muted-foreground">Receive automated scoring and potential expert review.</p>
+                  </div>
+                  <div className="text-center group">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4 hover:scale-110 transition-all duration-200">
+                      <span className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600">4</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-2">
+                      Receive Prizes
+                    </h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Win exciting cash prizes and recognition for top rankings.</p>
                   </div>
                 </div>
               </CardContent>
