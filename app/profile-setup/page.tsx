@@ -23,7 +23,6 @@ export default function ProfileSetupPage() {
   const [city, setCity] = useState("")
   const [province, setProvince] = useState("")
   const [majors, setMajors] = useState("")
-  // Changed default from "Uni Students" to "Student"
   const [category, setCategory] = useState("Student")
   const [linkedin, setLinkedin] = useState("")
   const [bio, setBio] = useState("")
@@ -139,8 +138,6 @@ export default function ProfileSetupPage() {
 
   const validateCategory = (cat: string): string | null => {
     if (!cat) return "Category is required."
-    // Updated validation message and logic for "Student"
-    if (cat === "Professional") return "This event is only for students."
     if (cat !== "Student") return "Invalid category selection."
     return null
   }
@@ -779,7 +776,7 @@ export default function ProfileSetupPage() {
                 )}
               </div>
 
-              {/* Category - Updates: "Uni Students" changed to "Student" */}
+              {/* Category */}
               <div className="space-y-2">
                 <label htmlFor="category" className="text-sm font-medium text-slate-700">Category</label>
                 <CustomDropdown
@@ -787,8 +784,7 @@ export default function ProfileSetupPage() {
                   value={category}
                   onChange={handleCategoryChange}
                   options={[
-                    { value: 'Student', label: 'Student' },
-                    { value: 'Professional', label: 'Professional' }
+                    { value: 'Student', label: 'Student' }
                   ]}
                   placeholder="Select category"
                   icon={Briefcase}

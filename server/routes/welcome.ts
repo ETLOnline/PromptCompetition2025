@@ -131,6 +131,10 @@ router.post("/", verifyClerkToken, async (req: Request, res: Response) => {
             <div class="signature">
               <p style="margin: 4px 0;"><strong>Best regards,</strong></p>
               <p style="margin: 4px 0;"><strong>APPEC Competition Team</strong></p>
+              
+              <p style="margin: 20px 0 4px 0; font-size: 14px; color: #666;">All Pakistan Prompt Engineering Competition (APPEC)</p>
+              <p style="margin: 4px 0; font-size: 14px; color: #666;">A Project of <a href="https://www.etlonline.org/" style="color: #0f172a; text-decoration: none; font-weight: 500;">ETLOnline.org</a></p>
+              <p style="margin: 4px 0; font-size: 14px; color: #666;">Follow us on <a href="https://www.linkedin.com/company/etlonline" style="color: #0f172a; text-decoration: none; font-weight: 500;">LinkedIn</a> to stay up to date on the competition timeline and dates.</p>
             </div>
           </div>
           
@@ -161,6 +165,12 @@ We look forward to seeing your creativity and expertise in action.
 
 Best regards,
 APPEC Competition Team
+
+All Pakistan Prompt Engineering Competition (APPEC)
+A Project of ETLOnline.org
+Website: https://www.etlonline.org/
+Follow us on LinkedIn to stay up to date on the competition timeline and dates.
+LinkedIn: https://www.linkedin.com/company/etlonline
 
 ---
 © ${new Date().getFullYear()} APPEC - All Pakistan Prompt Engineering Competition
