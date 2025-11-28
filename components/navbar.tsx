@@ -243,7 +243,7 @@ export default function Navbar() {
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-700"></div>
                     <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-all duration-300 group-hover:scale-105 relative z-10" />
-                    <span className="relative z-10 transition-all duration-300 group-hover:text-white">Sign Up</span>
+                    <span className="relative z-10 transition-all duration-300 group-hover:text-white">Register Now</span>
                   </Button>
                 </Link>
               </SignedOut>
