@@ -238,8 +238,8 @@ function ErrorState({ error, onRetry }: { error: string | null; onRetry: () => v
             <div className="pt-4 border-t border-gray-200 w-full">
               <p className="text-xs text-gray-400">
                 Still having issues? Contact support at{" "}
-                <a href="mailto:support@example.com" className="text-indigo-600 hover:text-indigo-700 font-medium underline">
-                  etl1competition@gmail.com
+                <a href="mailto:info@etlonline.org" className="text-indigo-600 hover:text-indigo-700 font-medium underline">
+                  info@etlonline.org
                 </a>
               </p>
             </div>

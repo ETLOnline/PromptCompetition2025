@@ -440,6 +440,21 @@ export default function HomePage() {
                     </p>
                     <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-2">Plus certificates and recognition for all winners</p>
                   </div>
+
+                  {/* Register Now Button */}
+                  <div className="mt-6 sm:mt-8 text-center space-y-3">
+                    <Button
+                      onClick={() => (window.location.href = '/auth/login')}
+                      className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                      style={{ backgroundColor: '#0f172a' }}
+                    >
+                      <Zap className="h-5 w-5" />
+                      Register Now
+                    </Button>
+                    <p className="text-sm sm:text-base text-emerald-700 font-semibold">
+                      Participation in the competition is completely free
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -565,6 +580,21 @@ export default function HomePage() {
                     <p className="text-xs sm:text-sm text-muted-foreground">Win exciting cash prizes and recognition for top rankings.</p>
                   </div>
                 </div>
+
+                {/* Register Now Button */}
+                <div className="mt-8 sm:mt-12 text-center space-y-3">
+                  <Button
+                    onClick={() => (window.location.href = '/auth/login')}
+                    className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                    style={{ backgroundColor: '#0f172a' }}
+                  >
+                    <Zap className="h-5 w-5" />
+                    Register Now
+                  </Button>
+                  <p className="text-sm sm:text-base text-emerald-700 font-semibold">
+                    Participation in the competition is completely free
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -606,7 +636,6 @@ export default function HomePage() {
                     title: "Email",
                     details: [
                       { text: "info@etlonline.org", isEmail: true },
-                      { text: "etl1competition@gmail.com", isEmail: true },
                       { text: "Perfect for detailed inquiries", isEmail: false }
                     ],
                     bgColor: "bg-blue-100",
