@@ -240,6 +240,19 @@ export default function ProfileSetupPage() {
     setConsentError(validateConsent(checked))
   }
 
+  // Handle Enter key to move to next field
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, nextFieldId?: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (nextFieldId) {
+        const nextField = document.getElementById(nextFieldId)
+        if (nextField) {
+          nextField.focus()
+        }
+      }
+    }
+  }
+
   // Form submission - show confirmation modal first
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -620,6 +633,7 @@ export default function ProfileSetupPage() {
                     type="text"
                     value={fullName}
                     onChange={handleFullNameChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'institution')}
                     required
                     placeholder="Enter your name"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
@@ -650,6 +664,7 @@ export default function ProfileSetupPage() {
                     type="text"
                     value={institution}
                     onChange={handleInstitutionChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'gender')}
                     required
                     placeholder="FAST University"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white text-slate-900 placeholder-slate-400 ${
@@ -705,6 +720,7 @@ export default function ProfileSetupPage() {
                     type="text"
                     value={city}
                     onChange={handleCityChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'province')}
                     required
                     placeholder="Lahore"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${cityError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -727,6 +743,7 @@ export default function ProfileSetupPage() {
                     type="text"
                     value={province}
                     onChange={handleProvinceChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'majors')}
                     required
                     placeholder="Punjab"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${provinceError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -749,6 +766,7 @@ export default function ProfileSetupPage() {
                     type="text"
                     value={majors}
                     onChange={handleMajorsChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'category')}
                     required
                     placeholder="IT, Business, Data Science, ..."
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${majorsError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
@@ -797,6 +815,7 @@ export default function ProfileSetupPage() {
                     type="url"
                     value={linkedin}
                     onChange={handleLinkedinChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'bio')}
                     placeholder="https://www.linkedin.com/in/username"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 ${linkedinError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
                     disabled={loading}
@@ -816,6 +835,7 @@ export default function ProfileSetupPage() {
                     id="bio"
                     value={bio}
                     onChange={handleBioChange}
+                    onKeyDown={(e) => handleKeyDown(e, 'consent')}
                     rows={3}
                     placeholder="A short description about you (max 500 characters)"
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg bg-white text-slate-900 placeholder-slate-400 resize-none ${bioError ? 'border-red-500 focus:border-red-500' : 'border-slate-300 focus:border-blue-500'}`}
