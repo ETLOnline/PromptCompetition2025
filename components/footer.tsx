@@ -51,14 +51,14 @@ export default function Footer() {
                     Rules & Guidelines
                   </Link>
                 </li>
-                <li>
+                {/* <li>
                   <Link
                     href="/leaderboard"
                     className="font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 hover:translate-x-1 inline-block focus:outline-none focus:ring-2 focus:ring-blue-600/20 rounded-md px-1 py-1"
                   >
                     Leaderboard
                   </Link>
-                </li>
+                </li> */}
               </ul>
             </nav>
           </div>

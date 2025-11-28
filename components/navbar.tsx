@@ -28,7 +28,7 @@ export default function Navbar() {
     { label: "About", href: "/about" },
     { label: "Events", href: "/#events" },
     { label: "Rules", href: "/rules" },
-    { label: "Leaderboard", href: "/leaderboard" },
+    // { label: "Leaderboard", href: "/leaderboard" },
     { label: "Contact Us", href: "/#contact" },
   ]
 
