@@ -372,91 +372,162 @@ export default function HomePage() {
         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
         
         {/* Prize Pool Section */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto p-6 space-y-8">
-            <div className="text-center max-w-3xl mx-auto space-y-4 px-4">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 rounded-lg sm:rounded-xl px-2.5 py-1 sm:px-3 md:px-4 sm:py-1.5 md:py-2 mb-4">
-                <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 text-amber-600" />
-                <span className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wide">Prize Pool</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                Prize Pool – Compete & Win Big!
-              </h2>
-              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground">
-                Showcase your talent, rise to the challenge, and claim your share of an exciting cash prize pool. Whether you're aiming for the top spot or simply want to test your skills, every position counts!
-              </p>
+        <section className="py-12 sm:py-16 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-amber-100/30 to-yellow-100/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100/30 to-purple-100/30 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+          
+          <div className="container mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8 relative z-10">
+            <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4 px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 border-2 border-emerald-200 shadow-lg"
+              >
+                <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
+                <span className="text-[10px] sm:text-xs font-bold text-emerald-700 uppercase tracking-wide">Prize Pool</span>
+              </motion.div>
+              
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent leading-tight"
+              >
+                Compete & Win Big!
+              </motion.h2>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-xs sm:text-sm md:text-base text-slate-600 leading-relaxed"
+              >
+                Showcase your talent, rise to the challenge, and claim your share of an exciting cash prize pool. 
+                Whether you're aiming for the top spot or simply want to test your skills, every position counts!
+              </motion.p>
             </div>
             
-            <div className="max-w-4xl mx-auto px-4">
-              <Card className="bg-white shadow-lg rounded-xl">
-                <CardHeader className="text-center p-4 sm:p-6 md:p-8">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-                  </div>
-                  <CardTitle className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                    Cash Prizes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 md:p-8 pt-0">
-                  <div className="grid gap-4">
-                    {[
-                      { position: "1st Prize", amount: "PKR 100,000", rank: 1 },
-                      { position: "2nd Prize", amount: "PKR 75,000", rank: 2 },
-                      { position: "3rd Prize", amount: "PKR 50,000", rank: 3 },
-                      { position: "4th Prize", amount: "PKR 30,000", rank: 4 },
-                      { position: "5th Prize", amount: "PKR 20,000", rank: 5 },
-                    ].map((prize, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        className="flex items-center justify-between p-3 sm:p-4 rounded-lg border-2 border-slate-100 bg-slate-50/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200"
-                      >
-                        <div className="flex items-center gap-2 sm:gap-4">
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-[#0f172a] text-white rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm md:text-base">
-                            {prize.rank}
-                          </div>
-                          <div>
-                            <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-slate-900">{prize.position}</h3>
-                            <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground">Achievement Award</p>
-                          </div>
-                        </div>
-                        <div className="text-xs sm:text-sm md:text-lg lg:text-xl font-bold text-slate-900">
-                          {prize.amount}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-6 sm:mt-8 text-center p-4 sm:p-6 bg-emerald-50 rounded-xl border border-emerald-200">
-                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-2">
-                      <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-emerald-600" />
-                      <span className="text-sm sm:text-base md:text-lg font-bold text-slate-900">Total Prize Pool</span>
+            <div className="max-w-5xl mx-auto px-4">
+              {/* Total Prize Pool Highlight */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="relative mb-6 sm:mb-8"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 rounded-2xl blur-xl opacity-30" />
+                <Card className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-0 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40" />
+                  <CardContent className="relative p-4 sm:p-6 md:p-8 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl mb-3 sm:mb-4 shadow-lg border-2 border-emerald-200">
+                      <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-600" />
                     </div>
-                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
+                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2">Total Prize Pool</h3>
+                    <p className="text-3xl sm:text-4xl md:text-5xl font-black bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-300 bg-clip-text text-transparent mb-2">
                       PKR 275,000
                     </p>
-                    <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-2">Plus certificates and recognition for all winners</p>
-                  </div>
+                    <p className="text-slate-300 text-[10px] sm:text-xs md:text-sm">Plus certificates and recognition for all winners</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
-                  {/* Register Now Button */}
-                  <div className="mt-6 sm:mt-8 text-center space-y-3">
+              {/* Prize Tiers */}
+              <div className="grid gap-3 sm:gap-4 mb-6 sm:mb-8">
+                {[
+                  { position: "1st Prize", amount: "PKR 100,000", rank: 1, gradient: "from-amber-500 to-yellow-500", bgGradient: "from-amber-50 to-yellow-50", icon: "🥇" },
+                  { position: "2nd Prize", amount: "PKR 75,000", rank: 2, gradient: "from-slate-400 to-slate-500", bgGradient: "from-slate-50 to-slate-100", icon: "🥈" },
+                  { position: "3rd Prize", amount: "PKR 50,000", rank: 3, gradient: "from-orange-600 to-amber-700", bgGradient: "from-orange-50 to-amber-50", icon: "🥉" },
+                  { position: "4th Prize", amount: "PKR 30,000", rank: 4, gradient: "from-blue-500 to-purple-500", bgGradient: "from-blue-50 to-purple-50", icon: "🏆" },
+                  { position: "5th Prize", amount: "PKR 20,000", rank: 5, gradient: "from-emerald-500 to-teal-500", bgGradient: "from-emerald-50 to-teal-50", icon: "⭐" },
+                ].map((prize, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -50 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.01, y: -2 }}
+                    className="relative group"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r ${prize.gradient} rounded-xl blur-md opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                    <Card className={`relative bg-gradient-to-br ${prize.bgGradient} border-2 border-white/50 rounded-xl shadow-lg overflow-hidden`}>
+                      <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-white/20 to-transparent rounded-bl-full" />
+                      <CardContent className="p-3 sm:p-4 md:p-5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                            <div className={`relative w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${prize.gradient} rounded-lg sm:rounded-xl flex items-center justify-center shadow-md transform group-hover:scale-105 transition-all duration-300 flex-shrink-0`}>
+                              <span className="text-lg sm:text-xl md:text-2xl">{prize.icon}</span>
+                              <div className="absolute -top-0.5 -right-0.5 w-5 h-5 sm:w-6 sm:h-6 bg-white rounded-full flex items-center justify-center shadow-md">
+                                <span className="text-[10px] sm:text-xs font-bold text-slate-900">{prize.rank}</span>
+                              </div>
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="text-sm sm:text-base md:text-lg font-bold text-slate-900 truncate">{prize.position}</h3>
+                              <p className="text-[10px] sm:text-xs text-slate-600 font-medium">Achievement Award</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm sm:text-base md:text-lg lg:text-xl font-black whitespace-nowrap" style={{ color: '#0f172a' }}>
+                              {prize.amount}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* CTA Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-2xl blur-xl opacity-20" />
+                <Card className="relative bg-white border-0 rounded-2xl shadow-xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-purple-50/50 to-blue-50/50" />
+                  <CardContent className="relative p-4 sm:p-6 md:p-8 text-center space-y-3 sm:space-y-4">
+                    <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 border-2 border-emerald-200">
+                      <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
+                      <span className="text-[10px] sm:text-xs font-bold text-emerald-700 uppercase tracking-wide">Free to Participate</span>
+                    </div>
+                    
+                    <div className="space-y-2 sm:space-y-3">
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                        Ready to Showcase Your Skills?
+                      </h3>
+                      <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto">
+                        Join thousands of participants competing for glory and prizes. Registration is completely free!
+                      </p>
+                    </div>
+
                     <Button
-                      onClick={() => (window.location.href = '/auth/login')}
-                      className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                      style={{ backgroundColor: '#0f172a' }}
+                      onClick={() => (window.location.href = '/auth/register')}
+                      className="group relative gap-2 px-6 sm:px-8 py-4 sm:py-5 h-auto text-sm sm:text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:via-slate-700 hover:to-slate-800"
                     >
-                      <Zap className="h-5 w-5" />
-                      Register Now
+                      <Zap className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
+                      <span>Register Now & Compete</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </Button>
-                    <p className="text-sm sm:text-base text-emerald-700 font-semibold">
-                      Participation in the competition is completely free
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-emerald-700 flex-wrap">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse" />
+                      <p className="text-[10px] sm:text-xs md:text-sm font-semibold">
+                        No registration fees • No hidden charges • 100% Free
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -584,7 +655,7 @@ export default function HomePage() {
                 {/* Register Now Button */}
                 <div className="mt-8 sm:mt-12 text-center space-y-3">
                   <Button
-                    onClick={() => (window.location.href = '/auth/login')}
+                    onClick={() => (window.location.href = '/auth/register')}
                     className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                     style={{ backgroundColor: '#0f172a' }}
                   >
