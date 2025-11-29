@@ -26,7 +26,7 @@ export default function Navbar() {
   const navItems = [
     { label: "Home", href: "/" },
     { label: "About", href: "/about" },
-    { label: "Events", href: "/#events" },
+    { label: "Tutorials", href: "/tutorial" },
     { label: "Rules", href: "/rules" },
     { label: "Judges", href: "/judge-info" },
     // { label: "Leaderboard", href: "/leaderboard" },

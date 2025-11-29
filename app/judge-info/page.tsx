@@ -70,7 +70,7 @@ const judges = [
   },
   {
     id: 6,
-    name: "Zulfiqar Ali Mir",
+    name: "Dr. Zulfiqar Ali Mir",
     title: "Experienced AI Software Developer and Educator",
     bio: "Proven ability to deliver engaging lessons that foster critical thinking, problem-solving, and analytical skills. Proficient in business intelligence tools (Power BI, Tableau) and dimensional modeling. Strong background in quantitative developer, analyst, and management accounting within the fields of economics and finance, leveraging analytical skills to drive business decisions. Specializes in IGCSE and A-Level math curricula. Experienced AI Software Developer and Founder at an AI Startup | Mathematics & Statistics Educator | Data Science, Machine Learning, AI, Econometrics Expert | Quantitative Developer & Analyst | Management Accounting Specialist | Full Stack Developer | Cloud-Native Generative AI Engineer | News Paper Writer",
     linkedin: "https://www.linkedin.com/in/zulfiqar-ali-mir/",

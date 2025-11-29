@@ -257,7 +257,7 @@ export default function SponsorsPage() {
                   <Star className="h-8 w-8 text-white" />
                 </div>
                 <CardTitle className="text-base sm:text-lg font-bold" style={{ color: '#0f172a' }}>Silver</CardTitle>
-                <CardDescription className="text-lg sm:text-xl font-bold text-gray-600 mt-2">Rs. 150,000</CardDescription>
+                <CardDescription className="text-lg sm:text-xl font-bold text-gray-600 mt-2">Rs. 100,000</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-2">
