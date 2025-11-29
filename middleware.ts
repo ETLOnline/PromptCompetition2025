@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhooks(.*)', // Clerk webhooks should be public
+  '/judge-info(.*)',
 ])
 
 // Define routes that should be protected

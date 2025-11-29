@@ -106,25 +106,29 @@ export default function SponsorsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 w-full justify-center md:justify-center lg:justify-center xl:justify-center">
-                <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white">
-                  <CardHeader className="text-center pb-4 flex flex-col items-center">
-                    <img src="/images/sponsers/acme.png" alt="ACME ONE Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
-                    <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
-                      <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
-                    </div>
-                    <CardTitle className="text-xl font-bold text-gray-900">ACME ONE</CardTitle>
-                  </CardHeader>
-                </Card>
+                  <Link href="https://acme-one.com/" target="_blank" rel="noopener noreferrer" className="block">
+                    <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                      <CardHeader className="text-center pb-4 flex flex-col items-center">
+                        <img src="/images/sponsers/acme.png" alt="ACME ONE Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                        <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
+                          <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
+                        </div>
+                        <CardTitle className="text-xl font-bold text-gray-900">ACME ONE</CardTitle>
+                      </CardHeader>
+                    </Card>
+                  </Link>
 
-                <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white">
-                  <CardHeader className="text-center pb-4 flex flex-col items-center">
-                    <img src="/images/sponsers/ninetynine.png" alt="Ninety Nine Technologies Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
-                    <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
-                      <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
-                    </div>
-                    <CardTitle className="text-xl font-bold text-gray-900">Ninety Nine Technologies</CardTitle>
-                  </CardHeader>
-                </Card>
+                  <Link href="https://99technologies.com/" target="_blank" rel="noopener noreferrer" className="block">
+                    <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                      <CardHeader className="text-center pb-4 flex flex-col items-center">
+                        <img src="/images/sponsers/ninetynine.png" alt="Ninety Nine Technologies Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                        <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
+                          <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
+                        </div>
+                        <CardTitle className="text-xl font-bold text-gray-900">Ninety Nine Technologies</CardTitle>
+                      </CardHeader>
+                    </Card>
+                  </Link>
           </div>
         </div>
       </section>
@@ -159,7 +163,7 @@ export default function SponsorsPage() {
                   <Rocket className="h-8 w-8 text-white" />
                 </div>
                 <CardTitle className="text-base sm:text-lg font-bold" style={{ color: '#0f172a' }}>Platinum</CardTitle>
-                <CardDescription className="text-lg sm:text-xl font-bold text-blue-600 mt-2">Rs. 500,000</CardDescription>
+                <CardDescription className="text-lg sm:text-xl font-bold text-blue-600 mt-2">Rs. 300,000</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-2">
@@ -208,7 +212,7 @@ export default function SponsorsPage() {
                   <Award className="h-8 w-8 text-white" />
                 </div>
                 <CardTitle className="text-base sm:text-lg font-bold" style={{ color: '#0f172a' }}>Gold</CardTitle>
-                <CardDescription className="text-lg sm:text-xl font-bold text-yellow-600 mt-2">Rs. 300,000</CardDescription>
+                <CardDescription className="text-lg sm:text-xl font-bold text-yellow-600 mt-2">Rs. 200,000</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-2">
