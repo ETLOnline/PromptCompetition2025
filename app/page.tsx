@@ -157,10 +157,10 @@ function CompetitionEventsSection() {
             <span className="text-[10px] sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">Live Events</span>
           </div>
           <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent mb-6">
-            Competition Events
+            Prompt Competition
           </h2>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
-            Join our exciting events to showcase your prompt engineering skills and compete with the best minds in AI.
+            Join our exciting competition to showcase your prompt engineering skills and compete with the best minds in AI.
           </p>
         </div>
         {isScrollable &&
@@ -317,7 +317,7 @@ export default function HomePage() {
   return (
     <>
       <StructuredData />
-      <div className="flex min-h-screen flex-col pt-5">
+      <div className="flex min-h-screen flex-col pt-2">
         <Navbar />
         {/* Hero Section */}
         <section id="hero" className="relative overflow-hidden min-h-screen flex items-center justify-center bg-white">
@@ -325,19 +325,9 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-50/30 via-transparent to-purple-50/30" />
           <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-100/20 to-purple-100/20 rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-br from-emerald-100/20 to-blue-100/20 rounded-full blur-3xl" />
-          <div className="container mx-auto p-6 py-20 md:py-32 relative z-10">
+          <div className="container mx-auto p-6 py-8 md:py-16 relative z-10">
             <div className="flex flex-col items-center text-center max-w-5xl mx-auto space-y-8">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50 rounded-lg sm:rounded-xl px-3 py-1.5 sm:px-6 sm:py-3 backdrop-blur-sm"
-              >
-                <Star className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-blue-600" />
-                <span className="text-[10px] sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                  Prompt Engineering Competition
-                </span>
-              </motion.div>
+              {/* Removed hero badge section as requested */}
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -522,7 +512,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-emerald-700 flex-wrap">
                       <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse" />
                       <p className="text-[10px] sm:text-xs md:text-sm font-semibold">
-                        No registration fees • No hidden charges • 100% Free
+                        No registration fees • 100% Free
                       </p>
                     </div>
                   </CardContent>

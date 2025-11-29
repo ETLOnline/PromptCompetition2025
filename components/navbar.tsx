@@ -28,8 +28,9 @@ export default function Navbar() {
     { label: "About", href: "/about" },
     { label: "Events", href: "/#events" },
     { label: "Rules", href: "/rules" },
+    { label: "Judges", href: "/judge-info" },
     // { label: "Leaderboard", href: "/leaderboard" },
-    { label: "Contact Us", href: "/#contact" },
+    { label: "Sponsors", href: "/sponsors" },
   ]
 
   // Get dashboard URL based on user role
@@ -54,7 +55,7 @@ export default function Navbar() {
       {/* Main Navigation Container */}
       <div className="transition-all duration-300 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto max-w-7xl">
-          <div className="flex h-20 items-center justify-between px-2 sm:px-6">
+          <div className="flex h-14 sm:h-20 items-center justify-between px-2 sm:px-6">
             {/* Left Section: Mobile Trigger + Logo */}
             <div className="flex items-center gap-1 sm:gap-2">
               {/* Mobile Menu Trigger (left) */}
