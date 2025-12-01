@@ -1,0 +1,66 @@
+# .github/workflows/deploy.yml
+
+name: Build and Push Container Images to ACR (Production Build)
+
+on:
+  push:
+    branches: [ production ]
+
+env:
+  ACR_NAME: "etlonline"
+  FRONTEND_IMAGE_NAME: "prompt-competition-2025-frontend-production"
+  BACKEND_IMAGE_NAME: "prompt-competition-2025-backend-production"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Azure Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.ACR_NAME }}.azurecr.io
+        username: ${{ secrets.AZURE_ACR_USER }}
+        password: ${{ secrets.AZURE_ACR_PWD }}
+        
+    - name: Build and push frontend image to ACR
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.frontend
+        push: true
+        tags: |
+          ${{ env.ACR_NAME }}.azurecr.io/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.ACR_NAME }}.azurecr.io/${{ env.FRONTEND_IMAGE_NAME }}:latest
+        build-args: |
+          NEXT_PUBLIC_FIREBASE_API_KEY_PROD=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY_PROD }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_PROD=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_PROD }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID_PROD=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID_PROD }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_PROD=${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET_PROD }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID_PROD=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID_PROD }}
+          NEXT_PUBLIC_FIREBASE_APP_ID_PROD=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID_PROD }}
+          NEXT_PUBLIC_CHALLENGE_DATABASE_PROD=${{ secrets.NEXT_PUBLIC_CHALLENGE_DATABASE_PROD }}
+          NEXT_PUBLIC_SUBMISSION_DATABASE_PROD=${{ secrets.NEXT_PUBLIC_SUBMISSION_DATABASE_PROD }}
+          NEXT_PUBLIC_USER_DATABASE_PROD=${{ secrets.NEXT_PUBLIC_USER_DATABASE_PROD }}
+          NEXT_PUBLIC_API_URL_PROD=${{ secrets.NEXT_PUBLIC_API_URL_PROD }}
+          NEXT_PUBLIC_ADMIN_AUTH_PROD=${{ secrets.NEXT_PUBLIC_ADMIN_AUTH_PROD }}
+          NEXT_PUBLIC_SUPER_AUTH_PROD=${{ secrets.NEXT_PUBLIC_SUPER_AUTH_PROD }}
+          NEXT_PUBLIC_JUDGE_AUTH_PROD=${{ secrets.NEXT_PUBLIC_JUDGE_AUTH_PROD }}
+          NEXT_PUBLIC_USER_AUTH_PROD=${{ secrets.NEXT_PUBLIC_USER_AUTH_PROD }}
+          AZURE_STORAGE_ACCOUNT_NAME_PROD=${{ secrets.AZURE_STORAGE_ACCOUNT_NAME_PROD }}
+          CONTAINER_NAME_PROD=${{ secrets.CONTAINER_NAME_PROD }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY_PROD }}
+          CLERK_SECRET_KEY_PROD=${{ secrets.CLERK_SECRET_KEY_PROD }}
+          CLERK_PUBLISHABLE_KEY_PROD=${{ secrets.CLERK_PUBLISHABLE_KEY_PROD }}
+        
+    - name: Build and push backend image to ACR
+      uses: docker/build-push-action@v5
+      with:
+        context: ./server
+        file: ./server/Dockerfile.backend
+        push: true
+        tags: |
+          ${{ env.ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:latest
