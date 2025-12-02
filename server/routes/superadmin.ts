@@ -88,10 +88,15 @@ router.post("/assign-role", verifySuperAdmin, async (req: RequestWithUser, res: 
       });
     }
 
-    // Update role in Firestore
-    await db.collection("users").doc(uid).update({
-      role: role
-    });
+    // Update role in Firestore; if doc doesn't exist, also set basic profile fields
+    await db.collection("users").doc(uid).set({
+      role: role,
+      ...(userDoc.exists ? {} : {
+        createdAt: new Date().toISOString(),
+        email: user.emailAddresses[0]?.emailAddress || "",
+        fullName: user.fullName || user.firstName || "",
+      })
+    }, { merge: true });
   
     return res.status(200).json({
       message: `Role '${role}' assigned to user ${user.emailAddresses[0]?.emailAddress || uid}`,
@@ -145,9 +150,14 @@ router.post(
       }
 
       // Demote to "participant" (default role) in Firestore
-      await db.collection("users").doc(uid).update({
-        role: "participant"
-      });
+      await db.collection("users").doc(uid).set({
+        role: "participant",
+        ...(userDoc.exists ? {} : {
+          createdAt: new Date().toISOString(),
+          email: user.emailAddresses[0]?.emailAddress || "",
+          fullName: user.fullName || user.firstName || "",
+        })
+      }, { merge: true });
 
       return res.status(200).json({
         message: `Role revoked for user ${user.emailAddresses[0]?.emailAddress || uid}`,
