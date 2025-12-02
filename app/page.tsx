@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { fetchCompetitions } from "@/lib/api" // Import your API utility
@@ -24,8 +25,11 @@ import {
   Star,
   MessageCircle, 
   Globe,
-  Eye
+  Eye,
+  LayoutDashboard
 } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
+import { SignedIn, SignedOut } from "@clerk/nextjs"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import StructuredData from "@/components/structured-data"
@@ -314,6 +318,24 @@ function CompetitionEventsSection() {
 }
 
 export default function HomePage() {
+  const { role, loading } = useAuth()
+
+  const getDashboardUrl = () => {
+    if (!role) return "/profile-setup"
+    
+    switch (role) {
+      case "admin":
+      case "superadmin":
+        return "/admin"
+      case "judge":
+        return "/judge"
+      case "participant":
+        return "/participant"
+      default:
+        return "/profile-setup"
+    }
+  }
+
   return (
     <>
       <StructuredData />
@@ -496,18 +518,32 @@ export default function HomePage() {
                         Ready to Showcase Your Skills?
                       </h3>
                       <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto">
-                        Join thousands of participants competing for glory and prizes. Registration is completely free!
+                        Join thousands of participants competing for glory and prizes.
                       </p>
                     </div>
 
-                    <Button
-                      onClick={() => (window.location.href = '/auth/register')}
-                      className="group relative gap-2 px-6 sm:px-8 py-4 sm:py-5 h-auto text-sm sm:text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:via-slate-700 hover:to-slate-800"
-                    >
-                      <Zap className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
-                      <span>Register Now & Compete</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </Button>
+                    <SignedOut>
+                      <Button
+                        onClick={() => (window.location.href = '/auth/register')}
+                        className="group relative gap-2 px-6 sm:px-8 py-4 sm:py-5 h-auto text-sm sm:text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:via-slate-700 hover:to-slate-800"
+                      >
+                        <Zap className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
+                        <span>Register Now & Compete</span>
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </Button>
+                    </SignedOut>
+                    <SignedIn>
+                        <Link href={getDashboardUrl()}>
+                          <Button
+                            disabled={loading}
+                            className="group relative gap-2 px-6 sm:px-8 py-4 sm:py-5 h-auto text-sm sm:text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:via-slate-700 hover:to-slate-800 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+                          >
+                            <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
+                            <span>Go to Dashboard</span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          </Button>
+                        </Link>
+                    </SignedIn>
 
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-emerald-700 flex-wrap">
                       <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -644,14 +680,28 @@ export default function HomePage() {
 
                 {/* Register Now Button */}
                 <div className="mt-8 sm:mt-12 text-center space-y-3">
-                  <Button
-                    onClick={() => (window.location.href = '/auth/register')}
-                    className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                    style={{ backgroundColor: '#0f172a' }}
-                  >
-                    <Zap className="h-5 w-5" />
-                    Register Now
-                  </Button>
+                  <SignedOut>
+                    <Button
+                      onClick={() => (window.location.href = '/auth/register')}
+                      className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                      style={{ backgroundColor: '#0f172a' }}
+                    >
+                      <Zap className="h-5 w-5" />
+                      Register Now
+                    </Button>
+                  </SignedOut>
+                  <SignedIn>
+                    <Link href={getDashboardUrl()}>
+                      <Button
+                        disabled={loading}
+                        className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: '#0f172a' }}
+                      >
+                        <LayoutDashboard className="h-5 w-5" />
+                        Go to Dashboard
+                      </Button>
+                    </Link>
+                  </SignedIn>
                   <p className="text-sm sm:text-base text-emerald-700 font-semibold">
                     Participation in the competition is completely free
                   </p>
