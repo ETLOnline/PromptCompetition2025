@@ -77,6 +77,37 @@ const judges = [
     placeholder: "/images/judges/Zulfiqar-Ali-Mir.png",
     expertise: ["AI Development", "Data Science", "Education"]
   }
+  ,
+  {
+    id: 7,
+    name: "Momina Maqbool",
+    title: "Ed-Tech Innovator | Generative AI | Machine Learning | Lecturer",
+    bio: "Momina Maqbool is a researcher and lecturer with 5+ years of experience across Software Engineering, Generative AI, NLP, and Machine Learning. She designs AI‑driven solutions for automation, research, and business growth, applying NLP and Generative AI to build intelligent applications. Her work spans Machine Learning and Data Science for data‑informed decision‑making and research in AI in Education to reshape learning methodologies. With strong foundations in Python and data analytics, she bridges academic insight with real‑world impact in ed‑tech and AI‑powered digital strategies.",
+    linkedin: "https://www.linkedin.com/in/momina-maqbool-26b816177/",
+    placeholder: "/images/judges/momina-maqbool.png",
+    expertise: [
+      "Generative AI",
+      "NLP",
+      "Machine Learning",
+      "AI in Education",
+      "Python & Data Analytics"
+    ]
+  },
+  {
+    id: 8,
+    name: "Akber Choudhry",
+    title: "Principal Cloud Architect (AWS/GCP/Azure) | AI & DevOps Leader | Modernizing Legacy Systems",
+    bio: "Akber Choudhry is a Principal Cloud Architect and AI/DevOps leader who modernizes legacy, monolith, and on‑prem systems into cloud‑native and microservices architectures. With 20+ years of experience, he combines hands‑on delivery—building pipelines, writing Terraform, and mentoring teams—with architectural leadership. He is fluent across AWS, Google Cloud, and Azure, and brings a DevSecOps mindset where security and operations are treated as code. Akber leads pragmatic MLOps and Generative AI initiatives that drive measurable business value and has delivered globally across regulated environments in Canada, the US, UK, and Europe.",
+    linkedin: "https://www.linkedin.com/in/akberc/",
+    placeholder: "/images/judges/akber-chaudary.png",
+    expertise: [
+      "AWS | GCP | Azure",
+      "Terraform & DevSecOps",
+      "MLOps & Generative AI",
+      "Legacy Modernization",
+      "Architecture Leadership"
+    ]
+  }
 ]
 
 export default function JudgesPage() {
