@@ -19,7 +19,7 @@ router.post("/", async (req: Request, res: Response) => {
     // Send email to you
     await transporter.sendMail({
       from: process.env.EMAIL_SENDER,
-      to: process.env.EMAIL_SENDER,  
+      to: "info@etlonline.org",  
       subject: "New Enterprise Contact Form Submission",
       html: htmlContent,
     });
