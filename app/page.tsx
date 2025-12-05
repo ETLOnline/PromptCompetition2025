@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { fetchCompetitions } from "@/lib/api" // Import your API utility
 
@@ -319,6 +319,8 @@ function CompetitionEventsSection() {
 
 export default function HomePage() {
   const { role, loading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const getDashboardUrl = () => {
     if (!role) return "/profile-setup"
@@ -335,6 +337,22 @@ export default function HomePage() {
         return "/profile-setup"
     }
   }
+
+  // Conditional redirection logic
+  useEffect(() => {
+    // Wait until loading is complete
+    if (loading) return
+
+    // Check if redirect query parameter is "false"
+    const redirectParam = searchParams.get("redirect")
+    const shouldSkipRedirect = redirectParam === "false"
+
+    // If user is logged in (has a role) and redirect is not disabled, redirect to dashboard
+    if (role && !shouldSkipRedirect) {
+      const dashboardUrl = getDashboardUrl()
+      router.push(dashboardUrl)
+    }
+  }, [loading, role, searchParams, router])
 
   return (
     <>
@@ -564,7 +582,7 @@ export default function HomePage() {
             {/* Section Heading */}
             <div className="text-center max-w-3xl mx-auto space-y-4 px-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                Why Participate in PromptComp?
+                Why Participate in APPEC?
               </h2>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground">
                 Take your AI skills to the next level by competing in a national prompt engineering competition designed
