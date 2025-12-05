@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -317,7 +317,7 @@ function CompetitionEventsSection() {
   )
 }
 
-export default function HomePage() {
+function RedirectHandler() {
   const { role, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -354,8 +354,33 @@ export default function HomePage() {
     }
   }, [loading, role, searchParams, router])
 
+  return null
+}
+
+export default function HomePage() {
+  const { role, loading } = useAuth()
+
+  const getDashboardUrl = () => {
+    if (!role) return "/profile-setup"
+    
+    switch (role) {
+      case "admin":
+      case "superadmin":
+        return "/admin"
+      case "judge":
+        return "/judge"
+      case "participant":
+        return "/participant"
+      default:
+        return "/profile-setup"
+    }
+  }
+
   return (
     <>
+      <Suspense fallback={null}>
+        <RedirectHandler />
+      </Suspense>
       <StructuredData />
       <div className="flex min-h-screen flex-col pt-2">
         <Navbar />
