@@ -105,50 +105,48 @@ export const CompetitionCard = ({
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 flex-1">
-            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 flex-1">
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                 <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Date</p>
-                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                  {startDateTime.date === endDateTime.date
-                    ? startDateTime.date
-                    : `${startDateTime.date} - ${endDateTime.date}`}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Start Time</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 break-words leading-tight">
+                  {startDateTime.date} {startDateTime.time}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
                 <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Time</p>
-                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                  {startDateTime.time} → {endDateTime.time}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">End Time</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 break-words leading-tight">
+                  {endDateTime.date} {endDateTime.time}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                 <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Mode</p>
-                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">{competition.mode || "Online"}</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 break-words leading-tight">{competition.mode || "Online"}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
+            <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
                 <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-[10px] sm:text-xs text-muted-foreground font-medium uppercase tracking-wide">Prize</p>
-                <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">PKR {competition.prizeMoney || "TBD"}</p>
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 break-words leading-tight">PKR {competition.prizeMoney || "TBD"}</p>
               </div>
             </div>
           </div>

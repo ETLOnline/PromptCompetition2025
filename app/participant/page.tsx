@@ -16,6 +16,7 @@ import { CompetitionSkeleton } from "@/components/participantcompetitions/compet
 import { CompetitionSection } from "@/components/participantcompetitions/competition-section"
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
+import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
 // import { PageHeader } from "@/components/participantcompetitions/page-header"
 
 interface Competition {
@@ -69,6 +70,7 @@ export default function CompetitionsPage() {
 
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [showAppecInfo, setShowAppecInfo] = useState(true)
   
 
   useEffect(() => {
@@ -362,6 +364,15 @@ export default function CompetitionsPage() {
         }}
         competition={selectedCompetition}
       />
+
+      {showAppecInfo && (
+        <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
+          <AppecInfoBox
+            initiallyVisible={showAppecInfo}
+            onDismiss={() => setShowAppecInfo(false)}
+          />
+        </div>
+      )}
 
       <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto">
         <SearchAndFilters
