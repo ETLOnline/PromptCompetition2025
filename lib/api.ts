@@ -126,7 +126,22 @@ export async function fetchWithAuth(
   }
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    // Try to parse JSON error response
+    const contentType = response.headers.get('content-type');
+    let errorMessage = 'An error occurred';
+    
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+      } else {
+        errorMessage = await response.text();
+      }
+    } catch (parseError) {
+      errorMessage = `Request failed with status ${response.status}`;
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return response.json();

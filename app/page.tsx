@@ -1,8 +1,8 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { fetchCompetitions } from "@/lib/api" // Import your API utility
 
@@ -40,16 +40,57 @@ import ContactForm from "@/components/contact-form"
 import { CompetitionCardSkeleton } from "@/components/competition-card-skeleton"
 import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
 
+type CompetitionStatus = "Active" | "Upcoming" | "Finished"
+
+type CompetitionApiResponse = {
+  id: string
+  title: string
+  description: string
+  startDeadline: string
+  endDeadline: string
+  mode?: string
+  venue?: string
+  location?: string
+  prizeMoney?: string
+  createdAt?: string
+  isActive?: boolean
+  isLocked?: boolean
+  [key: string]: unknown
+}
+
+type CompetitionEvent = CompetitionApiResponse & {
+  status: CompetitionStatus
+  date: string
+  time: string
+}
+
+const resolveDashboardUrl = (role?: string | null) => {
+  if (!role) return "/profile-setup"
+
+  switch (role) {
+    case "admin":
+    case "superadmin":
+      return "/admin"
+    case "judge":
+      return "/judge"
+    case "participant":
+      return "/participant"
+    default:
+      return "/profile-setup"
+  }
+}
+
 // The Main Component
 function CompetitionEventsSection() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isScrollable, setIsScrollable] = useState(false)
   const [isAtStart, setIsAtStart] = useState(true)
   const [isAtEnd, setIsAtEnd] = useState(false)
-  const [events, setEvents] = useState<any[]>([])
+  const [events, setEvents] = useState<CompetitionEvent[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(true)
-  const [selectedCompetition, setSelectedCompetition] = useState<any>(null)
+  const [selectedCompetition, setSelectedCompetition] = useState<CompetitionEvent | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const { role, loading } = useAuth()
   const router = useRouter()
 
   const checkScrollability = () => {
@@ -66,21 +107,21 @@ function CompetitionEventsSection() {
     const loadCompetitions = async () => {
       setIsLoadingEvents(true)
       try {
-        const data = await fetchCompetitions()
+        const data = (await fetchCompetitions()) as CompetitionApiResponse[]
         const now = new Date()
 
-        const processedCompetitions = data
-          .map((comp: any) => {
+        const processedCompetitions: CompetitionEvent[] = data
+          .map((comp) => {
             const start = new Date(comp.startDeadline)
             const end = new Date(comp.endDeadline)
-            let status = "Upcoming"
+            let status: CompetitionStatus = "Upcoming"
             if (now >= start && now <= end) {
               status = "Active"
             } else if (now > end) {
               status = "Finished"
             }
             return {
-              ...comp, // Keep all original competition data
+              ...comp,
               status,
               date: start.toLocaleDateString("en-US", {
                 year: "numeric",
@@ -133,7 +174,7 @@ function CompetitionEventsSection() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: CompetitionStatus) => {
     switch (status) {
       case "Active":
         return "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -146,9 +187,15 @@ function CompetitionEventsSection() {
     }
   }
 
-  const handleViewDetails = (event: any) => {
+  const handleViewDetails = (event: CompetitionEvent) => {
     setSelectedCompetition(event)
     setIsDetailsModalOpen(true)
+  }
+
+  const handleJoin = () => {
+    if (loading) return
+    const destination = role ? resolveDashboardUrl(role) : "/auth/login"
+    router.push(destination)
   }
 
   return (
@@ -204,7 +251,7 @@ function CompetitionEventsSection() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
-              {events.map((event, index) => (
+              {events.map((event: CompetitionEvent, index) => (
                 <motion.div
                   key={event.id}
                   className="w-full"
@@ -287,7 +334,7 @@ function CompetitionEventsSection() {
                       <div className="flex justify-between items-center pt-4 border-t border-slate-100">
                         {(event.status === "Active" || event.status === "Upcoming") && (
                           <Button
-                            onClick={() => router.push("/auth/login")}
+                            onClick={handleJoin}
                             className="w-full gap-2 px-4 sm:px-6 md:px-8 py-3 sm:py-4 h-12 sm:h-14 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                           >
                             <Zap className="h-5 w-5" />
@@ -317,27 +364,38 @@ function CompetitionEventsSection() {
   )
 }
 
+function RedirectHandler() {
+  const { role, loading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Conditional redirection logic
+  useEffect(() => {
+    // Wait until loading is complete
+    if (loading) return
+
+    // Check if redirect query parameter is "false"
+    const redirectParam = searchParams.get("redirect")
+    const shouldSkipRedirect = redirectParam === "false"
+
+    // If user is logged in (has a role) and redirect is not disabled, redirect to dashboard
+    if (role && !shouldSkipRedirect) {
+      const dashboardUrl = resolveDashboardUrl(role)
+      router.push(dashboardUrl)
+    }
+  }, [loading, role, searchParams, router])
+
+  return null
+}
+
 export default function HomePage() {
   const { role, loading } = useAuth()
 
-  const getDashboardUrl = () => {
-    if (!role) return "/profile-setup"
-    
-    switch (role) {
-      case "admin":
-      case "superadmin":
-        return "/admin"
-      case "judge":
-        return "/judge"
-      case "participant":
-        return "/participant"
-      default:
-        return "/profile-setup"
-    }
-  }
-
   return (
     <>
+      <Suspense fallback={null}>
+        <RedirectHandler />
+      </Suspense>
       <StructuredData />
       <div className="flex min-h-screen flex-col pt-2">
         <Navbar />
@@ -533,7 +591,7 @@ export default function HomePage() {
                       </Button>
                     </SignedOut>
                     <SignedIn>
-                        <Link href={getDashboardUrl()}>
+                        <Link href={resolveDashboardUrl(role)}>
                           <Button
                             disabled={loading}
                             className="group relative gap-2 px-6 sm:px-8 py-4 sm:py-5 h-auto text-sm sm:text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:via-slate-700 hover:to-slate-800 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
@@ -564,7 +622,7 @@ export default function HomePage() {
             {/* Section Heading */}
             <div className="text-center max-w-3xl mx-auto space-y-4 px-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                Why Participate in PromptComp?
+                Why Participate in APPEC?
               </h2>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground">
                 Take your AI skills to the next level by competing in a national prompt engineering competition designed
@@ -691,7 +749,7 @@ export default function HomePage() {
                     </Button>
                   </SignedOut>
                   <SignedIn>
-                    <Link href={getDashboardUrl()}>
+                    <Link href={resolveDashboardUrl(role)}>
                       <Button
                         disabled={loading}
                         className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
