@@ -24,7 +24,7 @@ export default function Navbar() {
   }, [])
 
   const navItems = [
-    { label: "Home", href: "/" },
+    { label: "Home", href: "/?redirect=false" },
     { label: "About", href: "/about" },
     { label: "Tutorials", href: "/tutorial" },
     { label: "Rules", href: "/rules" },
