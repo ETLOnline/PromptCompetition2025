@@ -13,6 +13,7 @@ interface CompetitionAdmin {
   createdAt?: string
   isActive?: boolean
   isLocked?: boolean
+  isFeatured?: boolean
   mode?: string
   venue?: string
   prizeMoney?: string

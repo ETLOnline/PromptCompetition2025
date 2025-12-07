@@ -56,6 +56,7 @@ router.post(
         prizeMoney,
         isActive: true,
         isLocked: false,
+        isFeatured: req.body.isFeatured || false,
         ChallengeCount: 0,
         AllJudgeEvaluated: false,
         hasFinalLeaderboard: false,

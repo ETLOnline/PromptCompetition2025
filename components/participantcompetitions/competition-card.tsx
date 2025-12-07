@@ -3,7 +3,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, MapPin, Trophy, CheckCircle2, UserPlus, Eye } from "lucide-react"
+import { Calendar, Clock, MapPin, Trophy, CheckCircle2, UserPlus, Eye, Star, Zap } from "lucide-react"
+import { useCountdownTimer } from "@/hooks/useCountdownTimer"
 
 interface Competition {
   id: string
@@ -14,6 +15,7 @@ interface Competition {
   createdAt?: string
   isActive?: boolean
   isLocked?: boolean
+  isFeatured?: boolean
   mode?: string
   prizeMoney?: string
 }
@@ -49,24 +51,58 @@ export const CompetitionCard = ({
   const showButton =
     status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered);
 
+  const isFeatured = competition.isFeatured || false;
+  const targetDate = new Date(competition.startDeadline?.seconds * 1000 || competition.startDeadline);
+  const countdown = useCountdownTimer(targetDate);
+
   const getButtonText = () => {
     if (status.status === "ENDED") return "View Results";
     if (isRegistered) return isCompleted ? "View Results" : "Continue";
-    return "Register";
+    return isFeatured ? "Register Now" : "Register";
   };
 
   const getButtonIcon = () => {
     if (status.status === "ENDED" || isRegistered) return <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />;
-    return <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />;
+    return isFeatured ? <Zap className="h-4 w-4 sm:h-5 sm:w-5" /> : <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />;
   };
 
   return (
     <Card
-      className="bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-0 overflow-hidden group relative isolate"
+      className={`bg-white shadow-lg rounded-xl h-full flex flex-col hover:shadow-xl hover:-translate-y-2 transition-all duration-300 overflow-hidden group relative isolate ${
+        isFeatured 
+          ? 'border-2 border-blue-500'
+          : 'border-0'
+      }`}
     >
+      {/* Featured Badge - Top Corner */}
+      {isFeatured && (
+        <div className="absolute top-3 right-3 z-20">
+          <Badge className="bg-blue-600 text-white border-0 px-3 py-1 flex items-center gap-1.5 shadow-md">
+            <Star className="w-3 h-3 fill-white" />
+            <span className="font-semibold text-xs">FEATURED</span>
+          </Badge>
+        </div>
+      )}
+
       <div className="relative h-full">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-slate-600/5" />
+        {/* Subtle gradient background */}
+        <div className={`absolute inset-0 ${
+          isFeatured 
+            ? 'bg-gradient-to-br from-blue-50/30 via-white to-indigo-50/30' 
+            : 'bg-gradient-to-br from-slate-900/5 to-slate-600/5'
+        }`} />
+
         <CardContent className="p-4 sm:p-6 md:p-8 relative flex flex-col h-full">
+          {/* Prize Money Banner - Only for Featured */}
+          {isFeatured && competition.prizeMoney && (
+            <div className="mb-4 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-3 rounded-lg shadow-sm">
+              <div className="flex items-center justify-center gap-2">
+                <Trophy className="w-5 h-5" />
+                <span className="font-bold text-sm sm:text-base">PKR {competition.prizeMoney} Prize</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="space-y-2 sm:space-y-4 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -105,6 +141,41 @@ export const CompetitionCard = ({
               </button>
             </div>
           </div>
+
+          {/* Countdown Timer for Featured Upcoming Competitions */}
+          {isFeatured && status.status === "UPCOMING" && !countdown.isExpired && (
+            <div className="mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg shadow-sm">
+              <div className="text-center">
+                <div className="text-xs font-semibold uppercase tracking-wide mb-2 opacity-90">Starts In</div>
+                <div className="flex gap-3 items-center justify-center">
+                  {countdown.days > 0 && (
+                    <>
+                      <div className="flex flex-col items-center">
+                        <div className="text-2xl font-bold">{countdown.days}</div>
+                        <div className="text-[10px] uppercase opacity-75">Days</div>
+                      </div>
+                      <div className="text-xl font-bold opacity-50">:</div>
+                    </>
+                  )}
+                  <div className="flex flex-col items-center">
+                    <div className="text-2xl font-bold">{String(countdown.hours).padStart(2, '0')}</div>
+                    <div className="text-[10px] uppercase opacity-75">Hrs</div>
+                  </div>
+                  <div className="text-xl font-bold opacity-50">:</div>
+                  <div className="flex flex-col items-center">
+                    <div className="text-2xl font-bold">{String(countdown.minutes).padStart(2, '0')}</div>
+                    <div className="text-[10px] uppercase opacity-75">Mins</div>
+                  </div>
+                  <div className="text-xl font-bold opacity-50">:</div>
+                  <div className="flex flex-col items-center">
+                    <div className="text-2xl font-bold">{String(countdown.seconds).padStart(2, '0')}</div>
+                    <div className="text-[10px] uppercase opacity-75">Secs</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6 flex-1">
             <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50/50 rounded-lg">
               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
@@ -154,7 +225,11 @@ export const CompetitionCard = ({
           {showButton && (
             <div className="pt-3 sm:pt-4 border-t border-slate-100">
               <Button
-                className="w-full gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-4 h-11 sm:h-14 text-sm sm:text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center"
+                className={`w-full gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-4 h-11 sm:h-14 text-sm sm:text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center font-semibold ${
+                  isFeatured && !isRegistered
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white'
+                    : ''
+                }`}
                 disabled={isButtonLoading}
                 onClick={(e) => {
                   e.stopPropagation();

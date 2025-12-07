@@ -17,6 +17,7 @@ import { CompetitionSection } from "@/components/participantcompetitions/competi
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
 import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
+import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
 // import { PageHeader } from "@/components/participantcompetitions/page-header"
 
 interface Competition {
@@ -29,6 +30,7 @@ interface Competition {
   ChallengeCount?: number
   isActive?: boolean
   isLocked?: boolean
+  isFeatured?: boolean
   location?: string
   prizeMoney?: string
 }
@@ -299,6 +301,7 @@ export default function CompetitionsPage() {
 
   const groupCompetitionsByStatus = (competitions: Competition[]) => {
     const groups = {
+      featured: [] as Competition[],
       active: [] as Competition[],
       upcoming: [] as Competition[],
       ended: [] as Competition[],
@@ -306,18 +309,33 @@ export default function CompetitionsPage() {
 
     competitions.forEach((comp) => {
       const status = getCompetitionStatus(comp)
-      if (status.status === "ACTIVE") {
+      
+      // Separate featured competitions
+      if (comp.isFeatured) {
+        groups.featured.push(comp)
+      } else if (status.status === "ACTIVE") {
         groups.active.push(comp)
       } else if (status.status === "UPCOMING") {
         groups.upcoming.push(comp)
       } else if (status.status === "ENDED") {
         const isRegistered = participantMap[comp.id]
-        const isCompleted = completionMap[comp.id] // Use completionMap instead of completedCompetitions
+        const isCompleted = completionMap[comp.id]
         if (isRegistered || isCompleted) {
           groups.ended.push(comp)
         }
       }
     })
+
+    // Sort non-featured groups by date
+    const sortByDate = (a: Competition, b: Competition) => {
+      const dateA = new Date(a.startDeadline?.seconds * 1000 || a.startDeadline).getTime()
+      const dateB = new Date(b.startDeadline?.seconds * 1000 || b.startDeadline).getTime()
+      return dateB - dateA
+    }
+
+    groups.active.sort(sortByDate)
+    groups.upcoming.sort(sortByDate)
+    groups.ended.sort(sortByDate)
 
     return groups
   }
@@ -394,10 +412,39 @@ export default function CompetitionsPage() {
               ))}
             </div>
           ) : (
-            // Always use groupedCompetitions (which already applies the ended registration logic)
-            filterStatus === "ended" ? (
-              // Show only ended competitions where the user participated (groupedCompetitions.ended)
-              groupedCompetitions.ended.length === 0 ? (
+            <>
+              {/* Featured Competition Section - Full Width */}
+              {groupedCompetitions.featured.length > 0 && filterStatus === "all" && !searchTerm && (
+                <div className="mb-12">
+                  {groupedCompetitions.featured.map((competition) => {
+                    const status = getCompetitionStatus(competition)
+                    const startDateTime = formatDateTime(competition.startDeadline)
+                    const endDateTime = formatDateTime(competition.endDeadline)
+                    const isRegistered = participantMap[competition.id]
+                    const isButtonLoading = loadingMap[competition.id] || buttonStatesLoading[competition.id]
+                    const isCompleted = completionMap[competition.id] || false
+
+                    return (
+                      <FeaturedCompetition
+                        key={competition.id}
+                        competition={competition}
+                        status={status}
+                        startDateTime={startDateTime}
+                        endDateTime={endDateTime}
+                        isRegistered={isRegistered}
+                        isCompleted={isCompleted}
+                        isButtonLoading={isButtonLoading}
+                        onButtonClick={handleButtonClick}
+                      />
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Regular Competitions */}
+              {filterStatus === "ended" ? (
+                // Show only ended competitions where the user participated
+                groupedCompetitions.ended.length === 0 ? (
                 <EmptyState
                   searchTerm={searchTerm}
                   filterStatus={filterStatus}
@@ -487,7 +534,7 @@ export default function CompetitionsPage() {
               )
             ) : (
               // filterStatus === 'all' (main page): render only non-empty grouped sections and no empty-state per section
-              (groupedCompetitions.active.length === 0 && groupedCompetitions.upcoming.length === 0 && groupedCompetitions.ended.length === 0) ? (
+              (groupedCompetitions.active.length === 0 && groupedCompetitions.upcoming.length === 0 && groupedCompetitions.ended.length === 0 && groupedCompetitions.featured.length === 0) ? (
                 <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
               ) : (
                 <div className="space-y-12">
@@ -543,7 +590,8 @@ export default function CompetitionsPage() {
                   )}
                 </div>
               )
-            )
+            )}
+          </>
           )}
         </div>
       </div>

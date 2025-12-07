@@ -9,6 +9,7 @@ export interface Competition {
   venue?: string
   isActive: boolean
   isLocked: boolean
+  isFeatured: boolean
   createdAt?: string
   systemPrompt: string
 }
@@ -24,6 +25,7 @@ export interface CreateCompetitionData {
   ChallengeCount: number
   createdAt: string
   systemPrompt: string
+  isFeatured: boolean
 }
 
 export interface EditCompetitionData {
@@ -36,5 +38,6 @@ export interface EditCompetitionData {
   prizeMoney?: string
   isActive?: boolean
   isLocked?: boolean
+  isFeatured?: boolean
   systemPrompt?: string
 }
