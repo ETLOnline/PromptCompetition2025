@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Users, DollarSign,Trophy, ArrowRight, CheckCircle2, XCircle, Clock, Edit, Eye } from "lucide-react"
+import { Calendar, MapPin, Users, DollarSign,Trophy, ArrowRight, CheckCircle2, XCircle, Clock, Edit, Eye, Star } from "lucide-react"
 import type { Competition } from "@/types/competition"
 // import { FaRupeeSign } from 'react-icons/fa'; // Example from Font Awesome
 
@@ -111,18 +111,36 @@ export default function CompetitionGrid({
         return (
           <Card
             key={competition.id}
-            className="group relative overflow-hidden bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit"
+            className={`group relative overflow-hidden bg-white rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit ${
+              competition.isFeatured
+                ? 'border-2 border-slate-900'
+                : 'border border-gray-100'
+            }`}
           >
+            {competition.isFeatured && (
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900"></div>
+            )}
             <CardContent className="p-6">
               <div className="space-y-4">
                 {/* Header with consistent height */}
                 <div className="flex items-start justify-between min-h-[40px]">
                   <div className="flex-1 min-w-0 pr-4">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
-                      {competition.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      {competition.isFeatured && (
+                        <Star className="w-5 h-5 text-slate-900 fill-yellow-400 flex-shrink-0" />
+                      )}
+                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
+                        {competition.title}
+                      </h3>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {competition.isFeatured && (
+                      <Badge className="bg-slate-900 text-white border-0 font-medium whitespace-nowrap hover:bg-slate-800">
+                        <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
+                        Featured
+                      </Badge>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

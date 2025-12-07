@@ -33,7 +33,8 @@ export default function CreateCompetitionModal({
     endTime: "",
     mode: "online" as "online" | "offline",
     venue: "",
-    systemPrompt: "", 
+    systemPrompt: "",
+    isFeatured: false,
   })
   const [formError, setFormError] = useState<string | null>(null)
   const [prizeMoneyError, setPrizeMoneyError] = useState<string | null>(null)
@@ -56,7 +57,13 @@ export default function CreateCompetitionModal({
       }
     }
     
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Handle boolean conversion for isFeatured
+    if (field === "isFeatured") {
+      setFormData((prev) => ({ ...prev, [field]: value === "true" }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
+    
     setFormError(null)
     setTouched(true)
   }
@@ -111,6 +118,7 @@ export default function CreateCompetitionModal({
         mode: mode as "online" | "offline",
         venue: mode === "offline" ? venue : undefined,
         systemPrompt,
+        isFeatured: formData.isFeatured,
         ChallengeCount: 0
       }
 
@@ -125,7 +133,8 @@ export default function CreateCompetitionModal({
         endTime: "",
         systemPrompt: "",
         mode: "online",
-        venue: ""
+        venue: "",
+        isFeatured: false,
       })
       onClose()
     } catch (error) {
@@ -143,7 +152,8 @@ export default function CreateCompetitionModal({
       endTime: "",
       systemPrompt: "",
       mode: "online",
-      venue: ""
+      venue: "",
+      isFeatured: false,
     })
     setFormError(null)
     setPrizeMoneyError(null)
@@ -307,6 +317,24 @@ export default function CreateCompetitionModal({
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="featured" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Featured
+                </Label>
+                <Select 
+                  value={formData.isFeatured ? "yes" : "no"} 
+                  onValueChange={(value) => handleFormChange("isFeatured", value === "yes" ? "true" : "false")}
+                >
+                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 text-left">
+                    <SelectValue placeholder="Select featured status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

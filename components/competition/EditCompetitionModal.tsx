@@ -42,6 +42,7 @@ export default function EditCompetitionModal({
     prizeMoney: "",
     isActive: false,
     isLocked: false,
+    isFeatured: false,
     systemPrompt: "",
   })
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -81,6 +82,7 @@ export default function EditCompetitionModal({
         prizeMoney: competition.prizeMoney || "",
         isActive: competition.isActive ?? false,
         isLocked: competition.isLocked ?? false,
+        isFeatured: competition.isFeatured ?? false,
         systemPrompt: competition.systemPrompt || "",
       })
     }
@@ -404,6 +406,20 @@ export default function EditCompetitionModal({
                       Lock Competition
                     </Label>
                     <p className="text-xs text-gray-600">Prevent further modifications to this competition</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
+                  <Checkbox
+                    id="edit-isFeatured"
+                    checked={editFormData.isFeatured}
+                    onCheckedChange={(checked) => handleEditCheckboxChange("isFeatured", checked as boolean)}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-isFeatured" className="text-sm font-medium cursor-pointer">
+                      Featured Competition
+                    </Label>
+                    <p className="text-xs text-gray-600">Mark this competition as featured</p>
                   </div>
                 </div>
               </div>
