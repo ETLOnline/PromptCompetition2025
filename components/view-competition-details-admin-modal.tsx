@@ -138,11 +138,21 @@ export const ViewCompetitionDetailsAdminModal = ({ isOpen, onClose, competition 
             </div>
             <div className={`rounded-lg p-4 ${competitionStatus.bgColor}`}>
               <Label className="text-base font-semibold text-gray-900 mb-3 block">Competition Status</Label>
-              <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded-full flex-shrink-0 ${competitionStatus.color}`}></div>
-                <span className="text-sm text-gray-900 font-medium">
-                  {competitionStatus.status}
-                </span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full flex-shrink-0 ${competitionStatus.color}`}></div>
+                  <span className="text-sm text-gray-900 font-medium">
+                    {competitionStatus.status}
+                  </span>
+                </div>
+                {competition.isFeatured && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full flex-shrink-0 bg-amber-400"></div>
+                    <span className="text-sm text-gray-900 font-medium">
+                      Featured
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

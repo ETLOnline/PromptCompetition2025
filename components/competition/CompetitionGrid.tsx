@@ -111,36 +111,32 @@ export default function CompetitionGrid({
         return (
           <Card
             key={competition.id}
-            className={`group relative overflow-hidden bg-white rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit ${
-              competition.isFeatured
-                ? 'border-2 border-slate-900'
-                : 'border border-gray-100'
-            }`}
+            className="group relative overflow-hidden bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 h-fit"
           >
-            {competition.isFeatured && (
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900"></div>
-            )}
             <CardContent className="p-6">
               <div className="space-y-4">
-                {/* Header with consistent height */}
+                {/* Status badges */}
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={`${status.color} border font-medium whitespace-nowrap hover:bg-transparent`}>
+                    <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+                    {status.label}
+                  </Badge>
+                  {competition.isFeatured && (
+                    <Badge className="bg-amber-50 text-amber-700 border border-amber-200 font-medium whitespace-nowrap hover:bg-transparent">
+                      <div className="w-2 h-2 bg-amber-400 rounded-full mr-1.5"></div>
+                      Featured
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Header with title and action buttons */}
                 <div className="flex items-start justify-between min-h-[40px]">
                   <div className="flex-1 min-w-0 pr-4">
-                    <div className="flex items-center gap-2">
-                      {competition.isFeatured && (
-                        <Star className="w-5 h-5 text-slate-900 fill-yellow-400 flex-shrink-0" />
-                      )}
-                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
-                        {competition.title}
-                      </h3>
-                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
+                      {competition.title}
+                    </h3>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {competition.isFeatured && (
-                      <Badge className="bg-slate-900 text-white border-0 font-medium whitespace-nowrap hover:bg-slate-800">
-                        <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
-                        Featured
-                      </Badge>
-                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -159,10 +155,6 @@ export default function CompetitionGrid({
                         <Edit className="w-4 h-4" />
                       </Button>
                     )}
-                    <Badge className={`${status.color} border font-medium whitespace-nowrap hover:bg-transparent`}>
-                      <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
-                      {status.label}
-                    </Badge>
                   </div>
                 </div>
 
