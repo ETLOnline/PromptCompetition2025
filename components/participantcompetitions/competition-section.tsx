@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import { CompetitionCard } from "./competition-card"
+import { FeaturedCompetition } from "./FeaturedCompetition"
 
 interface Competition {
   id: string
@@ -8,11 +9,13 @@ interface Competition {
   startDeadline: any
   endDeadline: any
   createdAt?: string
+  ChallengeCount?: number
   isActive?: boolean
   isLocked?: boolean
   isFeatured?: boolean
   mode?: string
   prizeMoney?: string
+  location?: string
 }
 
 interface CompetitionSectionProps {
@@ -75,6 +78,10 @@ export const CompetitionSection = ({
     return null
   }
 
+  // Separate featured and regular competitions
+  const featuredCompetitions = competitions.filter(c => c.isFeatured)
+  const regularCompetitions = competitions.filter(c => !c.isFeatured)
+
   return (
     <div>
       <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
@@ -82,18 +89,19 @@ export const CompetitionSection = ({
         <h3 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h3>
         <Badge className={`${badgeColor} border font-medium text-xs`}>{competitions.length}</Badge>
       </div>
-      <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-        {competitions.map((competition) => {
-          const status = getCompetitionStatus(competition)
-          const startDateTime = formatDateTime(competition.startDeadline)
-          const endDateTime = formatDateTime(competition.endDeadline)
-          const isRegistered = participantMap[competition.id]
-          const isButtonLoading = loadingMap[competition.id]
-          const isCompleted = completionMap[competition.id] || false
+      
+      {/* Render featured competitions first with special UI */}
+      {featuredCompetitions.map((competition) => {
+        const status = getCompetitionStatus(competition)
+        const startDateTime = formatDateTime(competition.startDeadline)
+        const endDateTime = formatDateTime(competition.endDeadline)
+        const isRegistered = participantMap[competition.id]
+        const isButtonLoading = loadingMap[competition.id]
+        const isCompleted = completionMap[competition.id] || false
 
-          return (
-            <CompetitionCard
-              key={competition.id}
+        return (
+          <div key={competition.id} className="mb-6">
+            <FeaturedCompetition
               competition={competition}
               status={status}
               startDateTime={startDateTime}
@@ -101,12 +109,40 @@ export const CompetitionSection = ({
               isRegistered={isRegistered}
               isCompleted={isCompleted}
               isButtonLoading={isButtonLoading}
-              onCardClick={onCardClick}
               onButtonClick={onButtonClick}
             />
-          )
-        })}
-      </div>
+          </div>
+        )
+      })}
+
+      {/* Render regular competitions in grid/list view */}
+      {regularCompetitions.length > 0 && (
+        <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+          {regularCompetitions.map((competition) => {
+            const status = getCompetitionStatus(competition)
+            const startDateTime = formatDateTime(competition.startDeadline)
+            const endDateTime = formatDateTime(competition.endDeadline)
+            const isRegistered = participantMap[competition.id]
+            const isButtonLoading = loadingMap[competition.id]
+            const isCompleted = completionMap[competition.id] || false
+
+            return (
+              <CompetitionCard
+                key={competition.id}
+                competition={competition}
+                status={status}
+                startDateTime={startDateTime}
+                endDateTime={endDateTime}
+                isRegistered={isRegistered}
+                isCompleted={isCompleted}
+                isButtonLoading={isButtonLoading}
+                onCardClick={onCardClick}
+                onButtonClick={onButtonClick}
+              />
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
