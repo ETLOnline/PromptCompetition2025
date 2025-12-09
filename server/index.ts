@@ -110,6 +110,7 @@ import llmRouter from "./routes/llmevaluations.js";
 
 import lastRouter from "./routes/leaderboard.js";
 import welcomeRouter from "./routes/welcome.js";
+import dailyChallengeRouter from "./routes/dailychallenge.js";
 
 
 console.log("2. Starting server setup...");
@@ -149,6 +150,7 @@ app.use("/submissions", submissionsRouter);
 app.use("/last", lastRouter);
 app.use("/upload", uploadRouter);
 app.use("/welcome", welcomeRouter);
+app.use("/dailychallenge", dailyChallengeRouter);
 
 
 

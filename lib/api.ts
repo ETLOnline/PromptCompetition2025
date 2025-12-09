@@ -223,3 +223,19 @@ export const fetchCompetitionSubmissions = async (competitionId: string, getToke
     method: "GET",
   }, getToken);
 };
+
+//-------------------------------------------------------
+//------------ daily challenge API's  ------------------
+//-------------------------------------------------------
+
+export const fetchDailyChallenges = async () => {
+  const res = await fetch(`${API_URL}/dailychallenge`)
+  if (!res.ok) throw new Error("Failed to fetch daily challenges")
+  return res.json()
+}
+
+export const fetchDailyChallengeById = async (id: string) => {
+  const res = await fetch(`${API_URL}/dailychallenge/${id}`)
+  if (!res.ok) throw new Error("Failed to fetch daily challenge")
+  return res.json()
+}

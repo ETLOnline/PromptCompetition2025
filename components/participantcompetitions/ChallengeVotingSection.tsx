@@ -1,0 +1,503 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot, doc, updateDoc, increment, Timestamp, getDoc, setDoc, query, where, getDocs } from "firebase/firestore"
+import { useUser } from "@clerk/nextjs"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/components/ui/use-toast"
+import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2 } from "lucide-react"
+
+interface Submission {
+  id: string
+  userId: string
+  submissionText: string
+  timestamp: Timestamp
+  totalVotes: number
+  userFullName?: string
+}
+
+interface ChallengeVotingSectionProps {
+  challengeId: string
+  challengeTitle: string
+}
+
+export const ChallengeVotingSection = ({ challengeId, challengeTitle }: ChallengeVotingSectionProps) => {
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedScores, setSelectedScores] = useState<Record<string, number>>({})
+  const [submittingVotes, setSubmittingVotes] = useState<Record<string, boolean>>({})
+  const [expandedSubmissions, setExpandedSubmissions] = useState<Record<string, boolean>>({})
+  const [userVotes, setUserVotes] = useState<Record<string, { score: number, votedAt: Timestamp }>>({})
+  const { toast } = useToast()
+  
+  // Get current user from Clerk
+  const { user, isLoaded } = useUser()
+  const currentUserId = user?.id || null
+
+  // Fetch user's votes for all submissions in this challenge
+  useEffect(() => {
+    if (!currentUserId) return
+
+    const fetchUserVotes = async () => {
+      try {
+        const votesRef = collection(db, "dailychallenge", challengeId, "votes")
+        const q = query(votesRef, where("voterId", "==", currentUserId))
+        const querySnapshot = await getDocs(q)
+        
+        const votes: Record<string, { score: number, votedAt: Timestamp }> = {}
+        querySnapshot.forEach((doc) => {
+          const data = doc.data()
+          votes[data.submissionId] = {
+            score: data.score,
+            votedAt: data.votedAt
+          }
+        })
+        
+        setUserVotes(votes)
+      } catch (err) {
+        console.error("Error fetching user votes:", err)
+      }
+    }
+
+    fetchUserVotes()
+  }, [currentUserId, challengeId])
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+
+    const submissionsRef = collection(db, "dailychallenge", challengeId, "submissions")
+    console.log("Listening to submissions at:", submissionsRef.path)
+    // Real-time listener for submissions
+    const unsubscribe = onSnapshot(
+      submissionsRef,
+      async (snapshot) => {
+        try {
+          const submissionsData: Submission[] = []
+          
+          // Fetch user names for all submissions
+          const userFetchPromises = snapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data()
+            const userId = data.userId || docSnap.id
+            // console.log(`Processing submission from userId: ${userId}`)
+            
+            // Fetch user's full name from users collection
+            let userFullName = "Anonymous User"
+            try {
+              const userDoc = await getDoc(doc(db, "users", userId))
+            //   console.log(`Fetched user doc for ${userId}:`, userDoc.data())
+              if (userDoc.exists()) {
+                userFullName = userDoc.data()?.fullName || "Anonymous User"
+              }
+            } catch (err) {
+              console.error(`Error fetching user ${userId}:`, err)
+            }
+
+            return {
+              id: docSnap.id,
+              userId: userId,
+              submissionText: data.submissionText || "",
+              timestamp: data.timestamp,
+              totalVotes: data.totalVotes || 0,
+              userFullName: userFullName,
+            }
+          })
+
+          const resolvedSubmissions = await Promise.all(userFetchPromises)
+          
+          // Sort by totalVotes descending (highest first)
+          resolvedSubmissions.sort((a, b) => b.totalVotes - a.totalVotes)
+          
+          setSubmissions(resolvedSubmissions)
+          setLoading(false)
+        } catch (err) {
+          console.error("Error processing submissions:", err)
+          setError("Failed to process submissions")
+          setLoading(false)
+        }
+      },
+      (err) => {
+        console.error("Error fetching submissions:", err)
+        setError("Failed to load submissions. Please try again.")
+        setLoading(false)
+      }
+    )
+
+    // Cleanup listener on unmount
+    return () => unsubscribe()
+  }, [challengeId])
+
+  const handleScoreChange = (submissionId: string, score: string) => {
+    setSelectedScores((prev) => ({
+      ...prev,
+      [submissionId]: parseInt(score, 10),
+    }))
+  }
+
+  const handleSubmitScore = async (submissionId: string, userId: string) => {
+    console.log("handleSubmitScore called:", { submissionId, userId, currentUserId })
+    
+    if (!currentUserId) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to vote on submissions.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Prevent users from voting on their own submission
+    // submissionId and userId are the same (both are the submission owner's userId)
+    if (submissionId === currentUserId) {
+      toast({
+        title: "Cannot Vote on Own Submission",
+        description: "You cannot vote on your own submission.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check if user has already voted for this submission
+    if (userVotes[submissionId]) {
+      toast({
+        title: "Already Voted",
+        description: `You already gave ${userVotes[submissionId].score} point${userVotes[submissionId].score !== 1 ? 's' : ''} to this submission.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    const score = selectedScores[submissionId]
+
+    if (score === undefined || score < 0 || score > 5) {
+      toast({
+        title: "Invalid Score",
+        description: "Please select a score between 0 and 5.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSubmittingVotes((prev) => ({ ...prev, [submissionId]: true }))
+
+    try {
+      const submissionRef = doc(db, "dailychallenge", challengeId, "submissions", userId)
+      
+      // Create a unique vote document in the votes subcollection
+      const voteId = `${currentUserId}_${submissionId}`
+      const voteRef = doc(db, "dailychallenge", challengeId, "votes", voteId)
+      
+      console.log("Submitting vote:", { voteRef: voteRef.path, submissionRef: submissionRef.path, score })
+      
+      // Store the vote
+      await setDoc(voteRef, {
+        voterId: currentUserId,
+        submissionId: submissionId,
+        submissionOwnerId: userId,
+        score: score,
+        votedAt: Timestamp.now(),
+      })
+
+      console.log("Vote document created successfully")
+
+      // Atomic increment - crucial for concurrent updates
+      await updateDoc(submissionRef, {
+        totalVotes: increment(score),
+      })
+
+      console.log("Submission totalVotes updated successfully")
+
+      // Update local state to reflect the vote
+      setUserVotes((prev) => ({
+        ...prev,
+        [submissionId]: { score, votedAt: Timestamp.now() }
+      }))
+
+      toast({
+        title: "Score Submitted!",
+        description: `You gave ${score} point${score !== 1 ? 's' : ''} to this submission.`,
+      })
+
+      // Clear selected score after successful submission
+      setSelectedScores((prev) => {
+        const updated = { ...prev }
+        delete updated[submissionId]
+        return updated
+      })
+    } catch (err) {
+      console.error("Error submitting score:", err)
+      toast({
+        title: "Submission Failed",
+        description: "Failed to submit your score. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmittingVotes((prev) => ({ ...prev, [submissionId]: false }))
+    }
+  }
+
+  const formatTimestamp = (timestamp: Timestamp | undefined) => {
+    if (!timestamp) return "Unknown"
+    
+    try {
+      const date = timestamp.toDate()
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    } catch {
+      return "Unknown"
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#0f172a] rounded-xl flex items-center justify-center">
+            <Trophy className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <div className="h-8 w-64 bg-gray-200 rounded-lg animate-pulse mb-2" />
+            <div className="h-4 w-96 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-5 w-32 bg-gray-200 rounded" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="h-24 bg-gray-200 rounded" />
+                <div className="h-10 bg-gray-200 rounded" />
+                <div className="h-10 bg-gray-200 rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-red-50 border-red-200">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 text-red-800">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <Trophy className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="font-semibold">Error Loading Submissions</p>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (submissions.length === 0) {
+    return (
+      <Card className="bg-gray-50 border-gray-200">
+        <CardContent className="p-12 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trophy className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
+          <p className="text-gray-600">Be the first to submit a solution for this challenge!</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Section Header */}
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 bg-[#0f172a] rounded-xl flex items-center justify-center shrink-0">
+          <Trophy className="h-6 w-6 text-white" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            Vote to Community Submissions
+          </h2>
+          <p className="text-gray-600 text-sm sm:text-base">
+            Review and score submissions for <span className="font-semibold text-gray-900">"{challengeTitle}"</span>. Rate each submission from 0-5 points.
+          </p>
+          <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
+            <Badge className="bg-[#0f172a] text-white border-0 px-3 py-1.5 text-sm font-medium shadow-sm">
+              {submissions.length} Submission{submissions.length !== 1 ? 's' : ''}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Submissions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {submissions.map((submission, index) => {
+          const isSubmitting = submittingVotes[submission.id] || false
+          const selectedScore = selectedScores[submission.id]
+          const hasVoted = !!userVotes[submission.id]
+          const votedScore = userVotes[submission.id]?.score
+          const isOwnSubmission = submission.userId === currentUserId
+
+          return (
+            <Card 
+              key={submission.id} 
+              className="bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 flex flex-col"
+            >
+              <CardHeader className="bg-gray-50 border-b border-gray-200 pb-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="w-8 h-8 bg-[#0f172a] rounded-full flex items-center justify-center shrink-0">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-sm font-semibold text-gray-900 truncate">
+                        {submission.userFullName || "Anonymous User"}
+                      </CardTitle>
+                      <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5">
+                        <Calendar className="h-3 w-3" />
+                        <span className="truncate">{formatTimestamp(submission.timestamp)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Rank Badge for top 3 */}
+                  {index < 3 && (
+                    <Badge 
+                      className={`shrink-0 ${
+                        index === 0 
+                          ? "bg-yellow-100 text-yellow-800 border-yellow-300" 
+                          : index === 1
+                          ? "bg-gray-100 text-gray-800 border-gray-300"
+                          : "bg-orange-100 text-orange-800 border-orange-300"
+                      }`}
+                    >
+                      #{index + 1}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-5 flex-1 flex flex-col space-y-4">
+                {/* Submission Text */}
+                <div className="flex-1">
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <p className={`text-sm text-gray-700 leading-relaxed ${
+                      expandedSubmissions[submission.id] ? "" : "line-clamp-2"
+                    }`}>
+                      {submission.submissionText}
+                    </p>
+                    {submission.submissionText.length > 100 && (
+                      <button
+                        onClick={() => setExpandedSubmissions(prev => ({
+                          ...prev,
+                          [submission.id]: !prev[submission.id]
+                        }))}
+                        className="text-xs text-[#0f172a] hover:text-slate-700 font-semibold mt-2 underline"
+                      >
+                        {expandedSubmissions[submission.id] ? "Show less" : "Show more"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Current Votes */}
+                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-2 text-slate-800">
+                    <ThumbsUp className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Total Votes</span>
+                  </div>
+                  <Badge className="bg-[#0f172a] text-white border-0 text-base font-bold px-3 py-1">
+                    {submission.totalVotes}
+                  </Badge>
+                </div>
+
+                {/* Scoring Interface */}
+                <div className="space-y-3 pt-2 border-t border-gray-200">
+                  {isOwnSubmission ? (
+                    // Show own submission status
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-blue-800 mb-2">
+                        <User className="h-5 w-5" />
+                        <span className="font-semibold text-sm">Your Submission</span>
+                      </div>
+                      <p className="text-sm text-blue-700">
+                        You cannot vote on your own submission.
+                      </p>
+                    </div>
+                  ) : hasVoted ? (
+                    // Show voted status
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-green-800 mb-2">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="font-semibold text-sm">You've Already Voted</span>
+                      </div>
+                      <p className="text-sm text-green-700">
+                        You gave <span className="font-bold">{votedScore}</span> point{votedScore !== 1 ? 's' : ''} to this submission.
+                      </p>
+                    </div>
+                  ) : (
+                    // Show voting interface
+                    <>
+                      <label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                        Give Score (0-5)
+                      </label>
+                      
+                      <Select
+                        value={selectedScore?.toString() || ""}
+                        onValueChange={(value) => handleScoreChange(submission.id, value)}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className="w-full bg-white border-gray-300 focus:border-[#0f172a] focus:ring-[#0f172a]">
+                          <SelectValue placeholder="Select score..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[0, 1, 2, 3, 4, 5].map((score) => (
+                            <SelectItem key={score} value={score.toString()}>
+                              {score} point{score !== 1 ? 's' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Button
+                        onClick={() => handleSubmitScore(submission.id, submission.userId)}
+                        disabled={selectedScore === undefined || isSubmitting}
+                        className="w-full bg-[#0f172a] hover:bg-slate-800 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                            Submitting...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Submit Score
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

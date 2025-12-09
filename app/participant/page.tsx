@@ -18,6 +18,8 @@ import { SearchAndFilters } from "@/components/participantcompetitions/search-an
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
 import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
 import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
+import { DailyChallengesSection } from "@/components/participantcompetitions/DailyChallengesSection"
+import { fetchDailyChallenges } from "@/lib/api"
 // import { PageHeader } from "@/components/participantcompetitions/page-header"
 
 interface Competition {
@@ -33,6 +35,23 @@ interface Competition {
   isFeatured?: boolean
   location?: string
   prizeMoney?: string
+}
+
+interface DailyChallenge {
+  id: string
+  title: string
+  problemStatement: string
+  guidelines: string
+  startTime: any
+  endTime: any
+  status: string
+  type: string
+  totalSubmissions: number
+  createdAt?: any
+  createdBy?: string
+  problemAudioUrls?: string[]
+  guidelinesAudioUrls?: string[]
+  visualClueUrls?: string[]
 }
 
 interface UserProfile {
@@ -74,6 +93,9 @@ export default function CompetitionsPage() {
   const [user, setUser] = useState<UserProfile | null>(null)
   const [showAppecInfo, setShowAppecInfo] = useState(true)
   
+  // Daily Challenge States
+  const [dailyChallenges, setDailyChallenges] = useState<DailyChallenge[]>([])
+  const [loadingDailyChallenges, setLoadingDailyChallenges] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -83,11 +105,28 @@ export default function CompetitionsPage() {
       const profile = await checkAuth()
       if (!profile) return
 
-      await loadCompetitions(profile)
+      // Load competitions and daily challenges in parallel
+      await Promise.all([
+        loadCompetitions(profile),
+        loadDailyChallenges()
+      ])
     }
 
     init()
   }, [])
+
+  const loadDailyChallenges = async () => {
+    try {
+      setLoadingDailyChallenges(true)
+      const data = await fetchDailyChallenges()
+      setDailyChallenges(data)
+    } catch (error) {
+      console.error("Error loading daily challenges:", error)
+      // Silently fail - daily challenges are optional
+    } finally {
+      setLoadingDailyChallenges(false)
+    }
+  }
 
   const loadCompetitions = async (profile: UserProfile) => {
     try {
@@ -233,6 +272,17 @@ export default function CompetitionsPage() {
   const handleViewDetails = (competition: Competition) => {
     setSelectedCompetition(competition)
     setIsViewModalOpen(true)
+  }
+
+  const handleDailyChallengeView = (challenge: DailyChallenge) => {
+    // For now, we'll just log - you can implement a modal or navigate to a challenge page
+    console.log("View daily challenge:", challenge)
+    // TODO: Implement daily challenge view/submission flow
+    toast({
+      title: "Daily Challenge",
+      description: "Challenge details will be available soon!",
+      variant: "default"
+    })
   }
 
   const getCompetitionStatus = (competition: Competition) => {
@@ -428,6 +478,13 @@ export default function CompetitionsPage() {
                 />
               ) : (
                 <div className="space-y-12">
+                  {/* Daily Challenges Section - Only show on "ended" filter */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                  />
+
                   <CompetitionSection
                     title="Ended Competitions"
                     competitions={groupedCompetitions.ended}
@@ -546,6 +603,13 @@ export default function CompetitionsPage() {
                       onButtonClick={handleButtonClick}
                     />
                   )}
+
+                  {/* Daily Challenges Section - Show on main page above ended competitions */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                  />
 
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
