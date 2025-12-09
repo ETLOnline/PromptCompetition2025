@@ -310,10 +310,13 @@ export default function CompetitionsPage() {
     competitions.forEach((comp) => {
       const status = getCompetitionStatus(comp)
       
-      // Separate featured competitions
+      // Add to featured group if applicable
       if (comp.isFeatured) {
         groups.featured.push(comp)
-      } else if (status.status === "ACTIVE") {
+      }
+      
+      // Also add to status-based group (featured competitions should appear in both)
+      if (status.status === "ACTIVE") {
         groups.active.push(comp)
       } else if (status.status === "UPCOMING") {
         groups.upcoming.push(comp)
@@ -413,34 +416,6 @@ export default function CompetitionsPage() {
             </div>
           ) : (
             <>
-              {/* Featured Competition Section - Full Width */}
-              {groupedCompetitions.featured.length > 0 && filterStatus === "all" && !searchTerm && (
-                <div className="mb-12">
-                  {groupedCompetitions.featured.map((competition) => {
-                    const status = getCompetitionStatus(competition)
-                    const startDateTime = formatDateTime(competition.startDeadline)
-                    const endDateTime = formatDateTime(competition.endDeadline)
-                    const isRegistered = participantMap[competition.id]
-                    const isButtonLoading = loadingMap[competition.id] || buttonStatesLoading[competition.id]
-                    const isCompleted = completionMap[competition.id] || false
-
-                    return (
-                      <FeaturedCompetition
-                        key={competition.id}
-                        competition={competition}
-                        status={status}
-                        startDateTime={startDateTime}
-                        endDateTime={endDateTime}
-                        isRegistered={isRegistered}
-                        isCompleted={isCompleted}
-                        isButtonLoading={isButtonLoading}
-                        onButtonClick={handleButtonClick}
-                      />
-                    )
-                  })}
-                </div>
-              )}
-
               {/* Regular Competitions */}
               {filterStatus === "ended" ? (
                 // Show only ended competitions where the user participated

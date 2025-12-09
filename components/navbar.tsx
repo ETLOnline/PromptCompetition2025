@@ -150,7 +150,16 @@ export default function Navbar() {
                         </SignedOut>
                         <SignedIn>
                           <div className="flex items-center justify-center mb-3">
-                            <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: { width: "40px", height: "40px", backgroundColor: "#0f172a" }, userButtonPopoverCard: "shadow-xl", userButtonPopoverActionButton: "hover:bg-gray-100" } }} />
+                            <UserButton 
+                              afterSignOutUrl="/?redirect=false" 
+                              appearance={{ 
+                                elements: { 
+                                  avatarBox: { width: "40px", height: "40px", backgroundColor: "#0f172a" }, 
+                                  userButtonPopoverCard: "shadow-xl", 
+                                  userButtonPopoverActionButton: "hover:bg-gray-100" 
+                                } 
+                              }} 
+                            />
                           </div>
                           <Link href={getDashboardUrl()} onClick={() => setIsOpen(false)}>
                             <Button
@@ -252,7 +261,7 @@ export default function Navbar() {
               <SignedIn>
                 {/* User Avatar Button */}
                 <UserButton 
-                  afterSignOutUrl="/"
+                  afterSignOutUrl="/?redirect=false"
                   appearance={{
                     elements: {
                       avatarBox: {
