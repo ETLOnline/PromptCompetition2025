@@ -226,7 +226,11 @@ export default function NewDailyChallengeePage() {
         let startDateStr = ""
         if (data.startTime) {
           const startDate = data.startTime.toDate()
-          startDateStr = startDate.toISOString().split('T')[0]
+          // Format as YYYY-MM-DD in local timezone to avoid date shift
+          const year = startDate.getFullYear()
+          const month = String(startDate.getMonth() + 1).padStart(2, '0')
+          const day = String(startDate.getDate()).padStart(2, '0')
+          startDateStr = `${year}-${month}-${day}`
         }
         
         setFormData({
@@ -897,17 +901,20 @@ export default function NewDailyChallengeePage() {
                       <img src={url} alt={`Existing Visual ${i + 1}`} className="w-full h-32 object-cover rounded-md border border-gray-200" />
                       <button
                         type="button"
-                        onClick={() => removeVisualClueUrl(i)}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setPreviewImage(url)}
                         className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors rounded-md"
                       >
                         <span className="text-white opacity-0 group-hover:opacity-100 text-sm">Preview</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeVisualClueUrl(i)
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
