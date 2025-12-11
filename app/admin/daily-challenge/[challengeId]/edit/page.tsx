@@ -161,7 +161,6 @@ export default function NewDailyChallengeePage() {
     if (challengeId) {
       console.log('🚀 Edit Daily Challenge Page - Component mounted with:', { challengeId })
       checkAuthAndLoad()
-      fetchChallenge()
     }
   }, [challengeId])
 
@@ -197,8 +196,14 @@ export default function NewDailyChallengeePage() {
     try {
       console.log('🔐 Checking authentication...')
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`)
+      if (profile.role !== "superadmin") {
+        //console.warn('❌ User is not superadmin')
+        router.push("/admin/select-competition")
+        return
+      }
       console.log('✅ Authentication successful:', { uid: profile.uid })
       setUserID(profile.uid)
+      await fetchChallenge()
     } catch (error) {
       console.error('❌ Authentication failed:', error)
       router.push("/")

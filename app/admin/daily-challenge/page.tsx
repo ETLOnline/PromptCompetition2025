@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { fetchWithAuth } from "@/lib/api"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, Search, Edit, Trash2, Calendar, Clock, Users, Zap, Trophy, RefreshCw, TrendingUp } from "lucide-react"
 import { db } from "@/lib/firebase"
@@ -50,155 +51,169 @@ export default function DailyChallengeAdmin() {
   const [challengeToDelete, setChallengeToDelete] = useState<DailyChallenge | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch challenges and stats from Firestore
+  // Fetch challenges and stats from Firestore after auth
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        
-        let totalChallenges = 0
-        let totalSubmissions = 0
-        
-        // Fetch from /stats/dailychallenge with error handling
-        try {
-          const statsDocRef = doc(db, "stats", "dailychallenge")
-          const statsDoc = await getDoc(statsDocRef)
-          
-          if (statsDoc.exists()) {
-            const data = statsDoc.data()
-            totalChallenges = data?.Totalchallenges || 0
-            totalSubmissions = data?.totalsubmission || 0
-          } else {
-            console.log("Stats document does not exist, using default values")
-            // Stats document doesn't exist, keep defaults at 0
-          }
-        } catch (statsError) {
-          console.error("Error fetching stats document:", statsError)
-          // Continue with default values (0, 0)
-        }
-        
-        const now = new Date()
-        let ongoingCount = 0
-        let upcomingCount = 0
-        const fetchedChallenges: DailyChallenge[] = []
-        
-        // Fetch all challenges from dailychallenge collection with error handling
-        try {
-          const challengesRef = collection(db, "dailychallenge")
-          const challengesSnapshot = await getDocs(challengesRef)
-          
-          // Check if collection is empty
-          if (challengesSnapshot.empty) {
-            console.log("No challenges found in dailychallenge collection")
-          } else {
-            challengesSnapshot.forEach((docSnapshot) => {
-              try {
-                const data = docSnapshot.data()
-                
-                // Validate required fields
-                if (!data) {
-                  console.warn(`Challenge ${docSnapshot.id} has no data`)
-                  return
-                }
-                
-                // Convert Firestore Timestamps to Date objects with fallback
-                let startTime: Date
-                let endTime: Date
-                let createdAt: Date
-                
-                try {
-                  startTime = data.startTime instanceof Timestamp 
-                    ? data.startTime.toDate() 
-                    : new Date(data.startTime)
-                  
-                  endTime = data.endTime instanceof Timestamp 
-                    ? data.endTime.toDate() 
-                    : new Date(data.endTime)
-                  
-                  createdAt = data.createdAt instanceof Timestamp
-                    ? data.createdAt.toDate()
-                    : new Date(data.createdAt)
-                  
-                  // Check for invalid dates
-                  if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-                    console.warn(`Challenge ${docSnapshot.id} has invalid date values`)
-                    return
-                  }
-                } catch (dateError) {
-                  console.error(`Error parsing dates for challenge ${docSnapshot.id}:`, dateError)
-                  return
-                }
-                
-                // Determine status based on current time
-                let status: "active" | "ongoing" | "ended" | "upcoming" = "upcoming"
-                if (now >= startTime && now <= endTime) {
-                  status = "ongoing"
-                  ongoingCount++
-                } else if (now < startTime) {
-                  status = "upcoming"
-                  upcomingCount++
-                } else if (now > endTime) {
-                  status = "ended"
-                }
-                
-                // Build challenge object with safe property access
-                fetchedChallenges.push({
-                  id: docSnapshot.id,
-                  title: data.title || "Untitled Challenge",
-                  startTime: startTime.toISOString(),
-                  endTime: endTime.toISOString(),
-                  totalSubmissions: typeof data.totalSubmissions === 'number' ? data.totalSubmissions : 0,
-                  createdBy: data.createdBy || "Unknown",
-                  lastUpdatedBy: data.lastUpdatedBy || data.createdBy || "Unknown",
-                  status: status,
-                  type: data.type || "direct",
-                  createdAt: createdAt.toISOString(),
-                  createdByEmail: data.createdByEmail || undefined,
-                  guidelines: data.guidelines || undefined,
-                  problemStatement: data.problemStatement || undefined
-                })
-              } catch (docError) {
-                console.error(`Error processing challenge ${docSnapshot.id}:`, docError)
-                // Skip this document and continue with others
-              }
-            })
-          }
-        } catch (collectionError) {
-          console.error("Error fetching dailychallenge collection:", collectionError)
-          // Collection might not exist, continue with empty challenges array
-        }
-        
-        // Sort challenges by createdAt (most recent first)
-        fetchedChallenges.sort((a, b) => {
-          const dateA = new Date(a.createdAt || a.startTime)
-          const dateB = new Date(b.createdAt || b.startTime)
-          return dateB.getTime() - dateA.getTime()
-        })
-        
-        setChallenges(fetchedChallenges)
-        setStatsData({
-          totalChallenges,
-          totalSubmissions,
-          ongoing: ongoingCount,
-          upcoming: upcomingCount
-        })
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        // Set default values on error
-        setChallenges([])
-        setStatsData({
-          totalChallenges: 0,
-          totalSubmissions: 0,
-          ongoing: 0,
-          upcoming: 0
-        })
-      } finally {
-        setIsLoading(false)
-      }
-    }
+    checkAuth()
+  }, [router])
 
-    fetchData()
-  }, [])
+  const checkAuth = async () => {
+    try {
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`)
+      if (profile.role !== "superadmin") {
+        router.push("/admin/select-competition")
+        return
+      }
+      fetchData()
+    } catch (error) {
+      console.error("Authentication check failed:", error)
+      router.push("/")
+    }
+  }
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true)
+      
+      let totalChallenges = 0
+      let totalSubmissions = 0
+      
+      // Fetch from /stats/dailychallenge with error handling
+      try {
+        const statsDocRef = doc(db, "stats", "dailychallenge")
+        const statsDoc = await getDoc(statsDocRef)
+        
+        if (statsDoc.exists()) {
+          const data = statsDoc.data()
+          totalChallenges = data?.Totalchallenges || 0
+          totalSubmissions = data?.totalsubmission || 0
+        } else {
+          console.log("Stats document does not exist, using default values")
+          // Stats document doesn't exist, keep defaults at 0
+        }
+      } catch (statsError) {
+        console.error("Error fetching stats document:", statsError)
+        // Continue with default values (0, 0)
+      }
+      
+      const now = new Date()
+      let ongoingCount = 0
+      let upcomingCount = 0
+      const fetchedChallenges: DailyChallenge[] = []
+      
+      // Fetch all challenges from dailychallenge collection with error handling
+      try {
+        const challengesRef = collection(db, "dailychallenge")
+        const challengesSnapshot = await getDocs(challengesRef)
+        
+        // Check if collection is empty
+        if (challengesSnapshot.empty) {
+          console.log("No challenges found in dailychallenge collection")
+        } else {
+          challengesSnapshot.forEach((docSnapshot) => {
+            try {
+              const data = docSnapshot.data()
+              
+              // Validate required fields
+              if (!data) {
+                console.warn(`Challenge ${docSnapshot.id} has no data`)
+                return
+              }
+              
+              // Convert Firestore Timestamps to Date objects with fallback
+              let startTime: Date
+              let endTime: Date
+              let createdAt: Date
+              
+              try {
+                startTime = data.startTime instanceof Timestamp 
+                  ? data.startTime.toDate() 
+                  : new Date(data.startTime)
+                
+                endTime = data.endTime instanceof Timestamp 
+                  ? data.endTime.toDate() 
+                  : new Date(data.endTime)
+                
+                createdAt = data.createdAt instanceof Timestamp
+                  ? data.createdAt.toDate()
+                  : new Date(data.createdAt)
+                
+                // Check for invalid dates
+                if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+                  console.warn(`Challenge ${docSnapshot.id} has invalid date values`)
+                  return
+                }
+              } catch (dateError) {
+                console.error(`Error parsing dates for challenge ${docSnapshot.id}:`, dateError)
+                return
+              }
+              
+              // Determine status based on current time
+              let status: "active" | "ongoing" | "ended" | "upcoming" = "upcoming"
+              if (now >= startTime && now <= endTime) {
+                status = "ongoing"
+                ongoingCount++
+              } else if (now < startTime) {
+                status = "upcoming"
+                upcomingCount++
+              } else if (now > endTime) {
+                status = "ended"
+              }
+              
+              // Build challenge object with safe property access
+              fetchedChallenges.push({
+                id: docSnapshot.id,
+                title: data.title || "Untitled Challenge",
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                totalSubmissions: typeof data.totalSubmissions === 'number' ? data.totalSubmissions : 0,
+                createdBy: data.createdBy || "Unknown",
+                lastUpdatedBy: data.lastUpdatedBy || data.createdBy || "Unknown",
+                status: status,
+                type: data.type || "direct",
+                createdAt: createdAt.toISOString(),
+                createdByEmail: data.createdByEmail || undefined,
+                guidelines: data.guidelines || undefined,
+                problemStatement: data.problemStatement || undefined
+              })
+            } catch (docError) {
+              console.error(`Error processing challenge ${docSnapshot.id}:`, docError)
+              // Skip this document and continue with others
+            }
+          })
+        }
+      } catch (collectionError) {
+        console.error("Error fetching dailychallenge collection:", collectionError)
+        // Collection might not exist, continue with empty challenges array
+      }
+      
+      // Sort challenges by createdAt (most recent first)
+      fetchedChallenges.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.startTime)
+        const dateB = new Date(b.createdAt || b.startTime)
+        return dateB.getTime() - dateA.getTime()
+      })
+      
+      setChallenges(fetchedChallenges)
+      setStatsData({
+        totalChallenges,
+        totalSubmissions,
+        ongoing: ongoingCount,
+        upcoming: upcomingCount
+      })
+    } catch (error) {
+      console.error("Error fetching data:", error)
+      // Set default values on error
+      setChallenges([])
+      setStatsData({
+        totalChallenges: 0,
+        totalSubmissions: 0,
+        ongoing: 0,
+        upcoming: 0
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Handle delete challenge
   const handleDeleteClick = (challenge: DailyChallenge) => {

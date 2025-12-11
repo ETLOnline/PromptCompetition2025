@@ -6,16 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+// import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog"
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogHeader,
+//   DialogTitle,
+//   DialogFooter,
+//   DialogDescription,
+// } from "@/components/ui/dialog"
 
 import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition, 
   fetchWithAuth
@@ -355,13 +355,15 @@ export default function ModernCompetitionSelector() {
                   Create Competition
                 </Button>
               )}
-              <Button
-                onClick={() => router.push("/admin/daily-challenge")}
-                className="bg-gray-900 hover:bg-gray-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Daily Challenge
-              </Button>
+              {role === "superadmin" && (
+                <Button
+                  onClick={() => router.push("/admin/daily-challenge")}
+                  className="bg-gray-900 hover:bg-gray-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Daily Challenge
+                </Button>
+              )}
             </div>
           </div>
         </div>

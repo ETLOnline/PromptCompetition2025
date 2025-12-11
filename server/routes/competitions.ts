@@ -31,12 +31,13 @@ router.post(
       endDeadline,
       mode,          // CHANGED from 'location'
       venue,         // NEW FIELD
+      level,         // NEW FIELD
       systemPrompt,
       prizeMoney
     } = req.body;
 
     // Update validation
-    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !systemPrompt) {
+    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !systemPrompt || !level) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -53,6 +54,7 @@ router.post(
         startDeadline,
         endDeadline,
         mode,          // CHANGED from 'location'
+        level,         // NEW FIELD
         prizeMoney,
         isActive: true,
         isLocked: false,
