@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2 } from "lucide-react"
+import { DailyChallengeLeaderboard } from "./DailyChallengeLeaderboard"
 
 interface Submission {
   id: string
@@ -72,7 +73,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
     setError(null)
 
     const submissionsRef = collection(db, "dailychallenge", challengeId, "submissions")
-    console.log("Listening to submissions at:", submissionsRef.path)
+    // console.log("Listening to submissions at:", submissionsRef.path)
     // Real-time listener for submissions
     const unsubscribe = onSnapshot(
       submissionsRef,
@@ -324,27 +325,26 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
   return (
     <div className="space-y-6">
       {/* Section Header */}
-      <div className="flex items-start gap-4">
-        <div className="w-12 h-12 bg-[#0f172a] rounded-xl flex items-center justify-center shrink-0">
-          <Trophy className="h-6 w-6 text-white" />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Vote to Community Submissions
-          </h2>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Review and score submissions for <span className="font-semibold text-gray-900">"{challengeTitle}"</span>. Rate each submission from 0-5 points.
-          </p>
-          <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
-            <Badge className="bg-[#0f172a] text-white border-0 px-3 py-1.5 text-sm font-medium shadow-sm">
-              {submissions.length} Submission{submissions.length !== 1 ? 's' : ''}
-            </Badge>
+      <div className="mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
+            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           </div>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+            <span className="sm:hidden">Vote to Submissions</span>
+            <span className="hidden sm:inline">Vote to Daily Prompt Submissions</span>
+          </h3>
+          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
+            {submissions.length}
+          </Badge>
         </div>
+        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
+          Review and score submissions from 0-5 points.
+        </p>
       </div>
 
       {/* Submissions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {submissions.map((submission, index) => {
           const isSubmitting = submittingVotes[submission.id] || false
           const selectedScore = selectedScores[submission.id]
@@ -357,19 +357,19 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
               key={submission.id} 
               className="bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 flex flex-col"
             >
-              <CardHeader className="bg-gray-50 border-b border-gray-200 pb-4">
+              <CardHeader className="bg-gray-50 border-b border-gray-200 pb-3 sm:pb-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="w-8 h-8 bg-[#0f172a] rounded-full flex items-center justify-center shrink-0">
-                      <User className="h-4 w-4 text-white" />
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#0f172a] rounded-full flex items-center justify-center shrink-0">
+                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <CardTitle className="text-sm font-semibold text-gray-900 truncate">
+                      <CardTitle className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                         {submission.userFullName || "Anonymous User"}
                       </CardTitle>
-                      <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5">
-                        <Calendar className="h-3 w-3" />
-                        <span className="truncate">{formatTimestamp(submission.timestamp)}</span>
+                      <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5 min-w-0">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate text-xs">{formatTimestamp(submission.timestamp)}</span>
                       </div>
                     </div>
                   </div>
@@ -391,11 +391,11 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                 </div>
               </CardHeader>
 
-              <CardContent className="p-5 flex-1 flex flex-col space-y-4">
+              <CardContent className="p-3 sm:p-5 flex-1 flex flex-col space-y-3 sm:space-y-4">
                 {/* Submission Text */}
                 <div className="flex-1">
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                    <p className={`text-sm text-gray-700 leading-relaxed ${
+                  <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-100">
+                    <p className={`text-xs sm:text-sm text-gray-700 leading-relaxed ${
                       expandedSubmissions[submission.id] ? "" : "line-clamp-2"
                     }`}>
                       {submission.submissionText}
@@ -415,45 +415,45 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                 </div>
 
                 {/* Current Votes */}
-                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="flex items-center gap-2 text-slate-800">
-                    <ThumbsUp className="h-4 w-4" />
-                    <span className="text-sm font-semibold">Total Votes</span>
+                <div className="flex items-center justify-between py-2 px-2 sm:px-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-slate-800">
+                    <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:text-sm font-semibold">Votes</span>
                   </div>
-                  <Badge className="bg-[#0f172a] text-white border-0 text-base font-bold px-3 py-1">
+                  <Badge className="bg-[#0f172a] text-white border-0 text-sm sm:text-base font-bold px-2 sm:px-3 py-1">
                     {submission.totalVotes}
                   </Badge>
                 </div>
 
                 {/* Scoring Interface */}
-                <div className="space-y-3 pt-2 border-t border-gray-200">
+                <div className="space-y-2 sm:space-y-3 pt-2 border-t border-gray-200">
                   {isOwnSubmission ? (
                     // Show own submission status
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-blue-800 mb-2">
-                        <User className="h-5 w-5" />
-                        <span className="font-semibold text-sm">Your Submission</span>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                      <div className="flex items-center gap-2 text-blue-800 mb-1">
+                        <User className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="font-semibold text-xs sm:text-sm">Your Submission</span>
                       </div>
-                      <p className="text-sm text-blue-700">
+                      <p className="text-xs sm:text-sm text-blue-700">
                         You cannot vote on your own submission.
                       </p>
                     </div>
                   ) : hasVoted ? (
                     // Show voted status
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
                       <div className="flex items-center gap-2 text-green-800 mb-2">
-                        <CheckCircle2 className="h-5 w-5" />
-                        <span className="font-semibold text-sm">You've Already Voted</span>
+                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="font-semibold text-xs sm:text-sm">Already Voted</span>
                       </div>
-                      <p className="text-sm text-green-700">
+                      <p className="text-xs sm:text-sm text-green-700">
                         You gave <span className="font-bold">{votedScore}</span> point{votedScore !== 1 ? 's' : ''} to this submission.
                       </p>
                     </div>
                   ) : (
                     // Show voting interface
                     <>
-                      <label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                        Give Score (0-5)
+                      <label className="text-xs font-semibold text-gray-700 uppercase tracking-tight">
+                        Score
                       </label>
                       
                       <Select
@@ -476,17 +476,19 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                       <Button
                         onClick={() => handleSubmitScore(submission.id, submission.userId)}
                         disabled={selectedScore === undefined || isSubmitting}
-                        className="w-full bg-[#0f172a] hover:bg-slate-800 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-[#0f172a] hover:bg-slate-800 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm py-2"
                       >
                         {isSubmitting ? (
                           <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Submitting...
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5 sm:mr-2" />
+                            <span className="hidden sm:inline">Submitting...</span>
+                            <span className="sm:hidden">Submitting</span>
                           </>
                         ) : (
                           <>
-                            <Send className="h-4 w-4 mr-2" />
-                            Submit Score
+                            <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                            <span className="hidden sm:inline">Submit Score</span>
+                            <span className="sm:hidden">Vote</span>
                           </>
                         )}
                       </Button>
@@ -497,6 +499,15 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
             </Card>
           )
         })}
+      </div>
+
+      {/* Daily Challenge Leaderboard - Below the submissions */}
+      <div className="mt-12 pt-8 border-t border-gray-200">
+        <DailyChallengeLeaderboard
+          challengeId={challengeId}
+          challengeTitle={challengeTitle}
+          topN={10}
+        />
       </div>
     </div>
   )

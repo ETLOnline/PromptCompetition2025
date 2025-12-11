@@ -12,13 +12,15 @@ import { useAuth } from "@/components/auth-provider"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 import { RegistrationModal } from "@/components/participantcompetitions/registration-modal"
-import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
+// import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
 import { CompetitionSection } from "@/components/participantcompetitions/competition-section"
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
 import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
-import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
+// import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
 import { DailyChallengesSection } from "@/components/participantcompetitions/DailyChallengesSection"
+import { PageSkeletonLoader } from "@/components/participantcompetitions/page-skeleton-loader"
+import { Spinner } from "@/components/ui/spinner"
 import { fetchDailyChallenges } from "@/lib/api"
 // import { PageHeader } from "@/components/participantcompetitions/page-header"
 
@@ -96,6 +98,7 @@ export default function CompetitionsPage() {
   // Daily Challenge States
   const [dailyChallenges, setDailyChallenges] = useState<DailyChallenge[]>([])
   const [loadingDailyChallenges, setLoadingDailyChallenges] = useState(false)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -204,6 +207,7 @@ export default function CompetitionsPage() {
       setButtonStatesLoading({})
     } finally {
       setLoadingInitialFetch(false)
+      setDataLoaded(true)
     }
 }
 
@@ -410,8 +414,9 @@ export default function CompetitionsPage() {
     setCurrentPage(1)
   }, [searchTerm, filterStatus])
 
-  if (!user) {
-    return null
+  // Show full page skeleton loader while initial authentication and data loading
+  if (!user || loadingInitialFetch) {
+    return <PageSkeletonLoader />
   }
 
   return (
@@ -458,11 +463,10 @@ export default function CompetitionsPage() {
 
       <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto pb-12 bg-white sm:rounded-xl sm:shadow-sm mb-8">
         <div className="py-6">
-          {loadingInitialFetch && competitions.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(itemsPerPage)].map((_, i) => (
-                <CompetitionSkeleton key={i} />
-              ))}
+          {/* Show spinner while competitions are loading */}
+          {!dataLoaded ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner className="h-6 w-6" />
             </div>
           ) : (
             <>
@@ -630,7 +634,7 @@ export default function CompetitionsPage() {
                 </div>
               )
             )}
-          </>
+            </>
           )}
         </div>
       </div>

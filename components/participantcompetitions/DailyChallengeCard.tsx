@@ -136,6 +136,7 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
     }
   }, [challenge.id, user?.id])
 
+
   // Featured layout - full width horizontal card
   if (isSingle) {
     return (
@@ -145,37 +146,40 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
           <CardContent className="p-5 pl-5">
             <div className="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
               {/* Title & Description */}
-              <div className="flex-1 min-w-[200px]">
+              <div className="flex-1 min-w-[200px] w-full sm:w-auto">
                 <h3 className="text-base sm:text-lg font-bold text-[#0f172a] leading-tight mb-1">{challenge.title}</h3>
                 <p className="text-xs sm:text-sm text-slate-600 line-clamp-1">{challenge.problemStatement}</p>
               </div>
 
-              {/* Deadline */}
-              <div className="flex flex-col items-center text-center min-w-[100px]">
-                <div className="w-7 h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
-                  <Calendar className="h-3.5 w-3.5 text-slate-700" />
+              {/* Stats Row - Mobile: Single Line, Desktop: Separate Columns */}
+              <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-start">
+                {/* Deadline */}
+                <div className="flex flex-col items-center text-center min-w-[80px] sm:min-w-[100px]">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
+                    <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">Deadline</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-900">{endDateTime.date}</p>
+                  <p className="text-[9px] sm:text-[10px] text-slate-500">{endDateTime.time}</p>
                 </div>
-                <p className="text-[10px] text-slate-600 font-medium">Deadline</p>
-                <p className="text-xs font-semibold text-slate-900">{endDateTime.date}</p>
-                <p className="text-[10px] text-slate-500">{endDateTime.time}</p>
-              </div>
 
-              {/* Submissions */}
-              <div className="flex flex-col items-center text-center min-w-[90px]">
-                <div className="w-7 h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
-                  <Users className="h-3.5 w-3.5 text-slate-700" />
+                {/* Submissions */}
+                <div className="flex flex-col items-center text-center min-w-[70px] sm:min-w-[90px]">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
+                    <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">Submissions</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-900">{challenge.totalSubmissions || 0}</p>
                 </div>
-                <p className="text-[10px] text-slate-600 font-medium">Submissions</p>
-                <p className="text-xs font-semibold text-slate-900">{challenge.totalSubmissions || 0}</p>
-              </div>
 
-              {/* Type */}
-              <div className="flex flex-col items-center text-center min-w-[80px]">
-                <div className="w-7 h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
-                  <Zap className="h-3.5 w-3.5 text-slate-700" />
+                {/* Type */}
+                <div className="flex flex-col items-center text-center min-w-[60px] sm:min-w-[80px]">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
+                    <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">Type</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-900 capitalize">{challenge.type}</p>
                 </div>
-                <p className="text-[10px] text-slate-600 font-medium">Type</p>
-                <p className="text-xs font-semibold text-slate-900 capitalize">{challenge.type}</p>
               </div>
 
               {/* CTA Button */}
@@ -199,14 +203,6 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
                   )}
                 </Button>
               </div>
-
-              {/* Active Badge for mobile */}
-              {isActive && (
-                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 border font-medium px-2 py-0.5 text-xs sm:hidden">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse" />
-                  Active
-                </Badge>
-              )}
             </div>
           </CardContent>
         </Card>
