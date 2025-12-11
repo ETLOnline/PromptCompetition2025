@@ -20,6 +20,7 @@ import {
 import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition, 
   fetchWithAuth
   } from "@/lib/api"
+import { Spinner } from "@/components/ui/spinner"
   
 import {
   Plus,
@@ -298,6 +299,15 @@ export default function ModernCompetitionSelector() {
     } finally {
       setDeleteLoading(false)
     }
+  }
+
+  // Show full page spinner during initial authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+        <Spinner className="h-10 w-10" />
+      </div>
+    )
   }
 
   if ((role !== "admin" && role !== "superadmin")) {
