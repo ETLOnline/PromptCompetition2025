@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Plus, X, Mic, Pause, Calendar } from 'lucide-react'
+import { Plus, X, Mic, Pause, Calendar } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
 import { doc, setDoc, getDocs, Timestamp, collection, getDoc } from "firebase/firestore"
@@ -137,9 +137,7 @@ export default function NewDailyChallengeePage() {
   const [previewVoice, setPreviewVoice] = useState<string | null>(null)
 
   useEffect(() => {
-    setPageLoading(true)
     checkAuthAndLoad()
-    setPageLoading(false)
   }, [])
 
   useEffect(() => {
@@ -172,12 +170,17 @@ export default function NewDailyChallengeePage() {
 
   const checkAuthAndLoad = async () => {
     try {
+      setPageLoading(true)
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`)
+      if (profile.role !== "superadmin") {
+        router.push("/admin/select-competition")
+        return
+      }
       setUserID(profile.uid)
     } catch (error) {
       router.push("/")
     } finally {
-      setLoading(false)
+      setPageLoading(false)
     }
   }
 

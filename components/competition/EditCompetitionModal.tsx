@@ -39,6 +39,7 @@ export default function EditCompetitionModal({
     endDeadline: "",
     mode: "online" as "online" | "offline",          // CHANGED from 'location: ""'
     venue: "",         // NEW FIELD
+    level: "Level 1" as "Level 1" | "Level 2" | "custom",  // NEW FIELD
     prizeMoney: "",
     isActive: false,
     isLocked: false,
@@ -79,6 +80,7 @@ export default function EditCompetitionModal({
         endDeadline: formatForDatetimeLocal(competition.endDeadline || ""),
         mode: (competition.mode as "online" | "offline") || "online",  // CHANGED - with fallback for old data
         venue: competition.venue || "",                              // NEW FIELD
+        level: (competition.level as "Level 1" | "Level 2" | "custom") || "Level 1",  // NEW FIELD
         prizeMoney: competition.prizeMoney || "",
         isActive: competition.isActive ?? false,
         isLocked: competition.isLocked ?? false,
@@ -244,6 +246,28 @@ export default function EditCompetitionModal({
                     required
                     className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
                   />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-level" className="text-sm font-medium text-gray-700 mb-2 block">
+                    Competition Level
+                  </Label>
+                  <select
+                    id="edit-level"
+                    name="level"
+                    value={editFormData.level || "Level 1"}
+                    onChange={(e) => {
+                      const value = e.target.value as "Level 1" | "Level 2" | "custom"
+                      setEditFormData(prev => ({ ...prev, level: value }))
+                      setTouched(true)
+                      setEditFormError(null)
+                    }}
+                    className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500/20 focus:outline-none"
+                  >
+                    <option value="Level 1">Level 1</option>
+                    <option value="Level 2">Level 2</option>
+                    <option value="custom">custom</option>
+                  </select>
                 </div>
 
                 <div>
