@@ -7,6 +7,8 @@ export interface DailyChallengeLeaderboardEntry {
   userId: string
   userFullName: string
   totalVotes: number
+  bayesScore?: number
+  ratingAvg?: number
   submissionText: string
   timestamp: any
 }
@@ -20,7 +22,7 @@ interface UseDailyChallengeLeaderboardProps {
  * Custom hook to fetch and listen to Daily Challenge leaderboard in real-time
  * Efficiently queries Firestore with proper indexing
  * 
- * - Orders by totalVotes (descending)
+ * - Orders by bayesScore (descending)
  * - Limits to top N submissions (default 10)
  * - Uses real-time listener for live updates
  * - Fetches user names from users collection
@@ -46,11 +48,11 @@ export const useDailyChallengeLeaderboard = ({
     try {
       const submissionsRef = collection(db, "dailychallenge", challengeId, "submissions")
       
-      // Efficient query: Order by totalVotes (descending) and limit to top N
-      // Note: Requires Firestore composite index on (totalVotes descending, __name__)
+      // Efficient query: Order by bayesScore (descending) and limit to top N
+      // Note: Requires Firestore single-field index on bayesScore
       const q = query(
         submissionsRef,
-        orderBy("totalVotes", "desc"),
+        orderBy("bayesScore", "desc"),
         limit(topN)
       ) as Query
 
@@ -78,11 +80,17 @@ export const useDailyChallengeLeaderboard = ({
                 console.error(`Error fetching user ${userId}:`, err)
               }
 
+              const voteCount = data.voteCount ?? data.totalVotes ?? 0
+              const ratingAvg = data.ratingAvg ?? (voteCount > 0 && data.ratingSum ? (data.ratingSum / voteCount) : undefined)
+              const bayesScore = data.bayesScore ?? 0
+
               return {
                 rank: 0, // Will be set after sorting
                 userId: userId,
                 userFullName: userFullName,
-                totalVotes: data.totalVotes || 0,
+                totalVotes: voteCount,
+                bayesScore,
+                ratingAvg,
                 submissionText: data.submissionText || "",
                 timestamp: data.timestamp,
               }
@@ -91,12 +99,13 @@ export const useDailyChallengeLeaderboard = ({
             // Wait for all user name fetches to complete
             const resolvedEntries = await Promise.all(userFetchPromises)
 
-            // Add ranks
-            resolvedEntries.forEach((entry, index) => {
-              entry.rank = index + 1
-            })
+            // Filter out submissions with less than 2 votes (minimum threshold)
+            const filteredEntries = resolvedEntries.filter(entry => entry.totalVotes >= 2)
 
-            setLeaderboard(resolvedEntries)
+            // Add ranks (already ordered by query)
+            filteredEntries.forEach((entry, index) => { entry.rank = index + 1 })
+
+            setLeaderboard(filteredEntries)
             setError(null)
             setLoading(false)
           } catch (err) {

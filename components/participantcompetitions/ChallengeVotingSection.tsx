@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { db } from "@/lib/firebase"
-import { collection, onSnapshot, doc, updateDoc, increment, Timestamp, getDoc, setDoc, query, where, getDocs } from "firebase/firestore"
+import { collection, onSnapshot, doc, Timestamp, getDoc, setDoc, query, where, getDocs, runTransaction } from "firebase/firestore"
 import { useUser } from "@clerk/nextjs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2 } from "lucide-react"
+import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2, Star } from "lucide-react"
 import { DailyChallengeLeaderboard } from "./DailyChallengeLeaderboard"
 
 interface Submission {
@@ -19,6 +19,8 @@ interface Submission {
   timestamp: Timestamp
   totalVotes: number
   userFullName?: string
+  bayesScore?: number
+  ratingAvg?: number
 }
 
 interface ChallengeVotingSectionProps {
@@ -99,20 +101,30 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
               console.error(`Error fetching user ${userId}:`, err)
             }
 
+            const voteCount = data.voteCount ?? data.totalVotes ?? 0
+            const bayesScore = data.bayesScore ?? 0
+            const ratingAvg = data.ratingAvg ?? undefined
             return {
               id: docSnap.id,
               userId: userId,
               submissionText: data.submissionText || "",
               timestamp: data.timestamp,
-              totalVotes: data.totalVotes || 0,
+              totalVotes: voteCount,
               userFullName: userFullName,
+              bayesScore,
+              ratingAvg,
             }
           })
 
           const resolvedSubmissions = await Promise.all(userFetchPromises)
           
-          // Sort by totalVotes descending (highest first)
-          resolvedSubmissions.sort((a, b) => b.totalVotes - a.totalVotes)
+          // Sort by bayesian score (fallback to votes count)
+          resolvedSubmissions.sort((a, b) => {
+            const bsB = b.bayesScore ?? 0
+            const bsA = a.bayesScore ?? 0
+            if (bsB !== bsA) return bsB - bsA
+            return b.totalVotes - a.totalVotes
+          })
           
           setSubmissions(resolvedSubmissions)
           setLoading(false)
@@ -175,10 +187,10 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
     const score = selectedScores[submissionId]
 
-    if (score === undefined || score < 0 || score > 5) {
+    if (score === undefined || score < 1 || score > 5) {
       toast({
-        title: "Invalid Score",
-        description: "Please select a score between 0 and 5.",
+        title: "Invalid Rating",
+        description: "Please select a rating between 1 and 5.",
         variant: "destructive",
       })
       return
@@ -188,30 +200,80 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
     try {
       const submissionRef = doc(db, "dailychallenge", challengeId, "submissions", userId)
-      
-      // Create a unique vote document in the votes subcollection
       const voteId = `${currentUserId}_${submissionId}`
       const voteRef = doc(db, "dailychallenge", challengeId, "votes", voteId)
-      
-      console.log("Submitting vote:", { voteRef: voteRef.path, submissionRef: submissionRef.path, score })
-      
-      // Store the vote
-      await setDoc(voteRef, {
-        voterId: currentUserId,
-        submissionId: submissionId,
-        submissionOwnerId: userId,
-        score: score,
-        votedAt: Timestamp.now(),
+      // Use a concrete document id under the stats collection (even segments required)
+      const statsRef = doc(db, "dailychallenge", challengeId, "stats", "global")
+
+      await runTransaction(db, async (tx) => {
+        // Ensure no duplicate vote
+        const existingVote = await tx.get(voteRef)
+        if (existingVote.exists()) {
+          throw new Error("Already voted for this submission")
+        }
+
+        // Load global stats (for C and m)
+        const statsSnap = await tx.get(statsRef)
+        let globalVoteCount = 0
+        let globalRatingSum = 0
+        let m = 2 // default minimum votes threshold; lowered to 2 for better sensitivity with low vote counts
+        if (statsSnap.exists()) {
+          const s = statsSnap.data() as any
+          globalVoteCount = s.globalVoteCount ?? 0
+          globalRatingSum = s.globalRatingSum ?? 0
+          if (typeof s.m === "number") m = s.m
+        }
+
+        // Load submission aggregate
+        const subSnap = await tx.get(submissionRef)
+        if (!subSnap.exists()) {
+          throw new Error("Submission not found")
+        }
+        const sub = subSnap.data() as any
+        const prevCount = sub.voteCount ?? 0
+        const prevSum = sub.ratingSum ?? 0
+
+        // Apply this vote
+        const newCount = prevCount + 1
+        const newSum = prevSum + score
+        const R = newSum / newCount
+
+        const newGlobalCount = globalVoteCount + 1
+        const newGlobalSum = globalRatingSum + score
+        const C = newGlobalCount > 0 ? newGlobalSum / newGlobalCount : 0
+
+        const denom = newCount + m
+        const bayesScore = denom > 0 ? (newCount / denom) * R + (m / denom) * C : 0
+
+        // Persist: vote, submission aggregates, and global stats
+        tx.set(voteRef, {
+          voterId: currentUserId,
+          submissionId,
+          submissionOwnerId: userId,
+          score,
+          votedAt: Timestamp.now(),
+        })
+
+        tx.set(
+          statsRef,
+          {
+            globalVoteCount: newGlobalCount,
+            globalRatingSum: newGlobalSum,
+            globalAverage: C,
+            m,
+            updatedAt: Timestamp.now(),
+          },
+          { merge: true }
+        )
+
+        tx.update(submissionRef, {
+          voteCount: newCount,
+          ratingSum: newSum,
+          ratingAvg: R,
+          bayesScore,
+          lastVotedAt: Timestamp.now(),
+        })
       })
-
-      console.log("Vote document created successfully")
-
-      // Atomic increment - crucial for concurrent updates
-      await updateDoc(submissionRef, {
-        totalVotes: increment(score),
-      })
-
-      console.log("Submission totalVotes updated successfully")
 
       // Update local state to reflect the vote
       setUserVotes((prev) => ({
@@ -220,8 +282,8 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
       }))
 
       toast({
-        title: "Score Submitted!",
-        description: `You gave ${score} point${score !== 1 ? 's' : ''} to this submission.`,
+        title: "Rating Submitted!",
+        description: `You gave ${score} star${score !== 1 ? 's' : ''} to this submission.`,
       })
 
       // Clear selected score after successful submission
@@ -231,10 +293,10 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
         return updated
       })
     } catch (err) {
-      console.error("Error submitting score:", err)
+      console.error("Error submitting rating:", err)
       toast({
         title: "Submission Failed",
-        description: "Failed to submit your score. Please try again.",
+        description: "Failed to submit your rating. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -339,7 +401,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
-          Review and score submissions from 0-5 points.
+          Review and rate submissions from 1-5 stars.
         </p>
       </div>
 
@@ -414,14 +476,31 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                   </div>
                 </div>
 
-                {/* Current Votes */}
-                <div className="flex items-center justify-between py-2 px-2 sm:px-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="flex items-center gap-1.5 sm:gap-2 text-slate-800">
-                    <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="text-xs sm:text-sm font-semibold">Votes</span>
+                {/* Rating Average Display */}
+                <div className="flex items-center justify-between py-2 px-2 sm:px-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => {
+                        const rating = submission.ratingAvg ?? 0
+                        const filled = rating >= s - 0.5
+                        return (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${
+                              filled
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        )
+                      })}
+                    </div>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-800">
+                      {submission.ratingAvg ? `${submission.ratingAvg.toFixed(1)}/5.0` : '0.0/5.0'}
+                    </span>
                   </div>
-                  <Badge className="bg-[#0f172a] text-white border-0 text-sm sm:text-base font-bold px-2 sm:px-3 py-1">
-                    {submission.totalVotes}
+                  <Badge className="bg-yellow-600 text-white border-0 text-xs sm:text-sm font-bold px-2 py-1">
+                    {submission.totalVotes} {submission.totalVotes <= 1 ? 'vote' : 'votes'}
                   </Badge>
                 </div>
 
@@ -446,32 +525,33 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                         <span className="font-semibold text-xs sm:text-sm">Already Voted</span>
                       </div>
                       <p className="text-xs sm:text-sm text-green-700">
-                        You gave <span className="font-bold">{votedScore}</span> point{votedScore !== 1 ? 's' : ''} to this submission.
+                        You gave <span className="font-bold">{votedScore}</span> star{votedScore !== 1 ? 's' : ''} to this submission.
                       </p>
                     </div>
                   ) : (
                     // Show voting interface
                     <>
                       <label className="text-xs font-semibold text-gray-700 uppercase tracking-tight">
-                        Score
+                        Rating
                       </label>
-                      
-                      <Select
-                        value={selectedScore?.toString() || ""}
-                        onValueChange={(value) => handleScoreChange(submission.id, value)}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger className="w-full bg-white border-gray-300 focus:border-[#0f172a] focus:ring-[#0f172a]">
-                          <SelectValue placeholder="Select score..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[0, 1, 2, 3, 4, 5].map((score) => (
-                            <SelectItem key={score} value={score.toString()}>
-                              {score} point{score !== 1 ? 's' : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2 w-full">
+                        {[1,2,3,4,5].map((s) => {
+                          const active = (selectedScore ?? 0) >= s
+                          return (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => handleScoreChange(submission.id, String(s))}
+                              disabled={isSubmitting}
+                              aria-label={`${s} star`}
+                              className={`flex-1 p-2 rounded flex items-center justify-center ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'hover:scale-105 transition-transform'}`}
+                            >
+                              <Star className={`${active ? 'text-yellow-500' : 'text-gray-300'} h-6 w-6`} />
+                            </button>
+                          )
+                        })}
+                        <span className="ml-3 text-xs text-gray-600 whitespace-nowrap">{selectedScore ? `${selectedScore} / 5` : 'Select rating'}</span>
+                      </div>
 
                       <Button
                         onClick={() => handleSubmitScore(submission.id, submission.userId)}
@@ -487,7 +567,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                         ) : (
                           <>
                             <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            <span className="hidden sm:inline">Submit Score</span>
+                            <span className="hidden sm:inline">Submit Rating</span>
                             <span className="sm:hidden">Vote</span>
                           </>
                         )}
