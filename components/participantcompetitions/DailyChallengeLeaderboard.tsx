@@ -1,6 +1,6 @@
 "use client"
 
-import { Trophy, Medal, Award, Zap, X } from "lucide-react"
+import { Trophy, Medal, Award, Zap, X, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useState } from "react"
@@ -80,7 +80,7 @@ export const DailyChallengeLeaderboard = ({
     })
   }
 
-  const truncateText = (text: string, maxLength: number = 100) => {
+  const truncateText = (text: string, maxLength: number = 60) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + "..."
   }
@@ -127,7 +127,10 @@ export const DailyChallengeLeaderboard = ({
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight">
                     Participant
                   </th>
-                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-16 sm:w-24">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-20 sm:w-24">
+                    Rating
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-16 sm:w-20">
                     Votes
                   </th>
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight hidden lg:table-cell">
@@ -162,7 +165,7 @@ export const DailyChallengeLeaderboard = ({
                   ))
                 ) : leaderboard.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 sm:py-12 text-center">
+                    <td colSpan={6} className="px-6 py-8 sm:py-12 text-center">
                       <p className="text-xs sm:text-sm text-gray-500">No submissions yet</p>
                     </td>
                   </tr>
@@ -191,6 +194,27 @@ export const DailyChallengeLeaderboard = ({
                         </p>
                       </td>
 
+                      {/* Rating Average */}
+                      <td className="px-3 sm:px-6 py-3 sm:py-5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => {
+                              const rating = entry.ratingAvg ?? 0
+                              const filled = rating >= s - 0.5
+                              return (
+                                <Star
+                                  key={s}
+                                  className={`h-3.5 w-3.5 ${filled ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                                />
+                              )
+                            })}
+                          </div>
+                          <span className="text-xs font-semibold text-gray-800">
+                            {entry.ratingAvg ? entry.ratingAvg.toFixed(1) : '0.0'}
+                          </span>
+                        </div>
+                      </td>
+
                       {/* Total Votes */}
                       <td className="px-3 sm:px-6 py-3 sm:py-5 text-center">
                         <Badge className="bg-[#0f172a]/10 text-[#0f172a] hover:bg-[#0f172a]/15 border border-[#0f172a]/20 font-bold text-xs sm:text-sm px-2 sm:px-3 py-1">
@@ -201,8 +225,8 @@ export const DailyChallengeLeaderboard = ({
                       {/* Submission Preview */}
                       <td className="px-3 sm:px-6 py-3 sm:py-5 hidden lg:table-cell">
                         <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
-                          {truncateText(entry.submissionText, 80)}
-                          {entry.submissionText.length > 80 && (
+                          {truncateText(entry.submissionText, 50)}
+                          {entry.submissionText.length > 50 && (
                             <button
                               onClick={() => setExpandedSubmissionId(`${entry.userId}-${entry.rank}`)}
                               className="text-xs text-[#0f172a] hover:text-slate-800 font-semibold ml-1 inline"
@@ -271,25 +295,36 @@ export const DailyChallengeLeaderboard = ({
                     </p>
                   </div>
                 </div>
-                <Badge className="bg-[#0f172a]/10 text-[#0f172a] hover:bg-[#0f172a]/15 border border-[#0f172a]/20 font-bold text-xs px-2 py-1 flex-shrink-0">
-                  {entry.totalVotes}
-                </Badge>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => {
+                      const rating = entry.ratingAvg ?? 0
+                      const filled = rating >= s - 0.5
+                      return (
+                        <Star
+                          key={s}
+                          className={`h-3 w-3 ${filled ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                        />
+                      )
+                    })}
+                  </div>
+                  <span className="text-xs font-semibold text-gray-800 whitespace-nowrap">
+                    {entry.ratingAvg ? entry.ratingAvg.toFixed(1) : '0.0'}
+                  </span>
+                </div>
               </div>
-
               <div className="space-y-1.5">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2" title={entry.submissionText}>
-                    {truncateText(entry.submissionText, 100)}
-                  </p>
-                  {entry.submissionText.length > 100 && (
+                <p className="text-xs sm:text-sm text-gray-600" title={entry.submissionText}>
+                  {truncateText(entry.submissionText, 50)}
+                  {entry.submissionText.length > 50 && (
                     <button
                       onClick={() => setExpandedSubmissionId(`${entry.userId}-${entry.rank}`)}
-                      className="text-xs text-[#0f172a] hover:text-slate-800 font-semibold mt-0.5"
+                      className="text-xs text-[#0f172a] hover:text-slate-800 font-semibold ml-1"
                     >
                       Show more
                     </button>
                   )}
-                </div>
+                </p>
                 <p className="text-xs text-gray-500 whitespace-nowrap">
                   {formatDate(entry.timestamp)}
                 </p>
@@ -298,12 +333,11 @@ export const DailyChallengeLeaderboard = ({
           ))
         )}
       </div>
-
       {/* Footer Info */}
       {!loading && leaderboard.length > 0 && (
         <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#0f172a]/5 rounded-lg border border-[#0f172a]/10">
           <p className="text-xs text-[#0f172a]">
-            Leaderboard updates in real-time. Top performers are determined by the total votes received on their submissions for the daily challenge.
+            Leaderboard updates in real-time. Top performers are determined by the total ratings received on their submissions for the daily challenge.
           </p>
         </div>
       )}
