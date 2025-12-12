@@ -107,6 +107,21 @@ const judges = [
       "Legacy Modernization",
       "Architecture Leadership"
     ]
+  },
+  {
+    id: 9,
+    name: "Mehwish Salman Ali",
+    title: "Award-winning Entrepreneur | CEO- Data Vault | Global AI Leader | Investor | Forbes Technology Council Member | TEDx Speaker",
+    bio: "Mehwish Salman Ali is an award-winning serial entrepreneur, global AI leader, investor, and technology innovator driving the future of AI, GPUs, and digital economies. She is the Founder & CEO of Data Vault Pakistan, the nation's first AI-optimized, GPU-powered, solar-enabled data center, and Co-Founder of Zahanat AI, Pakistan's first indigenous GPT enabling AI in Urdu and regional languages. With 16+ years of experience in technology and innovation, she has built a legacy of visionary leadership & transformative impact on the global AI ecosystem. She serves as President of the USA Chapter of CxO Global Forum, COO of AppsGenii USA, Charter Member of OPEN Dallas, Member of P@SHA AI Committee, and AI Chair at Rotary Club. As a mentor, judge, and active investor, she co-leads the $10M JR Dallas Tech Fund, enabling startups to scale into the U.S. market. Mehwish is also the Founder of SheEarns, a transformative initiative empowering women financial Inclusion, having trained and mentored 200+ women. Her scholarly research on 'AI for Disease Prediction & Prevention' is published in the IJCSIT Journal (Vol.16, 2025).",
+    linkedin: "https://www.linkedin.com/in/mehwishsalmanali/",
+    placeholder: "/images/judges/mehwish.png",
+    expertise: [
+      "AI & Digital Infrastructure",
+      "Entrepreneurship",
+      "Investment & Scaling",
+      "Women Empowerment",
+      "AI Policy & Ethics"
+    ]
   }
 ]
 
@@ -149,19 +164,6 @@ export default function JudgesPage() {
         {/* Judges Grid Section */}
         <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-7xl">
-            <div className="text-center mb-8 sm:mb-12 md:mb-16">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-green-100 mb-4">
-                <Users className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                <span className="text-xs sm:text-sm font-semibold text-green-600">Our Distinguished Panel</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
-                Meet the Experts
-              </h2>
-              <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
-                Industry leaders, educators, and innovators guiding the next generation of AI professionals
-              </p>
-            </div>
-
             {/* Judge Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {judges.map((judge) => (

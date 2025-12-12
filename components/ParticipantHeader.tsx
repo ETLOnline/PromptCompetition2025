@@ -122,7 +122,7 @@ export default function ParticipantHeader() {
                     <nav className="space-y-2" aria-label="Mobile Navigation">
                       <button
                         onClick={() => {
-                          router.push("/")
+                          router.push("/?redirect=false")
                           setIsOpen(false)
                         }}
                         className="w-full flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
@@ -214,7 +214,7 @@ export default function ParticipantHeader() {
           <div className="hidden lg:flex items-center space-x-4">
             <Button
               variant="ghost"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/?redirect=false")}
               className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
             >
               Home

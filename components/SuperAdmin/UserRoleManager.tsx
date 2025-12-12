@@ -101,6 +101,15 @@ export interface User {
       rank: number
     }
   }
+  // Additional Firestore profile fields
+  bio?: string
+  category?: string
+  city?: string
+  province?: string
+  institution?: string
+  majors?: string
+  gender?: string
+  linkedin?: string
 }
 
 export interface Stats {
@@ -130,7 +139,8 @@ interface UsersResponse {
   users: User[]
   total: number
   hasNextPage: boolean
-  nextPageToken: string | null
+  nextOffset?: number
+  currentOffset?: number
 }
 
 // --- Constants --------------------------------------------------------------
@@ -392,7 +402,7 @@ export default function UserRoleManager() {
   
   // Server pagination state
   const [serverPagination, setServerPagination] = useState({
-    nextPageToken: null as string | null,
+    offset: 0,
     hasNextPage: false,
     totalUsers: 0,
     loading: false,
@@ -433,23 +443,6 @@ export default function UserRoleManager() {
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedRole, searchQuery])
-
-  // Check if we need to load more data when pagination changes
-  useEffect(() => {
-    const filteredUsersCount = filteredUsers.length
-    const currentPageEndIndex = currentPage * ITEMS_PER_PAGE
-    
-    // If we're approaching the end of loaded data and there's more to fetch
-    if (
-      currentPageEndIndex >= filteredUsersCount - ITEMS_PER_PAGE && 
-      serverPagination.hasNextPage && 
-      !serverPagination.loading &&
-      selectedRole === "all" && // Only auto-load for "all" users
-      !searchQuery.trim() // Only auto-load when not searching
-    ) {
-      fetchMoreUsers()
-    }
-  }, [currentPage, selectedRole, searchQuery])
 
   // --- Helper functions ---
   const loadInitialData = useCallback(async () => {
@@ -630,8 +623,15 @@ export default function UserRoleManager() {
         getToken
       )
       setStats(data)
-    } catch (error) {
-      showNotification("error", "Data Loading Error", "Failed to load user statistics")
+    } catch (error: any) {
+      console.error('Fetch stats error:', error)
+      let errorMessage = "Failed to load user statistics"
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^Error:\s*/, '')
+      }
+      
+      showNotification("error", "Data Loading Error", errorMessage)
     } finally {
       setLoading((p) => ({ ...p, stats: false }))
     }
@@ -639,11 +639,13 @@ export default function UserRoleManager() {
 
   async function fetchAllUsers(isInitial = false) {
     try {
+      const currentOffset = isInitial ? 0 : allUsers.length
+      
       if (isInitial) {
         setLoading((p) => ({ ...p, users: true }))
         // Reset pagination state for initial load
         setServerPagination({
-          nextPageToken: null,
+          offset: 0,
           hasNextPage: false,
           totalUsers: 0,
           loading: false,
@@ -652,33 +654,75 @@ export default function UserRoleManager() {
       }
 
       const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/superadmin/users`)
-      url.searchParams.set('limit', '200')
-      
-      if (!isInitial && serverPagination.nextPageToken) {
-        url.searchParams.set('pageToken', serverPagination.nextPageToken)
-      }
+      url.searchParams.set('limit', '250')
+      url.searchParams.set('offset', currentOffset.toString())
 
+      console.log('Fetching URL:', url.toString(), 'with offset:', currentOffset)
       const data: UsersResponse = await fetchWithAuth(
         url.toString(),
         {},
         getToken
       )
+      
+      console.log('Received data:', {
+        usersCount: data.users?.length,
+        total: data.total,
+        hasNextPage: data.hasNextPage,
+        nextOffset: data.nextOffset,
+        currentOffset: data.currentOffset
+      })
         
       if (isInitial) {
-        setAllUsers(data.users || [])
+        const newUsers = data.users || []
+        setAllUsers(newUsers)
+        
+        const hasMore = newUsers.length < data.total
+        setServerPagination({
+          offset: newUsers.length,
+          hasNextPage: hasMore,
+          totalUsers: data.total,
+          loading: false,
+        })
       } else {
-        // Append new users to existing ones
-        setAllUsers(prev => [...prev, ...(data.users || [])])
+        // Append new users to existing ones, avoiding duplicates
+        setAllUsers(prev => {
+          const existingUids = new Set(prev.map(u => u.uid))
+          const newUsers = (data.users || []).filter(u => !existingUids.has(u.uid))
+          const updatedUsers = [...prev, ...newUsers]
+          
+          // If we received 0 new users or we've reached the total, no more pages
+          const hasMore = newUsers.length > 0 && updatedUsers.length < data.total
+          
+          // console.log('Pagination update:', {
+          //   previousCount: prev.length,
+          //   newUsersReceived: data.users?.length,
+          //   newUsersAdded: newUsers.length,
+          //   totalNow: updatedUsers.length,
+          //   expectedTotal: data.total,
+          //   hasMore: hasMore,
+          //   currentOffset: currentOffset
+          // })
+          
+          // Update pagination state with the new count
+          setServerPagination({
+            offset: updatedUsers.length,
+            hasNextPage: hasMore,
+            totalUsers: data.total,
+            loading: false,
+          })
+          
+          return updatedUsers
+        })
       }
-
-      setServerPagination({
-        nextPageToken: data.nextPageToken,
-        hasNextPage: data.hasNextPage,
-        totalUsers: data.total,
-        loading: false,
-      })
-    } catch (error) {
-      showNotification("error", "Data Loading Error", "Failed to load users")
+    } catch (error: any) {
+      console.error('Error fetching users:', error)
+      let errorMessage = "Failed to load users"
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^Error:\s*/, '')
+      }
+      
+      showNotification("error", "Data Loading Error", errorMessage)
       setServerPagination(prev => ({ ...prev, loading: false }))
     } finally {
       if (isInitial) {
@@ -688,8 +732,15 @@ export default function UserRoleManager() {
   }
 
   async function fetchMoreUsers() {
-    if (serverPagination.loading || !serverPagination.hasNextPage) return
+    if (serverPagination.loading || !serverPagination.hasNextPage) {
+      console.log('fetchMoreUsers blocked:', { 
+        loading: serverPagination.loading, 
+        hasNextPage: serverPagination.hasNextPage 
+      })
+      return
+    }
     
+    console.log('fetchMoreUsers starting with offset:', serverPagination.offset)
     setServerPagination(prev => ({ ...prev, loading: true }))
     await fetchAllUsers(false)
   }
@@ -713,7 +764,14 @@ export default function UserRoleManager() {
       ))
       fetchStats()
     } catch (error: any) {
-      const errorMessage = error.message || "Failed to update role"
+      console.error('Role update error:', error)
+      let errorMessage = "Failed to update role"
+      
+      if (error.message) {
+        // Clean up error message - remove "Error: " prefix if present
+        errorMessage = error.message.replace(/^Error:\s*/, '')
+      }
+      
       showNotification("error", "Update Failed", errorMessage)
     } finally {
       setLoading((p) => ({ ...p, action: false }))
@@ -737,7 +795,13 @@ export default function UserRoleManager() {
       setAllUsers(prev => prev.filter(user => user.uid !== uid))
       fetchStats()
     } catch (error: any) {
-      const errorMessage = error.message || "Failed to delete user"
+      console.error('Delete user error:', error)
+      let errorMessage = "Failed to delete user"
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^Error:\s*/, '')
+      }
+      
       showNotification("error", "Delete Failed", errorMessage)
     } finally {
       setLoading((p) => ({ ...p, action: false }))
@@ -771,7 +835,13 @@ export default function UserRoleManager() {
       fetchAllUsers(true)
       fetchStats()
     } catch (error: any) {
-      const errorMessage = error.message || "Failed to create user"
+      console.error('Create user error:', error)
+      let errorMessage = "Failed to create user"
+      
+      if (error.message) {
+        errorMessage = error.message.replace(/^Error:\s*/, '')
+      }
+      
       setFormError(errorMessage)
     } finally {
       setLoading((p) => ({ ...p, action: false }))
@@ -1007,9 +1077,9 @@ export default function UserRoleManager() {
               <div>
                 <CardTitle className="text-xl">
                   Users ({filteredUsers.length})
-                  {serverPagination.hasNextPage && selectedRole === "all" && !searchQuery && (
+                  {selectedRole === "all" && !searchQuery && serverPagination.totalUsers > 0 && (
                     <span className="text-sm font-normal text-muted-foreground ml-2">
-                      (Loading more...)
+                      of {serverPagination.totalUsers} total
                     </span>
                   )}
                 </CardTitle>
@@ -1034,6 +1104,70 @@ export default function UserRoleManager() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Load More Section - Show at top for better UX */}
+            {selectedRole === "all" && !searchQuery && serverPagination.hasNextPage && !loading.users && (
+              <div className="flex flex-col items-center gap-3 py-6 px-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    {allUsers.length} of {serverPagination.totalUsers} users loaded
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {serverPagination.totalUsers - allUsers.length} more users available
+                  </p>
+                </div>
+                <Button
+                  onClick={fetchMoreUsers}
+                  disabled={serverPagination.loading}
+                  variant="default"
+                  size="sm"
+                  className="gap-2"
+                >
+                  {serverPagination.loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Load More Users
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {/* Search with Load All Option */}
+            {searchQuery && serverPagination.hasNextPage && !loading.users && (
+              <div className="flex flex-col items-center gap-3 py-4 px-6 bg-amber-50 border-b border-amber-200">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <AlertTriangle className="w-4 h-4" />
+                  <p className="text-sm font-medium">
+                    Searching in {allUsers.length} of {serverPagination.totalUsers} users
+                  </p>
+                </div>
+                <Button
+                  onClick={fetchMoreUsers}
+                  disabled={serverPagination.loading}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-amber-300 hover:bg-amber-100"
+                >
+                  {serverPagination.loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Loading more...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Load More Users to Search
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
             {loading.users ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center space-y-3">
@@ -1092,6 +1226,28 @@ export default function UserRoleManager() {
               totalItems={filteredUsers.length}
               itemsPerPage={ITEMS_PER_PAGE}
             />
+            {selectedRole === "all" && !searchQuery && serverPagination.hasNextPage && (
+              <div className="flex justify-center py-4 border-t">
+                <Button
+                  onClick={fetchMoreUsers}
+                  disabled={serverPagination.loading}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  {serverPagination.loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Loading more users...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Load More Users ({allUsers.length} of {serverPagination.totalUsers})
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1416,6 +1572,88 @@ export default function UserRoleManager() {
                     <p className="text-sm mt-1">{formatDate(showUserDetails.lastSignIn)}</p>
                   </div>
                 </div>
+                
+                {/* Additional Profile Information */}
+                {(showUserDetails.category || showUserDetails.institution || showUserDetails.city) && (
+                  <>
+                    <Separator />
+                    <div className="grid grid-cols-2 gap-4">
+                      {showUserDetails.category && (
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Category
+                          </Label>
+                          <p className="text-sm mt-1">{showUserDetails.category}</p>
+                        </div>
+                      )}
+                      {showUserDetails.gender && (
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Gender
+                          </Label>
+                          <p className="text-sm mt-1 capitalize">{showUserDetails.gender}</p>
+                        </div>
+                      )}
+                    </div>
+                    {showUserDetails.institution && (
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Institution
+                        </Label>
+                        <p className="text-sm mt-1">{showUserDetails.institution}</p>
+                      </div>
+                    )}
+                    {showUserDetails.majors && (
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Major
+                        </Label>
+                        <p className="text-sm mt-1">{showUserDetails.majors}</p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-4">
+                      {showUserDetails.city && (
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            City
+                          </Label>
+                          <p className="text-sm mt-1">{showUserDetails.city}</p>
+                        </div>
+                      )}
+                      {showUserDetails.province && (
+                        <div>
+                          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Province
+                          </Label>
+                          <p className="text-sm mt-1">{showUserDetails.province}</p>
+                        </div>
+                      )}
+                    </div>
+                    {showUserDetails.linkedin && (
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          LinkedIn
+                        </Label>
+                        <a 
+                          href={showUserDetails.linkedin} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm mt-1 text-blue-600 hover:underline block"
+                        >
+                          {showUserDetails.linkedin}
+                        </a>
+                      </div>
+                    )}
+                    {showUserDetails.bio && (
+                      <div>
+                        <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Bio
+                        </Label>
+                        <p className="text-sm mt-1">{showUserDetails.bio}</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Competition Participations Section */}

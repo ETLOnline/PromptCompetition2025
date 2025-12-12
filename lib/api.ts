@@ -126,7 +126,22 @@ export async function fetchWithAuth(
   }
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    // Try to parse JSON error response
+    const contentType = response.headers.get('content-type');
+    let errorMessage = 'An error occurred';
+    
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
+      } else {
+        errorMessage = await response.text();
+      }
+    } catch (parseError) {
+      errorMessage = `Request failed with status ${response.status}`;
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return response.json();
@@ -208,3 +223,19 @@ export const fetchCompetitionSubmissions = async (competitionId: string, getToke
     method: "GET",
   }, getToken);
 };
+
+//-------------------------------------------------------
+//------------ daily challenge API's  ------------------
+//-------------------------------------------------------
+
+export const fetchDailyChallenges = async () => {
+  const res = await fetch(`${API_URL}/dailychallenge`)
+  if (!res.ok) throw new Error("Failed to fetch daily challenges")
+  return res.json()
+}
+
+export const fetchDailyChallengeById = async (id: string) => {
+  const res = await fetch(`${API_URL}/dailychallenge/${id}`)
+  if (!res.ok) throw new Error("Failed to fetch daily challenge")
+  return res.json()
+}

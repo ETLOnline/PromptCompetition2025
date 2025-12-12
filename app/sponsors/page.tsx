@@ -12,7 +12,6 @@ import {
   Trophy,
   Briefcase,
   Globe,
-  Building2,
   Sparkles,
   Target,
   Rocket,
@@ -133,6 +132,119 @@ export default function SponsorsPage() {
         </div>
       </section>
 
+      {/* Event Expenses Section */}
+      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50">
+        <div className="container mx-auto w-full sm:max-w-6xl">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-blue-100 mb-4">
+              <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+              <span className="text-xs sm:text-sm font-semibold text-blue-600">Budget Transparency</span>
+            </div>
+            <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 mb-2 sm:mb-3 px-2">
+              Event Expenses & Prize Breakdown
+            </h2>
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
+              Complete transparency on how sponsorship funds are invested to deliver an exceptional experience
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+            {/* Operational Expenses */}
+            <Card className="border-2 border-blue-200 shadow-lg bg-white hover:shadow-xl transition-all duration-300 flex flex-col">
+              <CardHeader className="pb-4 border-b border-blue-100">
+                <CardTitle className="text-base sm:text-lg font-bold" style={{ color: '#0f172a' }}>
+                  Operational Expenses
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6 flex-1 flex flex-col">
+                <div className="space-y-3 flex-1">
+                  <div className="flex justify-between items-center py-2.5 border-b border-gray-100">
+                    <span className="text-xs sm:text-sm text-gray-700">Platform Development</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">PKR 150,000</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2.5 border-b border-gray-100">
+                    <span className="text-xs sm:text-sm text-gray-700">Platform Dev Support</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">PKR 120,000</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2.5 border-b border-gray-100">
+                    <span className="text-xs sm:text-sm text-gray-700">Event Manager</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">PKR 150,000</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2.5 border-b border-gray-100">
+                    <span className="text-xs sm:text-sm text-gray-700">Marketing Company</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">PKR 250,000</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2.5 border-b border-gray-100">
+                    <span className="text-xs sm:text-sm text-gray-700">Social Media Campaigns</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">PKR 50,000</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2.5">
+                    <span className="text-xs sm:text-sm text-gray-700">Prizes</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">PKR 275,000</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-3 px-4 rounded-lg mt-6" style={{ backgroundColor: '#0f172a' }}>
+                  <span className="text-sm font-bold text-white">Total Budget</span>
+                  <span className="text-sm font-bold text-white">PKR 995,000</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Prizes Breakdown */}
+            <Card className="border-2 border-green-200 shadow-lg bg-white hover:shadow-xl transition-all duration-300 flex flex-col">
+              <CardHeader className="pb-4 border-b border-green-100">
+                <CardTitle className="text-base sm:text-lg font-bold" style={{ color: '#0f172a' }}>
+                  Prize Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6 flex-1 flex flex-col">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <Trophy className="h-4 w-4 text-blue-600 shrink-0" />
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">1st Prize</span>
+                      <span className="text-xs sm:text-sm font-semibold text-blue-600">PKR 100,000</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <Award className="h-4 w-4 text-blue-600 shrink-0" />
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">2nd Prize</span>
+                      <span className="text-xs sm:text-sm font-semibold text-blue-600">PKR 75,000</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <Star className="h-4 w-4 text-blue-600 shrink-0" />
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">3rd Prize</span>
+                      <span className="text-xs sm:text-sm font-semibold text-blue-600">PKR 50,000</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <TrendingUp className="h-4 w-4 text-blue-600 shrink-0" />
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">4th Prize</span>
+                      <span className="text-xs sm:text-sm font-semibold text-blue-600">PKR 30,000</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 py-2 px-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-xs sm:text-sm font-semibold text-gray-900">5th Prize</span>
+                      <span className="text-xs sm:text-sm font-semibold text-blue-600">PKR 20,000</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center py-3 px-4 rounded-lg mt-6" style={{ backgroundColor: '#0f172a' }}>
+                  <span className="text-sm font-bold text-white">Total Prizes</span>
+                  <span className="text-sm font-bold text-white">PKR 275,000</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Sponsorship Packages Section */}
       <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto w-full sm:max-w-7xl">
@@ -152,10 +264,10 @@ export default function SponsorsPage() {
           {/* Sponsorship Tiers Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12 w-full">
             {/* Platinum Tier */}
-              <Card className="relative border-2 border-blue-500 shadow-2xl bg-gradient-to-br from-blue-50 to-purple-50 hover:shadow-blue-200 transition-all duration-300 transform hover:-translate-y-2">
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                  <div className="px-2 py-0.5 sm:px-4 sm:py-1 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
-                    <span className="text-[10px] sm:text-xs font-bold text-white">MOST POPULAR</span>
+              <Card className="relative border-2 border-blue-500 shadow-2xl bg-gradient-to-br from-blue-50 to-purple-50 hover:shadow-blue-200 transition-all duration-300 transform hover:-translate-y-2 pt-6">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                  <div className="px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
+                    <span className="text-xs sm:text-xs font-bold text-white">MOST POPULAR</span>
                   </div>
                 </div>
               <CardHeader className="text-center pt-8">
@@ -217,10 +329,6 @@ export default function SponsorsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">Logo on all event materials</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
                   <span className="text-sm text-gray-700">Brand feature in national media coverage</span>
                 </div>
                 <div className="flex items-start gap-2">
@@ -276,6 +384,10 @@ export default function SponsorsPage() {
                   <CheckCircle2 className="h-5 w-5 text-gray-600 shrink-0 mt-0.5" />
                   <span className="text-sm text-gray-700">Brand email to all participants</span>
                 </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-gray-600 shrink-0 mt-0.5" />
+                  <span className="text-sm text-gray-700">Impact & visibility report</span>
+                </div>
               </CardContent>
             </Card>
 
@@ -295,11 +407,11 @@ export default function SponsorsPage() {
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">Judge or mentor opportunity</span>
+                  <span className="text-sm text-gray-700">Brand email to all participants</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">Brand email to all participants</span>
+                  <span className="text-sm text-gray-700">Impact & visibility report</span>
                 </div>
               </CardContent>
             </Card>
