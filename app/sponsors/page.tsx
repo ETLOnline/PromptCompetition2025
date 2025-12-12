@@ -12,7 +12,6 @@ import {
   Trophy,
   Briefcase,
   Globe,
-  Building2,
   Sparkles,
   Target,
   Rocket,
@@ -330,10 +329,6 @@ export default function SponsorsPage() {
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">Logo on all event materials</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
                   <span className="text-sm text-gray-700">Brand feature in national media coverage</span>
                 </div>
                 <div className="flex items-start gap-2">
@@ -389,6 +384,10 @@ export default function SponsorsPage() {
                   <CheckCircle2 className="h-5 w-5 text-gray-600 shrink-0 mt-0.5" />
                   <span className="text-sm text-gray-700">Brand email to all participants</span>
                 </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-gray-600 shrink-0 mt-0.5" />
+                  <span className="text-sm text-gray-700">Impact & visibility report</span>
+                </div>
               </CardContent>
             </Card>
 
@@ -408,11 +407,11 @@ export default function SponsorsPage() {
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">Judge or mentor opportunity</span>
+                  <span className="text-sm text-gray-700">Brand email to all participants</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                  <span className="text-sm text-gray-700">Brand email to all participants</span>
+                  <span className="text-sm text-gray-700">Impact & visibility report</span>
                 </div>
               </CardContent>
             </Card>

@@ -25,9 +25,6 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   Plus,
   Trophy,
-  Calendar,
-  MapPin,
-  DollarSign,
   Search,
   Filter,
   Grid3X3,
@@ -35,8 +32,6 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  Info,
   Zap,
 } from "lucide-react"
 

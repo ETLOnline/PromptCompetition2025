@@ -40,7 +40,7 @@ export default function Navbar() {
     switch (role) {
       case "admin":
       case "superadmin":
-        return "/admin"
+        return "/admin/select-competition"
       case "judge":
         return "/judge"
       case "participant":
