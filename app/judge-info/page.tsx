@@ -107,6 +107,21 @@ const judges = [
       "Legacy Modernization",
       "Architecture Leadership"
     ]
+  },
+  {
+    id: 9,
+    name: "Mehwish Salman Ali",
+    title: "Award-winning Entrepreneur | CEO- Data Vault | Global AI Leader | Investor | Forbes Technology Council Member | TEDx Speaker",
+    bio: "Mehwish Salman Ali is an award-winning serial entrepreneur, global AI leader, investor, and technology innovator driving the future of AI, GPUs, and digital economies. She is the Founder & CEO of Data Vault Pakistan, the nation's first AI-optimized, GPU-powered, solar-enabled data center, and Co-Founder of Zahanat AI, Pakistan's first indigenous GPT enabling AI in Urdu and regional languages. With 16+ years of experience in technology and innovation, she has built a legacy of visionary leadership & transformative impact on the global AI ecosystem. She serves as President of the USA Chapter of CxO Global Forum, COO of AppsGenii USA, Charter Member of OPEN Dallas, Member of P@SHA AI Committee, and AI Chair at Rotary Club. As a mentor, judge, and active investor, she co-leads the $10M JR Dallas Tech Fund, enabling startups to scale into the U.S. market. Mehwish is also the Founder of SheEarns, a transformative initiative empowering women financial Inclusion, having trained and mentored 200+ women. Her scholarly research on 'AI for Disease Prediction & Prevention' is published in the IJCSIT Journal (Vol.16, 2025).",
+    linkedin: "https://www.linkedin.com/in/mehwishsalmanali/",
+    placeholder: "/images/judges/mehwish.png",
+    expertise: [
+      "AI & Digital Infrastructure",
+      "Entrepreneurship",
+      "Investment & Scaling",
+      "Women Empowerment",
+      "AI Policy & Ethics"
+    ]
   }
 ]
 

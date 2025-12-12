@@ -19,14 +19,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
-  Phone,
   Sparkles,
   Zap,
-  Star,
   MessageCircle, 
   Globe,
   Eye,
-  LayoutDashboard
+  LayoutDashboard,
+  Heart
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { SignedIn, SignedOut } from "@clerk/nextjs"
@@ -70,7 +69,7 @@ const resolveDashboardUrl = (role?: string | null) => {
   switch (role) {
     case "admin":
     case "superadmin":
-      return "/admin"
+      return "/admin/select-competition"
     case "judge":
       return "/judge"
     case "participant":
@@ -615,6 +614,66 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Current Sponsors Section */}
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+          <div className="container mx-auto w-full sm:max-w-6xl">
+            
+            <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3 px-4">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-blue-100 mb-2">
+                <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <span className="text-xs sm:text-sm font-semibold text-blue-600">Our Valued Partners</span>
+              </div>
+              
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent leading-tight"
+              >
+                Current Sponsors
+              </motion.h2>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-xs sm:text-sm md:text-base text-slate-600 leading-relaxed"
+              >
+                Join these forward-thinking organizations shaping the future of AI in Pakistan
+              </motion.p>
+            </div>
+        
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 w-full justify-center md:justify-center lg:justify-center xl:justify-center mt-8 sm:mt-10 md:mt-12">
+                    <Link href="https://acme-one.com/" target="_blank" rel="noopener noreferrer" className="block">
+                      <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                        <CardHeader className="text-center pb-4 flex flex-col items-center">
+                          <img src="/images/sponsers/acme.png" alt="ACME ONE Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                          <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
+                            <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900">ACME ONE</CardTitle>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+
+                    <Link href="https://99technologies.com/" target="_blank" rel="noopener noreferrer" className="block">
+                      <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                        <CardHeader className="text-center pb-4 flex flex-col items-center">
+                          <img src="/images/sponsers/ninetynine.png" alt="Ninety Nine Technologies Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                          <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
+                            <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900">Ninety Nine Technologies</CardTitle>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+            </div>
+          </div>
+        </section>
+
 
         {/* Features Section */}
         <section className="py-20 bg-white">
