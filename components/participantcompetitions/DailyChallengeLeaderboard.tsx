@@ -1,11 +1,13 @@
 "use client"
 
-import { Trophy, Medal, Award, Zap, X, Star } from "lucide-react"
+import { Trophy, Medal, Award, Zap, X, Star, FileText, Target, Eye, Image as ImageIcon, Send } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDailyChallengeLeaderboard } from "@/hooks/useDailyChallengeLeaderboard"
 import type { DailyChallengeLeaderboardEntry } from "@/hooks/useDailyChallengeLeaderboard"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
 
 interface DailyChallengeLeaderboardProps {
   challengeId: string
@@ -23,6 +25,31 @@ export const DailyChallengeLeaderboard = ({
     topN,
   })
   const [expandedSubmissionId, setExpandedSubmissionId] = useState<string | null>(null)
+  const [challengeDetails, setChallengeDetails] = useState<any>(null)
+  const [loadingChallengeDetails, setLoadingChallengeDetails] = useState(false)
+
+  // Fetch challenge details when modal opens
+  useEffect(() => {
+    if (expandedSubmissionId && !challengeDetails) {
+      fetchChallengeDetails()
+    }
+  }, [expandedSubmissionId])
+
+  const fetchChallengeDetails = async () => {
+    try {
+      setLoadingChallengeDetails(true)
+      const challengeRef = doc(db, "dailychallenge", challengeId)
+      const challengeSnap = await getDoc(challengeRef)
+      
+      if (challengeSnap.exists()) {
+        setChallengeDetails(challengeSnap.data())
+      }
+    } catch (err) {
+      console.error("Error fetching challenge details:", err)
+    } finally {
+      setLoadingChallengeDetails(false)
+    }
+  }
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -95,22 +122,21 @@ export const DailyChallengeLeaderboard = ({
 
   return (
     <div className="w-full">
-      {/* Header */}
+      {/* Header (matched to Voting section styles) */}
       <div className="mb-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
           <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
             <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           </div>
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-            <span className="sm:hidden">Top Perfomers of the Day</span>
-            <span className="hidden sm:inline">Top Performers Of The Daily Challenge</span>
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Daily Challenge Leaderboard
           </h3>
-          <Badge className="hidden sm:inline-flex bg-[#0f172a] text-white border-0 font-medium text-xs">
+          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
             Live
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
-          Vote-based rankings
+          Ranked using a fair scoring method that balances both the number of votes and the average rating for each submission.
         </p>
       </div>
 
@@ -134,7 +160,7 @@ export const DailyChallengeLeaderboard = ({
                     Votes
                   </th>
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight hidden lg:table-cell">
-                    Preview
+                    User submission
                   </th>
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-20 sm:w-32">
                     Time
@@ -342,18 +368,18 @@ export const DailyChallengeLeaderboard = ({
         </div>
       )}
 
-      {/* Submission Details Modal */}
+      {/* Submission Details Modal with Challenge Context */}
       {expandedSubmissionId && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
           onClick={() => setExpandedSubmissionId(null)}
         >
           <div 
-            className="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] overflow-hidden shadow-2xl"
+            className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-slate-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">Full Submission</h3>
+            <div className="bg-slate-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Submission Details</h3>
               <button
                 onClick={() => setExpandedSubmissionId(null)}
                 className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
@@ -361,28 +387,124 @@ export const DailyChallengeLeaderboard = ({
                 <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               </button>
             </div>
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
-              {leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId) && (
-                <div>
-                  <div className="mb-4 pb-4 border-b border-gray-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getRankIcon(leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)?.rank || 0)}
-                      <p className="text-sm sm:text-base font-bold text-gray-900">
-                        {leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)?.userFullName}
-                      </p>
+            
+            <div className="overflow-y-auto flex-1 p-4 sm:p-6">
+              {loadingChallengeDetails ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Challenge Title */}
+                  {challengeDetails?.title && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
+                        {challengeDetails.title}
+                      </h3>
                     </div>
-                    <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500 flex-wrap">
-                      <span>📅 {formatDate(leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)?.timestamp)}</span>
-                      <Badge className="bg-[#0f172a]/10 text-[#0f172a] hover:bg-[#0f172a]/15 border border-[#0f172a]/20 font-bold text-xs">
-                        {leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)?.totalVotes} votes
-                      </Badge>
+                  )}
+
+                  {/* Problem Statement */}
+                  {(challengeDetails?.problemStatement || challengeDetails?.problemAudioUrls?.length > 0) && (
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <h4 className="text-base font-semibold text-blue-900">Problem Statement</h4>
+                      </div>
+                    
+                      {challengeDetails.problemStatement && (
+                        <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                          <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                            {challengeDetails.problemStatement}
+                          </p>
+                        </div>
+                      )}
+                    
+                      {challengeDetails.problemAudioUrls && challengeDetails.problemAudioUrls.length > 0 && (
+                        <div className="space-y-3">
+                          {challengeDetails.problemAudioUrls.map((url: string, index: number) => (
+                            <div key={index} className="bg-white rounded-md p-3 border">
+                              <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                              <audio controls src={url} className="w-full h-8" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="bg-slate-50 p-4 sm:p-5 rounded-lg border border-gray-200">
-                    <p className="text-xs sm:text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                      {leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)?.submissionText}
-                    </p>
-                  </div>
+                  )}
+
+                  {/* Guidelines */}
+                  {(challengeDetails?.guidelines || challengeDetails?.guidelinesAudioUrls?.length > 0) && (
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        <h4 className="text-base font-semibold text-green-900">Guidelines</h4>
+                      </div>
+                    
+                      {challengeDetails.guidelines && (
+                        <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                          <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                            {challengeDetails.guidelines}
+                          </p>
+                        </div>
+                      )}
+                    
+                      {challengeDetails.guidelinesAudioUrls && challengeDetails.guidelinesAudioUrls.length > 0 && (
+                        <div className="space-y-3">
+                          {challengeDetails.guidelinesAudioUrls.map((url: string, index: number) => (
+                            <div key={index} className="bg-white rounded-md p-3 border">
+                              <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                              <audio controls src={url} className="w-full h-8" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Visual Clues */}
+                  {challengeDetails?.visualClueUrls && challengeDetails.visualClueUrls.length > 0 && (
+                    <div className="bg-amber-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Eye className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                        <h4 className="text-base font-semibold text-amber-900">Visual Clues ({challengeDetails.visualClueUrls.length})</h4>
+                      </div>
+                      <div className="space-y-4">
+                        {challengeDetails.visualClueUrls.map((url: string, index: number) => (
+                          <div key={index} className="w-full flex justify-center">
+                            <img
+                              src={url}
+                              alt={`Visual clue ${index + 1}`}
+                              className="max-w-full h-auto rounded-md border border-amber-200 mx-auto"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Participant Submission */}
+                  {(() => {
+                    const currentEntry = leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)
+                    return currentEntry && (
+                      <div className="bg-purple-50 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Send className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                          <h4 className="text-base font-semibold text-purple-900">{currentEntry.userFullName}'s Submission</h4>
+                        </div>
+                        <div className="bg-white rounded-md p-4 max-h-64 overflow-y-auto border">
+                          <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                            {currentEntry.submissionText}
+                          </p>
+                        </div>
+                        {currentEntry.submissionText && (
+                          <div className="mt-2 text-xs text-purple-700 bg-purple-100 px-3 py-1 rounded-full inline-block">
+                            Characters: {currentEntry.submissionText.length} | Words: {currentEntry.submissionText.split(/\s+/).filter(Boolean).length}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               )}
             </div>

@@ -1,6 +1,5 @@
 "use client"
 
-import { Zap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { DailyChallengeCard, DailyChallengeSkeleton } from "./DailyChallengeCard"
 import { ChallengeVotingSection } from "./ChallengeVotingSection"
@@ -40,31 +39,23 @@ export const DailyChallengesSection = ({
 
   return (
     <div>
-      {/* Section Header - Prominent Daily Challenge Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#0f172a] shadow-lg shrink-0">
-            <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap mb-2">
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                Daily Prompt Challenge
-              </h3>
-              {!loading && challenges.length > 0 && (
-                <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-3 py-1">
-                  {challenges.length} Active
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-              Test your prompt engineering skill to prepare for the actual Prompt Idol Pakistan 2026
-            </p>
-          </div>
+      {/* Section Header - Clean and Professional */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={`w-2 h-2 sm:w-3 sm:h-3 bg-[#0f172a] rounded-full`}></div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Daily Prompt Challenge</h2>
+          {!loading && challenges.length > 0 && (
+            <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs px-2.5 py-1">
+              {challenges.length} Active
+            </Badge>
+          )}
         </div>
+        <p className="text-sm sm:text-base text-gray-600 leading-relaxed ml-5 sm:ml-6">
+          Test your prompt engineering skills in preparation for Prompt Idol Pakistan 2026
+        </p>
       </div>
 
-      {/* Challenges Grid - Full width for single challenge, grid for multiple */}
+      {/* Challenges Display */}
       <div className={challenges.length === 1 && !loading ? "" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
         {loading ? (
           // Show skeletons while loading
