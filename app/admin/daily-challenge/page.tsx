@@ -227,7 +227,27 @@ export default function DailyChallengeAdmin() {
     try {
       setIsDeleting(true)
 
-      // Delete the challenge document
+      // Delete known subcollections first (so nothing orphaned remains)
+      const subcollectionsToRemove = ["submissions", "votes"]
+      for (const subcol of subcollectionsToRemove) {
+        try {
+          const subRef = collection(db, "dailychallenge", challengeToDelete.id, subcol)
+          const subSnap = await getDocs(subRef)
+          if (!subSnap.empty) {
+            for (const subDoc of subSnap.docs) {
+              try {
+                await deleteDoc(doc(db, "dailychallenge", challengeToDelete.id, subcol, subDoc.id))
+              } catch (innerErr) {
+                console.error(`Failed to delete ${subcol}/${subDoc.id}:`, innerErr)
+              }
+            }
+          }
+        } catch (scErr) {
+          console.error(`Error fetching/deleting subcollection ${subcol}:`, scErr)
+        }
+      }
+
+      // Finally delete the challenge document
       const challengeDocRef = doc(db, "dailychallenge", challengeToDelete.id)
       await deleteDoc(challengeDocRef)
 
@@ -343,7 +363,11 @@ export default function DailyChallengeAdmin() {
                 <div>
                   <h1 className="text-3xl font-bold text-slate-900">Daily Challenges</h1>
                   <p className="text-slate-500 text-sm">
-                    {filteredChallenges.length} challenge{filteredChallenges.length !== 1 ? "s" : ""} available
+                    {isLoading ? (
+                      <span className="inline-block h-4 w-20 bg-slate-200 rounded animate-pulse" />
+                    ) : (
+                      `${filteredChallenges.length} challenge${filteredChallenges.length !== 1 ? "s" : ""} available`
+                    )}
                   </p>
                 </div>
               </div>
@@ -368,7 +392,11 @@ export default function DailyChallengeAdmin() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Challenges</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{stats.total}</p>
+                  {isLoading ? (
+                    <div className="mt-2 h-10 w-28 bg-slate-200 rounded animate-pulse" />
+                  ) : (
+                    <p className="text-3xl font-bold text-slate-900 mt-2">{stats.total}</p>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
                   <Trophy className="w-6 h-6 text-slate-400" />
@@ -382,7 +410,11 @@ export default function DailyChallengeAdmin() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Ongoing</p>
-                  <p className="text-3xl font-bold text-emerald-600 mt-2">{stats.ongoing}</p>
+                  {isLoading ? (
+                    <div className="mt-2 h-10 w-20 bg-emerald-100 rounded animate-pulse" />
+                  ) : (
+                    <p className="text-3xl font-bold text-emerald-600 mt-2">{stats.ongoing}</p>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-emerald-600" />
@@ -396,7 +428,11 @@ export default function DailyChallengeAdmin() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Upcoming</p>
-                  <p className="text-3xl font-bold text-amber-600 mt-2">{stats.upcoming}</p>
+                  {isLoading ? (
+                    <div className="mt-2 h-10 w-20 bg-amber-100 rounded animate-pulse" />
+                  ) : (
+                    <p className="text-3xl font-bold text-amber-600 mt-2">{stats.upcoming}</p>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-amber-600" />
@@ -410,7 +446,11 @@ export default function DailyChallengeAdmin() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Submissions</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{stats.totalSubmissions}</p>
+                  {isLoading ? (
+                    <div className="mt-2 h-10 w-28 bg-slate-200 rounded animate-pulse" />
+                  ) : (
+                    <p className="text-3xl font-bold text-slate-900 mt-2">{stats.totalSubmissions}</p>
+                  )}
                 </div>
                 <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
                   <Users className="w-6 h-6 text-slate-400" />
@@ -452,7 +492,17 @@ export default function DailyChallengeAdmin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredChallenges.length === 0 ? (
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-8">
+                        <div className="space-y-3">
+                          {[0, 1, 2].map((i) => (
+                            <div key={i} className="h-6 w-full bg-slate-200 rounded animate-pulse" />
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredChallenges.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-12">
                         <div className="flex flex-col items-center gap-2">
