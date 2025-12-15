@@ -126,6 +126,14 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
     ],
   },
   {
+    // /admin/daily-challenge/[challengeId]/dashboard
+    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[3] === "dashboard",
+    getItems: (segs) => [
+      { label: "Daily Challenges", href: "/admin/daily-challenge", isLast: false },
+      { label: "Challenge Dashboard", href: null, isLast: true },
+    ],
+  },
+  {
     // /admin/daily-challenge/new
     match: segs => segs.length === 3 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[2] === "new",
     getItems: () => [

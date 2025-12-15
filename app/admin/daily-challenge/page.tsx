@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { fetchWithAuth } from "@/lib/api"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit, Trash2, Calendar, Clock, Users, Zap, Trophy, RefreshCw, TrendingUp } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Calendar, Clock, Users, Zap, Trophy, RefreshCw, TrendingUp, BarChart3 } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, increment, Timestamp } from "firebase/firestore"
 import {
@@ -447,8 +447,6 @@ export default function DailyChallengeAdmin() {
                     <TableHead className="font-semibold text-slate-700 px-6 py-3">Type</TableHead>
                     <TableHead className="font-semibold text-slate-700 px-6 py-3">Time Period</TableHead>
                     <TableHead className="font-semibold text-slate-700 px-6 py-3 text-center">Submissions</TableHead>
-                    <TableHead className="font-semibold text-slate-700 px-6 py-3">Created By</TableHead>
-                    <TableHead className="font-semibold text-slate-700 px-6 py-3">Last Updated</TableHead>
                     <TableHead className="font-semibold text-slate-700 px-6 py-3">Status</TableHead>
                     <TableHead className="font-semibold text-slate-700 px-6 py-3 text-right">Actions</TableHead>
                   </TableRow>
@@ -456,7 +454,7 @@ export default function DailyChallengeAdmin() {
                 <TableBody>
                   {filteredChallenges.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-12">
+                      <TableCell colSpan={6} className="text-center py-12">
                         <div className="flex flex-col items-center gap-2">
                           <Zap className="w-12 h-12 text-slate-300" />
                           <p className="text-slate-600 font-medium">No challenges found</p>
@@ -510,15 +508,6 @@ export default function DailyChallengeAdmin() {
                             <span className="font-semibold text-slate-900">{challenge.totalSubmissions}</span>
                           </TableCell>
                           <TableCell className="px-6 py-4">
-                            <span className="text-sm text-slate-600">{challenge.createdBy}</span>
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            <div className="flex items-center gap-1.5">
-                              <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
-                              <span className="text-sm text-slate-600">{challenge.lastUpdatedBy}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
                             <Badge
                               className={`${getStatusColor(challenge.status)} border font-medium text-xs capitalize`}
                             >
@@ -527,6 +516,15 @@ export default function DailyChallengeAdmin() {
                           </TableCell>
                           <TableCell className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/admin/daily-challenge/${challenge.id}/dashboard`)}
+                                className="h-8 px-3 hover:bg-slate-100 hover:text-[#0f172a] text-slate-700 border-slate-300 transition-colors"
+                              >
+                                <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
+                                Dashboard
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
