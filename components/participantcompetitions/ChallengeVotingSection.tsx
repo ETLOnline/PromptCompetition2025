@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, doc, Timestamp, getDoc, setDoc, query, where, getDocs, runTransaction } from "firebase/firestore"
 import { useUser } from "@clerk/nextjs"
@@ -33,6 +33,8 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [filter, setFilter] = useState<'all' | 'voted' | 'not_voted'>('all')
   const [selectedScores, setSelectedScores] = useState<Record<string, number>>({})
   const [submittingVotes, setSubmittingVotes] = useState<Record<string, boolean>>({})
   const [expandedSubmissions, setExpandedSubmissions] = useState<Record<string, boolean>>({})
@@ -361,6 +363,17 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
     }
   }
 
+  const filteredSubmissions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return submissions.filter((s) => {
+      const name = (s.userFullName || "").toLowerCase()
+      if (q && !name.includes(q)) return false
+      if (filter === 'voted') return !!userVotes[s.id]
+      if (filter === 'not_voted') return !userVotes[s.id]
+      return true
+    })
+  }, [submissions, searchQuery, filter, userVotes])
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -417,7 +430,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions for the Daily challenge Yet</h3>
           <p className="text-gray-600">Be the first to submit a solution for this challenge!</p>
         </CardContent>
       </Card>
@@ -425,8 +438,8 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
   }
 
   return (
-    <div className="space-y-6">
-      <div className="mt-12 pt-8 border-t border-gray-200">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200">
         <DailyChallengeLeaderboard
           challengeId={challengeId}
           challengeTitle={challengeTitle}
@@ -434,25 +447,50 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
         />
       </div>
       {/* Section Header */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
-            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
+            <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
           </div>
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
             Vote to Daily Prompt Submissions
           </h3>
-          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
-            {submissions.length}
+          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1">
+            {filteredSubmissions.length}
           </Badge>
         </div>
-        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
+        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-11 md:pl-13">
           Review and rate submissions from 1-5 stars. Help rank the best responses.
         </p>
+
+        <div className="mt-3 sm:mt-4 flex flex-col md:flex-row md:items-center gap-2 sm:gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by participant name"
+            className="w-full md:w-64 px-3 py-2 border border-gray-200 rounded-md text-xs sm:text-sm h-9 sm:h-10"
+          />
+
+          <Select value={filter} onValueChange={(v) => setFilter(v as 'all' | 'voted' | 'not_voted')}>
+            <SelectTrigger className="w-full sm:w-40 text-xs sm:text-sm h-9 sm:h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="voted">Voted</SelectItem>
+              <SelectItem value="not_voted">Not Voted</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="text-xs sm:text-sm text-gray-600 md:ml-auto">
+            Showing {filteredSubmissions.length} of {submissions.length}
+          </div>
+        </div>
       </div>
 
       {/* Submissions List View */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Table Header */}
         <div className="hidden md:grid grid-cols-11 gap-4 bg-gray-50 border-b border-gray-200 p-4 font-semibold text-gray-800 text-sm sticky top-0">
           <div className="col-span-2">Participant</div>
@@ -464,7 +502,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
         {/* Table Body */}
         <div className="divide-y divide-gray-200">
-          {submissions.map((submission, index) => {
+          {filteredSubmissions.map((submission, index) => {
             const isSubmitting = submittingVotes[submission.id] || false
             const selectedScore = selectedScores[submission.id]
             const hasVoted = !!userVotes[submission.id]
@@ -474,22 +512,22 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
             return (
               <div key={submission.id} className="hover:bg-gray-50/50 transition-colors">
                 {/* Mobile View */}
-                <div className="md:hidden p-4 space-y-3">
+                <div className="md:hidden p-3 sm:p-4 space-y-2.5 sm:space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="w-8 h-8 bg-[#0f172a] rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4 text-white" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#0f172a] rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-sm text-gray-900 truncate">
+                        <p className="font-semibold text-xs sm:text-sm text-gray-900 truncate">
                           {submission.userFullName || "Anonymous User"}
                         </p>
-                        <p className="text-xs text-gray-600">{formatTimestamp(submission.timestamp)}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-600">{formatTimestamp(submission.timestamp)}</p>
                       </div>
                     </div>
                     {index < 3 && (
                       <Badge 
-                        className={`shrink-0 ${
+                        className={`shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 ${
                           index === 0 
                             ? "bg-yellow-100 text-yellow-800" 
                             : index === 1
@@ -505,30 +543,30 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                   {/* Submission Preview */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <button className="w-full text-left p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                        <p className="text-xs text-gray-600 line-clamp-2">{submission.submissionText}</p>
-                        <p className="text-xs text-blue-600 font-semibold mt-1 underline">View Full Submission</p>
+                      <button className="w-full text-left p-2.5 sm:p-3 bg-gray-50 rounded-md sm:rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                        <p className="text-[11px] sm:text-xs text-gray-600 line-clamp-2">{submission.submissionText}</p>
+                        <p className="text-[10px] sm:text-xs text-blue-600 font-semibold mt-1 underline">View Full Submission</p>
                       </button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-2xl w-[95vw]">
                       <DialogHeader>
-                        <DialogTitle className="text-xl">{submission.userFullName}'s Submission</DialogTitle>
-                        <DialogDescription>Full submission text</DialogDescription>
+                        <DialogTitle className="text-base sm:text-lg md:text-xl">{submission.userFullName}'s Submission</DialogTitle>
+                        <DialogDescription className="text-xs sm:text-sm">Full submission text</DialogDescription>
                       </DialogHeader>
-                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{submission.submissionText}</p>
+                      <div className="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200 max-h-72 sm:max-h-96 overflow-y-auto">
+                        <p className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{submission.submissionText}</p>
                       </div>
                     </DialogContent>
                   </Dialog>
 
                   {/* Rating Stats */}
-                  <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-md sm:rounded-lg">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className="flex gap-0.5">
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Star
                             key={s}
-                            className={`h-3 w-3 ${
+                            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${
                               (submission.ratingAvg ?? 0) >= s - 0.5
                                 ? 'text-yellow-500 fill-yellow-500'
                                 : 'text-gray-300'
@@ -536,18 +574,18 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-semibold">{submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}</span>
+                      <span className="text-[10px] sm:text-xs font-semibold">{submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}</span>
                     </div>
-                    <Badge className="bg-yellow-600 text-white text-xs">{submission.totalVotes}</Badge>
+                    <Badge className="bg-yellow-600 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">{submission.totalVotes}</Badge>
                   </div>
 
                   {/* Voting Interface Mobile */}
                   {isOwnSubmission ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
+                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-[10px] sm:text-xs text-blue-700">
                       You cannot vote on your own submission.
                     </div>
                   ) : hasVoted ? (
-                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs text-green-700">
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-[10px] sm:text-xs text-green-700">
                       ✓ You gave {votedScore} star{votedScore !== 1 ? 's' : ''}
                     </div>
                   ) : (
@@ -560,14 +598,14 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                             disabled={isSubmitting}
                             className="flex-1"
                           >
-                            <Star className={`w-5 h-5 mx-auto ${(selectedScore ?? 0) >= s ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
+                            <Star className={`w-4 h-4 sm:w-5 sm:h-5 mx-auto ${(selectedScore ?? 0) >= s ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
                           </button>
                         ))}
                       </div>
                       <Button
                         onClick={() => handleSubmitScore(submission.id, submission.userId)}
                         disabled={selectedScore === undefined || isSubmitting}
-                        className="w-full h-8 bg-[#0f172a] hover:bg-slate-800 text-white text-xs"
+                        className="w-full h-8 sm:h-9 bg-[#0f172a] hover:bg-slate-800 text-white text-xs sm:text-sm"
                       >
                         {isSubmitting ? "Submitting..." : "Submit Vote"}
                       </Button>
@@ -685,28 +723,28 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                e.preventDefault()
              }}
            >
-             <DialogHeader className="space-y-3">
-               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                   <Eye className="w-5 h-5 text-blue-600" />
+             <DialogHeader className="space-y-2 sm:space-y-3">
+               <div className="flex items-center gap-2 sm:gap-3">
+                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-50 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                   <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                  </div>
                  <div className="min-w-0 flex-1">
-                   <DialogTitle className="text-xl font-semibold text-gray-900">Challenge & Submission Details</DialogTitle>
-                   <p className="text-gray-600 text-sm">Review the challenge requirements and participant submission</p>
+                   <DialogTitle className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">Challenge & Submission Details</DialogTitle>
+                   <p className="text-gray-600 text-xs sm:text-sm">Review the challenge requirements and participant submission</p>
                  </div>
                </div>
              </DialogHeader>
            
              {loadingChallengeDetails ? (
-               <div className="flex items-center justify-center py-12">
-                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+               <div className="flex items-center justify-center py-8 sm:py-12">
+                 <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 sm:border-4 border-blue-200 border-t-blue-600"></div>
                </div>
              ) : (
-               <div className="space-y-6">
+               <div className="space-y-4 sm:space-y-6">
                  {/* Challenge Title */}
                  {challengeDetails?.title && (
-                   <div className="bg-gray-50 rounded-lg p-4">
-                     <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
+                   <div className="bg-gray-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                     <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
                        {challengeDetails.title}
                      </h3>
                    </div>
@@ -714,25 +752,25 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
                  {/* Problem Statement */}
                  {(challengeDetails?.problemStatement || challengeDetails?.problemAudioUrls?.length > 0) && (
-                   <div className="bg-blue-50 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-3">
-                       <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                       <h4 className="text-base font-semibold text-blue-900">Problem Statement</h4>
+                   <div className="bg-blue-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                     <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                       <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                       <h4 className="text-sm sm:text-base font-semibold text-blue-900">Problem Statement</h4>
                      </div>
                    
                      {challengeDetails.problemStatement && (
-                       <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
-                         <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                       <div className="bg-white rounded-md p-3 sm:p-4 max-h-40 sm:max-h-48 overflow-y-auto border mb-3 sm:mb-4">
+                         <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
                            {challengeDetails.problemStatement}
                          </p>
                        </div>
                      )}
                    
                      {challengeDetails.problemAudioUrls && challengeDetails.problemAudioUrls.length > 0 && (
-                       <div className="space-y-3">
+                       <div className="space-y-2 sm:space-y-3">
                          {challengeDetails.problemAudioUrls.map((url: string, index: number) => (
-                           <div key={index} className="bg-white rounded-md p-3 border">
-                             <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                           <div key={index} className="bg-white rounded-md p-2 sm:p-3 border">
+                             <div className="text-xs sm:text-sm text-gray-700 mb-1.5 sm:mb-2 font-medium">Audio {index + 1}</div>
                              <audio controls src={url} className="w-full h-8" />
                            </div>
                          ))}
@@ -743,25 +781,25 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
                  {/* Guidelines */}
                  {(challengeDetails?.guidelines || challengeDetails?.guidelinesAudioUrls?.length > 0) && (
-                   <div className="bg-green-50 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-3">
-                       <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
-                       <h4 className="text-base font-semibold text-green-900">Guidelines</h4>
+                   <div className="bg-green-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                     <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                       <Target className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+                       <h4 className="text-sm sm:text-base font-semibold text-green-900">Guidelines</h4>
                      </div>
                    
                      {challengeDetails.guidelines && (
-                       <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
-                         <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                       <div className="bg-white rounded-md p-3 sm:p-4 max-h-40 sm:max-h-48 overflow-y-auto border mb-3 sm:mb-4">
+                         <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
                            {challengeDetails.guidelines}
                          </p>
                        </div>
                      )}
                    
                      {challengeDetails.guidelinesAudioUrls && challengeDetails.guidelinesAudioUrls.length > 0 && (
-                       <div className="space-y-3">
+                       <div className="space-y-2 sm:space-y-3">
                          {challengeDetails.guidelinesAudioUrls.map((url: string, index: number) => (
-                           <div key={index} className="bg-white rounded-md p-3 border">
-                             <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                           <div key={index} className="bg-white rounded-md p-2 sm:p-3 border">
+                             <div className="text-xs sm:text-sm text-gray-700 mb-1.5 sm:mb-2 font-medium">Audio {index + 1}</div>
                              <audio controls src={url} className="w-full h-8" />
                            </div>
                          ))}
@@ -772,12 +810,12 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
                  {/* Visual Clues */}
                  {challengeDetails?.visualClueUrls && challengeDetails.visualClueUrls.length > 0 && (
-                   <div className="bg-amber-50 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-3">
-                       <ImageIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                       <h4 className="text-base font-semibold text-amber-900">Visual Clues ({challengeDetails.visualClueUrls.length})</h4>
+                   <div className="bg-amber-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                     <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                       <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 flex-shrink-0" />
+                       <h4 className="text-sm sm:text-base font-semibold text-amber-900">Visual Clues ({challengeDetails.visualClueUrls.length})</h4>
                      </div>
-                     <div className="space-y-4">
+                     <div className="space-y-3 sm:space-y-4">
                        {challengeDetails.visualClueUrls.map((url: string, index: number) => (
                          <div key={index} className="w-full flex justify-center">
                            <img
@@ -795,18 +833,18 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                  {(() => {
                    const currentSubmission = submissions.find(s => s.id === selectedSubmissionForDetails)
                    return currentSubmission && (
-                     <div className="bg-purple-50 rounded-lg p-4">
-                       <div className="flex items-center gap-2 mb-3">
-                         <Send className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                         <h4 className="text-base font-semibold text-purple-900">{currentSubmission.userFullName}'s Submission</h4>
+                     <div className="bg-purple-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                       <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                         <Send className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
+                         <h4 className="text-sm sm:text-base font-semibold text-purple-900">{currentSubmission.userFullName}'s Submission</h4>
                        </div>
-                       <div className="bg-white rounded-md p-4 max-h-64 overflow-y-auto border">
-                         <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                       <div className="bg-white rounded-md p-3 sm:p-4 max-h-48 sm:max-h-64 overflow-y-auto border">
+                         <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
                            {currentSubmission.submissionText}
                          </p>
                        </div>
                        {currentSubmission.submissionText && (
-                         <div className="mt-2 text-xs text-purple-700 bg-purple-100 px-3 py-1 rounded-full inline-block">
+                         <div className="mt-2 text-[10px] sm:text-xs text-purple-700 bg-purple-100 px-2 sm:px-3 py-1 rounded-full inline-block">
                            Characters: {currentSubmission.submissionText.length} | Words: {currentSubmission.submissionText.split(/\s+/).filter(Boolean).length}
                          </div>
                        )}

@@ -40,23 +40,23 @@ export const DailyChallengesSection = ({
   return (
     <div>
       {/* Section Header - Clean and Professional */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <div className={`w-2 h-2 sm:w-3 sm:h-3 bg-[#0f172a] rounded-full`}></div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Daily Prompt Challenge</h2>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
+          <div className={`w-2 h-2 sm:w-3 sm:h-3 bg-[#0f172a] rounded-full flex-shrink-0`}></div>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Daily Prompt Challenge</h2>
           {!loading && challenges.length > 0 && (
-            <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs px-2.5 py-1">
+            <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1">
               {challenges.length} Active
             </Badge>
           )}
         </div>
-        <p className="text-sm sm:text-base text-gray-600 leading-relaxed ml-5 sm:ml-6">
+        <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed ml-4 sm:ml-5 md:ml-6">
           Test your prompt engineering skills in preparation for Prompt Idol Pakistan 2026
         </p>
       </div>
 
       {/* Challenges Display */}
-      <div className={challenges.length === 1 && !loading ? "" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
+      <div className={challenges.length === 1 && !loading ? "" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"}>
         {loading ? (
           // Show skeletons while loading
           <>
@@ -79,7 +79,7 @@ export const DailyChallengesSection = ({
 
       {/* Voting Section - Show for active challenges */}
       {!loading && challenges.length > 0 && challenges.map((challenge) => (
-        <div key={`voting-${challenge.id}`} className="mt-12">
+        <div key={`voting-${challenge.id}`} className="mt-8 sm:mt-12">
           <ChallengeVotingSection
             challengeId={challenge.id}
             challengeTitle={challenge.title}

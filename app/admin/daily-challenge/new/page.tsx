@@ -789,12 +789,23 @@ export default function NewDailyChallengeePage() {
                       <img
                         src={visualCluePreviews[idx]}
                         alt={file.name}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer"
+                        onClick={() => setPreviewImage(visualCluePreviews[idx])}
                       />
+
                       <button
                         type="button"
-                        onClick={() => removeVisualClueFile(idx)}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setPreviewImage(visualCluePreviews[idx])}
+                        className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors rounded-lg"
+                      >
+                        <span className="text-white opacity-0 group-hover:opacity-100 text-sm">Preview</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeVisualClueFile(idx) }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        aria-label={`Remove ${file.name}`}
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -865,14 +876,19 @@ export default function NewDailyChallengeePage() {
 
       {/* Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-4 right-4 bg-white text-black rounded-full p-2 z-50 shadow"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+
           <div className="relative max-w-4xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300"
-            >
-              <X className="w-6 h-6" />
-            </button>
             <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 "use client"
 import { FileText, Target, Image as ImageIcon } from "lucide-react"
 
@@ -104,16 +103,6 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
 
   const endDateTime = formatDateTime(challenge.endTime)
   const isActive = timeLeft !== "Ended"
-  const buttonLabel = isActive
-    ? hasSubmission
-      ? "Edit Submission"
-      : "Start Challenge"
-    : "Challenge Ended"
-  const buttonClass = isActive
-    ? hasSubmission
-      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-      : "bg-[#0f172a] hover:bg-slate-800 text-white"
-    : "bg-gray-200 text-gray-400 cursor-not-allowed hover:bg-gray-200"
 
   useEffect(() => {
     let isMounted = true
@@ -143,224 +132,229 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
   // Featured layout - full width horizontal card (Prominent Display)
   if (isSingle) {
     return (
-      <Card className="bg-white/60 backdrop-blur-sm border-gray-200 shadow-xl rounded-xl overflow-hidden mb-8">
-        <CardContent className="p-6 sm:p-8">
-          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+      <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 rounded-xl sm:rounded-2xl overflow-hidden">
+        <CardContent className="p-4 sm:p-6 md:p-8">
+          <div className="grid lg:grid-cols-[1fr,auto] gap-4 sm:gap-6 md:gap-8 items-start">
             {/* Left Column: Challenge Details */}
             <div className="space-y-4 sm:space-y-6">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs px-3 py-1 flex items-center gap-1.5">
-                    <Flame className="w-3 h-3" />
-                    DAILY CHALLENGE
+              {/* Header with Badges */}
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge className="bg-[#0f172a] hover:bg-[#0d1220] text-white border-0 font-medium text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md">
+                    <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5" />
+                    Daily Challenge
                   </Badge>
                   {isActive && (
-                    <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium text-xs px-2.5 py-1 flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium text-xs px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1 sm:mr-1.5 animate-pulse" />
                       Active
                     </Badge>
                   )}
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mb-3 leading-tight">
+
+                {/* Title */}
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-tight">
                   {challenge.title}
-                </h3>
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed line-clamp-3">
+                </h2>
+
+                {/* Problem Statement */}
+                <p className="text-sm sm:text-base text-slate-600 leading-relaxed line-clamp-3">
                   {challenge.problemStatement}
                 </p>
               </div>
 
-              {/* <div className="flex items-center gap-4 sm:gap-6 text-sm text-gray-600 flex-wrap">
-                {challenge.createdBy && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-blue-50 rounded-md flex items-center justify-center">
-                      <span className="text-xs font-bold text-blue-600">👤</span>
-                    </div>
-                    <span className="font-medium text-gray-900">Created by:</span> <span className="text-gray-700">{challenge.createdBy}</span>
+              {/* Stats Section with View Details on the same line */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-slate-50 rounded-lg sm:rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-indigo-100 rounded-lg flex-shrink-0">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
                   </div>
-                )}
-                {challenge.createdAt && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-orange-50 rounded-md flex items-center justify-center">
-                      <Calendar className="w-3 h-3 text-orange-600" />
-                    </div>
-                    <span className="font-medium text-gray-900">Date:</span>{" "}
-                    <span className="text-gray-700">{formatDateTime(challenge.createdAt).date}</span>
+                  <div>
+                    <p className="text-sm sm:text-base text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-medium">Total Submissions: {challenge.totalSubmissions || 0}</p>
+                    {/* <p className="text-xl font-bold text-slate-900">{challenge.totalSubmissions || 0}</p> */}
                   </div>
-                )}
-              </div> */}
-
-              <div className="flex items-center gap-3 text-base sm:text-lg font-semibold text-gray-900 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-                <div className="w-6 h-6 bg-emerald-100 rounded-md flex items-center justify-center">
-                  <Users className="w-5 h-5 text-emerald-600" />
                 </div>
-                <span>
-                  Total Submissions: <span className="text-emerald-600 font-bold">{challenge.totalSubmissions || 0}</span>
-                </span>
-              </div>
 
-              {/* View Details Button (Modal Trigger) */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="lg" className="w-full md:w-auto bg-transparent hover:bg-gray-50">
-                    <Eye className="w-5 h-5 mr-2" />
-                    View Challenge Details
-                  </Button>
-                </DialogTrigger>
-                  <DialogContent className="bg-white border-0 shadow-2xl max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Eye className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <DialogTitle className="text-xl font-semibold text-gray-900">Challenge Details</DialogTitle>
-                          <p className="text-gray-600 text-sm">Review the challenge requirements</p>
-                        </div>
-                      </div>
-                    </DialogHeader>
-                    <div className="space-y-6 mt-4">
-                      {/* Challenge Title */}
-                      {challenge.title && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
-                            {challenge.title}
-                          </h3>
-                        </div>
-                      )}
+                <div className="w-full sm:w-auto">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full sm:w-auto text-sm text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                      >
+                        <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                        View Full Details
+                      </Button>
+                    </DialogTrigger>
 
-                      {/* Problem Statement */}
-                      {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
-                        <div className="bg-blue-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                            <h4 className="text-base font-semibold text-blue-900">Problem Statement</h4>
+                    <DialogContent className="bg-white border-slate-200 max-w-3xl w-[95vw] max-h-[85vh] overflow-y-auto">
+                      <DialogHeader className="space-y-2 sm:space-y-3 pb-3 sm:pb-4 border-b border-slate-200">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <div className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 bg-indigo-100 rounded-lg sm:rounded-xl flex-shrink-0">
+                            <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
                           </div>
-                          {challenge.problemStatement && (
-                            <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
-                              <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
-                                {challenge.problemStatement}
-                              </p>
-                            </div>
-                          )}
-                          {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
-                            <div className="space-y-3">
-                              {challenge.problemAudioUrls.map((url: string, index: number) => (
-                                <div key={index} className="bg-white rounded-md p-3 border">
-                                  <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
-                                  <audio controls src={url} className="w-full h-8" />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Guidelines */}
-                      {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
-                        <div className="bg-green-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
-                            <h4 className="text-base font-semibold text-green-900">Guidelines</h4>
+                          <div className="flex-1">
+                            <DialogTitle className="text-base sm:text-lg md:text-xl font-bold text-slate-900">Challenge Details</DialogTitle>
+                            <DialogDescription className="text-slate-600 text-xs sm:text-sm mt-1">
+                              Complete information about this challenge
+                            </DialogDescription>
                           </div>
-                          {challenge.guidelines && (
-                            <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
-                              <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
-                                {challenge.guidelines}
-                              </p>
-                            </div>
-                          )}
-                          {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
-                            <div className="space-y-3">
-                              {challenge.guidelinesAudioUrls.map((url: string, index: number) => (
-                                <div key={index} className="bg-white rounded-md p-3 border">
-                                  <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
-                                  <audio controls src={url} className="w-full h-8" />
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </div>
-                      )}
+                      </DialogHeader>
 
-                      {/* Visual Clues */}
-                      {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
-                        <div className="bg-amber-50 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <ImageIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                            <h4 className="text-base font-semibold text-amber-900">Visual Clues ({challenge.visualClueUrls.length})</h4>
+                      <div className="space-y-4 sm:space-y-5 pt-3 sm:pt-4">
+                        {/* Challenge Title */}
+                        {challenge.title && (
+                          <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-200">
+                            <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
+                              {challenge.title}
+                            </h3>
                           </div>
-                          <div className="space-y-4">
-                            {challenge.visualClueUrls.map((url: string, index: number) => (
-                              <div key={index} className="w-full flex justify-center">
-                                <img
-                                  src={url}
-                                  alt={`Visual clue ${index + 1}`}
-                                  className="max-w-full h-auto rounded-md border border-amber-200 mx-auto"
-                                />
+                        )}
+
+                        {/* Problem Statement */}
+                        {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                              <h4 className="text-sm sm:text-base font-semibold text-slate-900">Problem Statement</h4>
+                            </div>
+                            {challenge.problemStatement && (
+                              <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                  {challenge.problemStatement}
+                                </p>
                               </div>
-                            ))}
+                            )}
+                            {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
+                              <div className="space-y-2">
+                                {challenge.problemAudioUrls.map((url: string, index: number) => (
+                                  <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                    <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
+                                    <audio controls src={url} className="w-full" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </DialogContent>
-              </Dialog>
+                        )}
+
+                        {/* Guidelines */}
+                        {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                              <h4 className="text-sm sm:text-base font-semibold text-slate-900">Guidelines</h4>
+                            </div>
+                            {challenge.guidelines && (
+                              <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                  {challenge.guidelines}
+                                </p>
+                              </div>
+                            )}
+                            {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
+                              <div className="space-y-2">
+                                {challenge.guidelinesAudioUrls.map((url: string, index: number) => (
+                                  <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                    <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
+                                    <audio controls src={url} className="w-full" />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Visual Clues */}
+                        {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="flex items-center gap-2">
+                              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                              <h4 className="text-sm sm:text-base font-semibold text-slate-900">
+                                Visual Clues ({challenge.visualClueUrls.length})
+                              </h4>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {challenge.visualClueUrls.map((url: string, index: number) => (
+                                <div key={index} className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                                  <img
+                                    src={url}
+                                    alt={`Visual clue ${index + 1}`}
+                                    className="w-full h-auto rounded-lg"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
             </div>
 
             {/* Right Column: Call to Action */}
-            <div className="flex flex-col justify-center items-start md:items-end space-y-4 sm:space-y-6">
-              <div className="w-full md:w-auto space-y-4">
-                {/* Time and Deadline Info Cards */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 bg-blue-200 rounded-md flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-blue-700" />
+            <div className="lg:min-w-[320px] space-y-3 sm:space-y-4 lg:mt-12">
+              {/* Time Info Cards */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {/* Time Left */}
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-[#e0edfe]/80 to-[#e0edfe]/60 rounded-lg sm:rounded-xl border" style={{ borderColor: 'rgba(224,237,254,0.6)' }}>
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#123b8f] rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                       </div>
-                      <p className="text-xs text-blue-700 font-semibold uppercase">Time Left</p>
                     </div>
-                    <p className="text-lg font-bold text-blue-900">{isActive ? timeLeft : "Ended"}</p>
+                    <p className="text-[10px] sm:text-xs font-medium text-[#123b8f] uppercase tracking-wide mb-0.5 sm:mb-1">Time Left</p>
+                    <p className="text-base sm:text-xl font-bold text-[#123b8f]">{isActive ? timeLeft : "Ended"}</p>
                   </div>
-                  <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 bg-purple-200 rounded-md flex items-center justify-center">
-                        <Calendar className="h-4 w-4 text-purple-700" />
-                      </div>
-                      <p className="text-xs text-purple-700 font-semibold uppercase">Deadline</p>
-                    </div>
-                    <p className="text-sm font-bold text-purple-900">{endDateTime.date}</p>
-                    <p className="text-xs text-purple-800">{endDateTime.time}</p>
-                  </div>
-                </div>
 
-                <Button
-                  size="lg"
-                  onClick={() => router.push(`/participant/daily-challenge/${challenge.id}`)}
-                  disabled={!isActive}
-                  className={`w-full md:min-w-[280px] h-14 sm:h-16 text-lg sm:text-xl font-bold shadow-lg transition-all ${
-                    isActive
-                      ? hasSubmission
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        : "bg-[#0f172a] hover:bg-slate-800 text-white"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed hover:bg-gray-200"
-                  }`}
-                >
-                  {isActive ? (
-                    <>
-                      <Zap className="mr-2 h-5 w-5" />
-                      {hasSubmission ? "Edit Submission" : "Enter Submission"}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-5 w-5" />
-                      Challenge Ended
-                    </>
-                  )}
-                </Button>
-                <p className="text-sm text-center md:text-right text-gray-600">
-                  Submit your best prompt and compete for the top spot
-                </p>
+                {/* Deadline */}
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-lg sm:rounded-xl border border-amber-200">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-amber-600 rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] sm:text-xs font-medium text-amber-700 uppercase tracking-wide mb-0.5 sm:mb-1">Deadline</p>
+                  <p className="text-sm sm:text-base font-bold text-amber-900">{endDateTime.date}</p>
+                  <p className="text-[10px] sm:text-xs font-medium text-amber-700 mt-0.5">{endDateTime.time}</p>
+                </div>
               </div>
+
+              {/* CTA Button */}
+              <Button
+                size="lg"
+                onClick={() => router.push(`/participant/daily-challenge/${challenge.id}`)}
+                disabled={!isActive}
+                className={`w-full h-10 sm:h-12 text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? hasSubmission
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow-md"
+                      : "bg-[#0f172a] hover:bg-[#0d1220] text-white shadow-sm hover:shadow-md"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                }`}
+              >
+                {isActive ? (
+                  <>
+                    <Zap className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    {hasSubmission ? "Edit Submission" : "Start Challenge"}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    Challenge Ended
+                  </>
+                )}
+              </Button>
+
+              {/* Helper Text */}
+              {isActive && (
+                <p className="text-[10px] sm:text-xs text-center text-slate-500 leading-relaxed px-2">
+                  Submit your best solution and compete for the top spot
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -368,80 +362,79 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
     )
   }
 
-  // Regular grid layout
+  // Regular grid layout - Compact Card View
   return (
-    <Card className="bg-white shadow-lg rounded-lg h-full flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border border-slate-200 group">
-      <div className="h-1 bg-gradient-to-r from-slate-900 via-slate-700 to-slate-600" />
-
-      <CardContent className="p-4 sm:p-5 relative flex flex-col h-full">
+    <Card className="bg-white border border-slate-200 rounded-lg sm:rounded-xl overflow-hidden hover:shadow-md hover:border-slate-300 transition-all duration-200 h-full flex flex-col">
+      <CardContent className="p-3 sm:p-5 flex flex-col h-full">
         {/* Header Section */}
-        <div className="flex justify-between items-start mb-3 gap-2">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Badge className="bg-[#0f172a] text-white border-0 font-medium text-[10px] sm:text-[11px] px-2.5 py-1 flex items-center gap-1.5">
-                <Flame className="w-2.5 h-2.5" />
-                DAILY
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+          {/* Badges */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <Badge className="bg-[#0f172a] hover:bg-[#0d1220] text-white border-0 font-medium text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md">
+              <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+              Daily
+            </Badge>
+            {isActive && (
+              <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md">
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-500 rounded-full mr-0.5 sm:mr-1 animate-pulse" />
+                Active
               </Badge>
-              {isActive && (
-                <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium text-[10px] sm:text-[11px] px-2 py-0.5 flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  Active
-                </Badge>
-              )}
-            </div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2">
-              {challenge.title}
-            </h3>
+            )}
           </div>
+
+          {/* Title */}
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2">
+            {challenge.title}
+          </h3>
+
+          {/* Problem Statement */}
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2">
+            {challenge.problemStatement}
+          </p>
         </div>
 
-        {/* Problem Statement */}
-        <p className="text-xs sm:text-sm text-slate-600 mb-3 line-clamp-2 leading-relaxed font-medium">
-          {challenge.problemStatement}
-        </p>
+        {/* Info Grid */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {/* Time Left */}
+            <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-3 bg-slate-50 rounded-md sm:rounded-lg border border-slate-200">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#123b8f] rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs font-medium text-slate-600 mb-0.5">Time Left</p>
+                <p className="text-xs sm:text-sm font-bold text-[#123b8f]">{isActive ? timeLeft : "Ended"}</p>
+              </div>
+            </div>
 
-        {/* Info Grid - Compact and Clean */}
-        <div className="grid grid-cols-2 gap-2 mb-3 flex-1">
-          {/* Time Left */}
-          <div className="flex items-start gap-2 p-2.5 bg-gradient-to-br from-slate-50 to-slate-50 rounded-lg border border-slate-100">
-            <div className="w-5 h-5 bg-gradient-to-br from-slate-900 to-slate-700 rounded-md flex items-center justify-center shrink-0 flex-none">
-              <Clock className="h-2.5 w-2.5 text-white" />
+            {/* Deadline */}
+            <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-3 bg-slate-50 rounded-md sm:rounded-lg border border-slate-200">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-amber-600 rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs font-medium text-slate-600 mb-0.5">Deadline</p>
+                <p className="text-xs sm:text-sm font-bold text-amber-900 leading-tight">{endDateTime.date}</p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] sm:text-[10px] text-slate-600 font-semibold uppercase tracking-tight">Time</p>
-              <p className="text-xs sm:text-sm font-bold text-slate-900">{isActive ? timeLeft : "Ended"}</p>
-            </div>
-          </div>
-
-          {/* Deadline */}
-          <div className="flex items-start gap-2 p-2.5 bg-gradient-to-br from-slate-50 to-slate-50 rounded-lg border border-slate-100">
-            <div className="w-5 h-5 bg-gradient-to-br from-slate-900 to-slate-700 rounded-md flex items-center justify-center shrink-0 flex-none">
-              <Calendar className="h-2.5 w-2.5 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] sm:text-[10px] text-slate-600 font-semibold uppercase tracking-tight">Ends</p>
-              <p className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">{endDateTime.date}</p>
-            </div>
-          </div>
 
           {/* Submissions */}
-          <div className="flex items-start gap-2 p-2.5 bg-gradient-to-br from-slate-50 to-slate-50 rounded-lg border border-slate-100">
-            <div className="w-5 h-5 bg-gradient-to-br from-slate-900 to-slate-700 rounded-md flex items-center justify-center shrink-0 flex-none">
-              <Users className="h-2.5 w-2.5 text-white" />
+          <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-3 bg-slate-50 rounded-md sm:rounded-lg border border-slate-200">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-indigo-600 rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] sm:text-[10px] text-slate-600 font-semibold uppercase tracking-tight">Joined</p>
+              <p className="text-[10px] sm:text-xs font-medium text-slate-600 mb-0.5">Submissions</p>
               <p className="text-xs sm:text-sm font-bold text-slate-900">{challenge.totalSubmissions || 0}</p>
             </div>
           </div>
 
           {/* Type */}
-          <div className="flex items-start gap-2 p-2.5 bg-gradient-to-br from-slate-50 to-slate-50 rounded-lg border border-slate-100">
-            <div className="w-5 h-5 bg-gradient-to-br from-slate-900 to-slate-700 rounded-md flex items-center justify-center shrink-0 flex-none">
-              <Zap className="h-2.5 w-2.5 text-white" />
+          <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-3 bg-slate-50 rounded-md sm:rounded-lg border border-slate-200">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-violet-600 rounded-md sm:rounded-lg flex items-center justify-center flex-shrink-0">
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] sm:text-[10px] text-slate-600 font-semibold uppercase tracking-tight">Mode</p>
+              <p className="text-[10px] sm:text-xs font-medium text-slate-600 mb-0.5">Type</p>
               <p className="text-xs sm:text-sm font-bold text-slate-900 capitalize">{challenge.type}</p>
             </div>
           </div>
@@ -451,16 +444,22 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
         <Button
           onClick={() => router.push(`/participant/daily-challenge/${challenge.id}`)}
           disabled={!isActive}
-          className={`w-full mt-auto font-semibold transition-all ${buttonClass}`}
+          className={`w-full h-9 sm:h-10 text-xs sm:text-sm font-semibold rounded-md sm:rounded-lg transition-all duration-200 mt-auto ${
+            isActive
+              ? hasSubmission
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : "bg-[#0f172a] hover:bg-[#0d1220] text-white"
+              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+          }`}
         >
           {isActive ? (
             <>
-              <Zap className="mr-2 h-4 w-4" />
-              {buttonLabel}
+              <Zap className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              {hasSubmission ? "Edit Submission" : "Enter submission"}
             </>
           ) : (
             <>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
+              <CheckCircle2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Challenge Ended
             </>
           )}
@@ -473,26 +472,37 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
 
 export const DailyChallengeSkeleton = () => {
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-6">
-        <div className="animate-pulse">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gray-200" />
-              <div className="space-y-2">
-                <div className="w-32 h-4 bg-gray-200 rounded" />
-                <div className="w-48 h-6 bg-gray-200 rounded" />
-              </div>
-            </div>
+    <Card className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <CardContent className="p-5">
+        <div className="animate-pulse space-y-4">
+          {/* Badges */}
+          <div className="flex items-center gap-2">
+            <div className="w-20 h-6 bg-slate-200 rounded-md" />
+            <div className="w-16 h-6 bg-slate-200 rounded-md" />
           </div>
-          <div className="w-full h-10 bg-gray-200 rounded mb-4" />
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="h-16 bg-gray-200 rounded-lg" />
-            <div className="h-16 bg-gray-200 rounded-lg" />
-            <div className="h-16 bg-gray-200 rounded-lg" />
+          
+          {/* Title */}
+          <div className="space-y-2">
+            <div className="w-full h-5 bg-slate-200 rounded" />
+            <div className="w-3/4 h-5 bg-slate-200 rounded" />
           </div>
-          <div className="w-full h-12 bg-gray-200 rounded-lg mb-4" />
-          <div className="w-full h-10 bg-gray-200 rounded" />
+          
+          {/* Description */}
+          <div className="space-y-2">
+            <div className="w-full h-4 bg-slate-200 rounded" />
+            <div className="w-5/6 h-4 bg-slate-200 rounded" />
+          </div>
+          
+          {/* Info Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-16 bg-slate-200 rounded-lg" />
+            <div className="h-16 bg-slate-200 rounded-lg" />
+            <div className="h-16 bg-slate-200 rounded-lg" />
+            <div className="h-16 bg-slate-200 rounded-lg" />
+          </div>
+          
+          {/* Button */}
+          <div className="w-full h-10 bg-slate-200 rounded-lg" />
         </div>
       </CardContent>
     </Card>
