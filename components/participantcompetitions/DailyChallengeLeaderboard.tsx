@@ -192,7 +192,7 @@ export const DailyChallengeLeaderboard = ({
                 ) : leaderboard.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-8 sm:py-12 text-center">
-                      <p className="text-xs sm:text-sm text-gray-500">No submissions yet</p>
+                      <p className="text-xs sm:text-sm text-gray-500">No submissions meet the minimum vote threshold (3+ votes) yet</p>
                     </td>
                   </tr>
                 ) : (
@@ -297,7 +297,7 @@ export const DailyChallengeLeaderboard = ({
           ))
         ) : leaderboard.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
-            <p className="text-xs sm:text-sm text-gray-500">No submissions yet</p>
+            <p className="text-xs sm:text-sm text-gray-500">No submissions meet the minimum vote threshold (3+ votes) yet</p>
           </div>
         ) : (
           leaderboard.map((entry) => (
