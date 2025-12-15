@@ -123,26 +123,26 @@ export const DailyChallengeLeaderboard = ({
   return (
     <div className="w-full">
       {/* Header (matched to Voting section styles) */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
-            <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
+            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
           </div>
-          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
             Daily Challenge Leaderboard
           </h3>
-          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
+          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1">
             Live
           </Badge>
         </div>
-        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
+        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-11 md:pl-13">
           Ranked using a fair scoring method that balances both the number of votes and the average rating for each submission.
         </p>
       </div>
 
       {/* Desktop Table */}
       <div className="hidden md:block">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -361,8 +361,8 @@ export const DailyChallengeLeaderboard = ({
       </div>
       {/* Footer Info */}
       {!loading && leaderboard.length > 0 && (
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#0f172a]/5 rounded-lg border border-[#0f172a]/10">
-          <p className="text-xs text-[#0f172a]">
+        <div className="mt-3 sm:mt-4 md:mt-6 p-2.5 sm:p-3 md:p-4 bg-[#0f172a]/5 rounded-lg border border-[#0f172a]/10">
+          <p className="text-[10px] sm:text-xs text-[#0f172a] leading-relaxed">
             Leaderboard updates in real-time. Top performers are determined by the total ratings received on their submissions for the daily challenge.
           </p>
         </div>
@@ -371,34 +371,34 @@ export const DailyChallengeLeaderboard = ({
       {/* Submission Details Modal with Challenge Context */}
       {expandedSubmissionId && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-3 sm:p-4"
           onClick={() => setExpandedSubmissionId(null)}
         >
           <div 
-            className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
+            className="bg-white rounded-lg sm:rounded-xl max-w-4xl w-full max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-slate-50 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0">
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">Submission Details</h3>
+            <div className="bg-slate-50 border-b border-gray-200 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 flex items-center justify-between flex-shrink-0">
+              <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900">Submission Details</h3>
               <button
                 onClick={() => setExpandedSubmissionId(null)}
-                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
               >
                 <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               </button>
             </div>
             
-            <div className="overflow-y-auto flex-1 p-4 sm:p-6">
+            <div className="overflow-y-auto flex-1 p-3 sm:p-4 md:p-6">
               {loadingChallengeDetails ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+                <div className="flex items-center justify-center py-8 sm:py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-3 sm:border-4 border-blue-200 border-t-blue-600"></div>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Challenge Title */}
                   {challengeDetails?.title && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
+                    <div className="bg-gray-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
                         {challengeDetails.title}
                       </h3>
                     </div>
@@ -406,25 +406,25 @@ export const DailyChallengeLeaderboard = ({
 
                   {/* Problem Statement */}
                   {(challengeDetails?.problemStatement || challengeDetails?.problemAudioUrls?.length > 0) && (
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                        <h4 className="text-base font-semibold text-blue-900">Problem Statement</h4>
+                    <div className="bg-blue-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                        <h4 className="text-sm sm:text-base font-semibold text-blue-900">Problem Statement</h4>
                       </div>
                     
                       {challengeDetails.problemStatement && (
-                        <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
-                          <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                        <div className="bg-white rounded-md p-3 sm:p-4 max-h-40 sm:max-h-48 overflow-y-auto border mb-3 sm:mb-4">
+                          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
                             {challengeDetails.problemStatement}
                           </p>
                         </div>
                       )}
                     
                       {challengeDetails.problemAudioUrls && challengeDetails.problemAudioUrls.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           {challengeDetails.problemAudioUrls.map((url: string, index: number) => (
-                            <div key={index} className="bg-white rounded-md p-3 border">
-                              <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                            <div key={index} className="bg-white rounded-md p-2 sm:p-3 border">
+                              <div className="text-xs sm:text-sm text-gray-700 mb-1.5 sm:mb-2 font-medium">Audio {index + 1}</div>
                               <audio controls src={url} className="w-full h-8" />
                             </div>
                           ))}
@@ -435,25 +435,25 @@ export const DailyChallengeLeaderboard = ({
 
                   {/* Guidelines */}
                   {(challengeDetails?.guidelines || challengeDetails?.guidelinesAudioUrls?.length > 0) && (
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        <h4 className="text-base font-semibold text-green-900">Guidelines</h4>
+                    <div className="bg-green-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                        <Target className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+                        <h4 className="text-sm sm:text-base font-semibold text-green-900">Guidelines</h4>
                       </div>
                     
                       {challengeDetails.guidelines && (
-                        <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
-                          <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                        <div className="bg-white rounded-md p-3 sm:p-4 max-h-40 sm:max-h-48 overflow-y-auto border mb-3 sm:mb-4">
+                          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
                             {challengeDetails.guidelines}
                           </p>
                         </div>
                       )}
                     
                       {challengeDetails.guidelinesAudioUrls && challengeDetails.guidelinesAudioUrls.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           {challengeDetails.guidelinesAudioUrls.map((url: string, index: number) => (
-                            <div key={index} className="bg-white rounded-md p-3 border">
-                              <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                            <div key={index} className="bg-white rounded-md p-2 sm:p-3 border">
+                              <div className="text-xs sm:text-sm text-gray-700 mb-1.5 sm:mb-2 font-medium">Audio {index + 1}</div>
                               <audio controls src={url} className="w-full h-8" />
                             </div>
                           ))}
@@ -464,12 +464,12 @@ export const DailyChallengeLeaderboard = ({
 
                   {/* Visual Clues */}
                   {challengeDetails?.visualClueUrls && challengeDetails.visualClueUrls.length > 0 && (
-                    <div className="bg-amber-50 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Eye className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                        <h4 className="text-base font-semibold text-amber-900">Visual Clues ({challengeDetails.visualClueUrls.length})</h4>
+                    <div className="bg-amber-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 flex-shrink-0" />
+                        <h4 className="text-sm sm:text-base font-semibold text-amber-900">Visual Clues ({challengeDetails.visualClueUrls.length})</h4>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {challengeDetails.visualClueUrls.map((url: string, index: number) => (
                           <div key={index} className="w-full flex justify-center">
                             <img
@@ -487,18 +487,18 @@ export const DailyChallengeLeaderboard = ({
                   {(() => {
                     const currentEntry = leaderboard.find((e) => `${e.userId}-${e.rank}` === expandedSubmissionId)
                     return currentEntry && (
-                      <div className="bg-purple-50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Send className="w-5 h-5 text-purple-600 flex-shrink-0" />
-                          <h4 className="text-base font-semibold text-purple-900">{currentEntry.userFullName}'s Submission</h4>
+                      <div className="bg-purple-50 rounded-md sm:rounded-lg p-3 sm:p-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
+                          <Send className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" />
+                          <h4 className="text-sm sm:text-base font-semibold text-purple-900">{currentEntry.userFullName}'s Submission</h4>
                         </div>
-                        <div className="bg-white rounded-md p-4 max-h-64 overflow-y-auto border">
-                          <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                        <div className="bg-white rounded-md p-3 sm:p-4 max-h-48 sm:max-h-64 overflow-y-auto border">
+                          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
                             {currentEntry.submissionText}
                           </p>
                         </div>
                         {currentEntry.submissionText && (
-                          <div className="mt-2 text-xs text-purple-700 bg-purple-100 px-3 py-1 rounded-full inline-block">
+                          <div className="mt-2 text-[10px] sm:text-xs text-purple-700 bg-purple-100 px-2 sm:px-3 py-1 rounded-full inline-block">
                             Characters: {currentEntry.submissionText.length} | Words: {currentEntry.submissionText.split(/\s+/).filter(Boolean).length}
                           </div>
                         )}
