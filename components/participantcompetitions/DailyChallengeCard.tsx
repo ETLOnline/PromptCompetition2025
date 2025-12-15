@@ -1,9 +1,12 @@
+
 "use client"
+import { FileText, Target, Image as ImageIcon } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, Users, Zap, CheckCircle2, Flame } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Calendar, Clock, Users, Zap, CheckCircle2, Flame, Eye } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
@@ -137,76 +140,231 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
   }, [challenge.id, user?.id])
 
 
-  // Featured layout - full width horizontal card
+  // Featured layout - full width horizontal card (Prominent Display)
   if (isSingle) {
     return (
-      <div className="mb-6">
-        <Card className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-slate-200 overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-slate-900 to-slate-600" />
-          <CardContent className="p-5 pl-5">
-            <div className="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
-              {/* Title & Description */}
-              <div className="flex-1 min-w-[200px] w-full sm:w-auto">
-                <h3 className="text-base sm:text-lg font-bold text-[#0f172a] leading-tight mb-1">{challenge.title}</h3>
-                <p className="text-xs sm:text-sm text-slate-600 line-clamp-1">{challenge.problemStatement}</p>
+      <Card className="bg-white/60 backdrop-blur-sm border-gray-200 shadow-xl rounded-xl overflow-hidden mb-8">
+        <CardContent className="p-6 sm:p-8">
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+            {/* Left Column: Challenge Details */}
+            <div className="space-y-4 sm:space-y-6">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs px-3 py-1 flex items-center gap-1.5">
+                    <Flame className="w-3 h-3" />
+                    DAILY CHALLENGE
+                  </Badge>
+                  {isActive && (
+                    <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium text-xs px-2.5 py-1 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                      Active
+                    </Badge>
+                  )}
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-[#0f172a] mb-3 leading-tight">
+                  {challenge.title}
+                </h3>
+                <p className="text-base sm:text-lg text-gray-600 leading-relaxed line-clamp-3">
+                  {challenge.problemStatement}
+                </p>
               </div>
 
-              {/* Stats Row - Mobile: Single Line, Desktop: Separate Columns */}
-              <div className="flex items-center gap-3 sm:gap-6 w-full sm:w-auto justify-between sm:justify-start">
-                {/* Deadline */}
-                <div className="flex flex-col items-center text-center min-w-[80px] sm:min-w-[100px]">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
-                    <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
+              {/* <div className="flex items-center gap-4 sm:gap-6 text-sm text-gray-600 flex-wrap">
+                {challenge.createdBy && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-blue-50 rounded-md flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600">👤</span>
+                    </div>
+                    <span className="font-medium text-gray-900">Created by:</span> <span className="text-gray-700">{challenge.createdBy}</span>
                   </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">Deadline</p>
-                  <p className="text-[11px] sm:text-xs font-semibold text-slate-900">{endDateTime.date}</p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500">{endDateTime.time}</p>
-                </div>
+                )}
+                {challenge.createdAt && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-orange-50 rounded-md flex items-center justify-center">
+                      <Calendar className="w-3 h-3 text-orange-600" />
+                    </div>
+                    <span className="font-medium text-gray-900">Date:</span>{" "}
+                    <span className="text-gray-700">{formatDateTime(challenge.createdAt).date}</span>
+                  </div>
+                )}
+              </div> */}
 
-                {/* Submissions */}
-                <div className="flex flex-col items-center text-center min-w-[70px] sm:min-w-[90px]">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
-                    <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
-                  </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">Submissions</p>
-                  <p className="text-[11px] sm:text-xs font-semibold text-slate-900">{challenge.totalSubmissions || 0}</p>
+              <div className="flex items-center gap-3 text-base sm:text-lg font-semibold text-gray-900 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                <div className="w-6 h-6 bg-emerald-100 rounded-md flex items-center justify-center">
+                  <Users className="w-5 h-5 text-emerald-600" />
                 </div>
-
-                {/* Type */}
-                <div className="flex flex-col items-center text-center min-w-[60px] sm:min-w-[80px]">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-slate-200 to-slate-100 rounded-md flex items-center justify-center mb-1">
-                    <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-700" />
-                  </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-600 font-medium">Type</p>
-                  <p className="text-[11px] sm:text-xs font-semibold text-slate-900 capitalize">{challenge.type}</p>
-                </div>
+                <span>
+                  Total Submissions: <span className="text-emerald-600 font-bold">{challenge.totalSubmissions || 0}</span>
+                </span>
               </div>
 
-              {/* CTA Button */}
-              <div className="flex-shrink-0 w-full sm:w-auto">
+              {/* View Details Button (Modal Trigger) */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="lg" className="w-full md:w-auto bg-transparent hover:bg-gray-50">
+                    <Eye className="w-5 h-5 mr-2" />
+                    View Challenge Details
+                  </Button>
+                </DialogTrigger>
+                  <DialogContent className="bg-white border-0 shadow-2xl max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Eye className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <DialogTitle className="text-xl font-semibold text-gray-900">Challenge Details</DialogTitle>
+                          <p className="text-gray-600 text-sm">Review the challenge requirements</p>
+                        </div>
+                      </div>
+                    </DialogHeader>
+                    <div className="space-y-6 mt-4">
+                      {/* Challenge Title */}
+                      {challenge.title && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
+                            {challenge.title}
+                          </h3>
+                        </div>
+                      )}
+
+                      {/* Problem Statement */}
+                      {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                            <h4 className="text-base font-semibold text-blue-900">Problem Statement</h4>
+                          </div>
+                          {challenge.problemStatement && (
+                            <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                              <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                                {challenge.problemStatement}
+                              </p>
+                            </div>
+                          )}
+                          {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
+                            <div className="space-y-3">
+                              {challenge.problemAudioUrls.map((url: string, index: number) => (
+                                <div key={index} className="bg-white rounded-md p-3 border">
+                                  <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                                  <audio controls src={url} className="w-full h-8" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Guidelines */}
+                      {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
+                            <h4 className="text-base font-semibold text-green-900">Guidelines</h4>
+                          </div>
+                          {challenge.guidelines && (
+                            <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                              <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                                {challenge.guidelines}
+                              </p>
+                            </div>
+                          )}
+                          {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
+                            <div className="space-y-3">
+                              {challenge.guidelinesAudioUrls.map((url: string, index: number) => (
+                                <div key={index} className="bg-white rounded-md p-3 border">
+                                  <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                                  <audio controls src={url} className="w-full h-8" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Visual Clues */}
+                      {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
+                        <div className="bg-amber-50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ImageIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                            <h4 className="text-base font-semibold text-amber-900">Visual Clues ({challenge.visualClueUrls.length})</h4>
+                          </div>
+                          <div className="space-y-4">
+                            {challenge.visualClueUrls.map((url: string, index: number) => (
+                              <div key={index} className="w-full flex justify-center">
+                                <img
+                                  src={url}
+                                  alt={`Visual clue ${index + 1}`}
+                                  className="max-w-full h-auto rounded-md border border-amber-200 mx-auto"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Right Column: Call to Action */}
+            <div className="flex flex-col justify-center items-start md:items-end space-y-4 sm:space-y-6">
+              <div className="w-full md:w-auto space-y-4">
+                {/* Time and Deadline Info Cards */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-blue-200 rounded-md flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-blue-700" />
+                      </div>
+                      <p className="text-xs text-blue-700 font-semibold uppercase">Time Left</p>
+                    </div>
+                    <p className="text-lg font-bold text-blue-900">{isActive ? timeLeft : "Ended"}</p>
+                  </div>
+                  <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-purple-200 rounded-md flex items-center justify-center">
+                        <Calendar className="h-4 w-4 text-purple-700" />
+                      </div>
+                      <p className="text-xs text-purple-700 font-semibold uppercase">Deadline</p>
+                    </div>
+                    <p className="text-sm font-bold text-purple-900">{endDateTime.date}</p>
+                    <p className="text-xs text-purple-800">{endDateTime.time}</p>
+                  </div>
+                </div>
+
                 <Button
+                  size="lg"
                   onClick={() => router.push(`/participant/daily-challenge/${challenge.id}`)}
                   disabled={!isActive}
-                  size="sm"
-                  className={`w-full sm:w-auto ${buttonClass}`}
+                  className={`w-full md:min-w-[280px] h-14 sm:h-16 text-lg sm:text-xl font-bold shadow-lg transition-all ${
+                    isActive
+                      ? hasSubmission
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        : "bg-[#0f172a] hover:bg-slate-800 text-white"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed hover:bg-gray-200"
+                  }`}
                 >
                   {isActive ? (
                     <>
-                      <Zap className="mr-2 h-3.5 w-3.5" />
-                      {buttonLabel}
+                      <Zap className="mr-2 h-5 w-5" />
+                      {hasSubmission ? "Edit Submission" : "Enter Submission"}
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
+                      <CheckCircle2 className="mr-2 h-5 w-5" />
                       Challenge Ended
                     </>
                   )}
                 </Button>
+                <p className="text-sm text-center md:text-right text-gray-600">
+                  Submit your best prompt and compete for the top spot
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 

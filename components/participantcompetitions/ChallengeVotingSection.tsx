@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2, Star } from "lucide-react"
+import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2, Star, FileText, Target, Eye, Image as ImageIcon } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DailyChallengeLeaderboard } from "./DailyChallengeLeaderboard"
 
 interface Submission {
@@ -36,6 +37,9 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
   const [submittingVotes, setSubmittingVotes] = useState<Record<string, boolean>>({})
   const [expandedSubmissions, setExpandedSubmissions] = useState<Record<string, boolean>>({})
   const [userVotes, setUserVotes] = useState<Record<string, { score: number, votedAt: Timestamp }>>({})
+   const [selectedSubmissionForDetails, setSelectedSubmissionForDetails] = useState<string | null>(null)
+   const [challengeDetails, setChallengeDetails] = useState<any>(null)
+   const [loadingChallengeDetails, setLoadingChallengeDetails] = useState(false)
   const { toast } = useToast()
   
   // Get current user from Clerk
@@ -69,6 +73,39 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
     fetchUserVotes()
   }, [currentUserId, challengeId])
+ // Fetch challenge details when modal opens
+ useEffect(() => {
+   if (selectedSubmissionForDetails && !challengeDetails) {
+     fetchChallengeDetails()
+   }
+ }, [selectedSubmissionForDetails])
+
+ const fetchChallengeDetails = async () => {
+   try {
+     setLoadingChallengeDetails(true)
+     const challengeRef = doc(db, "dailychallenge", challengeId)
+     const challengeSnap = await getDoc(challengeRef)
+     
+     if (challengeSnap.exists()) {
+       setChallengeDetails(challengeSnap.data())
+     }
+   } catch (err) {
+     console.error("Error fetching challenge details:", err)
+   } finally {
+     setLoadingChallengeDetails(false)
+   }
+ }
+
+ const handleOpenSubmissionDetails = (submissionId: string) => {
+   setSelectedSubmissionForDetails(submissionId)
+   if (!challengeDetails) {
+     fetchChallengeDetails()
+   }
+ }
+
+ const handleCloseSubmissionDetails = () => {
+   setSelectedSubmissionForDetails(null)
+ }
 
   useEffect(() => {
     setLoading(true)
@@ -118,12 +155,15 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
           const resolvedSubmissions = await Promise.all(userFetchPromises)
           
-          // Sort by bayesian score (fallback to votes count)
+          // Sort by bayesian score descending, then ratingAvg, then votes
           resolvedSubmissions.sort((a, b) => {
-            const bsB = b.bayesScore ?? 0
             const bsA = a.bayesScore ?? 0
-            if (bsB !== bsA) return bsB - bsA
-            return b.totalVotes - a.totalVotes
+            const bsB = b.bayesScore ?? 0
+            if (bsA !== bsB) return bsB - bsA
+            const raA = a.ratingAvg ?? 0
+            const raB = b.ratingAvg ?? 0
+            if (raA !== raB) return raB - raA
+            return (b.totalVotes ?? 0) - (a.totalVotes ?? 0)
           })
           
           setSubmissions(resolvedSubmissions)
@@ -386,202 +426,6 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
   return (
     <div className="space-y-6">
-      {/* Section Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
-            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-          </div>
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-            <span className="sm:hidden">Vote to Submissions</span>
-            <span className="hidden sm:inline">Vote to Daily Prompt Submissions</span>
-          </h3>
-          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
-            {submissions.length}
-          </Badge>
-        </div>
-        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
-          Review and rate submissions from 1-5 stars.
-        </p>
-      </div>
-
-      {/* Submissions Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {submissions.map((submission, index) => {
-          const isSubmitting = submittingVotes[submission.id] || false
-          const selectedScore = selectedScores[submission.id]
-          const hasVoted = !!userVotes[submission.id]
-          const votedScore = userVotes[submission.id]?.score
-          const isOwnSubmission = submission.userId === currentUserId
-
-          return (
-            <Card 
-              key={submission.id} 
-              className="bg-white shadow-md hover:shadow-lg transition-shadow border border-gray-200 flex flex-col"
-            >
-              <CardHeader className="bg-gray-50 border-b border-gray-200 pb-3 sm:pb-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#0f172a] rounded-full flex items-center justify-center shrink-0">
-                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                        {submission.userFullName || "Anonymous User"}
-                      </CardTitle>
-                      <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5 min-w-0">
-                        <Calendar className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate text-xs">{formatTimestamp(submission.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Rank Badge for top 3 */}
-                  {index < 3 && (
-                    <Badge 
-                      className={`shrink-0 ${
-                        index === 0 
-                          ? "bg-yellow-100 text-yellow-800 border-yellow-300" 
-                          : index === 1
-                          ? "bg-gray-100 text-gray-800 border-gray-300"
-                          : "bg-orange-100 text-orange-800 border-orange-300"
-                      }`}
-                    >
-                      #{index + 1}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent className="p-3 sm:p-5 flex-1 flex flex-col space-y-3 sm:space-y-4">
-                {/* Submission Text */}
-                <div className="flex-1">
-                  <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-100">
-                    <p className={`text-xs sm:text-sm text-gray-700 leading-relaxed ${
-                      expandedSubmissions[submission.id] ? "" : "line-clamp-2"
-                    }`}>
-                      {submission.submissionText}
-                    </p>
-                    {submission.submissionText.length > 100 && (
-                      <button
-                        onClick={() => setExpandedSubmissions(prev => ({
-                          ...prev,
-                          [submission.id]: !prev[submission.id]
-                        }))}
-                        className="text-xs text-[#0f172a] hover:text-slate-700 font-semibold mt-2 underline"
-                      >
-                        {expandedSubmissions[submission.id] ? "Show less" : "Show more"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Rating Average Display */}
-                <div className="flex items-center justify-between py-2 px-2 sm:px-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((s) => {
-                        const rating = submission.ratingAvg ?? 0
-                        const filled = rating >= s - 0.5
-                        return (
-                          <Star
-                            key={s}
-                            className={`h-4 w-4 ${
-                              filled
-                                ? 'text-yellow-500 fill-yellow-500'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        )
-                      })}
-                    </div>
-                    <span className="text-xs sm:text-sm font-semibold text-gray-800">
-                      {submission.ratingAvg ? `${submission.ratingAvg.toFixed(1)}/5.0` : '0.0/5.0'}
-                    </span>
-                  </div>
-                  <Badge className="bg-yellow-600 text-white border-0 text-xs sm:text-sm font-bold px-2 py-1">
-                    {submission.totalVotes} {submission.totalVotes <= 1 ? 'vote' : 'votes'}
-                  </Badge>
-                </div>
-
-                {/* Scoring Interface */}
-                <div className="space-y-2 sm:space-y-3 pt-2 border-t border-gray-200">
-                  {isOwnSubmission ? (
-                    // Show own submission status
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                      <div className="flex items-center gap-2 text-blue-800 mb-1">
-                        <User className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="font-semibold text-xs sm:text-sm">Your Submission</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-blue-700">
-                        You cannot vote on your own submission.
-                      </p>
-                    </div>
-                  ) : hasVoted ? (
-                    // Show voted status
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-                      <div className="flex items-center gap-2 text-green-800 mb-2">
-                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="font-semibold text-xs sm:text-sm">Already Voted</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-green-700">
-                        You gave <span className="font-bold">{votedScore}</span> star{votedScore !== 1 ? 's' : ''} to this submission.
-                      </p>
-                    </div>
-                  ) : (
-                    // Show voting interface
-                    <>
-                      <label className="text-xs font-semibold text-gray-700 uppercase tracking-tight">
-                        Rating
-                      </label>
-                      <div className="flex items-center gap-2 w-full">
-                        {[1,2,3,4,5].map((s) => {
-                          const active = (selectedScore ?? 0) >= s
-                          return (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => handleScoreChange(submission.id, String(s))}
-                              disabled={isSubmitting}
-                              aria-label={`${s} star`}
-                              className={`flex-1 p-2 rounded flex items-center justify-center ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'hover:scale-105 transition-transform'}`}
-                            >
-                              <Star className={`${active ? 'text-yellow-500' : 'text-gray-300'} h-6 w-6`} />
-                            </button>
-                          )
-                        })}
-                        <span className="ml-3 text-xs text-gray-600 whitespace-nowrap">{selectedScore ? `${selectedScore} / 5` : 'Select rating'}</span>
-                      </div>
-
-                      <Button
-                        onClick={() => handleSubmitScore(submission.id, submission.userId)}
-                        disabled={selectedScore === undefined || isSubmitting}
-                        className="w-full bg-[#0f172a] hover:bg-slate-800 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm py-2"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5 sm:mr-2" />
-                            <span className="hidden sm:inline">Submitting...</span>
-                            <span className="sm:hidden">Submitting</span>
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            <span className="hidden sm:inline">Submit Rating</span>
-                            <span className="sm:hidden">Vote</span>
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Daily Challenge Leaderboard - Below the submissions */}
       <div className="mt-12 pt-8 border-t border-gray-200">
         <DailyChallengeLeaderboard
           challengeId={challengeId}
@@ -589,6 +433,395 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
           topN={10}
         />
       </div>
+      {/* Section Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
+          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
+            <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Vote to Daily Prompt Submissions
+          </h3>
+          <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
+            {submissions.length}
+          </Badge>
+        </div>
+        <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
+          Review and rate submissions from 1-5 stars. Help rank the best responses.
+        </p>
+      </div>
+
+      {/* Submissions List View */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Table Header */}
+        <div className="hidden md:grid grid-cols-11 gap-4 bg-gray-50 border-b border-gray-200 p-4 font-semibold text-gray-800 text-sm sticky top-0">
+          <div className="col-span-2">Participant</div>
+          <div className="col-span-4">Submission</div>
+          <div className="col-span-2 text-center">Avg Rating</div>
+          <div className="col-span-1 text-center">Votes</div>
+          <div className="col-span-2">Your Rating</div>
+        </div>
+
+        {/* Table Body */}
+        <div className="divide-y divide-gray-200">
+          {submissions.map((submission, index) => {
+            const isSubmitting = submittingVotes[submission.id] || false
+            const selectedScore = selectedScores[submission.id]
+            const hasVoted = !!userVotes[submission.id]
+            const votedScore = userVotes[submission.id]?.score
+            const isOwnSubmission = submission.userId === currentUserId
+
+            return (
+              <div key={submission.id} className="hover:bg-gray-50/50 transition-colors">
+                {/* Mobile View */}
+                <div className="md:hidden p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-8 h-8 bg-[#0f172a] rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm text-gray-900 truncate">
+                          {submission.userFullName || "Anonymous User"}
+                        </p>
+                        <p className="text-xs text-gray-600">{formatTimestamp(submission.timestamp)}</p>
+                      </div>
+                    </div>
+                    {index < 3 && (
+                      <Badge 
+                        className={`shrink-0 ${
+                          index === 0 
+                            ? "bg-yellow-100 text-yellow-800" 
+                            : index === 1
+                            ? "bg-gray-100 text-gray-800"
+                            : "bg-orange-100 text-orange-800"
+                        }`}
+                      >
+                        #{index + 1}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Submission Preview */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="w-full text-left p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                        <p className="text-xs text-gray-600 line-clamp-2">{submission.submissionText}</p>
+                        <p className="text-xs text-blue-600 font-semibold mt-1 underline">View Full Submission</p>
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl">{submission.userFullName}'s Submission</DialogTitle>
+                        <DialogDescription>Full submission text</DialogDescription>
+                      </DialogHeader>
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{submission.submissionText}</p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Rating Stats */}
+                  <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-3 w-3 ${
+                              (submission.ratingAvg ?? 0) >= s - 0.5
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-semibold">{submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}</span>
+                    </div>
+                    <Badge className="bg-yellow-600 text-white text-xs">{submission.totalVotes}</Badge>
+                  </div>
+
+                  {/* Voting Interface Mobile */}
+                  {isOwnSubmission ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
+                      You cannot vote on your own submission.
+                    </div>
+                  ) : hasVoted ? (
+                    <div className="bg-green-50 border border-green-200 rounded p-2 text-xs text-green-700">
+                      ✓ You gave {votedScore} star{votedScore !== 1 ? 's' : ''}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-1 justify-center">
+                        {[1,2,3,4,5].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => handleScoreChange(submission.id, String(s))}
+                            disabled={isSubmitting}
+                            className="flex-1"
+                          >
+                            <Star className={`w-5 h-5 mx-auto ${(selectedScore ?? 0) >= s ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
+                          </button>
+                        ))}
+                      </div>
+                      <Button
+                        onClick={() => handleSubmitScore(submission.id, submission.userId)}
+                        disabled={selectedScore === undefined || isSubmitting}
+                        className="w-full h-8 bg-[#0f172a] hover:bg-slate-800 text-white text-xs"
+                      >
+                        {isSubmitting ? "Submitting..." : "Submit Vote"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Desktop View - Table Row */}
+                <div className="hidden md:grid grid-cols-11 gap-4 p-4 items-center">
+                  {/* Participant Name */}
+                  <div className="col-span-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 bg-[#0f172a] rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="h-4.5 w-4.5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {submission.userFullName || "Anonymous"}
+                        </p>
+                        <p className="text-xs text-gray-600">{formatTimestamp(submission.timestamp).split(',')[0]}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submission Text with Show More Modal */}
+                  <div className="col-span-4">
+                     <button 
+                       onClick={() => handleOpenSubmissionDetails(submission.id)}
+                       className="w-full text-left p-2.5 bg-gray-50 rounded border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+                     >
+                       <p className="text-sm text-gray-700 line-clamp-1 group-hover:text-blue-700">{submission.submissionText}</p>
+                       <p className="text-xs text-blue-600 font-semibold mt-1.5">View Details</p>
+                     </button>
+                  </div>
+
+                  {/* Average Rating with Stars */}
+                  <div className="col-span-2 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${(submission.ratingAvg ?? 0) >= s - 0.5 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm font-bold text-gray-900 ml-1 whitespace-nowrap">
+                        {submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Number of Votes */}
+                  <div className="col-span-1 text-center">
+                    <Badge className="bg-blue-100 text-blue-900 text-sm font-semibold whitespace-nowrap">
+                      {submission.totalVotes}
+                    </Badge>
+                  </div>
+
+                  {/* Rating Input */}
+                  <div className="col-span-2">
+                    {isOwnSubmission ? (
+                      <div className="text-sm text-center text-blue-700 font-semibold p-2.5 bg-blue-50 rounded border border-blue-200">
+                        Your submission
+                      </div>
+                    ) : hasVoted ? (
+                      <div className="text-sm text-center text-green-700 font-semibold p-2.5 bg-green-50 rounded border border-green-200 flex items-center justify-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                        You rated {votedScore} star{votedScore !== 1 ? 's' : ''}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 w-full">
+                        <div className="flex gap-0.5">
+                          {[1,2,3,4,5].map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => handleScoreChange(submission.id, String(s))}
+                              disabled={isSubmitting}
+                              className="p-0.5"
+                              title={`${s} stars`}
+                            >
+                              <Star className={`w-4.5 h-4.5 transition-colors ${(selectedScore ?? 0) >= s ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'}`} />
+                            </button>
+                          ))}
+                        </div>
+                        <Button
+                          onClick={() => handleSubmitScore(submission.id, submission.userId)}
+                          disabled={selectedScore === undefined || isSubmitting}
+                          size="sm"
+                          className="h-8 px-2.5 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold flex-shrink-0"
+                        >
+                          {isSubmitting ? (
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Daily Challenge Leaderboard - Below the submissions */}
+       {/* Submission Details Modal */}
+       {selectedSubmissionForDetails && (
+         <Dialog open={!!selectedSubmissionForDetails} onOpenChange={(open) => { if (!open) handleCloseSubmissionDetails() }}>
+           <DialogContent 
+             className="bg-white border-0 shadow-2xl max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto"
+             onPointerDownOutside={(e) => {
+               e.preventDefault()
+             }}
+           >
+             <DialogHeader className="space-y-3">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                   <Eye className="w-5 h-5 text-blue-600" />
+                 </div>
+                 <div className="min-w-0 flex-1">
+                   <DialogTitle className="text-xl font-semibold text-gray-900">Challenge & Submission Details</DialogTitle>
+                   <p className="text-gray-600 text-sm">Review the challenge requirements and participant submission</p>
+                 </div>
+               </div>
+             </DialogHeader>
+           
+             {loadingChallengeDetails ? (
+               <div className="flex items-center justify-center py-12">
+                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+               </div>
+             ) : (
+               <div className="space-y-6">
+                 {/* Challenge Title */}
+                 {challengeDetails?.title && (
+                   <div className="bg-gray-50 rounded-lg p-4">
+                     <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 break-words leading-tight">
+                       {challengeDetails.title}
+                     </h3>
+                   </div>
+                 )}
+
+                 {/* Problem Statement */}
+                 {(challengeDetails?.problemStatement || challengeDetails?.problemAudioUrls?.length > 0) && (
+                   <div className="bg-blue-50 rounded-lg p-4">
+                     <div className="flex items-center gap-2 mb-3">
+                       <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                       <h4 className="text-base font-semibold text-blue-900">Problem Statement</h4>
+                     </div>
+                   
+                     {challengeDetails.problemStatement && (
+                       <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                         <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                           {challengeDetails.problemStatement}
+                         </p>
+                       </div>
+                     )}
+                   
+                     {challengeDetails.problemAudioUrls && challengeDetails.problemAudioUrls.length > 0 && (
+                       <div className="space-y-3">
+                         {challengeDetails.problemAudioUrls.map((url: string, index: number) => (
+                           <div key={index} className="bg-white rounded-md p-3 border">
+                             <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                             <audio controls src={url} className="w-full h-8" />
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                 {/* Guidelines */}
+                 {(challengeDetails?.guidelines || challengeDetails?.guidelinesAudioUrls?.length > 0) && (
+                   <div className="bg-green-50 rounded-lg p-4">
+                     <div className="flex items-center gap-2 mb-3">
+                       <Target className="w-5 h-5 text-green-600 flex-shrink-0" />
+                       <h4 className="text-base font-semibold text-green-900">Guidelines</h4>
+                     </div>
+                   
+                     {challengeDetails.guidelines && (
+                       <div className="bg-white rounded-md p-4 max-h-48 overflow-y-auto border mb-4">
+                         <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                           {challengeDetails.guidelines}
+                         </p>
+                       </div>
+                     )}
+                   
+                     {challengeDetails.guidelinesAudioUrls && challengeDetails.guidelinesAudioUrls.length > 0 && (
+                       <div className="space-y-3">
+                         {challengeDetails.guidelinesAudioUrls.map((url: string, index: number) => (
+                           <div key={index} className="bg-white rounded-md p-3 border">
+                             <div className="text-sm text-gray-700 mb-2 font-medium">Audio {index + 1}</div>
+                             <audio controls src={url} className="w-full h-8" />
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                 {/* Visual Clues */}
+                 {challengeDetails?.visualClueUrls && challengeDetails.visualClueUrls.length > 0 && (
+                   <div className="bg-amber-50 rounded-lg p-4">
+                     <div className="flex items-center gap-2 mb-3">
+                       <ImageIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                       <h4 className="text-base font-semibold text-amber-900">Visual Clues ({challengeDetails.visualClueUrls.length})</h4>
+                     </div>
+                     <div className="space-y-4">
+                       {challengeDetails.visualClueUrls.map((url: string, index: number) => (
+                         <div key={index} className="w-full flex justify-center">
+                           <img
+                             src={url}
+                             alt={`Visual clue ${index + 1}`}
+                             className="max-w-full h-auto rounded-md border border-amber-200 mx-auto"
+                           />
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Participant Submission */}
+                 {(() => {
+                   const currentSubmission = submissions.find(s => s.id === selectedSubmissionForDetails)
+                   return currentSubmission && (
+                     <div className="bg-purple-50 rounded-lg p-4">
+                       <div className="flex items-center gap-2 mb-3">
+                         <Send className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                         <h4 className="text-base font-semibold text-purple-900">{currentSubmission.userFullName}'s Submission</h4>
+                       </div>
+                       <div className="bg-white rounded-md p-4 max-h-64 overflow-y-auto border">
+                         <p className="text-gray-700 leading-relaxed text-sm break-words whitespace-pre-wrap">
+                           {currentSubmission.submissionText}
+                         </p>
+                       </div>
+                       {currentSubmission.submissionText && (
+                         <div className="mt-2 text-xs text-purple-700 bg-purple-100 px-3 py-1 rounded-full inline-block">
+                           Characters: {currentSubmission.submissionText.length} | Words: {currentSubmission.submissionText.split(/\s+/).filter(Boolean).length}
+                         </div>
+                       )}
+                     </div>
+                   )
+                 })()}
+               </div>
+             )}
+           </DialogContent>
+         </Dialog>
+       )}
+
+       {/* Image Preview Modal removed: visual clues now full-width in the dialog */}
+
+    
     </div>
   )
 }
