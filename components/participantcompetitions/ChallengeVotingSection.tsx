@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, doc, Timestamp, getDoc, setDoc, query, where, getDocs, runTransaction } from "firebase/firestore"
 import { useUser } from "@clerk/nextjs"
@@ -33,6 +33,8 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [filter, setFilter] = useState<'all' | 'voted' | 'not_voted'>('all')
   const [selectedScores, setSelectedScores] = useState<Record<string, number>>({})
   const [submittingVotes, setSubmittingVotes] = useState<Record<string, boolean>>({})
   const [expandedSubmissions, setExpandedSubmissions] = useState<Record<string, boolean>>({})
@@ -361,6 +363,17 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
     }
   }
 
+  const filteredSubmissions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return submissions.filter((s) => {
+      const name = (s.userFullName || "").toLowerCase()
+      if (q && !name.includes(q)) return false
+      if (filter === 'voted') return !!userVotes[s.id]
+      if (filter === 'not_voted') return !userVotes[s.id]
+      return true
+    })
+  }, [submissions, searchQuery, filter, userVotes])
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -417,7 +430,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions for the Daily challenge Yet</h3>
           <p className="text-gray-600">Be the first to submit a solution for this challenge!</p>
         </CardContent>
       </Card>
@@ -443,12 +456,37 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
             Vote to Daily Prompt Submissions
           </h3>
           <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm">
-            {submissions.length}
+            {filteredSubmissions.length}
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-13">
           Review and rate submissions from 1-5 stars. Help rank the best responses.
         </p>
+
+        <div className="mt-4 flex flex-col md:flex-row md:items-center gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by participant name"
+            className="w-full md:w-64 px-3 py-2 border border-gray-200 rounded-md text-sm"
+          />
+
+          <Select value={filter} onValueChange={(v) => setFilter(v as 'all' | 'voted' | 'not_voted')}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="voted">Voted</SelectItem>
+              <SelectItem value="not_voted">Not Voted</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="text-sm text-gray-600 ml-auto">
+            Showing {filteredSubmissions.length} of {submissions.length}
+          </div>
+        </div>
       </div>
 
       {/* Submissions List View */}
@@ -464,7 +502,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
         {/* Table Body */}
         <div className="divide-y divide-gray-200">
-          {submissions.map((submission, index) => {
+          {filteredSubmissions.map((submission, index) => {
             const isSubmitting = submittingVotes[submission.id] || false
             const selectedScore = selectedScores[submission.id]
             const hasVoted = !!userVotes[submission.id]
