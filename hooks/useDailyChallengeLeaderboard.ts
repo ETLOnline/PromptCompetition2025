@@ -6,7 +6,7 @@ export interface DailyChallengeLeaderboardEntry {
   rank: number
   userId: string
   userFullName: string
-  totalVotes: number
+  voteCount: number
   bayesScore?: number
   ratingAvg?: number
   submissionText: string
@@ -80,7 +80,7 @@ export const useDailyChallengeLeaderboard = ({
                 console.error(`Error fetching user ${userId}:`, err)
               }
 
-              const voteCount = data.voteCount ?? data.totalVotes ?? 0
+              const voteCount = data.voteCount ?? 0
               const ratingAvg = data.ratingAvg ?? (voteCount > 0 && data.ratingSum ? (data.ratingSum / voteCount) : undefined)
               const bayesScore = data.bayesScore ?? 0
 
@@ -88,7 +88,7 @@ export const useDailyChallengeLeaderboard = ({
                 rank: 0, // Will be set after sorting
                 userId: userId,
                 userFullName: userFullName,
-                totalVotes: voteCount,
+                voteCount: voteCount,
                 bayesScore,
                 ratingAvg,
                 submissionText: data.submissionText || "",
@@ -100,7 +100,7 @@ export const useDailyChallengeLeaderboard = ({
             const resolvedEntries = await Promise.all(userFetchPromises)
 
             // Filter out submissions with less than 2 votes (minimum threshold)
-            const filteredEntries = resolvedEntries.filter(entry => entry.totalVotes >= 2)
+            const filteredEntries = resolvedEntries.filter(entry => entry.voteCount >= 2)
 
             // Add ranks (already ordered by query)
             filteredEntries.forEach((entry, index) => { entry.rank = index + 1 })
