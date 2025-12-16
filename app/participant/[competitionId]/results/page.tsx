@@ -207,23 +207,49 @@ export default function ResultsPage() {
   // No submissions state
   if (!submissions.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-blue-50 border border-blue-200 rounded-xl p-6 text-center space-y-4">
-          <User className="h-12 w-12 text-blue-600 mx-auto" />
-          <h2 className="text-xl font-bold text-blue-800">No Submissions Found</h2>
-          <p className="text-blue-700">You haven't submitted any solutions for this competition yet.</p>
-          {competition && (
-            <p className="text-sm text-blue-600">
-              Competition: <span className="font-semibold">{competition.title}</span>
-            </p>
-          )}
-          <button
-            onClick={() => router.back()}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Competition
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex items-start gap-6">
+              <button
+                onClick={() => router.back()}
+                className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
+              >
+                <ArrowLeft className="h-5 w-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
+                {competition && <p className="text-lg text-gray-600 max-w-2xl">{competition.title}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="p-12 text-center space-y-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl mb-2">
+                  <FileX className="h-10 w-10 text-blue-600" />
+                </div>
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-bold text-gray-900">No Submissions Yet</h2>
+                  <p className="text-gray-600 text-lg max-w-md mx-auto">
+                    You haven't submitted any solutions for this competition yet. Start participating to see your results here.
+                  </p>
+                </div>
+                <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => router.back()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Competition
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )

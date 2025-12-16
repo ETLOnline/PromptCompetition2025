@@ -39,12 +39,21 @@ export default function ParticipantBreadcrumb() {
   const [competitionName, setCompetitionName] = useState<string>("");
   const [challengeName, setChallengeName] = useState<string>("");
 
+  // Check if we're on daily challenge route
+  const isDailyChallenge = pathname?.includes('/daily-challenge');
+
   useEffect(() => {
     let mounted = true;
     async function loadNames() {
       setLoading(true);
       try {
-        if (params.competitionId) {
+        // Handle daily challenge route
+        if (isDailyChallenge && params.challengeId) {
+            setChallengeName("Daily Challenge");
+          
+        }
+        // Handle regular competition routes
+        else if (params.competitionId) {
           const competitionRef = doc(db, "competitions", params.competitionId as string);
           const competitionSnap = await getDoc(competitionRef);
           if (competitionSnap.exists() && mounted) {
@@ -52,14 +61,15 @@ export default function ParticipantBreadcrumb() {
           } else if (mounted) {
             setCompetitionName("Competition");
           }
-        }
-        if (params.competitionId && params.challengeId) {
-          const challengeRef = doc(db, "competitions", params.competitionId as string, "challenges", params.challengeId as string);
-          const challengeSnap = await getDoc(challengeRef);
-          if (challengeSnap.exists() && mounted) {
-            setChallengeName(challengeSnap.data()?.title || "Challenge");
-          } else if (mounted) {
-            setChallengeName("Challenge");
+          
+          if (params.challengeId) {
+            const challengeRef = doc(db, "competitions", params.competitionId as string, "challenges", params.challengeId as string);
+            const challengeSnap = await getDoc(challengeRef);
+            if (challengeSnap.exists() && mounted) {
+              setChallengeName(challengeSnap.data()?.title || "Challenge");
+            } else if (mounted) {
+              setChallengeName("Challenge");
+            }
           }
         }
       } catch (error) {
@@ -78,7 +88,7 @@ export default function ParticipantBreadcrumb() {
     return () => {
       mounted = false;
     };
-  }, [params.competitionId, params.challengeId]);
+  }, [params.competitionId, params.challengeId, isDailyChallenge]);
 
   // Build breadcrumb items
   let items: BreadcrumbItem[] = [
@@ -88,19 +98,31 @@ export default function ParticipantBreadcrumb() {
     },
   ];
 
-  if (params.competitionId) {
+  // Handle daily challenge route
+  if (isDailyChallenge) {
+    if (params.challengeId) {
+      items.push({
+        label: truncate(challengeName || "Daily Challenge", 18),
+        isCurrent: true,
+      });
+    } else {
+      items[0].isCurrent = true;
+    }
+  }
+  // Handle regular competition routes
+  else if (params.competitionId) {
     items.push({
       label: truncate(competitionName || "Competition", 18),
       href: `/participant/${params.competitionId}`,
     });
-  }
-  if (params.competitionId && params.challengeId) {
-    items.push({
-      label: truncate(challengeName || "Challenge", 18),
-      isCurrent: true,
-    });
-  } else if (params.competitionId) {
-    items[items.length - 1].isCurrent = true;
+    if (params.challengeId) {
+      items.push({
+        label: truncate(challengeName || "Challenge", 18),
+        isCurrent: true,
+      });
+    } else {
+      items[items.length - 1].isCurrent = true;
+    }
   } else {
     items[0].isCurrent = true;
   }

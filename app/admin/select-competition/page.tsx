@@ -6,27 +6,25 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+// import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog"
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogHeader,
+//   DialogTitle,
+//   DialogFooter,
+//   DialogDescription,
+// } from "@/components/ui/dialog"
 
 import { fetchCompetitions, createCompetition, updateCompetition, deleteCompetition, 
   fetchWithAuth
   } from "@/lib/api"
+import { Spinner } from "@/components/ui/spinner"
   
 import {
   Plus,
   Trophy,
-  Calendar,
-  MapPin,
-  DollarSign,
   Search,
   Filter,
   Grid3X3,
@@ -34,8 +32,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  Info,
+  Zap,
 } from "lucide-react"
 
 // Import our new components
@@ -299,6 +296,15 @@ export default function ModernCompetitionSelector() {
     }
   }
 
+  // Show full page spinner during initial authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
+        <Spinner className="h-10 w-10" />
+      </div>
+    )
+  }
+
   if ((role !== "admin" && role !== "superadmin")) {
     return null
   }
@@ -342,6 +348,15 @@ export default function ModernCompetitionSelector() {
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Competition
+                </Button>
+              )}
+              {role === "superadmin" && (
+                <Button
+                  onClick={() => router.push("/admin/daily-challenge")}
+                  className="bg-gray-900 hover:bg-gray-800 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Daily Challenge
                 </Button>
               )}
             </div>

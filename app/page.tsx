@@ -1,8 +1,8 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import { useRef, useState, useEffect, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { fetchCompetitions } from "@/lib/api" // Import your API utility
 
@@ -19,14 +19,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
-  Phone,
   Sparkles,
   Zap,
-  Star,
   MessageCircle, 
   Globe,
   Eye,
-  LayoutDashboard
+  LayoutDashboard,
+  Heart
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { SignedIn, SignedOut } from "@clerk/nextjs"
@@ -40,16 +39,57 @@ import ContactForm from "@/components/contact-form"
 import { CompetitionCardSkeleton } from "@/components/competition-card-skeleton"
 import { ViewCompetitionDetailsModal } from "@/components/view-competition-details-modal"
 
+type CompetitionStatus = "Active" | "Upcoming" | "Finished"
+
+type CompetitionApiResponse = {
+  id: string
+  title: string
+  description: string
+  startDeadline: string
+  endDeadline: string
+  mode?: string
+  venue?: string
+  location?: string
+  prizeMoney?: string
+  createdAt?: string
+  isActive?: boolean
+  isLocked?: boolean
+  [key: string]: unknown
+}
+
+type CompetitionEvent = CompetitionApiResponse & {
+  status: CompetitionStatus
+  date: string
+  time: string
+}
+
+const resolveDashboardUrl = (role?: string | null) => {
+  if (!role) return "/profile-setup"
+
+  switch (role) {
+    case "admin":
+    case "superadmin":
+      return "/admin/select-competition"
+    case "judge":
+      return "/judge"
+    case "participant":
+      return "/participant"
+    default:
+      return "/profile-setup"
+  }
+}
+
 // The Main Component
 function CompetitionEventsSection() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isScrollable, setIsScrollable] = useState(false)
   const [isAtStart, setIsAtStart] = useState(true)
   const [isAtEnd, setIsAtEnd] = useState(false)
-  const [events, setEvents] = useState<any[]>([])
+  const [events, setEvents] = useState<CompetitionEvent[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(true)
-  const [selectedCompetition, setSelectedCompetition] = useState<any>(null)
+  const [selectedCompetition, setSelectedCompetition] = useState<CompetitionEvent | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const { role, loading } = useAuth()
   const router = useRouter()
 
   const checkScrollability = () => {
@@ -66,21 +106,21 @@ function CompetitionEventsSection() {
     const loadCompetitions = async () => {
       setIsLoadingEvents(true)
       try {
-        const data = await fetchCompetitions()
+        const data = (await fetchCompetitions()) as CompetitionApiResponse[]
         const now = new Date()
 
-        const processedCompetitions = data
-          .map((comp: any) => {
+        const processedCompetitions: CompetitionEvent[] = data
+          .map((comp) => {
             const start = new Date(comp.startDeadline)
             const end = new Date(comp.endDeadline)
-            let status = "Upcoming"
+            let status: CompetitionStatus = "Upcoming"
             if (now >= start && now <= end) {
               status = "Active"
             } else if (now > end) {
               status = "Finished"
             }
             return {
-              ...comp, // Keep all original competition data
+              ...comp,
               status,
               date: start.toLocaleDateString("en-US", {
                 year: "numeric",
@@ -133,7 +173,7 @@ function CompetitionEventsSection() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: CompetitionStatus) => {
     switch (status) {
       case "Active":
         return "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -146,9 +186,15 @@ function CompetitionEventsSection() {
     }
   }
 
-  const handleViewDetails = (event: any) => {
+  const handleViewDetails = (event: CompetitionEvent) => {
     setSelectedCompetition(event)
     setIsDetailsModalOpen(true)
+  }
+
+  const handleJoin = () => {
+    if (loading) return
+    const destination = role ? resolveDashboardUrl(role) : "/auth/login"
+    router.push(destination)
   }
 
   return (
@@ -204,7 +250,7 @@ function CompetitionEventsSection() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
-              {events.map((event, index) => (
+              {events.map((event: CompetitionEvent, index) => (
                 <motion.div
                   key={event.id}
                   className="w-full"
@@ -287,7 +333,7 @@ function CompetitionEventsSection() {
                       <div className="flex justify-between items-center pt-4 border-t border-slate-100">
                         {(event.status === "Active" || event.status === "Upcoming") && (
                           <Button
-                            onClick={() => router.push("/auth/login")}
+                            onClick={handleJoin}
                             className="w-full gap-2 px-4 sm:px-6 md:px-8 py-3 sm:py-4 h-12 sm:h-14 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                           >
                             <Zap className="h-5 w-5" />
@@ -317,27 +363,38 @@ function CompetitionEventsSection() {
   )
 }
 
+function RedirectHandler() {
+  const { role, loading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Conditional redirection logic
+  useEffect(() => {
+    // Wait until loading is complete
+    if (loading) return
+
+    // Check if redirect query parameter is "false"
+    const redirectParam = searchParams.get("redirect")
+    const shouldSkipRedirect = redirectParam === "false"
+
+    // If user is logged in (has a role) and redirect is not disabled, redirect to dashboard
+    if (role && !shouldSkipRedirect) {
+      const dashboardUrl = resolveDashboardUrl(role)
+      router.push(dashboardUrl)
+    }
+  }, [loading, role, searchParams, router])
+
+  return null
+}
+
 export default function HomePage() {
   const { role, loading } = useAuth()
 
-  const getDashboardUrl = () => {
-    if (!role) return "/profile-setup"
-    
-    switch (role) {
-      case "admin":
-      case "superadmin":
-        return "/admin"
-      case "judge":
-        return "/judge"
-      case "participant":
-        return "/participant"
-      default:
-        return "/profile-setup"
-    }
-  }
-
   return (
     <>
+      <Suspense fallback={null}>
+        <RedirectHandler />
+      </Suspense>
       <StructuredData />
       <div className="flex min-h-screen flex-col pt-2">
         <Navbar />
@@ -533,7 +590,7 @@ export default function HomePage() {
                       </Button>
                     </SignedOut>
                     <SignedIn>
-                        <Link href={getDashboardUrl()}>
+                        <Link href={resolveDashboardUrl(role)}>
                           <Button
                             disabled={loading}
                             className="group relative gap-2 px-6 sm:px-8 py-4 sm:py-5 h-auto text-sm sm:text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:via-slate-700 hover:to-slate-800 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
@@ -558,13 +615,73 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Current Sponsors Section */}
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+          <div className="container mx-auto w-full sm:max-w-6xl">
+            
+            <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3 px-4">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-blue-100 mb-2">
+                <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+                <span className="text-xs sm:text-sm font-semibold text-blue-600">Our Valued Partners</span>
+              </div>
+              
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent leading-tight"
+              >
+                Current Sponsors
+              </motion.h2>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-xs sm:text-sm md:text-base text-slate-600 leading-relaxed"
+              >
+                Join these forward-thinking organizations shaping the future of AI in Pakistan
+              </motion.p>
+            </div>
+        
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 w-full justify-center md:justify-center lg:justify-center xl:justify-center mt-8 sm:mt-10 md:mt-12">
+                    <Link href="https://acme-one.com/" target="_blank" rel="noopener noreferrer" className="block">
+                      <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                        <CardHeader className="text-center pb-4 flex flex-col items-center">
+                          <img src="/images/sponsers/acme.png" alt="ACME ONE Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                          <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
+                            <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900">ACME ONE</CardTitle>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+
+                    <Link href="https://99technologies.com/" target="_blank" rel="noopener noreferrer" className="block">
+                      <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                        <CardHeader className="text-center pb-4 flex flex-col items-center">
+                          <img src="/images/sponsers/ninetynine.png" alt="Ninety Nine Technologies Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                          <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 mb-3">
+                            <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900">Ninety Nine Technologies</CardTitle>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+            </div>
+          </div>
+        </section>
+
+
         {/* Features Section */}
         <section className="py-20 bg-white">
           <div className="container mx-auto p-6 space-y-8">
             {/* Section Heading */}
             <div className="text-center max-w-3xl mx-auto space-y-4 px-4">
               <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                Why Participate in PromptComp?
+                Why Participate in APPEC?
               </h2>
               <p className="text-xs sm:text-sm md:text-base lg:text-lg text-muted-foreground">
                 Take your AI skills to the next level by competing in a national prompt engineering competition designed
@@ -691,7 +808,7 @@ export default function HomePage() {
                     </Button>
                   </SignedOut>
                   <SignedIn>
-                    <Link href={getDashboardUrl()}>
+                    <Link href={resolveDashboardUrl(role)}>
                       <Button
                         disabled={loading}
                         className="w-full sm:w-auto gap-2 px-6 sm:px-10 py-4 sm:py-5 h-auto text-base sm:text-lg font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"

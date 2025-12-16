@@ -12,10 +12,16 @@ import { useAuth } from "@/components/auth-provider"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 import { RegistrationModal } from "@/components/participantcompetitions/registration-modal"
-import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
+// import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
 import { CompetitionSection } from "@/components/participantcompetitions/competition-section"
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
+import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
+// import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
+import { DailyChallengesSection } from "@/components/participantcompetitions/DailyChallengesSection"
+import { PageSkeletonLoader } from "@/components/participantcompetitions/page-skeleton-loader"
+import { Spinner } from "@/components/ui/spinner"
+import { fetchDailyChallenges } from "@/lib/api"
 // import { PageHeader } from "@/components/participantcompetitions/page-header"
 
 interface Competition {
@@ -28,8 +34,26 @@ interface Competition {
   ChallengeCount?: number
   isActive?: boolean
   isLocked?: boolean
+  isFeatured?: boolean
   location?: string
   prizeMoney?: string
+}
+
+interface DailyChallenge {
+  id: string
+  title: string
+  problemStatement: string
+  guidelines: string
+  startTime: any
+  endTime: any
+  status: string
+  type: string
+  totalSubmissions: number
+  createdAt?: any
+  createdBy?: string
+  problemAudioUrls?: string[]
+  guidelinesAudioUrls?: string[]
+  visualClueUrls?: string[]
 }
 
 interface UserProfile {
@@ -69,7 +93,12 @@ export default function CompetitionsPage() {
 
   const timeoutRefs = useRef<NodeJS.Timeout[]>([])
   const [user, setUser] = useState<UserProfile | null>(null)
+  const [showAppecInfo, setShowAppecInfo] = useState(true)
   
+  // Daily Challenge States
+  const [dailyChallenges, setDailyChallenges] = useState<DailyChallenge[]>([])
+  const [loadingDailyChallenges, setLoadingDailyChallenges] = useState(false)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -79,11 +108,28 @@ export default function CompetitionsPage() {
       const profile = await checkAuth()
       if (!profile) return
 
-      await loadCompetitions(profile)
+      // Load competitions and daily challenges in parallel
+      await Promise.all([
+        loadCompetitions(profile),
+        loadDailyChallenges()
+      ])
     }
 
     init()
   }, [])
+
+  const loadDailyChallenges = async () => {
+    try {
+      setLoadingDailyChallenges(true)
+      const data = await fetchDailyChallenges()
+      setDailyChallenges(data)
+    } catch (error) {
+      console.error("Error loading daily challenges:", error)
+      // Silently fail - daily challenges are optional
+    } finally {
+      setLoadingDailyChallenges(false)
+    }
+  }
 
   const loadCompetitions = async (profile: UserProfile) => {
     try {
@@ -161,6 +207,7 @@ export default function CompetitionsPage() {
       setButtonStatesLoading({})
     } finally {
       setLoadingInitialFetch(false)
+      setDataLoaded(true)
     }
 }
 
@@ -231,6 +278,17 @@ export default function CompetitionsPage() {
     setIsViewModalOpen(true)
   }
 
+  const handleDailyChallengeView = (challenge: DailyChallenge) => {
+    // For now, we'll just log - you can implement a modal or navigate to a challenge page
+    console.log("View daily challenge:", challenge)
+    // TODO: Implement daily challenge view/submission flow
+    toast({
+      title: "Daily Challenge",
+      description: "Challenge details will be available soon!",
+      variant: "default"
+    })
+  }
+
   const getCompetitionStatus = (competition: Competition) => {
     const now = new Date()
     const startDate = new Date(competition.startDeadline?.seconds * 1000 || competition.startDeadline)
@@ -297,6 +355,7 @@ export default function CompetitionsPage() {
 
   const groupCompetitionsByStatus = (competitions: Competition[]) => {
     const groups = {
+      featured: [] as Competition[],
       active: [] as Competition[],
       upcoming: [] as Competition[],
       ended: [] as Competition[],
@@ -304,18 +363,36 @@ export default function CompetitionsPage() {
 
     competitions.forEach((comp) => {
       const status = getCompetitionStatus(comp)
+      
+      // Add to featured group if applicable
+      if (comp.isFeatured) {
+        groups.featured.push(comp)
+      }
+      
+      // Also add to status-based group (featured competitions should appear in both)
       if (status.status === "ACTIVE") {
         groups.active.push(comp)
       } else if (status.status === "UPCOMING") {
         groups.upcoming.push(comp)
       } else if (status.status === "ENDED") {
         const isRegistered = participantMap[comp.id]
-        const isCompleted = completionMap[comp.id] // Use completionMap instead of completedCompetitions
+        const isCompleted = completionMap[comp.id]
         if (isRegistered || isCompleted) {
           groups.ended.push(comp)
         }
       }
     })
+
+    // Sort non-featured groups by date
+    const sortByDate = (a: Competition, b: Competition) => {
+      const dateA = new Date(a.startDeadline?.seconds * 1000 || a.startDeadline).getTime()
+      const dateB = new Date(b.startDeadline?.seconds * 1000 || b.startDeadline).getTime()
+      return dateB - dateA
+    }
+
+    groups.active.sort(sortByDate)
+    groups.upcoming.sort(sortByDate)
+    groups.ended.sort(sortByDate)
 
     return groups
   }
@@ -337,8 +414,9 @@ export default function CompetitionsPage() {
     setCurrentPage(1)
   }, [searchTerm, filterStatus])
 
-  if (!user) {
-    return null
+  // Show full page skeleton loader while initial authentication and data loading
+  if (!user || loadingInitialFetch) {
+    return <PageSkeletonLoader />
   }
 
   return (
@@ -363,6 +441,15 @@ export default function CompetitionsPage() {
         competition={selectedCompetition}
       />
 
+      {showAppecInfo && (
+        <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
+          <AppecInfoBox
+            initiallyVisible={showAppecInfo}
+            onDismiss={() => setShowAppecInfo(false)}
+          />
+        </div>
+      )}
+
       <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto">
         <SearchAndFilters
           searchTerm={searchTerm}
@@ -376,17 +463,17 @@ export default function CompetitionsPage() {
 
       <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto pb-12 bg-white sm:rounded-xl sm:shadow-sm mb-8">
         <div className="py-6">
-          {loadingInitialFetch && competitions.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(itemsPerPage)].map((_, i) => (
-                <CompetitionSkeleton key={i} />
-              ))}
+          {/* Show spinner while competitions are loading */}
+          {!dataLoaded ? (
+            <div className="flex items-center justify-center py-12">
+              <Spinner className="h-6 w-6" />
             </div>
           ) : (
-            // Always use groupedCompetitions (which already applies the ended registration logic)
-            filterStatus === "ended" ? (
-              // Show only ended competitions where the user participated (groupedCompetitions.ended)
-              groupedCompetitions.ended.length === 0 ? (
+            <>
+              {/* Regular Competitions */}
+              {filterStatus === "ended" ? (
+                // Show only ended competitions where the user participated
+                groupedCompetitions.ended.length === 0 ? (
                 <EmptyState
                   searchTerm={searchTerm}
                   filterStatus={filterStatus}
@@ -395,6 +482,13 @@ export default function CompetitionsPage() {
                 />
               ) : (
                 <div className="space-y-12">
+                  {/* Daily Challenges Section - Only show on "ended" filter */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                  />
+
                   <CompetitionSection
                     title="Ended Competitions"
                     competitions={groupedCompetitions.ended}
@@ -476,7 +570,7 @@ export default function CompetitionsPage() {
               )
             ) : (
               // filterStatus === 'all' (main page): render only non-empty grouped sections and no empty-state per section
-              (groupedCompetitions.active.length === 0 && groupedCompetitions.upcoming.length === 0 && groupedCompetitions.ended.length === 0) ? (
+              (groupedCompetitions.active.length === 0 && groupedCompetitions.upcoming.length === 0 && groupedCompetitions.ended.length === 0 && groupedCompetitions.featured.length === 0) ? (
                 <EmptyState searchTerm={searchTerm} filterStatus={filterStatus} />
               ) : (
                 <div className="space-y-12">
@@ -514,6 +608,13 @@ export default function CompetitionsPage() {
                     />
                   )}
 
+                  {/* Daily Challenges Section - Show on main page above ended competitions */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                  />
+
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
                       title="Ended Competitions"
@@ -532,7 +633,8 @@ export default function CompetitionsPage() {
                   )}
                 </div>
               )
-            )
+            )}
+            </>
           )}
         </div>
       </div>

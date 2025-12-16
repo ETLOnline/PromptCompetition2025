@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Users, DollarSign,Trophy, ArrowRight, CheckCircle2, XCircle, Clock, Edit, Eye } from "lucide-react"
+import { Calendar, MapPin, Users, DollarSign,Trophy, ArrowRight, CheckCircle2, XCircle, Clock, Edit, Eye, Star } from "lucide-react"
 import type { Competition } from "@/types/competition"
 // import { FaRupeeSign } from 'react-icons/fa'; // Example from Font Awesome
 
@@ -115,7 +115,21 @@ export default function CompetitionGrid({
           >
             <CardContent className="p-6">
               <div className="space-y-4">
-                {/* Header with consistent height */}
+                {/* Status badges */}
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={`${status.color} border font-medium whitespace-nowrap hover:bg-transparent`}>
+                    <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
+                    {status.label}
+                  </Badge>
+                  {competition.isFeatured && (
+                    <Badge className="bg-amber-50 text-amber-700 border border-amber-200 font-medium whitespace-nowrap hover:bg-transparent">
+                      <div className="w-2 h-2 bg-amber-400 rounded-full mr-1.5"></div>
+                      Featured
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Header with title and action buttons */}
                 <div className="flex items-start justify-between min-h-[40px]">
                   <div className="flex-1 min-w-0 pr-4">
                     <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
@@ -141,10 +155,6 @@ export default function CompetitionGrid({
                         <Edit className="w-4 h-4" />
                       </Button>
                     )}
-                    <Badge className={`${status.color} border font-medium whitespace-nowrap hover:bg-transparent`}>
-                      <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-1.5`}></div>
-                      {status.label}
-                    </Badge>
                   </div>
                 </div>
 

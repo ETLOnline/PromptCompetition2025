@@ -415,6 +415,7 @@ router.post("/create-user", verifySuperAdmin, async (req: RequestWithUser, res: 
                 </div>
               </div>
               
+              
               <div class="footer">
                 <p>© ${new Date().getFullYear()} APPEC - All Pakistan Prompt Engineering Competition</p>
                 <p style="margin-top: 8px; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
@@ -484,50 +485,58 @@ This is an automated message. Please do not reply to this email.
 });
 
 
-
-// GET /superadmin/users — include Firestore profile, auto-paginate
+// GET /superadmin/users — fetch from Firestore users collection with pagination
 router.get("/users", verifySuperAdmin, async (req, res) => {
   try {
-    const { role, limit = "50" } = req.query
+    const { role, limit = "50", offset = "0" } = req.query
     const maxResults = Math.min(parseInt(limit as string, 10) || 50, 500)
+    const offsetNum = parseInt(offset as string, 10) || 0
+     
+    // Build query for Firestore users collection
+    let query = db.collection("users")
+     
+    // Filter by role if provided
+    if (role && role !== "all") {
+      query = query.where("role", "==", role) as any
+    }
 
-    // Fetch users from Clerk with pagination
-    const clerkUsers = await clerkClient.users.getUserList({
-      limit: maxResults,
-      // offset can be used for pagination if needed
-    });
+    // Get total count for pagination
+    const countSnapshot = await query.count().get()
+    const totalCount = countSnapshot.data().count
 
-    // Map Clerk users to our format
-    let users: any[] = clerkUsers.data.map(u => ({
-      uid: u.id,
-      email: u.emailAddresses[0]?.emailAddress || "",
-      displayName: u.fullName || u.firstName || "",
-      role: "participant", // Default role, will be updated from Firestore query below
-      createdAt: new Date(u.createdAt).toISOString(),
-      lastSignIn: u.lastSignInAt ? new Date(u.lastSignInAt).toISOString() : null,
-      emailVerified: u.emailAddresses[0]?.verification?.status === "verified",
-    }))
+    // Fetch users with pagination
+    let usersQuery = query.orderBy("createdAt", "desc")
+    
+    if (offsetNum > 0) {
+      usersQuery = usersQuery.offset(offsetNum) as any
+    }
+    
+    const snapshot = await usersQuery.limit(maxResults).get()
 
-    // Merge Firestore profile for these users FIRST to get correct roles
-    const docs = await Promise.all(users.map(u =>
-      db.collection("users").doc(u.uid).get()
-    ))
-    const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]))
-
-    users = users.map(u => {
-      const p = profileByUid.get(u.uid) || {}
+    // Map Firestore users to our format
+    const users = snapshot.docs.map(doc => {
+      const data = doc.data()
       return {
-        ...u,
-        displayName: u.displayName || (p.fullName ?? ""),
-        role: p.role || "participant", // Use Firestore role or default to participant
-        participations: p.participations ?? {},
+        uid: doc.id,
+        email: data.email || "",
+        displayName: data.fullName || data.displayName || "",
+        role: data.role || "participant",
+        createdAt: data.createdAt || new Date().toISOString(),
+        lastSignIn: data.lastSignIn || null,
+        emailVerified: data.emailVerified ?? true,
+        disabled: data.disabled ?? false,
+        participations: data.participations || {},
+        // Additional profile data
+        bio: data.bio,
+        category: data.category,
+        city: data.city,
+        province: data.province,
+        institution: data.institution,
+        majors: data.majors,
+        gender: data.gender,
+        linkedin: data.linkedin,
       }
     })
-
-    // Filter by role if provided AFTER merging Firestore data
-    if (role && role !== "all") {
-      users = users.filter(u => u.role === role)
-    }
 
     // Sort by role priority and creation date
     const rolePriority = { superadmin: 0, admin: 1, judge: 2, participant: 3 }
@@ -538,12 +547,16 @@ router.get("/users", verifySuperAdmin, async (req, res) => {
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     })
 
+    const nextOffset = offsetNum + users.length
     res.json({
-      users: users.slice(0, maxResults),
-      total: clerkUsers.totalCount,
-      hasNextPage: clerkUsers.totalCount > maxResults,
+      users: users,
+      total: totalCount,
+      hasNextPage: nextOffset < totalCount,
+      nextOffset: nextOffset,
+      currentOffset: offsetNum,
     })
   } catch (err: any) {
+    console.error("Error fetching users from Firestore:", err)
     res.status(500).json({ error: "❌ Failed to fetch users", detail: err.message || String(err) })
   }
 })
@@ -594,48 +607,34 @@ router.get("/user-by-email", verifySuperAdmin, async (req: RequestWithUser, res:
 // GET /superadmin/stats
 router.get("/stats", verifySuperAdmin, async (req: RequestWithUser, res: Response) => {
   try {
-    // Fetch all users from Clerk (may need pagination for large datasets)
-    const clerkUsers = await clerkClient.users.getUserList({
-      limit: 500, // Adjust as needed
-    });
+    // Fetch all users from Firestore users collection
+    const usersSnapshot = await db.collection("users").get()
 
-    // Map Clerk users and get their Firestore roles
-    const users = clerkUsers.data.map((user) => ({
-      uid: user.id,
-      role: "participant", // Default role, will be updated from Firestore query below
-      disabled: user.locked || false
-    }));
-
-    // Fetch Firestore roles for all users
-    const docs = await Promise.all(users.map(u =>
-      db.collection("users").doc(u.uid).get()
-    ));
-    const profileByUid = new Map(docs.filter(d => d.exists).map(d => [d.id, d.data()]));
-
-    // Update users with correct roles from Firestore
-    const usersWithRoles = users.map(u => {
-      const p = profileByUid.get(u.uid) || {};
+    const users = usersSnapshot.docs.map(doc => {
+      const data = doc.data()
       return {
-        ...u,
-        role: p.role || "participant", // Use Firestore role or default to participant
-      };
-    });
+        uid: doc.id,
+        role: data.role || "participant",
+        disabled: data.disabled || false
+      }
+    })
 
     const stats = {
-      total: clerkUsers.totalCount,
-      superadmins: usersWithRoles.filter(u => u.role === "superadmin").length,
-      admins: usersWithRoles.filter(u => u.role === "admin").length,
-      judges: usersWithRoles.filter(u => u.role === "judge").length,
-      participants: usersWithRoles.filter(u => u.role === "participant").length,
-      disabled: usersWithRoles.filter(u => u.disabled).length,
-      active: usersWithRoles.filter(u => !u.disabled).length
-    };
+      total: users.length,
+      superadmins: users.filter(u => u.role === "superadmin").length,
+      admins: users.filter(u => u.role === "admin").length,
+      judges: users.filter(u => u.role === "judge").length,
+      participants: users.filter(u => u.role === "participant").length,
+      disabled: users.filter(u => u.disabled).length,
+      active: users.filter(u => !u.disabled).length
+    }
 
-    return res.status(200).json(stats);
+    return res.status(200).json(stats)
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return res.status(500).json({ error: "❌ Failed to fetch stats", detail: message });
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("Error fetching stats:", message)
+    return res.status(500).json({ error: "❌ Failed to fetch stats", detail: message })
   }
-});
+})
 
 export default router;

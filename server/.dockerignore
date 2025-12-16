@@ -4,3 +4,4 @@ enlightentech-a2046-firebase-adminsdk-fbsvc-8b4473f821.json
 .env*
 *.log
 .vscode
+service-account-key.json

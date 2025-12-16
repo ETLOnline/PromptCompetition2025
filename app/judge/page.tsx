@@ -8,13 +8,15 @@ import { Notifications } from "@/components/Notifications"
 import { fetchWithAuth } from "@/lib/api"
 import type { JudgeAssignment, JudgeStats as JudgeStatsType } from "@/types/judge-submission"
 import { useNotifications } from "@/hooks/useNotifications"
+import { Spinner } from "@/components/ui/spinner"
 
 export default function JudgePage() {
   const router = useRouter()
   const [userID, setUserID] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [assignments, setAssignments] = useState<JudgeAssignment[]>([])
-  const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [dataLoading, setDataLoading] = useState(true)
 
   const { notifications, removeNotification } = useNotifications()
 
@@ -22,7 +24,10 @@ export default function JudgePage() {
     try {
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_JUDGE_AUTH}`)
       setUserID(profile.uid)
+      setIsAuthenticated(true)
+      setAuthLoading(false)
 
+      // Load assignments after auth completes
       const userAssignments = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/assignments/${profile.uid}`
       )
@@ -33,8 +38,7 @@ export default function JudgePage() {
       router.push("/")
       return
     } finally {
-      setIsAuthenticated(true)
-      setLoading(false)
+      setDataLoading(false)
     }
   }
 
@@ -42,7 +46,21 @@ export default function JudgePage() {
     checkAuth()    
   }, [])
 
-  if (loading) {
+  // Stage 1: Show full page spinner during authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <Spinner className="h-10 w-10" />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !userID) {
+    return null
+  }
+
+  // Stage 2: Show skeleton components while loading data
+  if (dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="container mx-auto p-6 space-y-8">
@@ -51,10 +69,6 @@ export default function JudgePage() {
         </div>
       </div>
     )
-  }
-
-  if (!isAuthenticated || !userID) {
-    return null
   }
 
   const stats: JudgeStatsType = {
