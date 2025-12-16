@@ -13,11 +13,10 @@ interface Submission {
   userId: string
   submissionText: string
   timestamp: Timestamp
-  totalVotes: number
+  voteCount: number
   userFullName?: string
   bayesScore?: number
   ratingAvg?: number
-  voteCount?: number
 }
 
 interface AdminSubmissionsViewProps {
@@ -98,10 +97,9 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
               userId: data.userId || docSnap.id,
               submissionText: data.submissionText || "",
               timestamp: data.timestamp || Timestamp.now(),
-              totalVotes: data.totalVotes || 0,
+              voteCount: data.voteCount || 0,
               bayesScore: data.bayesScore || 0,
               ratingAvg: data.ratingAvg || 0,
-              voteCount: data.voteCount || 0,
               userFullName,
             } as Submission
           })
@@ -115,7 +113,7 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
             if (b.ratingAvg !== a.ratingAvg) {
               return (b.ratingAvg || 0) - (a.ratingAvg || 0)
             }
-            return (b.totalVotes || 0) - (a.totalVotes || 0)
+            return (b.voteCount || 0) - (a.voteCount || 0)
           })
           
           setSubmissions(resolvedSubmissions)
@@ -289,7 +287,7 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
                       </div>
                       <span className="text-xs font-semibold">{submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}</span>
                     </div>
-                    <Badge className="bg-yellow-600 text-white text-xs">{submission.totalVotes}</Badge>
+                    <Badge className="bg-yellow-600 text-white text-xs">{submission.voteCount}</Badge>
                   </div>
 
                   {/* Bayesian Score */}
@@ -346,7 +344,7 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
                   {/* Number of Votes */}
                   <div className="col-span-1 text-center">
                     <Badge className="bg-blue-100 text-blue-900 text-sm font-semibold whitespace-nowrap">
-                      {submission.totalVotes}
+                      {submission.voteCount}
                     </Badge>
                   </div>
 

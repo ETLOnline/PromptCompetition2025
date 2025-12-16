@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Trophy, User, Calendar, ThumbsUp, Send, CheckCircle2, Star, FileText, Target, Eye, Image as ImageIcon } from "lucide-react"
+import { Trophy, User, Send, CheckCircle2, Star, FileText, Target, Eye, Image as ImageIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DailyChallengeLeaderboard } from "./DailyChallengeLeaderboard"
 
@@ -18,7 +18,7 @@ interface Submission {
   userId: string
   submissionText: string
   timestamp: Timestamp
-  totalVotes: number
+  voteCount: number
   userFullName?: string
   bayesScore?: number
   ratingAvg?: number
@@ -140,7 +140,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
               console.error(`Error fetching user ${userId}:`, err)
             }
 
-            const voteCount = data.voteCount ?? data.totalVotes ?? 0
+            const voteCount = data.voteCount ?? 0
             const bayesScore = data.bayesScore ?? 0
             const ratingAvg = data.ratingAvg ?? undefined
             return {
@@ -148,7 +148,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
               userId: userId,
               submissionText: data.submissionText || "",
               timestamp: data.timestamp,
-              totalVotes: voteCount,
+              voteCount: voteCount,
               userFullName: userFullName,
               bayesScore,
               ratingAvg,
@@ -165,7 +165,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
             const raA = a.ratingAvg ?? 0
             const raB = b.ratingAvg ?? 0
             if (raA !== raB) return raB - raA
-            return (b.totalVotes ?? 0) - (a.totalVotes ?? 0)
+            return (b.voteCount ?? 0) - (a.voteCount ?? 0)
           })
           
           setSubmissions(resolvedSubmissions)
@@ -490,7 +490,35 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
       </div>
 
       {/* Submissions List View */}
-      <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      {filteredSubmissions.length === 0 ? (
+        searchQuery.trim() !== "" ? (
+          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-8 text-center">
+            <p className="text-gray-700 font-medium">No users found for "{searchQuery}"</p>
+            <p className="text-sm text-gray-500 mt-1">User does not exist.</p>
+          </div>
+        ) : (
+          // No results and no search term — show filter-specific messages
+          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm p-8 text-center">
+            {filter === 'voted' ? (
+              <>
+                <p className="text-gray-700 font-medium">You haven't voted on any submissions yet.</p>
+                <p className="text-sm text-gray-500 mt-1">Try switching to "Not Voted" to see submissions you can rate.</p>
+              </>
+            ) : filter === 'not_voted' ? (
+              <>
+                <p className="text-gray-700 font-medium">No submissions left to vote on.</p>
+                <p className="text-sm text-gray-500 mt-1">All current submissions have been reviewed.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-700 font-medium">No submissions match the current criteria.</p>
+                <p className="text-sm text-gray-500 mt-1">Try clearing filters or checking back later.</p>
+              </>
+            )}
+          </div>
+        )
+      ) : (
+        <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Table Header */}
         <div className="hidden md:grid grid-cols-11 gap-4 bg-gray-50 border-b border-gray-200 p-4 font-semibold text-gray-800 text-sm sticky top-0">
           <div className="col-span-2">Participant</div>
@@ -576,7 +604,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                       </div>
                       <span className="text-[10px] sm:text-xs font-semibold">{submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}</span>
                     </div>
-                    <Badge className="bg-yellow-600 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">{submission.totalVotes}</Badge>
+                    <Badge className="bg-yellow-600 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">{submission.voteCount}</Badge>
                   </div>
 
                   {/* Voting Interface Mobile */}
@@ -661,7 +689,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                   {/* Number of Votes */}
                   <div className="col-span-1 text-center">
                     <Badge className="bg-blue-100 text-blue-900 text-sm font-semibold whitespace-nowrap">
-                      {submission.totalVotes}
+                      {submission.voteCount}
                     </Badge>
                   </div>
 
@@ -712,6 +740,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
           })}
         </div>
       </div>
+      )}
 
       {/* Daily Challenge Leaderboard - Below the submissions */}
        {/* Submission Details Modal */}

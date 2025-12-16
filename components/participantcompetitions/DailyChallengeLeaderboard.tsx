@@ -244,7 +244,7 @@ export const DailyChallengeLeaderboard = ({
                       {/* Total Votes */}
                       <td className="px-3 sm:px-6 py-3 sm:py-5 text-center">
                         <Badge className="bg-[#0f172a]/10 text-[#0f172a] hover:bg-[#0f172a]/15 border border-[#0f172a]/20 font-bold text-xs sm:text-sm px-2 sm:px-3 py-1">
-                          {entry.totalVotes}
+                          {entry.voteCount}
                         </Badge>
                       </td>
 
