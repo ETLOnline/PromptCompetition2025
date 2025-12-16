@@ -228,7 +228,7 @@ export default function DailyChallengePage() {
         userId: user.uid,
         submissionText: prompt.trim(),
         timestamp: Timestamp.now(),
-        totalVotes: 0,
+        voteCount: 0,
       }
 
       // Check if this is a new submission
