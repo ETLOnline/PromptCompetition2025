@@ -192,7 +192,7 @@ export const DailyChallengeLeaderboard = ({
                 ) : leaderboard.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-8 sm:py-12 text-center">
-                      <p className="text-xs sm:text-sm text-gray-500">No submissions meet the minimum vote threshold (3+ votes) yet</p>
+                      <p className="text-xs sm:text-sm text-gray-500">No submissions meet the minimum vote threshold (2+ votes) yet</p>
                     </td>
                   </tr>
                 ) : (
@@ -297,7 +297,7 @@ export const DailyChallengeLeaderboard = ({
           ))
         ) : leaderboard.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
-            <p className="text-xs sm:text-sm text-gray-500">No submissions meet the minimum vote threshold (3+ votes) yet</p>
+            <p className="text-xs sm:text-sm text-gray-500">No submissions meet the minimum vote threshold (2+ votes) yet</p>
           </div>
         ) : (
           leaderboard.map((entry) => (
@@ -363,7 +363,7 @@ export const DailyChallengeLeaderboard = ({
       {!loading && leaderboard.length > 0 && (
         <div className="mt-3 sm:mt-4 md:mt-6 p-2.5 sm:p-3 md:p-4 bg-[#0f172a]/5 rounded-lg border border-[#0f172a]/10">
           <p className="text-[10px] sm:text-xs text-[#0f172a] leading-relaxed">
-            Leaderboard updates in real-time. Top performers are determined by the total ratings received on their submissions for the daily challenge.
+            Leaderboard updates in real-time. Top performers are determined using a Bayesian average of ratings received on their submissions for the daily challenge.
           </p>
         </div>
       )}
