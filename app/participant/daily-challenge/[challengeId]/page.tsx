@@ -223,16 +223,29 @@ export default function DailyChallengePage() {
       const submissionRef = doc(db, "dailychallenge", challengeId, "submissions", user.uid)
       const statsRef = doc(db, "stats", "dailychallenge")
 
-      // Prepare submission data
-      const submissionData = {
-        userId: user.uid,
-        submissionText: prompt.trim(),
-        timestamp: Timestamp.now(),
-        voteCount: 0,
-      }
-
       // Check if this is a new submission
       const isNewSubmission = !hasPreviousSubmission
+
+      // Prepare submission data based on whether it's new or an update
+      let submissionData
+      if (isNewSubmission) {
+        // New submission: initialize all fields including voting stats
+        submissionData = {
+          userId: user.uid,
+          submissionText: prompt.trim(),
+          timestamp: Timestamp.now(),
+          voteCount: 0,
+          ratingSum: 0,
+          ratingAvg: 0,
+          bayesScore: 0,
+        }
+      } else {
+        // Update: only change submission text and timestamp, preserve voting stats
+        submissionData = {
+          submissionText: prompt.trim(),
+          timestamp: Timestamp.now(),
+        }
+      }
 
       // Save submission
       await setDoc(submissionRef, submissionData, { merge: true })

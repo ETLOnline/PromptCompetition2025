@@ -453,7 +453,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
             <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
           </div>
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-            Vote to Daily Prompt Submissions
+            Vote for Daily Prompt Submissions
           </h3>
           <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1">
             {filteredSubmissions.length}
