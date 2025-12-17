@@ -369,10 +369,14 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
       const name = (s.userFullName || "").toLowerCase()
       if (q && !name.includes(q)) return false
       if (filter === 'voted') return !!userVotes[s.id]
-      if (filter === 'not_voted') return !userVotes[s.id]
+      if (filter === 'not_voted') {
+        // Exclude submissions by the current user (you cannot vote your own submission)
+        if (s.userId === currentUserId) return false
+        return !userVotes[s.id]
+      }
       return true
     })
-  }, [submissions, searchQuery, filter, userVotes])
+  }, [submissions, searchQuery, filter, userVotes, currentUserId])
 
   if (loading) {
     return (
