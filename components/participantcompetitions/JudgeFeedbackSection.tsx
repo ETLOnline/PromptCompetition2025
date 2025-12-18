@@ -335,6 +335,14 @@ export const JudgeFeedbackSection = ({
         }
 
         /* Preview content styling - This is the key fix! */
+        .feedback-preview-content {
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+          word-break: break-word !important;
+          max-width: 100% !important;
+          overflow: hidden !important;
+        }
+        
         .feedback-preview-content ul {
           list-style-type: disc !important;
           list-style-position: outside !important;
@@ -356,17 +364,30 @@ export const JudgeFeedbackSection = ({
           display: list-item !important;
           margin-bottom: 0.5rem !important;
           line-height: 1.6 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+          max-width: 100% !important;
         }
         
         .feedback-preview-content p {
           margin-top: 0.75rem !important;
           margin-bottom: 0.75rem !important;
           line-height: 1.6 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+          max-width: 100% !important;
         }
         
         .feedback-preview-content p:empty {
-          margin-top: 0.5rem !important;
-          margin-bottom: 0.5rem !important;
+          min-height: 1.5em !important;
+          margin-top: 0 !important;
+          margin-bottom: 0 !important;
+        }
+        
+        .feedback-preview-content p:empty::after {
+          content: '' !important;
+          display: inline-block !important;
+          width: 100% !important;
         }
         
         .feedback-preview-content strong {
@@ -388,6 +409,8 @@ export const JudgeFeedbackSection = ({
         .feedback-preview-content a {
           color: #2563eb !important;
           text-decoration: underline !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
         }
         
         .feedback-preview-content h1 {
@@ -396,6 +419,8 @@ export const JudgeFeedbackSection = ({
           margin-top: 1.5rem !important;
           margin-bottom: 1rem !important;
           line-height: 1.2 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
         }
         
         .feedback-preview-content h2 {
@@ -404,6 +429,8 @@ export const JudgeFeedbackSection = ({
           margin-top: 1.25rem !important;
           margin-bottom: 0.75rem !important;
           line-height: 1.3 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
         }
         
         .feedback-preview-content h3 {
@@ -412,6 +439,8 @@ export const JudgeFeedbackSection = ({
           margin-top: 1rem !important;
           margin-bottom: 0.5rem !important;
           line-height: 1.4 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
         }
       `}</style>
     </div>
