@@ -401,17 +401,19 @@ export const JudgeFeedbackSection = ({
           max-width: 100% !important;
         }
         
+        /* Mobile-first paragraph styling (default mobile) */
         .feedback-preview-content p {
-          margin-top: 0.75rem !important;
-          margin-bottom: 0.75rem !important;
-          line-height: 1.6 !important;
+          font-size: 0.875rem !important; /* 14px for mobile */
+          margin-top: 0.5rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.5 !important;
           word-wrap: break-word !important;
           overflow-wrap: break-word !important;
           max-width: 100% !important;
         }
         
         .feedback-preview-content p:empty {
-          min-height: 1.5em !important;
+          min-height: 1.2em !important;
           margin-top: 0 !important;
           margin-bottom: 0 !important;
         }
@@ -443,36 +445,88 @@ export const JudgeFeedbackSection = ({
           text-decoration: underline !important;
           word-wrap: break-word !important;
           overflow-wrap: break-word !important;
+          font-size: 0.875rem !important; /* 14px for mobile */
         }
         
+        /* Mobile-first list item styling */
+        .feedback-preview-content ul li,
+        .feedback-preview-content ol li {
+          font-size: 0.875rem !important; /* 14px for mobile */
+        }
+        
+        /* Mobile-first header styling */
         .feedback-preview-content h1 {
-          font-size: 2rem !important;
+          font-size: 1.25rem !important; /* 20px for mobile */
           font-weight: 700 !important;
-          margin-top: 1.5rem !important;
-          margin-bottom: 1rem !important;
-          line-height: 1.2 !important;
-          word-wrap: break-word !important;
-          overflow-wrap: break-word !important;
-        }
-        
-        .feedback-preview-content h2 {
-          font-size: 1.5rem !important;
-          font-weight: 600 !important;
-          margin-top: 1.25rem !important;
+          margin-top: 1rem !important;
           margin-bottom: 0.75rem !important;
           line-height: 1.3 !important;
           word-wrap: break-word !important;
           overflow-wrap: break-word !important;
         }
         
-        .feedback-preview-content h3 {
-          font-size: 1.25rem !important;
+        .feedback-preview-content h2 {
+          font-size: 1.125rem !important; /* 18px for mobile */
           font-weight: 600 !important;
-          margin-top: 1rem !important;
-          margin-bottom: 0.5rem !important;
+          margin-top: 0.875rem !important;
+          margin-bottom: 0.625rem !important;
           line-height: 1.4 !important;
           word-wrap: break-word !important;
           overflow-wrap: break-word !important;
+        }
+        
+        .feedback-preview-content h3 {
+          font-size: 1rem !important; /* 16px for mobile */
+          font-weight: 600 !important;
+          margin-top: 0.75rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.5 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+        }
+        
+        /* Desktop/tablet responsive styles (768px and up) */
+        @media (min-width: 768px) {
+          .feedback-preview-content p {
+            font-size: 0.9375rem !important; /* 15px for desktop */
+            margin-top: 0.75rem !important;
+            margin-bottom: 0.75rem !important;
+            line-height: 1.6 !important;
+          }
+          
+          .feedback-preview-content p:empty {
+            min-height: 1.5em !important;
+          }
+          
+          .feedback-preview-content a {
+            font-size: 0.9375rem !important; /* 15px for desktop */
+          }
+          
+          .feedback-preview-content ul li,
+          .feedback-preview-content ol li {
+            font-size: 0.9375rem !important; /* 15px for desktop */
+          }
+          
+          .feedback-preview-content h1 {
+            font-size: 2rem !important; /* 32px for desktop */
+            margin-top: 1.5rem !important;
+            margin-bottom: 1rem !important;
+            line-height: 1.2 !important;
+          }
+          
+          .feedback-preview-content h2 {
+            font-size: 1.5rem !important; /* 24px for desktop */
+            margin-top: 1.25rem !important;
+            margin-bottom: 0.75rem !important;
+            line-height: 1.3 !important;
+          }
+          
+          .feedback-preview-content h3 {
+            font-size: 1.25rem !important; /* 20px for desktop */
+            margin-top: 1rem !important;
+            margin-bottom: 0.5rem !important;
+            line-height: 1.4 !important;
+          }
         }
       `}</style>
     </div>
