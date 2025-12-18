@@ -98,12 +98,16 @@ export default function DailyChallengePage() {
       )
       setUser(profile)
 
-      if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
-        router.push("/")
-        return null
+      const allowedRoles = ["participant", "admin", "judge", "superadmin"]
+      if (allowedRoles.includes(profile.role)) {
+        setUser(profile)
+        return profile
       }
 
-      return profile
+      // Otherwise redirect to home
+      router.push("/")
+
+      return null
     } catch (error) {
       router.push("/")
       return null
@@ -308,14 +312,14 @@ export default function DailyChallengePage() {
     <main className="min-h-screen bg-gray-50">
       {loadingChallenge ? (
         <>
-          <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-6">
               <div className="h-8 w-64 bg-gray-200 rounded-xl animate-pulse" />
               <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
               <div className="h-5 w-48 bg-gray-200 rounded-xl animate-pulse sm:ml-auto" />
             </div>
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+              <CardHeader className="bg-gray-50 border-b border-gray-100 p-4 sm:p-6">
                 <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
                     <FileText className="h-5 w-5 text-white" />
@@ -323,7 +327,7 @@ export default function DailyChallengePage() {
                   Challenge Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="h-5 w-1/4 bg-gray-200 rounded-xl animate-pulse mb-4" />
                 <div className="h-4 w-full bg-gray-200 rounded-xl animate-pulse mb-2" />
                 <div className="h-4 w-5/6 bg-gray-200 rounded-xl animate-pulse mb-2" />
@@ -356,10 +360,10 @@ export default function DailyChallengePage() {
       ) : (
         <>
           <ParticipantBreadcrumb />
-          <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
             {/* Challenge title, badge, and countdown */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+              <CardHeader className="bg-gray-50 border-b border-gray-100 p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">{challenge.title}</h2>
                   <Badge
@@ -410,13 +414,13 @@ export default function DailyChallengePage() {
             {/* Problem Statement Card */}
             {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
               <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-4 sm:p-6">
                   <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
                     <FileText className="h-6 w-6 text-blue-700" />
                     Problem Statement
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-6">
                   {challenge.problemStatement && (
                     <div>
                       <p className="text-gray-700 leading-relaxed">{challenge.problemStatement}</p>
@@ -451,13 +455,13 @@ export default function DailyChallengePage() {
             {/* Visual Clues Card */}
             {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
               <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-4 sm:p-6">
                   <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
                     <ImageIcon className="h-6 w-6 text-purple-600" />
                     Visual Clues
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 sm:p-6 space-y-4">
                   {challenge.visualClueUrls.map((imageUrl, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
                       <img
@@ -475,13 +479,13 @@ export default function DailyChallengePage() {
             {/* Guidelines & Instructions Card */}
             {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
               <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-                <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+                <CardHeader className="bg-gray-50 border-b border-gray-100 p-4 sm:p-6">
                   <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
                     <Target className="h-6 w-6 text-emerald-600" />
                     Guidelines & Instructions
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-4 sm:p-6 space-y-6">
                   {challenge.guidelines && (
                     <div>
                       <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">{challenge.guidelines}</div>
@@ -515,18 +519,18 @@ export default function DailyChallengePage() {
 
             {/* Solution Card */}
             <Card className="bg-white shadow-sm border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 p-6">
+              <CardHeader className="bg-gray-50 border-b border-gray-100 p-4 sm:p-6">
                 <CardTitle className="text-gray-900 text-xl font-bold flex items-center gap-3">
                   <Send className="h-6 w-6 text-blue-700" />
                   Your Solution
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="p-4 sm:p-6 space-y-6">
                 {loadingPrompt ? (
                   <div className="space-y-4 animate-pulse">
                     <div className="h-6 w-40 bg-gray-200 rounded-xl" />
                     <div className="h-64 bg-gray-100 rounded-xl border border-gray-200" />
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center items-start sm:justify-between gap-3 pt-2">
                       <div className="h-4 w-32 bg-gray-200 rounded-xl" />
                       <div className="h-10 w-40 bg-gray-200 rounded-xl" />
                     </div>
@@ -566,7 +570,7 @@ export default function DailyChallengePage() {
                             variant: "destructive",
                           })
                         }}
-                        className="min-h-[280px] font-mono text-sm bg-white border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 rounded-xl resize-none"
+                        className="min-h-[180px] md:min-h-[280px] font-mono text-sm bg-white border-2 border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 rounded-xl resize-none"
                         disabled={isChallengeEnded || !isChallengeActive}
                       />
                     </div>
@@ -588,7 +592,7 @@ export default function DailyChallengePage() {
                         <span>This challenge hasn't started yet. Submissions are not available.</span>
                       </div>
                     )}
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center items-start sm:justify-between gap-3 pt-2">
                       <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                         Characters: <span className="font-semibold">{prompt.length}</span> | Words:{" "}
                         <span className="font-semibold">{prompt.split(/\s+/).filter(Boolean).length}</span>
@@ -608,7 +612,7 @@ export default function DailyChallengePage() {
                             ? "Please enter your prompt" 
                             : ""
                         }
-                        className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200 rounded-xl px-4 sm:px-6 py-2.5 sm:py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Send className="h-4 w-4 mr-2" />
                         {loading
@@ -624,7 +628,7 @@ export default function DailyChallengePage() {
                     {/* Confirmation Modal */}
                     {isConfirmModalOpen && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                        <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-[90%] sm:w-[400px] sm:max-w-none text-center border border-gray-100">
                           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Send className="w-8 h-8 text-blue-600" />
                           </div>
@@ -637,9 +641,9 @@ export default function DailyChallengePage() {
                               : "Are you ready to submit your solution?"}
                           </p>
 
-                          <div className="flex justify-center gap-3">
+                          <div className="flex justify-center gap-3 flex-wrap">
                             <Button
-                              className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                              className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 sm:px-6 py-2 rounded-xl transition-colors duration-200"
                               onClick={handleSubmit}
                             >
                               {loading ? (
@@ -655,7 +659,7 @@ export default function DailyChallengePage() {
                             <Button
                               variant="outline"
                               onClick={() => setIsConfirmModalOpen(false)}
-                              className="border-gray-200 hover:bg-gray-50 font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                              className="border-gray-200 hover:bg-gray-50 font-semibold px-4 sm:px-6 py-2 rounded-xl transition-colors duration-200"
                               disabled={loading}
                             >
                               Cancel
@@ -668,7 +672,7 @@ export default function DailyChallengePage() {
                     {/* Success Modal */}
                     {submissionStatus === 'success' && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                        <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-[90%] sm:w-[400px] sm:max-w-none text-center border border-gray-100">
                           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle className="w-8 h-8 text-green-600" />
                           </div>
@@ -681,7 +685,7 @@ export default function DailyChallengePage() {
                               : "Your prompt has been submitted successfully."}
                           </p>
                           <Button
-                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 sm:px-6 py-2 rounded-xl transition-colors duration-200"
                             onClick={() => {
                               setSubmissionStatus('idle')
                               router.push('/participant')
@@ -696,14 +700,14 @@ export default function DailyChallengePage() {
                     {/* Error Modal */}
                     {submissionStatus === 'error' && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div className="bg-white rounded-xl shadow-2xl p-8 w-[400px] text-center border border-gray-100">
+                        <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-[90%] sm:w-[400px] sm:max-w-none text-center border border-gray-100">
                           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <AlertCircle className="w-8 h-8 text-red-600" />
                           </div>
                           <h2 className="text-xl font-bold text-gray-900 mb-2">Submission Failed</h2>
                           <p className="text-gray-600 mb-6">{submissionError || "There was an error submitting your prompt. Please try again."}</p>
                           <Button
-                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2 rounded-xl transition-colors duration-200"
+                            className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-4 sm:px-6 py-2 rounded-xl transition-colors duration-200"
                             onClick={() => {
                               setSubmissionStatus('idle')
                               setSubmissionError('')
