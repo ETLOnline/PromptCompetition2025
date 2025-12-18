@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge"
 import { DailyChallengeCard, DailyChallengeSkeleton } from "./DailyChallengeCard"
 import { ChallengeVotingSection } from "./ChallengeVotingSection"
+import { JudgeFeedbackSection } from "./JudgeFeedbackSection"
 
 interface DailyChallenge {
   id: string
@@ -25,12 +26,14 @@ interface DailyChallengesSectionProps {
   challenges: DailyChallenge[]
   loading: boolean
   onViewDetails?: (challenge: DailyChallenge) => void
+  userRole: "participant" | "admin" | "judge" | "superadmin"
 }
 
 export const DailyChallengesSection = ({ 
   challenges, 
   loading,
-  onViewDetails 
+  onViewDetails,
+  userRole
 }: DailyChallengesSectionProps) => {
   // Don't render section if no challenges and not loading
   if (!loading && challenges.length === 0) {
@@ -77,7 +80,8 @@ export const DailyChallengesSection = ({
         )}
       </div>
 
-      {/* Voting Section - Show for active challenges */}
+      {/* Judge Feedback Section - Show for each active challenge */}
+      {/* Voting Section - Show for each active challenge */}
       {!loading && challenges.length > 0 && challenges.map((challenge) => (
         <div key={`voting-${challenge.id}`} className="mt-8 sm:mt-12">
           <ChallengeVotingSection
@@ -85,6 +89,16 @@ export const DailyChallengesSection = ({
             challengeTitle={challenge.title}
           />
         </div>
+      ))}
+
+      {/* Judge Feedback Section - Show for each active challenge */}
+      {!loading && challenges.length > 0 && challenges.map((challenge) => (
+        <JudgeFeedbackSection
+          key={`feedback-${challenge.id}`}
+          challengeId={challenge.id}
+          challengeTitle={challenge.title}
+          userRole={userRole}
+        />
       ))}
     </div>
   )

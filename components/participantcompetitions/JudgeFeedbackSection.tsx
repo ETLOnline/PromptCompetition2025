@@ -275,7 +275,7 @@ export const JudgeFeedbackSection = ({
           // View mode (feedback exists)
           <div>
             <div
-              className="prose prose-sm sm:prose max-w-none mb-6 text-gray-700 leading-relaxed feedback-preview-content"
+              className="prose prose-sm sm:prose max-w-none mb-6 text-gray-700 leading-relaxed feedback-preview-content feedback-preview-scroll"
               dangerouslySetInnerHTML={{
                 __html: sanitizeHTML(feedback?.content || ""),
               }}
@@ -341,6 +341,38 @@ export const JudgeFeedbackSection = ({
           word-break: break-word !important;
           max-width: 100% !important;
           overflow: hidden !important;
+        }
+        
+        /* Scrollable preview container */
+        .feedback-preview-scroll {
+          max-height: 350px !important;
+          overflow-y: auto !important;
+          padding-right: 1rem !important;
+        }
+        
+        /* Custom scrollbar styling */
+        .feedback-preview-scroll::-webkit-scrollbar {
+          width: 8px !important;
+        }
+        
+        .feedback-preview-scroll::-webkit-scrollbar-track {
+          background: #f1f5f9 !important;
+          border-radius: 4px !important;
+        }
+        
+        .feedback-preview-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1 !important;
+          border-radius: 4px !important;
+        }
+        
+        .feedback-preview-scroll::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8 !important;
+        }
+        
+        /* Firefox scrollbar styling */
+        .feedback-preview-scroll {
+          scrollbar-width: thin !important;
+          scrollbar-color: #cbd5e1 #f1f5f9 !important;
         }
         
         .feedback-preview-content ul {
