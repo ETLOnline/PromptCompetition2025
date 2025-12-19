@@ -54,7 +54,6 @@
     "react-dom": "^19",
     "react-hook-form": "latest",
     "react-hot-toast": "^2.5.2",
-    "react-quill": "^2.0.0",
     "react-quill-new": "^3.7.0",
     "react-resizable-panels": "latest",
     "recharts": "latest",
