@@ -210,6 +210,47 @@ export default function ParticipantHeader() {
                 </div>
           </div>
 
+          {/* Small-screen avatar dropdown (visible on mobile) */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="p-2 rounded-lg">
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-sm font-semibold">{userInitials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 shadow-lg border-gray-200">
+                <DropdownMenuLabel className="font-normal py-3">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="w-11 h-11 ring-2 ring-gray-100">
+                      <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-semibold">{userInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
+                      <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
+                      <Badge
+                        variant="secondary"
+                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                      >
+                        <Shield className="w-3 h-3 mr-1" />
+                        Participant
+                      </Badge>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => { logout(); }}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50 py-2.5 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-3" />
+                  <span className="font-medium">Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {/* Right: Nav + User menu (Desktop only) */}
           <div className="hidden lg:flex items-center space-x-4">
             <Button

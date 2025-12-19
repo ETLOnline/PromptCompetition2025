@@ -9,9 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Trophy, User, Send, CheckCircle2, Star, FileText, Target, Eye, Image as ImageIcon } from "lucide-react"
+import { Trophy, User, Send, CheckCircle2, Star, FileText, Target, Eye, Image as ImageIcon, Medal, Award } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { DailyChallengeLeaderboard } from "./DailyChallengeLeaderboard"
 
 interface Submission {
   id: string
@@ -363,6 +362,58 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
     }
   }
 
+  // Ranking helpers (mirrors leaderboard styles)
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Trophy className="h-5 w-5 text-yellow-500 drop-shadow-md" />
+      case 2:
+        return <Medal className="h-5 w-5 text-slate-400 drop-shadow-sm" />
+      case 3:
+        return <Award className="h-5 w-5 text-amber-500 drop-shadow-sm" />
+      default:
+        return null
+    }
+  }
+
+  const getRankBadgeStyle = (rank: number) => {
+    if (rank === 1) {
+      return "bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-white shadow-lg border-2 border-yellow-300"
+    }
+    if (rank === 2) {
+      return "bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 text-white shadow-md border-2 border-slate-200"
+    }
+    if (rank === 3) {
+      return "bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white shadow-md border-2 border-amber-300"
+    }
+    return "bg-slate-100 text-slate-800 border-2 border-slate-300 font-semibold"
+  }
+
+  // Prize-style visuals for top ranks (1-5), matching app/page.tsx prize tier styling
+  const getRankVisual = (rank: number) => {
+    const prizeMap: Record<number, { gradient: string; bgGradient: string; icon: string }> = {
+      1: { gradient: "from-amber-500 to-yellow-500", bgGradient: "from-amber-50 to-yellow-50", icon: "🥇" },
+      2: { gradient: "from-slate-400 to-slate-500", bgGradient: "from-slate-50 to-slate-100", icon: "🥈" },
+      3: { gradient: "from-orange-600 to-amber-700", bgGradient: "from-orange-50 to-amber-50", icon: "🥉" },
+      4: { gradient: "from-blue-500 to-purple-500", bgGradient: "from-blue-50 to-purple-50", icon: "🏆" },
+      5: { gradient: "from-emerald-500 to-teal-500", bgGradient: "from-emerald-50 to-teal-50", icon: "⭐" },
+    }
+
+    if (rank >= 1 && rank <= 5) {
+      const p = prizeMap[rank]
+      return (
+        <div className={`relative w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br ${p.gradient} rounded-md sm:rounded-lg flex items-center justify-center shadow-md`}>
+          <span className="text-base sm:text-lg">{p.icon}</span>
+          <div className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full flex items-center justify-center shadow-md">
+            <span className="text-[9px] sm:text-[10px] font-bold text-slate-900">{rank}</span>
+          </div>
+        </div>
+      )
+    }
+
+    return <div className="text-sm font-semibold text-gray-700">#{rank}</div>
+  }
+
   const filteredSubmissions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     return submissions.filter((s) => {
@@ -443,13 +494,6 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200">
-        <DailyChallengeLeaderboard
-          challengeId={challengeId}
-          challengeTitle={challengeTitle}
-          topN={10}
-        />
-      </div>
       {/* Section Header */}
       <div className="mb-4 sm:mb-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
@@ -524,31 +568,33 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
       ) : (
         <div className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Table Header */}
-        <div className="hidden md:grid grid-cols-11 gap-4 bg-gray-50 border-b border-gray-200 p-4 font-semibold text-gray-800 text-sm sticky top-0">
+        <div className="hidden md:grid grid-cols-12 gap-4 bg-gray-50 border-b border-gray-200 p-4 pr-6 font-semibold text-gray-800 text-sm sticky top-0">
+          <div className="col-span-1 text-center">Rank</div>
           <div className="col-span-2">Participant</div>
           <div className="col-span-4">Submission</div>
           <div className="col-span-2 text-center">Avg Rating</div>
           <div className="col-span-1 text-center">Votes</div>
-          <div className="col-span-2">Your Rating</div>
+          <div className="col-span-2 text-center">Your Rating</div>
         </div>
 
         {/* Table Body */}
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 max-h-[965px] overflow-y-auto">
           {filteredSubmissions.map((submission, index) => {
             const isSubmitting = submittingVotes[submission.id] || false
             const selectedScore = selectedScores[submission.id]
             const hasVoted = !!userVotes[submission.id]
             const votedScore = userVotes[submission.id]?.score
             const isOwnSubmission = submission.userId === currentUserId
+            const overallRank = submissions.findIndex((s) => s.id === submission.id) + 1
 
             return (
               <div key={submission.id} className="hover:bg-gray-50/50 transition-colors">
                 {/* Mobile View */}
-                <div className="md:hidden p-3 sm:p-4 space-y-2.5 sm:space-y-3">
+                <div className="md:hidden p-3 sm:p-4 pr-6 space-y-2.5 sm:space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#0f172a] rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                        <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-xs sm:text-sm text-gray-900 truncate">
@@ -557,18 +603,12 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                         <p className="text-[10px] sm:text-xs text-gray-600">{formatTimestamp(submission.timestamp)}</p>
                       </div>
                     </div>
-                    {index < 3 && (
-                      <Badge 
-                        className={`shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 ${
-                          index === 0 
-                            ? "bg-yellow-100 text-yellow-800" 
-                            : index === 1
-                            ? "bg-gray-100 text-gray-800"
-                            : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
-                        #{index + 1}
-                      </Badge>
+                    {overallRank <= 5 ? (
+                      <div className="flex-shrink-0">
+                        {getRankVisual(overallRank)}
+                      </div>
+                    ) : (
+                      <Badge className="shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">#{overallRank}</Badge>
                     )}
                   </div>
 
@@ -593,19 +633,19 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
 
                   {/* Rating Stats */}
                   <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-md sm:rounded-lg">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <div className="flex gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${
-                              (submission.ratingAvg ?? 0) >= s - 0.5
-                                ? 'text-yellow-500 fill-yellow-500'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${
+                                (submission.ratingAvg ?? 0) >= s - 0.5
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
                       <span className="text-[10px] sm:text-xs font-semibold">{submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}</span>
                     </div>
                     <Badge className="bg-yellow-600 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">{submission.voteCount}</Badge>
@@ -622,7 +662,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="flex gap-1 justify-center">
+                      <div className="flex gap-0.5 justify-center">
                         {[1,2,3,4,5].map((s) => (
                           <button
                             key={s}
@@ -646,13 +686,16 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                 </div>
 
                 {/* Desktop View - Table Row */}
-                <div className="hidden md:grid grid-cols-11 gap-4 p-4 items-center">
+                <div className="hidden md:grid grid-cols-12 gap-4 p-4 pr-6 items-center">
+                  {/* Rank Column */}
+                  <div className="col-span-1 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      {getRankVisual(overallRank)}
+                    </div>
+                  </div>
                   {/* Participant Name */}
                   <div className="col-span-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 bg-[#0f172a] rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="h-4.5 w-4.5 text-white" />
-                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {submission.userFullName || "Anonymous"}
@@ -684,7 +727,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                           />
                         ))}
                       </div>
-                      <span className="text-sm font-bold text-gray-900 ml-1 whitespace-nowrap">
+                      <span className="text-sm font-bold text-gray-900 ml-0.5 whitespace-nowrap">
                         {submission.ratingAvg ? submission.ratingAvg.toFixed(1) : '0.0'}
                       </span>
                     </div>
@@ -705,11 +748,11 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                       </div>
                     ) : hasVoted ? (
                       <div className="text-sm text-center text-green-700 font-semibold p-2.5 bg-green-50 rounded border border-green-200 flex items-center justify-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className="w-3.5 h-3.5" />
                         You rated {votedScore} star{votedScore !== 1 ? 's' : ''}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5 w-full">
+                      <div className="flex items-center gap-1 w-full pr-1">
                         <div className="flex gap-0.5">
                           {[1,2,3,4,5].map((s) => (
                             <button
@@ -719,7 +762,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                               className="p-0.5"
                               title={`${s} stars`}
                             >
-                              <Star className={`w-4.5 h-4.5 transition-colors ${(selectedScore ?? 0) >= s ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'}`} />
+                              <Star className={`w-5 h-5 transition-colors ${(selectedScore ?? 0) >= s ? 'text-yellow-500 fill-yellow-500' : 'text-gray-400 hover:text-yellow-400'}`} />
                             </button>
                           ))}
                         </div>
@@ -727,12 +770,12 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
                           onClick={() => handleSubmitScore(submission.id, submission.userId)}
                           disabled={selectedScore === undefined || isSubmitting}
                           size="sm"
-                          className="h-8 px-2.5 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold flex-shrink-0"
+                          className="h-8 px-2 ml-2 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold flex-shrink-0"
                         >
                           {isSubmitting ? (
                             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <Send className="w-3.5 h-3.5" />
+                            <Send className="w-3 h-3" />
                           )}
                         </Button>
                       </div>
