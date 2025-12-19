@@ -35,6 +35,7 @@ interface FeedbackData {
   content: string
   updatedAt: any
   updatedBy: string
+  judgeName?: string
 }
 
 export const JudgeFeedbackSection = ({
@@ -63,8 +64,22 @@ export const JudgeFeedbackSection = ({
       const feedbackDoc = await getDoc(feedbackRef)
 
       if (feedbackDoc.exists()) {
-        setFeedback(feedbackDoc.data() as FeedbackData)
-        setEditorContent(feedbackDoc.data().content || "")
+        const data = feedbackDoc.data()
+        let judgeName: string | undefined = undefined
+
+        if (data.updatedBy) {
+          try {
+            const userDoc = await getDoc(doc(db, "users", data.updatedBy))
+            if (userDoc.exists()) {
+              judgeName = userDoc.data().fullName
+            }
+          } catch (error) {
+            console.error("Error fetching user:", error)
+          }
+        }
+
+        setFeedback({ ...data, judgeName } as FeedbackData)
+        setEditorContent(data.content || "")
       } else {
         setFeedback(null)
         setEditorContent("")
@@ -283,6 +298,7 @@ export const JudgeFeedbackSection = ({
             {feedback?.updatedAt && (
               <div className="text-xs text-gray-500 pt-4 border-t border-gray-100">
                 Last updated: {formatTimestamp(feedback.updatedAt)}
+                {feedback.judgeName ? ` by ${feedback.judgeName}` : ''}
               </div>
             )}
             {canEdit && (
