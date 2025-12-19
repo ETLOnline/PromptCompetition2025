@@ -132,7 +132,7 @@ export default function ModernAdminHeader() {
             </div>
 
             {/* Right Section - Badge and User Menu */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {/* Home Button */}
               <Button
                 variant="ghost"
@@ -149,6 +149,15 @@ export default function ModernAdminHeader() {
                 className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
               >
                 Competitions
+              </Button>
+
+              {/* Participant Dashboard Button */}
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/participant")}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+              >
+                Participant Dashboard
               </Button>
 
               {/* Manage Roles Button - Only for superadmin */}
