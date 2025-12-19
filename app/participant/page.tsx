@@ -288,7 +288,7 @@ export default function CompetitionsPage() {
 
   const handleDailyChallengeView = (challenge: DailyChallenge) => {
     // For now, we'll just log - you can implement a modal or navigate to a challenge page
-    console.log("View daily challenge:", challenge)
+    // console.log("View daily challenge:", challenge)
     // TODO: Implement daily challenge view/submission flow
     toast({
       title: "Daily Challenge",
