@@ -154,13 +154,15 @@ export default function ParticipantHeader() {
                       <div className="flex flex-col space-y-1 flex-1">
                         <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
                         <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
-                        <Badge
-                          variant="secondary"
-                          className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
-                        >
-                          <Shield className="w-3 h-3 mr-1" />
-                          Participant
-                        </Badge>
+                        {(role === "superadmin" || role === "admin" || role === "participant" || role === "judge") && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                          >
+                            <Shield className="w-3 h-3 mr-1" />
+                            {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin" : role === "participant" ? "Participant" : "Judge"}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -229,13 +231,15 @@ export default function ParticipantHeader() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
                       <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
-                      >
-                        <Shield className="w-3 h-3 mr-1" />
-                        Participant
-                      </Badge>
+                      {(role === "superadmin" || role === "admin" || role === "participant" || role === "judge") && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                        >
+                          <Shield className="w-3 h-3 mr-1" />
+                          {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin" : role === "participant" ? "Participant" : "Judge"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuLabel>
@@ -298,13 +302,15 @@ export default function ParticipantHeader() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
                       <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
-                      >
-                        <Shield className="w-3 h-3 mr-1" />
-                        Participant
-                      </Badge>
+                      {(role === "superadmin" || role === "admin" || role === "participant" || role === "judge") && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                        >
+                          <Shield className="w-3 h-3 mr-1" />
+                          {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin" : role === "participant" ? "Participant" : "Judge"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuLabel>
