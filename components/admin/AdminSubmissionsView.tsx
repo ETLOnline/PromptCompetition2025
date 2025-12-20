@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { db } from "@/lib/firebase"
 import { collection, onSnapshot, doc, getDoc, Timestamp } from "firebase/firestore"
-import { Trophy, User, Star, Eye, FileText, Target, ImageIcon } from "lucide-react"
+import { Trophy, User, Star, Eye, FileText, Target, ImageIcon, Medal, Award } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 
 interface Submission {
@@ -151,6 +151,44 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
     }
   }
 
+  const getRankDisplay = (rank: number) => {
+    if (rank === 1) {
+      return (
+        <div className="flex items-center justify-center gap-1">
+          <Trophy className="h-5 w-5 text-yellow-500" />
+          <span className="font-bold text-gray-900">{rank}</span>
+        </div>
+      )
+    }
+    if (rank === 2) {
+      return (
+        <div className="flex items-center justify-center gap-1">
+          <Medal className="h-5 w-5 text-slate-400" />
+          <span className="font-bold text-gray-900">{rank}</span>
+        </div>
+      )
+    }
+    if (rank === 3) {
+      return (
+        <div className="flex items-center justify-center gap-1">
+          <Award className="h-5 w-5 text-amber-500" />
+          <span className="font-bold text-gray-900">{rank}</span>
+        </div>
+      )
+    }
+    if (rank <= 10) {
+      return (
+        <div className="flex items-center justify-center gap-1">
+          <Star className="h-4 w-4 text-blue-500" />
+          <span className="font-bold text-gray-900">{rank}</span>
+        </div>
+      )
+    }
+    return (
+      <span className="font-bold text-gray-900">{rank}</span>
+    )
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -219,7 +257,8 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
       {/* Submissions List View */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         {/* Table Header */}
-        <div className="hidden md:grid grid-cols-11 gap-4 bg-gray-50 border-b border-gray-200 p-4 font-semibold text-gray-800 text-sm sticky top-0">
+        <div className="hidden md:grid grid-cols-12 gap-4 bg-gray-50 border-b border-gray-200 p-4 font-semibold text-gray-800 text-sm sticky top-0">
+          <div className="col-span-1">Rank</div>
           <div className="col-span-2">Participant</div>
           <div className="col-span-4">Submission</div>
           <div className="col-span-2 text-center">Avg Rating</div>
@@ -297,7 +336,12 @@ export const AdminSubmissionsView = ({ challengeId, challengeTitle }: AdminSubmi
                 </div>
 
                 {/* Desktop View - Table Row */}
-                <div className="hidden md:grid grid-cols-11 gap-4 p-4 items-center">
+                <div className="hidden md:grid grid-cols-12 gap-4 p-4 items-center">
+                  {/* Rank */}
+                  <div className="col-span-1 flex items-center justify-center">
+                    {getRankDisplay(index + 1)}
+                  </div>
+
                   {/* Participant Name */}
                   <div className="col-span-2">
                     <div className="flex items-center gap-2.5">
