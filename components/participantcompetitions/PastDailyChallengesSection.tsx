@@ -47,6 +47,8 @@ interface FeedbackData {
   content: string
   updatedAt: any
   updatedBy: string
+  fullName: string
+  userId: string
 }
 
 interface PastDailyChallengesSectionProps {
@@ -59,11 +61,17 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
   const [selectedChallenge, setSelectedChallenge] = useState<DailyChallenge | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
-  const [judgeFeedback, setJudgeFeedback] = useState<FeedbackData | null>(null)
+  const [judgeFeedback, setJudgeFeedback] = useState<FeedbackData[]>([])
   const [loadingFeedback, setLoadingFeedback] = useState(false)
 
   useEffect(() => {
-    filterChallengesWithFeedback()
+    const cache = (window as any).pastChallengesCache || ((window as any).pastChallengesCache = { data: null, loaded: false, challengesLength: 0 })
+    if (cache && cache.loaded && cache.challengesLength === challenges.length) {
+      setChallengesWithFeedback(cache.data)
+      setLoading(false)
+    } else {
+      filterChallengesWithFeedback()
+    }
   }, [challenges])
 
   const filterChallengesWithFeedback = async () => {
@@ -72,16 +80,20 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
       const challengesWithJudgeFeedback: DailyChallenge[] = []
 
       for (const challenge of challenges) {
-        // Check if judge feedback exists for this challenge
-        const feedbackRef = doc(db, "dailychallenge", challenge.id, "judgefeedback", "main_feedback")
-        const feedbackDoc = await getDoc(feedbackRef)
+        // Check if judge feedback exists for this challenge (any documents in the collection)
+        const feedbackRef = collection(db, "dailychallenge", challenge.id, "judgefeedback")
+        const feedbackSnapshot = await getDocs(feedbackRef)
         
-        if (feedbackDoc.exists()) {
+        if (!feedbackSnapshot.empty) {
           challengesWithJudgeFeedback.push(challenge)
         }
       }
 
       setChallengesWithFeedback(challengesWithJudgeFeedback)
+      const cache = (window as any).pastChallengesCache
+      cache.data = challengesWithJudgeFeedback
+      cache.loaded = true
+      cache.challengesLength = challenges.length
     } catch (error) {
       console.error("Error filtering challenges with feedback:", error)
     } finally {
@@ -92,17 +104,32 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
   const fetchJudgeFeedback = async (challengeId: string) => {
     try {
       setLoadingFeedback(true)
-      const feedbackRef = doc(db, "dailychallenge", challengeId, "judgefeedback", "main_feedback")
-      const feedbackDoc = await getDoc(feedbackRef)
+      const judgeFeedbackRef = collection(db, "dailychallenge", challengeId, "judgefeedback")
+      const feedbackSnapshot = await getDocs(judgeFeedbackRef)
 
-      if (feedbackDoc.exists()) {
-        setJudgeFeedback(feedbackDoc.data() as FeedbackData)
-      } else {
-        setJudgeFeedback(null)
-      }
+      const feedbacks: FeedbackData[] = []
+      feedbackSnapshot.forEach((doc) => {
+        const data = doc.data()
+        feedbacks.push({
+          content: data.content || "",
+          updatedAt: data.updatedAt,
+          updatedBy: data.updatedBy || doc.id,
+          fullName: data.fullName || "Unknown Judge",
+          userId: doc.id,
+        })
+      })
+
+      // Sort by updatedAt, most recent first
+      feedbacks.sort((a, b) => {
+        if (!a.updatedAt) return 1
+        if (!b.updatedAt) return -1
+        return b.updatedAt.toMillis() - a.updatedAt.toMillis()
+      })
+
+      setJudgeFeedback(feedbacks)
     } catch (error) {
       console.error("Error fetching judge feedback:", error)
-      setJudgeFeedback(null)
+      setJudgeFeedback([])
     } finally {
       setLoadingFeedback(false)
     }
@@ -159,7 +186,7 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 flex-wrap">
           <div className="w-2 h-2 sm:w-3 sm:h-3 bg-amber-600 rounded-full flex-shrink-0"></div>
-          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Past Daily Challenges</h3>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Past Daily Challenges</h2>
           {!loading && challengesWithFeedback.length > 0 && (
             <Badge className="bg-amber-600 text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1">
               {challengesWithFeedback.length} Reviewed
@@ -170,6 +197,7 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
           View past challenges with judge feedback and reviews
         </p>
       </div>
+      
 
       {/* Challenges Grid */}
       {loading ? (
@@ -261,8 +289,8 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
 
       {/* Challenge Details Modal */}
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-        <DialogContent className="bg-white border-slate-200 max-w-3xl w-[95vw] max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="space-y-2 sm:space-y-3 pb-3 sm:pb-4 border-b border-slate-200">
+        <DialogContent className="bg-white border-slate-200 max-w-3xl w-[95vw] max-h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0 pb-3 sm:pb-4 border-b border-slate-200">
             <div className="flex items-start gap-2 sm:gap-3">
               <div className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 bg-indigo-100 rounded-lg sm:rounded-xl flex-shrink-0">
                 <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
@@ -276,168 +304,196 @@ export const PastDailyChallengesSection = ({ challenges }: PastDailyChallengesSe
             </div>
           </DialogHeader>
 
-          {selectedChallenge && (
-            <div className="space-y-4 sm:space-y-5 pt-3 sm:pt-4">
-              {/* Challenge Title */}
-              {selectedChallenge.title && (
-                <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-200">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
-                    {selectedChallenge.title}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs">
-                      Completed
-                    </Badge>
-                    <span className="flex items-center gap-1 text-xs text-slate-600">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {formatDate(selectedChallenge.endTime)}
-                    </span>
+          <div className="flex-1 overflow-y-auto">
+            {selectedChallenge && (
+              <div className="space-y-4 sm:space-y-5 pt-3 sm:pt-4">
+                {/* Challenge Title */}
+                {selectedChallenge.title && (
+                  <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-200">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
+                      {selectedChallenge.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs">
+                        Completed
+                      </Badge>
+                      <span className="flex items-center gap-1 text-xs text-slate-600">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {formatDate(selectedChallenge.endTime)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Problem Statement */}
-              {(selectedChallenge.problemStatement || (selectedChallenge.problemAudioUrls && selectedChallenge.problemAudioUrls.length > 0)) && (
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                    <h4 className="text-sm sm:text-base font-semibold text-slate-900">Problem Statement</h4>
-                  </div>
-                  {selectedChallenge.problemStatement && (
-                    <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                        {selectedChallenge.problemStatement}
-                      </p>
+                {/* Problem Statement */}
+                {(selectedChallenge.problemStatement || (selectedChallenge.problemAudioUrls && selectedChallenge.problemAudioUrls.length > 0)) && (
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                      <h4 className="text-sm sm:text-base font-semibold text-slate-900">Problem Statement</h4>
                     </div>
-                  )}
-                  {selectedChallenge.problemAudioUrls && selectedChallenge.problemAudioUrls.length > 0 && (
-                    <div className="space-y-2">
-                      {selectedChallenge.problemAudioUrls.map((url: string, index: number) => (
-                        <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                          <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
-                          <audio controls src={url} className="w-full" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Guidelines */}
-              {(selectedChallenge.guidelines || (selectedChallenge.guidelinesAudioUrls && selectedChallenge.guidelinesAudioUrls.length > 0)) && (
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-                    <h4 className="text-sm sm:text-base font-semibold text-slate-900">Guidelines</h4>
-                  </div>
-                  {selectedChallenge.guidelines && (
-                    <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                        {selectedChallenge.guidelines}
-                      </p>
-                    </div>
-                  )}
-                  {selectedChallenge.guidelinesAudioUrls && selectedChallenge.guidelinesAudioUrls.length > 0 && (
-                    <div className="space-y-2">
-                      {selectedChallenge.guidelinesAudioUrls.map((url: string, index: number) => (
-                        <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                          <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
-                          <audio controls src={url} className="w-full" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Visual Clues */}
-              {selectedChallenge.visualClueUrls && selectedChallenge.visualClueUrls.length > 0 && (
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
-                    <h4 className="text-sm sm:text-base font-semibold text-slate-900">
-                      Visual Clues ({selectedChallenge.visualClueUrls.length})
-                    </h4>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedChallenge.visualClueUrls.map((url: string, index: number) => (
-                      <div key={index} className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                        <img
-                          src={url}
-                          alt={`Visual clue ${index + 1}`}
-                          className="w-full h-auto rounded-lg"
-                        />
+                    {selectedChallenge.problemStatement && (
+                      <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {selectedChallenge.problemStatement}
+                        </p>
                       </div>
-                    ))}
+                    )}
+                    {selectedChallenge.problemAudioUrls && selectedChallenge.problemAudioUrls.length > 0 && (
+                      <div className="space-y-2">
+                        {selectedChallenge.problemAudioUrls.map((url: string, index: number) => (
+                          <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                            <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
+                            <audio controls src={url} className="w-full" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Challenge Stats */}
-              <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
-                <h4 className="text-sm font-semibold text-slate-900 mb-3">Challenge Information</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Type</p>
-                    <p className="text-sm font-semibold text-slate-900 capitalize">{selectedChallenge.type}</p>
+                {/* Guidelines */}
+                {(selectedChallenge.guidelines || (selectedChallenge.guidelinesAudioUrls && selectedChallenge.guidelinesAudioUrls.length > 0)) && (
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                      <h4 className="text-sm sm:text-base font-semibold text-slate-900">Guidelines</h4>
+                    </div>
+                    {selectedChallenge.guidelines && (
+                      <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {selectedChallenge.guidelines}
+                        </p>
+                      </div>
+                    )}
+                    {selectedChallenge.guidelinesAudioUrls && selectedChallenge.guidelinesAudioUrls.length > 0 && (
+                      <div className="space-y-2">
+                        {selectedChallenge.guidelinesAudioUrls.map((url: string, index: number) => (
+                          <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                            <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
+                            <audio controls src={url} className="w-full" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Total Submissions</p>
-                    <p className="text-sm font-semibold text-slate-900">{selectedChallenge.totalSubmissions || 0}</p>
+                )}
+
+                {/* Visual Clues */}
+                {selectedChallenge.visualClueUrls && selectedChallenge.visualClueUrls.length > 0 && (
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                      <h4 className="text-sm sm:text-base font-semibold text-slate-900">
+                        Visual Clues ({selectedChallenge.visualClueUrls.length})
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedChallenge.visualClueUrls.map((url: string, index: number) => (
+                        <div key={index} className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                          <img
+                            src={url}
+                            alt={`Visual clue ${index + 1}`}
+                            className="w-full h-auto rounded-lg"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Challenge Stats */}
+                <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                  <h4 className="text-sm font-semibold text-slate-900 mb-3">Challenge Information</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Type</p>
+                      <p className="text-sm font-semibold text-slate-900 capitalize">{selectedChallenge.type}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Total Submissions</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedChallenge.totalSubmissions || 0}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Judge Feedback Modal */}
       <Dialog open={showFeedbackModal} onOpenChange={setShowFeedbackModal}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-amber-600" />
-              Judge's Review
-            </DialogTitle>
-          </DialogHeader>
-          {selectedChallenge && (
-            <div className="space-y-4">
-              {/* Challenge Title */}
-              <div className="pb-3 border-b">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  {selectedChallenge.title}
-                </h3>
-                <p className="text-sm text-slate-600 mt-1">
-                  {formatDate(selectedChallenge.endTime)}
-                </p>
+        <DialogContent className="bg-white border-0 shadow-2xl max-w-3xl w-[95vw] max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0 pb-3 sm:pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-50 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
               </div>
-
-              {/* Feedback Content */}
-              {loadingFeedback ? (
-                <div className="space-y-3">
-                  <div className="h-4 bg-slate-200 rounded animate-pulse" />
-                  <div className="h-4 bg-slate-200 rounded animate-pulse w-5/6" />
-                  <div className="h-4 bg-slate-200 rounded animate-pulse w-4/6" />
-                </div>
-              ) : judgeFeedback ? (
-                <div>
-                  <div
-                    className="prose prose-sm sm:prose max-w-none mb-6 text-gray-700 leading-relaxed feedback-preview-content feedback-preview-scroll"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHTML(judgeFeedback.content) }}
-                  />
-                  <div className="mt-4 pt-3 border-t text-xs text-slate-500">
-                    Last updated: {formatTimestamp(judgeFeedback.updatedAt)}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No feedback available for this challenge</p>
-                </div>
-              )}
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">Judge's Review</DialogTitle>
+                {selectedChallenge && (
+                  <p className="text-gray-600 text-xs sm:text-sm mt-1">
+                    {selectedChallenge.title} • {formatDate(selectedChallenge.endTime)}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {selectedChallenge && (
+              <div className="space-y-4 pt-3 sm:pt-4">
+                {/* Feedback Content */}
+                {loadingFeedback ? (
+                  <div className="space-y-3">
+                    <div className="h-4 bg-slate-200 rounded animate-pulse" />
+                    <div className="h-4 bg-slate-200 rounded animate-pulse w-5/6" />
+                    <div className="h-4 bg-slate-200 rounded animate-pulse w-4/6" />
+                  </div>
+                ) : judgeFeedback.length > 0 ? (
+                  <div className="space-y-6">
+                    {judgeFeedback.map((feedback) => (
+                      <div 
+                        key={feedback.userId} 
+                        className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0"
+                      >
+                        {/* Judge Name Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                              {feedback.fullName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{feedback.fullName}</h4>
+                              {feedback.updatedAt && (
+                                <p className="text-xs text-gray-500">
+                                  {formatTimestamp(feedback.updatedAt)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Feedback Content */}
+                        <div
+                          className="prose prose-sm sm:prose max-w-none text-gray-700 leading-relaxed feedback-preview-content feedback-preview-scroll"
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHTML(feedback.content),
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-500">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No feedback available for this challenge</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
