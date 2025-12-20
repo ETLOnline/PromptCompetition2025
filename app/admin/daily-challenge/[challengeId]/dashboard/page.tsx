@@ -8,7 +8,7 @@ import { fetchWithAuth } from "@/lib/api"
 import { ArrowLeft,Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminDailyChallengeCard } from "@/components/admin/AdminDailyChallengeCard"
-import { DailyChallengeLeaderboard } from "@/components/participantcompetitions/DailyChallengeLeaderboard"
+import { JudgeFeedbackSection } from "@/components/participantcompetitions/JudgeFeedbackSection"
 import { AdminSubmissionsView } from "@/components/admin/AdminSubmissionsView"
 
 interface DailyChallenge {
@@ -150,20 +150,19 @@ export default function AdminDailyChallengeDashboard() {
           <AdminDailyChallengeCard challenge={challenge} />
         </div>
 
-        {/* Leaderboard Section */}
-        <div>
-          <DailyChallengeLeaderboard
-            challengeId={challengeId}
-            challengeTitle={challenge.title}
-            topN={10}
-          />
-        </div>
-
         {/* Submissions Section */}
         <div>
           <AdminSubmissionsView
             challengeId={challengeId}
             challengeTitle={challenge.title}
+          />
+        </div>
+        {/* Judge Feedback Section */}
+        <div>
+          <JudgeFeedbackSection
+            challengeId={challengeId}
+            challengeTitle={challenge.title}
+            userRole="superadmin"
           />
         </div>
       </div>

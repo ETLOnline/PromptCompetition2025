@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { db } from "@/lib/firebase"
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore"
+import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs } from "firebase/firestore"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -35,6 +35,8 @@ interface FeedbackData {
   content: string
   updatedAt: any
   updatedBy: string
+  fullName: string
+  userId: string
 }
 
 export const JudgeFeedbackSection = ({
@@ -42,32 +44,54 @@ export const JudgeFeedbackSection = ({
   challengeTitle,
   userRole,
 }: JudgeFeedbackSectionProps) => {
-  const [feedback, setFeedback] = useState<FeedbackData | null>(null)
+  const [allFeedbacks, setAllFeedbacks] = useState<FeedbackData[]>([])
+  const [currentUserFeedback, setCurrentUserFeedback] = useState<FeedbackData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [editorContent, setEditorContent] = useState("")
   const [saving, setSaving] = useState(false)
-  const { user } = useAuth()
+  const { user, fullName } = useAuth()
   const { toast } = useToast()
 
   const canEdit = ["admin", "judge", "superadmin"].includes(userRole)
+  const hasGivenFeedback = currentUserFeedback !== null
 
   useEffect(() => {
     fetchFeedback()
-  }, [challengeId])
+  }, [challengeId, user])
 
   const fetchFeedback = async () => {
     try {
       setLoading(true)
-      const feedbackRef = doc(db, "dailychallenge", challengeId, "judgefeedback", "main_feedback")
-      const feedbackDoc = await getDoc(feedbackRef)
+      const judgeFeedbackRef = collection(db, "dailychallenge", challengeId, "judgefeedback")
+      const feedbackSnapshot = await getDocs(judgeFeedbackRef)
 
-      if (feedbackDoc.exists()) {
-        setFeedback(feedbackDoc.data() as FeedbackData)
-        setEditorContent(feedbackDoc.data().content || "")
-      } else {
-        setFeedback(null)
-        setEditorContent("")
+      const feedbacks: FeedbackData[] = []
+      feedbackSnapshot.forEach((doc) => {
+        const data = doc.data()
+        feedbacks.push({
+          content: data.content || "",
+          updatedAt: data.updatedAt,
+          updatedBy: data.updatedBy || doc.id,
+          fullName: data.fullName || "Unknown Judge",
+          userId: doc.id,
+        })
+      })
+
+      // Sort by updatedAt, most recent first
+      feedbacks.sort((a, b) => {
+        if (!a.updatedAt) return 1
+        if (!b.updatedAt) return -1
+        return b.updatedAt.toMillis() - a.updatedAt.toMillis()
+      })
+
+      setAllFeedbacks(feedbacks)
+
+      // Find current user's feedback if they can edit
+      if (user && canEdit) {
+        const userFeedback = feedbacks.find((f) => f.userId === user.id)
+        setCurrentUserFeedback(userFeedback || null)
+        setEditorContent(userFeedback?.content || "")
       }
     } catch (error) {
       console.error("Error fetching judge feedback:", error)
@@ -82,7 +106,7 @@ export const JudgeFeedbackSection = ({
   }
 
   const handleSaveFeedback = async () => {
-    if (!user || !canEdit) return
+    if (!user || !canEdit || !fullName) return
 
     if (!editorContent.trim() || editorContent === "<p><br></p>") {
       toast({
@@ -95,7 +119,7 @@ export const JudgeFeedbackSection = ({
 
     try {
       setSaving(true)
-      const feedbackRef = doc(db, "dailychallenge", challengeId, "judgefeedback", "main_feedback")
+      const feedbackRef = doc(db, "dailychallenge", challengeId, "judgefeedback", user.id)
 
       await setDoc(
         feedbackRef,
@@ -103,6 +127,8 @@ export const JudgeFeedbackSection = ({
           content: editorContent,
           updatedAt: serverTimestamp(),
           updatedBy: user.id,
+          fullName: fullName,
+          userId: user.id,
         },
         { merge: true }
       )
@@ -112,7 +138,7 @@ export const JudgeFeedbackSection = ({
 
       toast({
         title: "Feedback saved",
-        description: "Judge feedback has been successfully saved.",
+        description: "Your feedback has been successfully saved.",
         variant: "default",
       })
     } catch (error) {
@@ -128,7 +154,7 @@ export const JudgeFeedbackSection = ({
   }
 
   const handleCancelEdit = () => {
-    setEditorContent(feedback?.content || "")
+    setEditorContent(currentUserFeedback?.content || "")
     setIsEditing(false)
   }
 
@@ -193,25 +219,34 @@ export const JudgeFeedbackSection = ({
     <div className="mt-8 sm:mt-12">
       <Card className="p-6 sm:p-8 bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
             <div className="p-2 bg-purple-50 rounded-lg">
-              <MessageSquare className="w-5 h-5 text-purple-600" />
+              <MessageSquare className="w-7 h-7 text-purple-600" />
             </div>
-            <div>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">Judge's Review</h3>
-              <p className="text-sm text-gray-600">Official feedback for {challengeTitle}</p>
-            </div>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
+              Judge's Review
+            </h3>
+
+            {allFeedbacks.length > 0 && !isEditing && (
+              <Badge className="bg-purple-600 text-white border-0 font-medium text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5">
+                {allFeedbacks.length} Review{allFeedbacks.length > 1 ? "s" : ""}
+              </Badge>
+            )}
           </div>
-          {feedback && !isEditing && (
-            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-              Published
-            </Badge>
-          )}
+
+          <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-11 md:pl-13">
+            Official feedback for {challengeTitle}
+          </p>
+        </div>
+
+        {/* Subtle divider and spacing between header and content */}
+        <div className="mt-3 mb-4">
+          <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.04)' }} aria-hidden />
         </div>
 
         {/* Content Area */}
-        {!feedback && !isEditing ? (
+        {allFeedbacks.length === 0 && !isEditing ? (
           // No feedback exists - Empty state
           <div className="py-12 text-center">
             <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -228,7 +263,7 @@ export const JudgeFeedbackSection = ({
                 className="bg-[#0f172a] hover:bg-[#1e293b] text-white"
               >
                 <Pencil className="w-4 h-4 mr-2" />
-                Write Feedback
+                Give Feedback
               </Button>
             )}
           </div>
@@ -274,26 +309,58 @@ export const JudgeFeedbackSection = ({
         ) : (
           // View mode (feedback exists)
           <div>
-            <div
-              className="prose prose-sm sm:prose max-w-none mb-6 text-gray-700 leading-relaxed feedback-preview-content feedback-preview-scroll"
-              dangerouslySetInnerHTML={{
-                __html: sanitizeHTML(feedback?.content || ""),
-              }}
-            />
-            {feedback?.updatedAt && (
-              <div className="text-xs text-gray-500 pt-4 border-t border-gray-100">
-                Last updated: {formatTimestamp(feedback.updatedAt)}
-              </div>
-            )}
+            <div className="space-y-6">
+              {allFeedbacks.map((feedback) => (
+                <div 
+                  key={feedback.userId} 
+                  className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0"
+                >
+                  {/* Judge Name Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        {feedback.fullName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{feedback.fullName}</h4>
+                        {feedback.updatedAt && (
+                          <p className="text-xs text-gray-500">
+                            {formatTimestamp(feedback.updatedAt)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {user && feedback.userId === user.id && canEdit && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Your Review
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {/* Feedback Content */}
+                  <div
+                    className="prose prose-sm sm:prose max-w-none text-gray-700 leading-relaxed feedback-preview-content feedback-preview-scroll"
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHTML(feedback.content),
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+
             {canEdit && (
-              <div className="mt-6">
+              <div className="mt-6 pt-6 border-t border-gray-100">
                 <Button
                   onClick={() => setIsEditing(true)}
-                  variant="outline"
-                  className="border-gray-300 hover:bg-gray-50"
+                  variant={hasGivenFeedback ? "outline" : "default"}
+                  className={
+                    hasGivenFeedback
+                      ? "border-green-500 text-green-700 hover:bg-green-50"
+                      : "bg-[#0f172a] hover:bg-[#1e293b] text-white"
+                  }
                 >
                   <Pencil className="w-4 h-4 mr-2" />
-                  Edit Feedback
+                  {hasGivenFeedback ? "Edit Feedback" : "Give Feedback"}
                 </Button>
               </div>
             )}

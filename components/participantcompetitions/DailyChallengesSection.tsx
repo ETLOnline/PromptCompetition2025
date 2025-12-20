@@ -5,6 +5,7 @@ import { DailyChallengeCard, DailyChallengeSkeleton } from "./DailyChallengeCard
 import { ChallengeVotingSection } from "./ChallengeVotingSection"
 import { JudgeFeedbackSection } from "./JudgeFeedbackSection"
 import { PastDailyChallengesSection } from "./PastDailyChallengesSection"
+import { OverallLeaderboardParticipant } from "./OverallLeaderboardParticipant"
 
 interface DailyChallenge {
   id: string
@@ -133,6 +134,13 @@ export const DailyChallengesSection = ({
       {/* Past Daily Challenges Section */}
       {!loading && completedChallenges.length > 0 && (
         <PastDailyChallengesSection challenges={completedChallenges} />
+      )}
+
+      {/* Overall Leaderboard (participant view) */}
+      {!loading && (
+        <div className="mt-16">
+          <OverallLeaderboardParticipant topN={10} />
+        </div>
       )}
     </div>
   )

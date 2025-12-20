@@ -423,7 +423,7 @@ export default function DailyChallengePage() {
                 <CardContent className="p-4 sm:p-6 space-y-6">
                   {challenge.problemStatement && (
                     <div>
-                      <p className="text-gray-700 leading-relaxed">{challenge.problemStatement}</p>
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{challenge.problemStatement}</p>
                     </div>
                   )}
                   

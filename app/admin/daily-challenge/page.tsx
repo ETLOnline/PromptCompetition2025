@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { fetchWithAuth } from "@/lib/api"
+import { fetchWithAuth, generateOverallLeaderboard } from "@/lib/api"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit, Trash2, Calendar, Clock, Users, Zap, Trophy, RefreshCw, TrendingUp, BarChart3 } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Calendar, Clock, Users, Zap, Trophy, RefreshCw, TrendingUp, BarChart3, X } from "lucide-react"
 import { db } from "@/lib/firebase"
 import { collection, getDocs, doc, getDoc, deleteDoc, updateDoc, increment, Timestamp } from "firebase/firestore"
 import {
@@ -19,6 +19,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { OverallLeaderboard } from "@/components/participantcompetitions/OverallLeaderboard"
+import { PastDailyChallengesSection } from "@/components/participantcompetitions/PastDailyChallengesSection"
+import { useAuth } from "@clerk/nextjs"
+import { useToast } from "@/hooks/use-toast"
 
 interface DailyChallenge {
   id: string
@@ -38,6 +42,8 @@ interface DailyChallenge {
 
 export default function DailyChallengeAdmin() {
   const router = useRouter()
+  const { getToken } = useAuth()
+  const { toast } = useToast()
   const [challenges, setChallenges] = useState<DailyChallenge[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statsData, setStatsData] = useState({
@@ -50,6 +56,8 @@ export default function DailyChallengeAdmin() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [challengeToDelete, setChallengeToDelete] = useState<DailyChallenge | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isGeneratingLeaderboard, setIsGeneratingLeaderboard] = useState(false)
+  const [leaderboardKey, setLeaderboardKey] = useState(0)
 
   // Fetch challenges and stats from Firestore after auth
   useEffect(() => {
@@ -284,7 +292,11 @@ export default function DailyChallengeAdmin() {
       setChallengeToDelete(null)
     } catch (error) {
       console.error("Error deleting challenge:", error)
-      alert("Failed to delete challenge. Please try again.")
+      toast({
+        title: "Error",
+        description: "Failed to delete challenge. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsDeleting(false)
     }
@@ -293,6 +305,28 @@ export default function DailyChallengeAdmin() {
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false)
     setChallengeToDelete(null)
+  }
+
+  const handleGenerateOverallLeaderboard = async () => {
+    try {
+      setIsGeneratingLeaderboard(true)
+      await generateOverallLeaderboard(getToken)
+      // Refresh the leaderboard component by updating key
+      setLeaderboardKey(prev => prev + 1)
+      toast({
+        title: "Success",
+        description: "Overall leaderboard generated successfully!",
+      })
+    } catch (error) {
+      console.error("Error generating overall leaderboard:", error)
+      toast({
+        title: "Error",
+        description: "Failed to generate overall leaderboard. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingLeaderboard(false)
+    }
   }
 
   const getStatusColor = (status: DailyChallenge["status"]) => {
@@ -602,6 +636,30 @@ export default function DailyChallengeAdmin() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Overall Leaderboard Section */}
+        <div className="mt-16 pt-8 border-t border-slate-200">
+          <OverallLeaderboard 
+            key={leaderboardKey} 
+            topN={10} 
+            onGenerateLeaderboard={handleGenerateOverallLeaderboard}
+            isGeneratingLeaderboard={isGeneratingLeaderboard}
+          />
+        </div>
+
+        {/* Past Daily Challenges Section */}
+        {(() => {
+          const now = new Date()
+          const completedChallenges = challenges.filter((challenge) => {
+            const endDate = new Date(challenge.endTime)
+            return endDate < now
+          })
+          return !isLoading && completedChallenges.length > 0 ? (
+            <div className="mt-16">
+              <PastDailyChallengesSection challenges={completedChallenges} />
+            </div>
+          ) : null
+        })()}
       </div>
 
       {/* Delete Confirmation Dialog */}
