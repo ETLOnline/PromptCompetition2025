@@ -187,8 +187,8 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
                       </Button>
                     </DialogTrigger>
 
-                    <DialogContent className="bg-white border-slate-200 max-w-3xl w-[95vw] max-h-[85vh] overflow-y-auto">
-                      <DialogHeader className="space-y-2 sm:space-y-3 pb-3 sm:pb-4 border-b border-slate-200">
+                    <DialogContent className="bg-white border-slate-200 max-w-3xl w-[95vw] max-h-[85vh] flex flex-col">
+                      <DialogHeader className="flex-shrink-0 pb-3 sm:pb-4 border-b border-slate-200">
                         <div className="flex items-start gap-2 sm:gap-3">
                           <div className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 bg-indigo-100 rounded-lg sm:rounded-xl flex-shrink-0">
                             <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
@@ -202,92 +202,94 @@ export const DailyChallengeCard = ({ challenge, onViewDetails, isSingle = false 
                         </div>
                       </DialogHeader>
 
-                      <div className="space-y-4 sm:space-y-5 pt-3 sm:pt-4">
-                        {/* Challenge Title */}
-                        {challenge.title && (
-                          <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-200">
-                            <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
-                              {challenge.title}
-                            </h3>
-                          </div>
-                        )}
-
-                        {/* Problem Statement */}
-                        {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
-                          <div className="space-y-2 sm:space-y-3">
-                            <div className="flex items-center gap-2">
-                              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                              <h4 className="text-sm sm:text-base font-semibold text-slate-900">Problem Statement</h4>
+                      <div className="flex-1 overflow-y-auto">
+                        <div className="space-y-4 sm:space-y-5 pt-3 sm:pt-4">
+                          {/* Challenge Title */}
+                          {challenge.title && (
+                            <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-200">
+                              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
+                                {challenge.title}
+                              </h3>
                             </div>
-                            {challenge.problemStatement && (
-                              <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
-                                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                  {challenge.problemStatement}
-                                </p>
-                              </div>
-                            )}
-                            {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
-                              <div className="space-y-2">
-                                {challenge.problemAudioUrls.map((url: string, index: number) => (
-                                  <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                                    <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
-                                    <audio controls src={url} className="w-full" />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                          )}
 
-                        {/* Guidelines */}
-                        {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
-                          <div className="space-y-2 sm:space-y-3">
-                            <div className="flex items-center gap-2">
-                              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-                              <h4 className="text-sm sm:text-base font-semibold text-slate-900">Guidelines</h4>
-                            </div>
-                            {challenge.guidelines && (
-                              <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
-                                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                  {challenge.guidelines}
-                                </p>
+                          {/* Problem Statement */}
+                          {(challenge.problemStatement || (challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0)) && (
+                            <div className="space-y-2 sm:space-y-3">
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+                                <h4 className="text-sm sm:text-base font-semibold text-slate-900">Problem Statement</h4>
                               </div>
-                            )}
-                            {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
-                              <div className="space-y-2">
-                                {challenge.guidelinesAudioUrls.map((url: string, index: number) => (
-                                  <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                                    <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
-                                    <audio controls src={url} className="w-full" />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Visual Clues */}
-                        {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
-                          <div className="space-y-2 sm:space-y-3">
-                            <div className="flex items-center gap-2">
-                              <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
-                              <h4 className="text-sm sm:text-base font-semibold text-slate-900">
-                                Visual Clues ({challenge.visualClueUrls.length})
-                              </h4>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {challenge.visualClueUrls.map((url: string, index: number) => (
-                                <div key={index} className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                                  <img
-                                    src={url}
-                                    alt={`Visual clue ${index + 1}`}
-                                    className="w-full h-auto rounded-lg"
-                                  />
+                              {challenge.problemStatement && (
+                                <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                    {challenge.problemStatement}
+                                  </p>
                                 </div>
-                              ))}
+                              )}
+                              {challenge.problemAudioUrls && challenge.problemAudioUrls.length > 0 && (
+                                <div className="space-y-2">
+                                  {challenge.problemAudioUrls.map((url: string, index: number) => (
+                                    <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                      <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
+                                      <audio controls src={url} className="w-full" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
+                          )}
+
+                          {/* Guidelines */}
+                          {(challenge.guidelines || (challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0)) && (
+                            <div className="space-y-2 sm:space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+                                <h4 className="text-sm sm:text-base font-semibold text-slate-900">Guidelines</h4>
+                              </div>
+                              {challenge.guidelines && (
+                                <div className="bg-slate-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-200">
+                                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                    {challenge.guidelines}
+                                  </p>
+                                </div>
+                              )}
+                              {challenge.guidelinesAudioUrls && challenge.guidelinesAudioUrls.length > 0 && (
+                                <div className="space-y-2">
+                                  {challenge.guidelinesAudioUrls.map((url: string, index: number) => (
+                                    <div key={index} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                      <p className="text-xs font-medium text-slate-600 mb-2">Audio {index + 1}</p>
+                                      <audio controls src={url} className="w-full" />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Visual Clues */}
+                          {challenge.visualClueUrls && challenge.visualClueUrls.length > 0 && (
+                            <div className="space-y-2 sm:space-y-3">
+                              <div className="flex items-center gap-2">
+                                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                                <h4 className="text-sm sm:text-base font-semibold text-slate-900">
+                                  Visual Clues ({challenge.visualClueUrls.length})
+                                </h4>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {challenge.visualClueUrls.map((url: string, index: number) => (
+                                  <div key={index} className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                                    <img
+                                      src={url}
+                                      alt={`Visual clue ${index + 1}`}
+                                      className="w-full h-auto rounded-lg"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
