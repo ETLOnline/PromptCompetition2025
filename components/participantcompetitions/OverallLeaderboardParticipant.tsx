@@ -5,6 +5,8 @@ import { fetchOverallLeaderboard } from "@/lib/api"
 import { Star, Users, Trophy, Medal, Award } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
 
 interface Entry {
   userId: string
@@ -14,6 +16,7 @@ interface Entry {
   totalRatingSum: number
   totalVoteCount: number
   submissionCount: number
+  institution?: string
 }
 
 interface Props {
@@ -24,6 +27,7 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
   const [entries, setEntries] = useState<Entry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandedInstitutions, setExpandedInstitutions] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let mounted = true
@@ -32,7 +36,25 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
         setLoading(true)
         const data = await fetchOverallLeaderboard(topN)
         if (!mounted) return
-        setEntries(data.leaderboard || [])
+        let leaderboardEntries = data.leaderboard || []
+        
+        // Fetch institutions for each user
+        const userIds = leaderboardEntries.map(e => e.userId)
+        const institutionPromises = userIds.map(async (userId) => {
+          try {
+            const userRef = doc(db, "users", userId)
+            const userSnap = await getDoc(userRef)
+            return userSnap.exists() ? userSnap.data()?.institution || "N/A" : "N/A"
+          } catch (error) {
+            console.error(`Failed to fetch institution for user ${userId}:`, error)
+            return "N/A"
+          }
+        })
+        
+        const institutions = await Promise.all(institutionPromises)
+        leaderboardEntries = leaderboardEntries.map((e, i) => ({ ...e, institution: institutions[i] }))
+        
+        setEntries(leaderboardEntries)
       } catch (err) {
         console.error("Failed to load overall leaderboard:", err)
         setError(err instanceof Error ? err.message : String(err))
@@ -95,6 +117,66 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
     return entry.totalRatingSum / entry.totalVoteCount
   }
 
+  const toggleInstitutionExpansion = (userId: string) => {
+    setExpandedInstitutions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(userId)) {
+        newSet.delete(userId)
+      } else {
+        newSet.add(userId)
+      }
+      return newSet
+    })
+  }
+
+  const renderInstitution = (institution: string | undefined, userId: string) => {
+    const text = institution || "N/A"
+    const isExpanded = expandedInstitutions.has(userId)
+    
+    // For expanded state, show full text
+    if (isExpanded) {
+      return (
+        <div className="text-xs sm:text-sm text-gray-700 leading-tight">
+          {text}{" "}
+          <button
+            onClick={() => toggleInstitutionExpansion(userId)}
+            className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+          >
+            show less
+          </button>
+        </div>
+      )
+    }
+    
+    // For collapsed state, show truncated text with show more
+    // Estimate characters that fit in ~1.5 lines (roughly 30-40 characters for typical institution names)
+    const maxCollapsedLength = 35
+    
+    if (text.length <= maxCollapsedLength) {
+      // Short text, no need for show more
+      return (
+        <span className="text-xs sm:text-sm text-gray-700 leading-tight">{text}</span>
+      )
+    }
+    
+    // Long text, show truncated with show more
+    const truncatedText = text.substring(0, maxCollapsedLength)
+    const lastSpaceIndex = truncatedText.lastIndexOf(' ')
+    const displayText = lastSpaceIndex > maxCollapsedLength * 0.7 ? truncatedText.substring(0, lastSpaceIndex) : truncatedText
+    
+    return (
+      <div className="text-xs sm:text-sm text-gray-700 leading-tight">
+        {displayText}...{" "}
+        <button
+          onClick={() => toggleInstitutionExpansion(userId)}
+          className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+        >
+          show more
+        </button>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="w-full rounded-lg border border-red-200 bg-red-50 p-3">
@@ -127,8 +209,11 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
                   <th className="px-2 sm:px-4 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-12 sm:w-16">
                     Rank
                   </th>
-                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight w-48">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight w-36">
                     Participant
+                  </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight w-44">
+                    Institution
                   </th>
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-44">
                     Avg Rating
@@ -151,6 +236,9 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
                       <td className="px-3 sm:px-6 py-3 sm:py-4">
                         <Skeleton className="h-4 w-32" />
                       </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                        <Skeleton className="h-4 w-20" />
+                      </td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
                         <Skeleton className="h-6 w-32 mx-auto" />
                       </td>
@@ -164,7 +252,7 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
                   ))
                 ) : entries.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-sm text-gray-500">No leaderboard data available</td>
+                    <td colSpan={6} className="text-center py-8 text-sm text-gray-500">No leaderboard data available</td>
                   </tr>
                 ) : (
                   entries.map((e) => (
@@ -186,14 +274,14 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
 
                       {/* Participant */}
                       <td className="px-3 sm:px-6 py-3 sm:py-5 min-w-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-slate-100 rounded-full flex items-center justify-center text-sm font-medium text-slate-700 flex-shrink-0">
-                            {e.fullName ? e.fullName.charAt(0).toUpperCase() : "?"}
-                          </div>
-                          <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
-                            {e.fullName}
-                          </p>
-                        </div>
+                        <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
+                          {e.fullName}
+                        </p>
+                      </td>
+
+                      {/* Institution */}
+                      <td className="px-3 sm:px-6 py-3 sm:py-5 align-top">
+                        {renderInstitution(e.institution, e.userId)}
                       </td>
 
                       {/* Avg Rating with Stars */}
@@ -244,10 +332,11 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
         {loading ? (
           [...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-lg border border-gray-200 p-3">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-2 mb-3">
                 <Skeleton className="h-8 w-8 rounded-full" />
                 <div className="flex-1">
                   <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
                 <Skeleton className="h-8 w-8 rounded-full" />
               </div>
@@ -289,13 +378,11 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-sm font-medium text-slate-700 flex-shrink-0">
-                        {e.fullName ? e.fullName.charAt(0).toUpperCase() : "?"}
-                      </div>
                       <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                         {e.fullName}
                       </p>
                     </div>
+                    <p className="text-[10px] text-gray-500 truncate">{e.institution || "N/A"}</p>
                   </div>
                 </div>
               </div>

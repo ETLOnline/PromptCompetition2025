@@ -90,26 +90,42 @@ export const DailyChallengesSection = ({
       </div>
 
       {/* Active Challenges Display */}
-      <div className={activeChallenges.length === 1 && !loading ? "" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"}>
-        {loading ? (
-          // Show skeletons while loading
-          <>
-            <DailyChallengeSkeleton />
-            <DailyChallengeSkeleton />
-            <DailyChallengeSkeleton />
-          </>
-        ) : (
-          // Show actual active challenges
-          activeChallenges.map((challenge) => (
-            <DailyChallengeCard
-              key={challenge.id}
-              challenge={challenge}
-              onViewDetails={onViewDetails}
-              isSingle={activeChallenges.length === 1}
-            />
-          ))
-        )}
-      </div>
+      {!loading && activeChallenges.length === 0 ? (
+        <div className="text-center py-12 px-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Daily Challenge Yet</h3>
+            <p className="text-gray-600 mb-4">
+              No daily challenge uploaded yet. Check past challenges below with judges' reviews while we upload new challenges.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className={activeChallenges.length === 1 && !loading ? "" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"}>
+          {loading ? (
+            // Show skeletons while loading
+            <>
+              <DailyChallengeSkeleton />
+              <DailyChallengeSkeleton />
+              <DailyChallengeSkeleton />
+            </>
+          ) : (
+            // Show actual active challenges
+            activeChallenges.map((challenge) => (
+              <DailyChallengeCard
+                key={challenge.id}
+                challenge={challenge}
+                onViewDetails={onViewDetails}
+                isSingle={activeChallenges.length === 1}
+              />
+            ))
+          )}
+        </div>
+      )}
 
       {/* Voting Section - Show for each active challenge */}
       {!loading && activeChallenges.length > 0 && activeChallenges.map((challenge) => (
