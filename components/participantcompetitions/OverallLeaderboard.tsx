@@ -242,6 +242,9 @@ export const OverallLeaderboard = ({ topN = 10, onGenerateLeaderboard, isGenerat
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-tight">
                     Participant
                   </th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-32">
+                    User ID
+                  </th>
                   <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-tight w-24">
                     Bayes Score
                   </th>
@@ -268,6 +271,9 @@ export const OverallLeaderboard = ({ topN = 10, onGenerateLeaderboard, isGenerat
                         <Skeleton className="h-4 w-32" />
                       </td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4">
                         <Skeleton className="h-4 w-16 mx-auto" />
                       </td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4">
@@ -283,7 +289,7 @@ export const OverallLeaderboard = ({ topN = 10, onGenerateLeaderboard, isGenerat
                   ))
                 ) : leaderboard.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={7} className="px-6 py-12 text-center">
                       <p className="text-sm text-gray-500">No leaderboard data available yet</p>
                     </td>
                   </tr>
@@ -305,7 +311,15 @@ export const OverallLeaderboard = ({ topN = 10, onGenerateLeaderboard, isGenerat
 
                       {/* Participant Name */}
                       <td className="px-3 sm:px-6 py-3 sm:py-4">
-                        <p className="text-sm font-semibold text-gray-900">{entry.fullName}</p>
+                        <div className="flex flex-col">
+                          <p className="text-sm font-semibold text-gray-900">{entry.fullName}</p>
+                          <p className="text-xs text-gray-500">{entry.email}</p>
+                        </div>
+                      </td>
+
+                      {/* User ID */}
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-center">
+                        <span className="text-sm font-mono text-gray-700">{entry.userId}</span>
                       </td>
 
                       {/* Bayesian Score */}
@@ -387,6 +401,9 @@ export const OverallLeaderboard = ({ topN = 10, onGenerateLeaderboard, isGenerat
                   <div className="flex-1 min-w-0">
                     <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate">
                       {entry.fullName}
+                    </p>
+                    <p className="text-[10px] text-gray-500 truncate">
+                      {entry.email}
                     </p>
                   </div>
                 </div>
