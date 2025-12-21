@@ -142,6 +142,32 @@ export default function ParticipantHeader() {
                         <Trophy className="h-4 w-4 mr-3 relative z-10" />
                         <span className="relative z-10">Competitions</span>
                       </button>
+                      {(role === "admin" || role === "superadmin") && (
+                        <button
+                          onClick={() => {
+                            router.push("/admin/select-competition")
+                            setIsOpen(false)
+                          }}
+                          className="w-full flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                          <Shield className="h-4 w-4 mr-3 relative z-10" />
+                          <span className="relative z-10">Admin Dashboard</span>
+                        </button>
+                      )}
+                      {role === "judge" && (
+                        <button
+                          onClick={() => {
+                            router.push("/judge")
+                            setIsOpen(false)
+                          }}
+                          className="w-full flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                          <Shield className="h-4 w-4 mr-3 relative z-10" />
+                          <span className="relative z-10">Judge Dashboard</span>
+                        </button>
+                      )}
                     </nav>
                   </div>
                   <div className="pt-6 border-t border-gray-100">
@@ -272,6 +298,26 @@ export default function ParticipantHeader() {
             >
               Competitions
             </Button>
+
+            {(role === "admin" || role === "superadmin") && (
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/admin/select-competition")}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+              >
+                Admin Dashboard
+              </Button>
+            )}
+
+            {role === "judge" && (
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/judge")}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+              >
+                Judge Dashboard
+              </Button>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
