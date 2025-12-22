@@ -215,14 +215,22 @@ export default function CompetitionsPage() {
     try {
       // console.log("Checking authentication...")
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_USER_AUTH}`)
-      setUser(profile)
-      // console.log("Authenticated user profile:", profile)
-      if (!profile || ["admin", "judge", "superadmin"].includes(profile.role)) {
+      // If no profile, redirect to home
+      if (!profile) {
         router.push("/")
         return null
       }
 
-      return profile
+      // Only allow these roles to proceed and return the profile
+      const allowedRoles = ["participant", "admin", "judge", "superadmin"]
+      if (allowedRoles.includes(profile.role)) {
+        setUser(profile)
+        return profile
+      }
+
+      // Otherwise redirect to home
+      router.push("/")
+      return null
     } catch (error) {
       router.push("/")
       return null
@@ -280,7 +288,7 @@ export default function CompetitionsPage() {
 
   const handleDailyChallengeView = (challenge: DailyChallenge) => {
     // For now, we'll just log - you can implement a modal or navigate to a challenge page
-    console.log("View daily challenge:", challenge)
+    // console.log("View daily challenge:", challenge)
     // TODO: Implement daily challenge view/submission flow
     toast({
       title: "Daily Challenge",
@@ -487,6 +495,7 @@ export default function CompetitionsPage() {
                     challenges={dailyChallenges}
                     loading={loadingDailyChallenges}
                     onViewDetails={handleDailyChallengeView}
+                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
                   />
 
                   <CompetitionSection
@@ -613,6 +622,7 @@ export default function CompetitionsPage() {
                     challenges={dailyChallenges}
                     loading={loadingDailyChallenges}
                     onViewDetails={handleDailyChallengeView}
+                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
                   />
 
                   {groupedCompetitions.ended.length > 0 && (

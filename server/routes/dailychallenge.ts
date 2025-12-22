@@ -3,16 +3,16 @@ import { db } from "../config/firebase-admin.js";
 
 const router = express.Router();
 
-// GET /dailychallenge - Fetch all active daily challenges (public)
+// GET /dailychallenge - Fetch active and completed daily challenges (public, excludes upcoming)
 router.get("/", async (req: Request, res: Response) => {
   try {
     const now = new Date();
     
-    // Query for active challenges (startTime <= now AND endTime >= now)
+    // Query for challenges that have started (startTime <= now)
+    // This includes both active and completed challenges, but excludes upcoming ones
     const snapshot = await db
       .collection("dailychallenge")
       .where("startTime", "<=", now)
-      .where("endTime", ">=", now)
       .orderBy("startTime", "desc")
       .get();
 
@@ -21,7 +21,7 @@ router.get("/", async (req: Request, res: Response) => {
       ...doc.data(),
     }));
 
-    console.log(`Fetched ${challenges.length} active daily challenges.`);
+    console.log(`Fetched ${challenges.length} daily challenges (active and completed).`);
     console.log('Challenges:', challenges);
 
     return res.status(200).json(challenges);

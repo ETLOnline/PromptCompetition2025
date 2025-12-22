@@ -142,6 +142,32 @@ export default function ParticipantHeader() {
                         <Trophy className="h-4 w-4 mr-3 relative z-10" />
                         <span className="relative z-10">Competitions</span>
                       </button>
+                      {(role === "admin" || role === "superadmin") && (
+                        <button
+                          onClick={() => {
+                            router.push("/admin/select-competition")
+                            setIsOpen(false)
+                          }}
+                          className="w-full flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                          <Shield className="h-4 w-4 mr-3 relative z-10" />
+                          <span className="relative z-10">Admin Dashboard</span>
+                        </button>
+                      )}
+                      {role === "judge" && (
+                        <button
+                          onClick={() => {
+                            router.push("/judge")
+                            setIsOpen(false)
+                          }}
+                          className="w-full flex items-center px-4 py-3.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-white/80 hover:text-gray-900 hover:shadow-sm transition-all duration-200 group relative overflow-hidden"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                          <Shield className="h-4 w-4 mr-3 relative z-10" />
+                          <span className="relative z-10">Judge Dashboard</span>
+                        </button>
+                      )}
                     </nav>
                   </div>
                   <div className="pt-6 border-t border-gray-100">
@@ -154,13 +180,15 @@ export default function ParticipantHeader() {
                       <div className="flex flex-col space-y-1 flex-1">
                         <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
                         <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
-                        <Badge
-                          variant="secondary"
-                          className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
-                        >
-                          <Shield className="w-3 h-3 mr-1" />
-                          Participant
-                        </Badge>
+                        {(role === "superadmin" || role === "admin" || role === "participant" || role === "judge") && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                          >
+                            <Shield className="w-3 h-3 mr-1" />
+                            {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin" : role === "participant" ? "Participant" : "Judge"}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -210,6 +238,49 @@ export default function ParticipantHeader() {
                 </div>
           </div>
 
+          {/* Small-screen avatar dropdown (visible on mobile) */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="p-2 rounded-lg">
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-sm font-semibold">{userInitials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 shadow-lg border-gray-200">
+                <DropdownMenuLabel className="font-normal py-3">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="w-11 h-11 ring-2 ring-gray-100">
+                      <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-semibold">{userInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
+                      <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
+                      {(role === "superadmin" || role === "admin" || role === "participant" || role === "judge") && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                        >
+                          <Shield className="w-3 h-3 mr-1" />
+                          {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin" : role === "participant" ? "Participant" : "Judge"}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => { logout(); }}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50 py-2.5 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-3" />
+                  <span className="font-medium">Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {/* Right: Nav + User menu (Desktop only) */}
           <div className="hidden lg:flex items-center space-x-4">
             <Button
@@ -227,6 +298,26 @@ export default function ParticipantHeader() {
             >
               Competitions
             </Button>
+
+            {(role === "admin" || role === "superadmin") && (
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/admin/select-competition")}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+              >
+                Admin Dashboard
+              </Button>
+            )}
+
+            {role === "judge" && (
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/judge")}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 font-medium"
+              >
+                Judge Dashboard
+              </Button>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -257,13 +348,15 @@ export default function ParticipantHeader() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-semibold leading-none text-gray-900">{displayName}</p>
                       <p className="text-xs leading-none text-gray-500">{userEmail || "participant@example.com"}</p>
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
-                      >
-                        <Shield className="w-3 h-3 mr-1" />
-                        Participant
-                      </Badge>
+                      {(role === "superadmin" || role === "admin" || role === "participant" || role === "judge") && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-50 text-blue-700 border-blue-200 text-xs w-fit mt-1"
+                        >
+                          <Shield className="w-3 h-3 mr-1" />
+                          {role === "superadmin" ? "Super Admin" : role === "admin" ? "Admin" : role === "participant" ? "Participant" : "Judge"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuLabel>

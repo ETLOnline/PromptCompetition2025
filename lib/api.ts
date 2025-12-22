@@ -239,3 +239,22 @@ export const fetchDailyChallengeById = async (id: string) => {
   if (!res.ok) throw new Error("Failed to fetch daily challenge")
   return res.json()
 }
+
+//-------------------------------------------------------
+//------------ overall leaderboard API's  --------------
+//-------------------------------------------------------
+
+export const generateOverallLeaderboard = async (getToken?: () => Promise<string | null>) => {
+  return await fetchWithAuth(`${API_URL}/leaderboard-overall/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }, getToken);
+};
+
+export const fetchOverallLeaderboard = async (limit: number = 100) => {
+  const res = await fetch(`${API_URL}/leaderboard-overall?limit=${limit}`)
+  if (!res.ok) throw new Error("Failed to fetch overall leaderboard")
+  return res.json()
+}
