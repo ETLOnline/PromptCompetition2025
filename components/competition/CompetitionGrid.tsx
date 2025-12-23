@@ -12,7 +12,7 @@ interface CompetitionGridProps {
   competitions: Competition[]
   onEdit: (competition: Competition) => void
   onView: (competition: Competition) => void
-  onManage: (competitionId: string) => void
+  onManage: (competition: Competition) => void
   role: string
   viewMode: "grid" | "list"
 }
@@ -188,11 +188,18 @@ export default function CompetitionGrid({
                   </div>
                   <span className="font-medium">PKR {competition.prizeMoney}</span>
                 </div>
+
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Star className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <span className="font-medium">{competition.level || "Not Available"}</span>
+                </div>
               </div>
 
               {/* Action Button */}
               <Button
-                onClick={() => onManage(competition.id)}
+                onClick={() => onManage(competition)}
                 className="w-full mt-4 bg-gray-900 hover:from-gray-900 hover:to-gray-600 text-white border-0 transition-all duration-300"
               >
                 <Users className="w-4 h-4 mr-2" />

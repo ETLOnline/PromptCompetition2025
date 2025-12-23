@@ -32,18 +32,32 @@ router.post(
       mode,          // CHANGED from 'location'
       venue,         // NEW FIELD
       level,         // NEW FIELD
+      TopN,          // NEW FIELD
       systemPrompt,
-      prizeMoney
+      prizeMoney,
+      isActive,      // NEW FIELD
+      isLocked,      // NEW FIELD
+      userEmail,     // NEW: From frontend
+      userFullName,  // NEW: From frontend
     } = req.body;
 
     // Update validation
-    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !systemPrompt || !level) {
+    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !systemPrompt || !level || !userEmail || !userFullName) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     // NEW VALIDATION: Validate venue for offline mode
     if (mode === "offline" && !venue) {
       return res.status(400).json({ error: "Venue is required for offline competitions" });
+    }
+
+    // NEW VALIDATION: Validate TopN for Level 1
+    if (level === "Level 1" && !TopN) {
+      return res.status(400).json({ error: "TopN is required for Level 1 competitions" });
+    }
+
+    if (level === "Level 1" && TopN && (isNaN(TopN) || TopN <= 0)) {
+      return res.status(400).json({ error: "TopN must be a positive number" });
     }
 
     try {
@@ -56,8 +70,8 @@ router.post(
         mode,          // CHANGED from 'location'
         level,         // NEW FIELD
         prizeMoney,
-        isActive: true,
-        isLocked: false,
+        isActive: typeof isActive === 'boolean' ? isActive : true,
+        isLocked: typeof isLocked === 'boolean' ? isLocked : false,
         isFeatured: req.body.isFeatured || false,
         ChallengeCount: 0,
         AllJudgeEvaluated: false,
@@ -66,14 +80,19 @@ router.post(
         createdAt: req.body.createdAt || new Date().toISOString(),
         createdBy: {
           uid: req.user?.uid || "",
-          email: req.user?.email || "",
-          name: req.user?.email?.split("@")[0] || "",
+          email: userEmail,        // Use frontend-provided email
+          name: userFullName,      // Use frontend-provided full name
         },
       };
 
       // NEW: Only add venue if it exists (offline mode)
       if (venue) {
         competitionData.venue = venue;
+      }
+
+      // NEW: Only add TopN if it exists and level is Level 1
+      if (level === "Level 1" && TopN) {
+        competitionData.TopN = TopN;
       }
 
       const newDoc = await db.collection("competitions").add(competitionData);
@@ -102,6 +121,20 @@ router.patch(
     // NEW: If changing from offline to online, explicitly remove venue
     if (updateData.mode === "online" && updateData.venue !== undefined) {
       updateData.venue = "";  // Set to empty string to clear it
+    }
+
+    // NEW VALIDATION: Validate TopN for Level 1
+    if (updateData.level === "Level 1" && updateData.TopN !== undefined && !updateData.TopN) {
+      return res.status(400).json({ error: "TopN is required for Level 1 competitions" });
+    }
+
+    if (updateData.level === "Level 1" && updateData.TopN && (isNaN(updateData.TopN) || updateData.TopN <= 0)) {
+      return res.status(400).json({ error: "TopN must be a positive number" });
+    }
+
+    // NEW: If changing to non-Level 1, remove TopN from update
+    if (updateData.level && updateData.level !== "Level 1") {
+      updateData.TopN = null;  // Set to null to remove it from database
     }
 
     try {

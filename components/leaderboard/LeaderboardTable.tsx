@@ -5,9 +5,10 @@ interface LeaderboardTableProps {
   data: DisplayEntry[]
   topN: number
   competitionTitle: string
+  isLevel1?: boolean
 }
 
-export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTableProps) {
+export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = false }: LeaderboardTableProps) {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -73,9 +74,11 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                     <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                       LLM Score
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Judge Score
-                    </th>
+                    {!isLevel1 && (
+                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Judge Score
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                       Final Score
                     </th>
@@ -125,15 +128,17 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                           {entry.llmScore.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-center">
-                        {entry.judgeScore !== null ? (
-                          <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
-                            {entry.judgeScore.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 text-lg font-light">—</span>
-                        )}
-                      </td>
+                      {!isLevel1 && (
+                        <td className="px-6 py-5 text-center">
+                          {entry.judgeScore !== null ? (
+                            <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
+                              {entry.judgeScore.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-lg font-light">—</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-5 text-center">
                         <span
                           className={`
@@ -203,18 +208,20 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
                     {entry.llmScore.toFixed(2)}
                   </span>
                 </div>
-                <div>
-                  <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Judge
+                {!isLevel1 && (
+                  <div>
+                    <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                      Judge
+                    </div>
+                    {entry.judgeScore !== null ? (
+                      <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium shadow-sm">
+                        {entry.judgeScore.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs sm:text-sm">—</span>
+                    )}
                   </div>
-                  {entry.judgeScore !== null ? (
-                    <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium shadow-sm">
-                      {entry.judgeScore.toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400 text-xs sm:text-sm">—</span>
-                  )}
-                </div>
+                )}
                 <div>
                   <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                     Final
@@ -255,12 +262,14 @@ export function LeaderboardTable({ data, topN, competitionTitle }: LeaderboardTa
               <Award className="h-4 w-4 text-amber-600" />
               <span className="font-medium text-gray-700">3rd Place</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">
-                Top {topN}
-              </span>
-              <span className="font-medium text-gray-700">Judge Evaluated</span>
-            </div>
+            {!isLevel1 && topN > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">
+                  Top {topN}
+                </span>
+                <span className="font-medium text-gray-700">Judge Evaluated</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
