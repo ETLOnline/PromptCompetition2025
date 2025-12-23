@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { FileText, Target, Eye, Send, Headphones, Image as ImageIcon, X } from "lucide-react"
+import { FileText, Target, Eye, Send, Headphones, Image as ImageIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -36,7 +36,6 @@ export const ViewChallengeDetailsModal = ({
 }: ViewChallengeDetailsModalProps) => {
   const [userSubmission, setUserSubmission] = useState<string>("")
   const [loadingSubmission, setLoadingSubmission] = useState(false)
-  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen && challenge) {
@@ -183,23 +182,14 @@ export const ViewChallengeDetailsModal = ({
                 <ImageIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
                 <Label className="text-base font-semibold text-amber-900">Visual Clues ({challenge.visualClueUrls.length})</Label>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {challenge.visualClueUrls.map((url, index) => (
-                  <div 
-                    key={index} 
-                    className="relative group cursor-pointer"
-                    onClick={() => setPreviewImage(url)}
-                  >
-                    <div className="aspect-square overflow-hidden rounded-md border border-amber-200">
-                      <img 
-                        src={url} 
-                        alt={`Visual clue ${index + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-md flex items-center justify-center transition-all">
-                      <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100" />
-                    </div>
+                  <div key={index} className="overflow-hidden rounded-md border border-amber-200 flex items-center justify-center bg-white">
+                    <img 
+                      src={url} 
+                      alt={`Visual clue ${index + 1}`}
+                      className="max-w-full max-h-48 object-contain"
+                    />
                   </div>
                 ))}
               </div>
@@ -258,22 +248,6 @@ export const ViewChallengeDetailsModal = ({
           )}
         </div>
       </DialogContent>
-      
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setPreviewImage(null)}>
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <button
-              type="button"
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300"
-            >
-              <X className="w-8 h-8" />
-            </button>
-            <img src={previewImage} alt="Preview" className="max-w-full max-h-[90vh] object-contain rounded-lg" />
-          </div>
-        </div>
-      )}
     </Dialog>
   )
 }

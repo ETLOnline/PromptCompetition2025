@@ -86,6 +86,7 @@ export default function LeaderboardPage() {
             title: data.title,
             TopN: data.TopN || 0,
             maxScore: data.maxScore || 0,
+            level: data.level || "custom",
           }
         })
         setCompetitions(comps)
@@ -387,6 +388,7 @@ function LeaderboardContent({
                       data={leaderboard}
                       topN={selectedCompetition.TopN}
                       competitionTitle={selectedCompetition.title}
+                      isLevel1={selectedCompetition.level === "Level 1"}
                     />
                   </div>
                   <Pagination page={page} setPage={setPage} hasMore={hasMore} loading={loading} />

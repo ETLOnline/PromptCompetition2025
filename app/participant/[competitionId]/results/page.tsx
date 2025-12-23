@@ -21,6 +21,7 @@ interface Submission {
   > | null
   submittedAt?: any
   status?: "pending" | "evaluated" | "failed"
+  rank?: number
 }
 
 interface Competition {
@@ -290,7 +291,7 @@ export default function ResultsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-50 rounded-xl">
@@ -326,6 +327,19 @@ export default function ResultsPage() {
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">In Progress</h3>
               <p className="text-sm text-gray-500">Awaiting evaluation</p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-50 rounded-xl">
+                  <Trophy className="h-6 w-6 text-purple-600" />
+                </div>
+                <span className="text-3xl font-bold text-gray-900">
+                  {submissions.find((s) => s.rank)?.rank || "N/A"}
+                </span>
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-1">Your Rank</h3>
+              <p className="text-sm text-gray-500">Overall position</p>
             </div>
           </div>
         </div>
@@ -378,6 +392,12 @@ export default function ResultsPage() {
                               {status === "pending" ? "Evaluating..." : status === "failed" ? "Failed" : "Pending"}
                             </span>
                             {status === "pending" && <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />}
+                          </div>
+                        )}
+                        {submission.rank && submission.finalScore !== null && submission.finalScore !== undefined && (
+                          <div className="mt-2">
+                            <span className="text-sm text-gray-500">Rank: </span>
+                            <span className="text-lg font-semibold text-blue-600">#{submission.rank}</span>
                           </div>
                         )}
                       </div>

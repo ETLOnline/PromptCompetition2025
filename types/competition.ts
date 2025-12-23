@@ -8,6 +8,7 @@ export interface Competition {
   mode: string
   venue?: string
   level?: "Level 1" | "Level 2" | "custom"
+  TopN?: number
   isActive: boolean
   isLocked: boolean
   isFeatured: boolean
@@ -24,10 +25,15 @@ export interface CreateCompetitionData {
   mode: "online" | "offline"
   venue?: string
   level?: "Level 1" | "Level 2" | "custom"
+  TopN?: number
   ChallengeCount: number
   createdAt: string
   systemPrompt: string
   isFeatured: boolean
+  isActive: boolean
+  isLocked: boolean
+  userEmail: string
+  userFullName: string
 }
 
 export interface EditCompetitionData {
@@ -38,6 +44,7 @@ export interface EditCompetitionData {
   mode?: "online" | "offline"
   venue?: string
   level?: "Level 1" | "Level 2" | "custom"
+  TopN?: number
   prizeMoney?: string
   isActive?: boolean
   isLocked?: boolean

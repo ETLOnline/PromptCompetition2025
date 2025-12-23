@@ -6,7 +6,120 @@ import { authenticateToken, authorizeRoles, AuthenticatedRequest } from "../util
 const lastRouter = Router();
 
 /**
- * Generate Final Leaderboard (LLM + Judge)
+ * Generate Final Leaderboard for Level 1 (LLM Only)
+ * No judge scores, only LLM scores are used for final leaderboard.
+ *
+ * Route: POST /api/competitions/:competitionId/level1-final-leaderboard
+ */
+lastRouter.post(
+  "/:competitionId/level1-final-leaderboard",
+  authenticateToken,
+  authorizeRoles(["superadmin"]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { competitionId } = req.params;
+
+    try {
+      // --- 1. Fetch competition info and verify it's Level 1 --------------
+      const competitionSnap = await db.collection("competitions").doc(competitionId).get();
+      if (!competitionSnap.exists) {
+        return res.status(404).json({ error: "Competition not found" });
+      }
+      const competitionData = competitionSnap.data();
+      
+      if (competitionData?.level !== "Level 1") {
+        return res.status(400).json({ 
+          error: "This endpoint is only for Level 1 competitions. Use /final-leaderboard for custom competitions." 
+        });
+      }
+
+      // --- 2. Fetch existing LLM leaderboard ------------------------------
+      const llmLeaderboardSnap = await db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("leaderboard")
+        .get();
+
+      // Build a list of participants with their llmScore only
+      const participants: {
+        userId: string;
+        fullName: string;
+        email: string;
+        llmScore: number;
+      }[] = [];
+
+      llmLeaderboardSnap.forEach((doc) => {
+        const data = doc.data();
+        participants.push({
+          userId: doc.id,
+          fullName: data.fullName,
+          email: data.email,
+          llmScore: data.totalScore || 0,
+        });
+      });
+
+      // --- 3. Sort by LLM score (descending) ------------------------------
+      participants.sort((a, b) => b.llmScore - a.llmScore);
+
+      // --- 4. Apply tie-aware ranking -------------------------------------
+      let currentRank = 0;
+      let prevScore: number | null = null;
+      let index = 0;
+
+      const finalList = participants.map((entry) => {
+        if (prevScore === null || entry.llmScore < prevScore) {
+          currentRank = index + 1;
+        }
+        prevScore = entry.llmScore;
+        index++;
+
+        return {
+          ...entry,
+          rank: currentRank,
+          finalScore: entry.llmScore, // For Level 1, finalScore = llmScore
+        };
+      });
+
+      // --- 5. Write to /finalLeaderboard/{userId} -------------------------
+      const batch = db.batch();
+
+      finalList.forEach((entry) => {
+        const finalRef = db
+          .collection("competitions")
+          .doc(competitionId)
+          .collection("finalLeaderboard")
+          .doc(entry.userId);
+
+        batch.set(finalRef, {
+          fullName: entry.fullName,
+          email: entry.email,
+          llmScore: entry.llmScore,
+          judgeScore: null, // No judge score for Level 1
+          finalScore: entry.finalScore,
+          rank: entry.rank,
+        });
+      });
+
+      await batch.commit();
+
+      // --- 6. Set hasFinalLeaderboard flag in the competition doc ---
+      await db.collection("competitions").doc(competitionId).update({
+        hasFinalLeaderboard: true,
+        finalLeaderboardGeneratedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      res.status(200).json({ 
+        message: "Level 1 final leaderboard generated successfully",
+        participantCount: finalList.length
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to generate Level 1 final leaderboard" });
+    }
+  }
+);
+
+/**
+ * Generate Final Leaderboard for Custom Competitions (LLM + Judge)
  * Trigger manually after all judge evaluations are completed.
  *
  * Route: POST /api/competitions/:competitionId/final-leaderboard
@@ -26,6 +139,14 @@ lastRouter.post(
         return res.status(404).json({ error: "Competition not found" });
       }
       const competitionData = competitionSnap.data();
+      
+      // Prevent using this endpoint for Level 1 competitions
+      if (competitionData?.level === "Level 1") {
+        return res.status(400).json({ 
+          error: "This endpoint is for custom competitions. Use /level1-final-leaderboard for Level 1 competitions." 
+        });
+      }
+      
       const topN = competitionData?.TopN ?? 0;
 
       // --- 2. Fetch existing LLM leaderboard ------------------------------

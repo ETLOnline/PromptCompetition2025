@@ -3,13 +3,15 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useAuth, useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, AlertCircle } from "lucide-react"
+import { Plus, AlertCircle, Info } from "lucide-react"
 import type { CreateCompetitionData } from "../../types/competition"
 
 interface CreateCompetitionModalProps {
@@ -25,6 +27,7 @@ export default function CreateCompetitionModal({
   onSubmit,
   loading = false,
 }: CreateCompetitionModalProps) {
+  const { user } = useUser()
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -34,8 +37,11 @@ export default function CreateCompetitionModal({
     mode: "online" as "online" | "offline",
     venue: "",
     level: "Level 1" as "Level 1" | "Level 2" | "custom",
+    TopN: "",
     systemPrompt: "",
     isFeatured: false,
+    isActive: true,
+    isLocked: false,
   })
   const [formError, setFormError] = useState<string | null>(null)
   const [prizeMoneyError, setPrizeMoneyError] = useState<string | null>(null)
@@ -69,15 +75,46 @@ export default function CreateCompetitionModal({
     setTouched(true)
   }
 
+  const handleLevelChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, level: value as "Level 1" | "Level 2" | "custom", TopN: value === "Level 1" ? prev.TopN : "" }))
+    setFormError(null)
+    setTouched(true)
+  }
+
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [name]: checked }))
+    setTouched(true)
+    setFormError(null)
+  }
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
 
-    const { title, description, prizeMoney, startTime, endTime, mode, venue, level, systemPrompt } = formData
+    const { title, description, prizeMoney, startTime, endTime, mode, venue, level, systemPrompt, TopN } = formData
 
     if (!title || !description || !prizeMoney || !startTime || !endTime || !mode || !level || !systemPrompt) {
       setFormError("All fields are required.")
       return
+    }
+
+    if (!user?.emailAddresses[0]?.emailAddress || !user?.fullName) {
+      setFormError("Unable to retrieve user information. Please log in again.")
+      return
+    }
+
+    // NEW VALIDATION: Check TopN for Level 1
+    if (level === "Level 1" && !TopN) {
+      setFormError("TopN is required for Level 1 competitions.")
+      return
+    }
+
+    if (level === "Level 1" && TopN) {
+      const topNNum = parseInt(TopN as string, 10)
+      if (isNaN(topNNum) || topNNum <= 0) {
+        setFormError("TopN must be a positive number.")
+        return
+      }
     }
 
     // NEW VALIDATION: Check venue for offline mode
@@ -109,6 +146,9 @@ export default function CreateCompetitionModal({
     try {
       console.log("Prompt", systemPrompt)
       
+      const userEmail = user?.emailAddresses[0]?.emailAddress || ""
+      const userFullName = user?.fullName || ""
+
       const createData: CreateCompetitionData = {
         title,
         description,
@@ -119,9 +159,14 @@ export default function CreateCompetitionModal({
         mode: mode as "online" | "offline",
         venue: mode === "offline" ? venue : undefined,
         level: level as "Level 1" | "Level 2" | "custom",
+        TopN: level === "Level 1" && TopN ? parseInt(TopN as string, 10) : undefined,
         systemPrompt,
         isFeatured: formData.isFeatured,
-        ChallengeCount: 0
+        isActive: formData.isActive,
+        isLocked: formData.isLocked,
+        ChallengeCount: 0,
+        userEmail,
+        userFullName,
       }
 
       await onSubmit(createData)
@@ -137,7 +182,10 @@ export default function CreateCompetitionModal({
         mode: "online",
         venue: "",
         level: "Level 1",
+        TopN: "",
         isFeatured: false,
+        isActive: true,
+        isLocked: false,
       })
       onClose()
     } catch (error) {
@@ -157,7 +205,10 @@ export default function CreateCompetitionModal({
       mode: "online",
       venue: "",
       level: "Level 1",
+      TopN: "",
       isFeatured: false,
+      isActive: true,
+      isLocked: false,
     })
     setFormError(null)
     setPrizeMoneyError(null)
@@ -208,7 +259,7 @@ export default function CreateCompetitionModal({
                   value={formData.title}
                   onChange={(e) => handleFormChange("title", e.target.value)}
                   className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                  placeholder="e.g., AI Prompt Engineering Challenge 2024"
+                  placeholder="e.g., AI Prompt Engineering Challenge 2026"
                 />
               </div>
 
@@ -229,7 +280,7 @@ export default function CreateCompetitionModal({
                 <Label htmlFor="level" className="text-sm font-medium text-gray-700 mb-2 block">
                   Competition Level
                 </Label>
-                <Select value={formData.level} onValueChange={(value) => handleFormChange("level", value)}>
+                <Select value={formData.level} onValueChange={handleLevelChange}>
                   <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 text-left">
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
@@ -240,6 +291,27 @@ export default function CreateCompetitionModal({
                   </SelectContent>
                 </Select>
               </div>
+
+                            {/* NEW: TopN Field - Only shown for Level 1 */}
+              {formData.level === "Level 1" && (
+                <div className="animate-in fade-in-50 duration-200">
+                  <Label htmlFor="TopN" className="text-sm font-medium text-gray-700 mb-2 block">
+                    Top N Participants
+                  </Label>
+                  <p className="text-xs italic text-gray-600 mb-2">
+                    This number determines how many top participants will be displayed in the final leaderboard.
+                  </p>
+                  <Input
+                    id="TopN"
+                    type="number"
+                    min="1"
+                    value={formData.TopN}
+                    onChange={(e) => handleFormChange("TopN", e.target.value)}
+                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                    placeholder="e.g., 10, 20, 50"
+                  />
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -338,25 +410,59 @@ export default function CreateCompetitionModal({
                   />
                 </div>
               </div>
-
-              <div>
-                <Label htmlFor="featured" className="text-sm font-medium text-gray-700 mb-2 block">
-                  Featured
-                </Label>
-                <Select 
-                  value={formData.isFeatured ? "yes" : "no"} 
-                  onValueChange={(value) => handleFormChange("isFeatured", value === "yes" ? "true" : "false")}
-                >
-                  <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 text-left">
-                    <SelectValue placeholder="Select featured status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yes">Yes</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+            
+            {/* Competition Settings */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Info className="w-5 h-5 text-gray-600" />
+                  <h3 className="text-lg font-semibold">Competition Settings</h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
+                    <Checkbox
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => handleCheckboxChange("isActive", checked as boolean)}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isActive" className="text-sm font-medium cursor-pointer">
+                        Active Competition
+                      </Label>
+                      <p className="text-xs text-gray-600">Enable this competition for public participation</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
+                    <Checkbox
+                      id="isLocked"
+                      checked={formData.isLocked}
+                      onCheckedChange={(checked) => handleCheckboxChange("isLocked", checked as boolean)}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isLocked" className="text-sm font-medium cursor-pointer">
+                        Locked Competition
+                      </Label>
+                      <p className="text-xs text-gray-600">Prevent submission of new entries</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-4 rounded-lg border bg-card">
+                    <Checkbox
+                      id="isFeatured"
+                      checked={formData.isFeatured}
+                      onCheckedChange={(checked) => handleCheckboxChange("isFeatured", checked as boolean)}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="isFeatured" className="text-sm font-medium cursor-pointer">
+                        Featured Competition
+                      </Label>
+                      <p className="text-xs text-gray-600">Display prominently on the homepage</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
             {formError && (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">

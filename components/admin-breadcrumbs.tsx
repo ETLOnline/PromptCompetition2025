@@ -9,110 +9,126 @@ import { db } from "@/lib/firebase"
 import clsx from "clsx"
 
 // Allowed admin paths and their breadcrumb labels
-const ADMIN_BREADCRUMB_PATHS: Array<{
-  match: (segments: string[]) => boolean,
-  getItems: (segments: string[], competitionTitle: string | null, loadingTitle: boolean) => Array<{ label: string, href: string | null, isLast: boolean, icon?: React.ReactNode }>
-}> = [
+const getAdminBreadcrumbPaths = (lastDashboard: string) => {
+  return [
   {
     // /admin/select-competition
-    match: segs => segs.length === 2 && segs[0] === "admin" && segs[1] === "select-competition",
+    match: (segs: string[]) => segs.length === 2 && segs[0] === "admin" && segs[1] === "select-competition",
     getItems: () => [
       { label: "Competitions", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/dashboard
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "dashboard",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "dashboard",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Overview", href: null, isLast: true },
     ],
   },
   {
-    // /admin/competitions/{id}/challenges
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    // /admin/competitions/{id}/level1-dashboard
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level1-dashboard",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: "Level 1 Dashboard", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/level2-dashboard
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level2-dashboard",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: "Level 2 Dashboard", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/challenges
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Challenges", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/challenges/new
-    match: segs => segs.length === 5 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[4] === "new",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 5 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[4] === "new",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "New Challenge", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/challenges/[id]/edit
-    match: segs => segs.length === 6 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[5] === "edit",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 6 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[5] === "edit",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Edit Challenge", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/participants
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participants",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participants",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Participants", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/submissions
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "submissions",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "submissions",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Submissions", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/judge-evaluations
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "judge-evaluations",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "judge-evaluations",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Judge Evaluations", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/llm-evaluations
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "llm-evaluations",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "llm-evaluations",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "LLM Evaluations", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/participant-distribution
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participant-distribution",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participant-distribution",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Participant Distribution", href: null, isLast: true },
     ],
   },
   {
     // /admin/competitions/{id}/leaderboard
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "leaderboard",
-    getItems: (segs, competitionTitle, loadingTitle) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "leaderboard",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/dashboard`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
       { label: "Leaderboard", href: null, isLast: true },
     ],
   },
   {
     // /admin/manage-roles
-    match: segs => segs.length === 2 && segs[0] === "admin" && segs[1] === "manage-roles",
+    match: (segs: string[]) => segs.length === 2 && segs[0] === "admin" && segs[1] === "manage-roles",
     getItems: () => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: "Manage Roles", href: null, isLast: true },
@@ -120,22 +136,22 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
   },
   {
     // /admin/daily-challenge
-    match: segs => segs.length === 2 && segs[0] === "admin" && segs[1] === "daily-challenge",
+    match: (segs: string[]) => segs.length === 2 && segs[0] === "admin" && segs[1] === "daily-challenge",
     getItems: () => [
       { label: "Daily Challenges", href: null, isLast: true },
     ],
   },
   {
     // /admin/daily-challenge/[challengeId]/dashboard
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[3] === "dashboard",
-    getItems: (segs) => [
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[3] === "dashboard",
+    getItems: (segs: string[]) => [
       { label: "Daily Challenges", href: "/admin/daily-challenge", isLast: false },
       { label: "Challenge Dashboard", href: null, isLast: true },
     ],
   },
   {
     // /admin/daily-challenge/new
-    match: segs => segs.length === 3 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[2] === "new",
+    match: (segs: string[]) => segs.length === 3 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[2] === "new",
     getItems: () => [
       { label: "Daily Challenges", href: "/admin/daily-challenge", isLast: false },
       { label: "New Challenge", href: null, isLast: true },
@@ -143,13 +159,14 @@ const ADMIN_BREADCRUMB_PATHS: Array<{
   },
   {
     // /admin/daily-challenge/[challengeId]/edit
-    match: segs => segs.length === 4 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[3] === "edit",
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "daily-challenge" && segs[3] === "edit",
     getItems: () => [
       { label: "Daily Challenges", href: "/admin/daily-challenge", isLast: false },
       { label: "Edit Challenge", href: null, isLast: true },
     ],
   },
 ]
+}
 
 // Utility to truncate long names for mobile
 function truncate(str: string, max: number) {
@@ -173,13 +190,22 @@ export function AdminBreadcrumbs() {
   const router = useRouter()
   const [competitionTitle, setCompetitionTitle] = useState<string | null>(null)
   const [loadingTitle, setLoadingTitle] = useState(false)
+  const [lastDashboard, setLastDashboard] = useState<string>('dashboard')
 
   // Split path and filter empty segments
   const segments = pathname.split("/").filter(Boolean)
 
+  // Update lastDashboard when on a dashboard page
+  useEffect(() => {
+    if (segments.length >= 4 && segments[0] === "admin" && segments[1] === "competitions" && (segments[3] === "dashboard" || segments[3] === "level1-dashboard" || segments[3] === "level2-dashboard")) {
+      setLastDashboard(segments[3])
+    }
+  }, [pathname])
+
   // Find if this is a competition path and get competitionId
   let competitionId: string | null = null
-  for (const pattern of ADMIN_BREADCRUMB_PATHS) {
+  const paths = getAdminBreadcrumbPaths(lastDashboard)
+  for (const pattern of paths) {
     if (pattern.match(segments)) {
       // If path includes a competitionId, fetch title
       if (segments[1] === "competitions" && segments.length >= 3) {
@@ -216,7 +242,7 @@ export function AdminBreadcrumbs() {
 
   // Only show breadcrumbs for allowed paths
   let items: Array<{ label: string, href: string | null, isLast: boolean, icon?: React.ReactNode }> | null = null
-  for (const pattern of ADMIN_BREADCRUMB_PATHS) {
+  for (const pattern of paths) {
     if (pattern.match(segments)) {
       items = pattern.getItems(segments, competitionTitle, loadingTitle)
       break

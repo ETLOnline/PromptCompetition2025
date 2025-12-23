@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Calendar, Eye, MapPin, DollarSign, Trophy } from "lucide-react"
+import { Calendar, Eye, MapPin, DollarSign, Trophy, Hash, Layers, Award } from "lucide-react"
 import { formatCompetitionDateTime } from "@/lib/format-competition-date-time"
 
 interface CompetitionAdmin {
@@ -17,6 +17,8 @@ interface CompetitionAdmin {
   mode?: string
   venue?: string
   prizeMoney?: string
+  level?: string
+  TopN?: number
 }
 
 interface ViewCompetitionDetailsAdminModalProps {
@@ -49,12 +51,12 @@ export const ViewCompetitionDetailsAdminModal = ({ isOpen, onClose, competition 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
-        className="bg-white border-0 shadow-2xl max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto"
+        className="bg-white border-0 shadow-2xl max-w-2xl w-[95vw] max-h-[85vh] flex flex-col"
         onPointerDownOutside={(e) => {
           e.preventDefault()
         }}
       >
-        <DialogHeader className="space-y-3">
+        <DialogHeader className="flex-shrink-0 space-y-3 pb-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Eye className="w-5 h-5 text-blue-600" />
@@ -65,7 +67,8 @@ export const ViewCompetitionDetailsAdminModal = ({ isOpen, onClose, competition 
             </div>
           </div>
         </DialogHeader>
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-6 p-6">
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 break-words leading-tight">
               {competition.title}
@@ -102,6 +105,37 @@ export const ViewCompetitionDetailsAdminModal = ({ isOpen, onClose, competition 
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-indigo-50 rounded-lg p-4 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <Hash className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                  <Label className="text-base font-semibold text-indigo-900">Competition ID</Label>
+                </div>
+                <div className="text-sm text-gray-900 font-medium break-words overflow-wrap-anywhere">
+                  {competition.id}
+                </div>
+              </div>
+              {competition.level && (
+                <div className="bg-orange-50 rounded-lg p-4 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Layers className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                    <Label className="text-base font-semibold text-orange-900">Level</Label>
+                  </div>
+                  <div className="text-sm text-gray-900 font-medium break-words overflow-wrap-anywhere">
+                    {competition.level}
+                  </div>
+                </div>
+              )}
+              {competition.TopN && (
+                <div className="bg-red-50 rounded-lg p-4 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <Label className="text-base font-semibold text-red-900">Top N</Label>
+                  </div>
+                  <div className="text-sm text-gray-900 font-medium break-words overflow-wrap-anywhere">
+                    {competition.TopN}
+                  </div>
+                </div>
+              )}
               {competition.mode && (
                 <div className="bg-purple-50 rounded-lg p-4 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
@@ -155,6 +189,7 @@ export const ViewCompetitionDetailsAdminModal = ({ isOpen, onClose, competition 
                 )}
               </div>
             </div>
+          </div>
           </div>
         </div>
       </DialogContent>
