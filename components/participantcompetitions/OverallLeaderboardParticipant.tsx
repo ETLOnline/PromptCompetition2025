@@ -39,8 +39,8 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
         let leaderboardEntries = data.leaderboard || []
         
         // Fetch institutions for each user
-        const userIds = leaderboardEntries.map(e => e.userId)
-        const institutionPromises = userIds.map(async (userId) => {
+        const userIds = leaderboardEntries.map((e: Entry) => e.userId)
+        const institutionPromises = userIds.map(async (userId: string) => {
           try {
             const userRef = doc(db, "users", userId)
             const userSnap = await getDoc(userRef)
@@ -52,7 +52,7 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
         })
         
         const institutions = await Promise.all(institutionPromises)
-        leaderboardEntries = leaderboardEntries.map((e, i) => ({ ...e, institution: institutions[i] }))
+        leaderboardEntries = leaderboardEntries.map((e: Entry, i: number) => ({ ...e, institution: institutions[i] }))
         
         setEntries(leaderboardEntries)
       } catch (err) {
