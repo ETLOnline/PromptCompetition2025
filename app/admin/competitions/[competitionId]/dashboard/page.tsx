@@ -415,7 +415,7 @@ export default function AdminDashboard() {
           {activeTab === "challenges" && (
             <Card className="bg-white rounded-2xl shadow-sm">
               <CardContent className="p-6">
-                <GetChallenges competitionId={competitionId} />
+                <GetChallenges competitionId={competitionId} from="dashboard" />
               </CardContent>
             </Card>
           )}

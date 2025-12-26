@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { getDoc, doc, updateDoc, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
@@ -123,6 +123,8 @@ export default function EditChallengePage() {
   const params = useParams()
   const competitionId = params?.competitionId as string
   const challengeId = params?.challengeId as string
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from') || 'dashboard'
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
@@ -705,7 +707,7 @@ export default function EditChallengePage() {
         title: "Success",
         description: "Challenge updated successfully!",
       })
-      router.push(`/admin/competitions/${competitionId}/dashboard`)
+      router.push(`/admin/competitions/${competitionId}/${from}`)
     } catch (error) {
       console.error("❌ Challenge update failed:", error)
       toast({
@@ -1095,7 +1097,7 @@ export default function EditChallengePage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}
+              onClick={() => router.push(`/admin/competitions/${competitionId}/${from}`)}
               className="border-gray-200 text-gray-700 hover:bg-gray-50"
             >
               Cancel

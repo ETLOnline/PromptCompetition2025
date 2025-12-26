@@ -68,7 +68,7 @@ type Challenge = {
   emailoflatestupdate: string
 }
 
-export default function GetChallenges({ competitionId }: { competitionId: string }) {
+export default function GetChallenges({ competitionId, from = 'dashboard' }: { competitionId: string, from?: string }) {
   const { role: authRole, loading: authLoading } = useAppAuth()
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -231,7 +231,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
               }
               
               else {
-                router.push(`/admin/competitions/${competitionId}/challenges/new`)
+                router.push(`/admin/competitions/${competitionId}/challenges/new?from=${from}`)
               }
             }}
             className="bg-gray-900 text-white hover:bg-gray-800 px-5 py-2 rounded-lg font-semibold"
@@ -502,7 +502,7 @@ export default function GetChallenges({ competitionId }: { competitionId: string
                           } else {
                             // superadmin OR non-started case
                             router.push(
-                              `/admin/competitions/${competitionId}/challenges/${challenge.id}/edit`
+                              `/admin/competitions/${competitionId}/challenges/${challenge.id}/edit?from=${from}`
                             )
                           }
                         }}
