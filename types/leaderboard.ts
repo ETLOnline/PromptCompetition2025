@@ -25,4 +25,5 @@ export interface Competition {
   title: string
   TopN: number
   maxScore: number 
+  level?: string
 }

@@ -68,6 +68,23 @@ export const generateLeaderboard = async (competitionId: string, getToken?: () =
   }, getToken);
 };
 
+export const generateLevel1FinalLeaderboard = async (competitionId: string, getToken?: () => Promise<string | null>) => {
+  return await fetchWithAuth(`${API_URL}/last/${competitionId}/level1-final-leaderboard`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }, getToken);
+};
+
+export const generateCustomFinalLeaderboard = async (competitionId: string, getToken?: () => Promise<string | null>) => {
+  return await fetchWithAuth(`${API_URL}/last/${competitionId}/final-leaderboard`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }, getToken);
+};
 
 
 // sends Clerk session token to backend And waits for approval

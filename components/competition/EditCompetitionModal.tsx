@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Edit, Save, X, Info, Trash2, AlertCircle } from "lucide-react"
 import type { Competition, EditCompetitionData } from "@/types/competition"
@@ -40,6 +42,7 @@ export default function EditCompetitionModal({
     mode: "online" as "online" | "offline",          // CHANGED from 'location: ""'
     venue: "",         // NEW FIELD
     level: "Level 1" as "Level 1" | "Level 2" | "custom",  // NEW FIELD
+    TopN: undefined,   // NEW FIELD
     prizeMoney: "",
     isActive: false,
     isLocked: false,
@@ -51,6 +54,8 @@ export default function EditCompetitionModal({
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [editFormError, setEditFormError] = useState<string | null>(null)
   const [prizeMoneyError, setPrizeMoneyError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showLockedDialog, setShowLockedDialog] = useState(false)
 
   const formatForDatetimeLocal = (utcIsoString: string): string => {
     if (!utcIsoString) return ""
@@ -81,6 +86,7 @@ export default function EditCompetitionModal({
         mode: (competition.mode as "online" | "offline") || "online",  // CHANGED - with fallback for old data
         venue: competition.venue || "",                              // NEW FIELD
         level: (competition.level as "Level 1" | "Level 2" | "custom") || "Level 1",  // NEW FIELD
+        TopN: competition.TopN,                                      // NEW FIELD
         prizeMoney: competition.prizeMoney || "",
         isActive: competition.isActive ?? false,
         isLocked: competition.isLocked ?? false,
@@ -128,6 +134,12 @@ export default function EditCompetitionModal({
     setTouched(true)
   }
 
+  const handleLevelChange = (value: string) => {
+    setEditFormData((prev) => ({ ...prev, level: value as "Level 1" | "Level 2" | "custom", TopN: value === "Level 1" ? prev.TopN : undefined }))
+    setEditFormError(null)
+    setTouched(true)
+  }
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setEditFormError(null)
@@ -138,6 +150,19 @@ export default function EditCompetitionModal({
     if (editFormData.mode === "offline" && !editFormData.venue?.trim()) {
       setEditFormError("Venue location is required for offline competitions.")
       return
+    }
+
+    // NEW VALIDATION: Check TopN for Level 1
+    if (editFormData.level === "Level 1" && !editFormData.TopN) {
+      setEditFormError("TopN is required for Level 1 competitions.")
+      return
+    }
+
+    if (editFormData.level === "Level 1" && editFormData.TopN) {
+      if (isNaN(editFormData.TopN) || editFormData.TopN <= 0) {
+        setEditFormError("TopN must be a positive number.")
+        return
+      }
     }
 
     // Validate the new dates from the form
@@ -160,6 +185,7 @@ export default function EditCompetitionModal({
         startDeadline: newStartDateTime.toISOString(),
         endDeadline: newEndDateTime.toISOString(),
         venue: editFormData.mode === "offline" ? editFormData.venue : undefined,  // NEW: Clear venue if online
+        TopN: editFormData.level === "Level 1" ? editFormData.TopN : undefined,   // NEW: Clear TopN if not Level 1
       }
 
       await onSubmit(submitData)
@@ -172,11 +198,22 @@ export default function EditCompetitionModal({
 
   const handleDeleteCompetition = async () => {
     try {
+      setDeleteError(null)
       await onDelete()
       setShowDeleteDialog(false)
       onClose()
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred"
       console.error("Error deleting competition:", error)
+      
+      // Check if it's a locked competition error
+      if (errorMessage.includes("locked") || errorMessage.includes("Locked")) {
+        setShowDeleteDialog(false)
+        setShowLockedDialog(true)
+        setDeleteError(null)
+      } else {
+        setDeleteError(errorMessage)
+      }
     }
   }
 
@@ -249,26 +286,46 @@ export default function EditCompetitionModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="edit-level" className="text-sm font-medium text-gray-700 mb-2 block">
+                  <Label htmlFor="level" className="text-sm font-medium text-gray-700 mb-2 block">
                     Competition Level
                   </Label>
-                  <select
-                    id="edit-level"
-                    name="level"
-                    value={editFormData.level || "Level 1"}
-                    onChange={(e) => {
-                      const value = e.target.value as "Level 1" | "Level 2" | "custom"
-                      setEditFormData(prev => ({ ...prev, level: value }))
-                      setTouched(true)
-                      setEditFormError(null)
-                    }}
-                    className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500/20 focus:outline-none"
-                  >
-                    <option value="Level 1">Level 1</option>
-                    <option value="Level 2">Level 2</option>
-                    <option value="custom">custom</option>
-                  </select>
+                  <Select value={editFormData.level} onValueChange={handleLevelChange}>
+                    <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 text-left">
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Level 1">Level 1</SelectItem>
+                      <SelectItem value="Level 2">Level 2</SelectItem>
+                      <SelectItem value="custom">custom</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                
+                {/* NEW: TopN Field - Only shown for Level 1 */}
+                {editFormData.level === "Level 1" && (
+                  <div className="animate-in fade-in-50 duration-200">
+                    <Label htmlFor="edit-TopN" className="text-sm font-medium text-gray-700 mb-2 block">
+                      Top N Participants
+                    </Label>
+                    <p className="text-xs italic text-gray-600 mb-2">
+                      This number determines how many top participants will be displayed in the final leaderboard.
+                    </p>
+                    <Input
+                      id="edit-TopN"
+                      type="number"
+                      min="1"
+                      value={editFormData.TopN || ""}
+                      onChange={(e) => {
+                        setEditFormData(prev => ({ ...prev, TopN: e.target.value ? parseInt(e.target.value, 10) : undefined }))
+                        setTouched(true)
+                        setEditFormError(null)
+                      }}
+                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      placeholder="e.g., 10, 20, 50"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 mb-2 block">
@@ -462,10 +519,16 @@ export default function EditCompetitionModal({
                   type="button"
                   variant="destructive"
                   onClick={() => setShowDeleteDialog(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  disabled={competition?.isLocked}
+                  className={`text-white ${
+                    competition?.isLocked
+                      ? "bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-60"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                  title={competition?.isLocked ? "Cannot delete a locked competition. Unlock it first." : ""}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Competition
+                  {competition?.isLocked ? "Locked - Cannot Delete" : "Delete Competition"}
                 </Button>
 
                 <div className="flex gap-3">
@@ -537,10 +600,20 @@ export default function EditCompetitionModal({
             </p>
           </DialogHeader>
 
+          {deleteError && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-red-700 text-sm">{deleteError}</p>
+            </div>
+          )}
+
           <DialogFooter className="flex gap-3 pt-3">
             <Button
               variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
+              onClick={() => {
+                setShowDeleteDialog(false)
+                setDeleteError(null)
+              }}
               disabled={deleteLoading}
               className="flex-1 text-sm"
             >
@@ -553,6 +626,37 @@ export default function EditCompetitionModal({
               className="flex-1 bg-red-600 hover:bg-red-700 text-sm"
             >
               {deleteLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Locked Competition Dialog */}
+      <Dialog open={showLockedDialog} onOpenChange={setShowLockedDialog}>
+        <DialogContent className="sm:max-w-[400px] p-5">
+          <DialogHeader className="flex flex-col items-center text-center space-y-3">
+            <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
+              <AlertCircle className="w-7 h-7" />
+            </div>
+            <DialogTitle className="text-xl font-semibold text-gray-900">Competition is Locked</DialogTitle>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              This competition cannot be deleted because it's currently locked. To delete this competition, you must first unlock it in the competition settings.
+            </p>
+          </DialogHeader>
+
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="text-blue-700 text-sm">
+              <span className="font-medium">To unlock:</span> Edit the competition and uncheck the "Lock Competition" option.
+            </p>
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button
+              onClick={() => setShowLockedDialog(false)}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+            >
+              Understood
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,11 +5,10 @@ import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileText, Activity, Users, Trophy, BarChart3, Shield, ExternalLink, AlertCircle, ChevronDown, MoreVertical } from "lucide-react"
+import { FileText, Users, Trophy, BarChart3, Shield, ExternalLink, AlertCircle } from "lucide-react"
 import GetChallenges from "@/components/GetChallenges"
-import JudgeProgress from "@/components/JudgeProgress"
 import StartEvaluationButton from "@/components/StartEvaluation"
-import GenerateLeaderboardButton from "@/components/GenerateLeaderboard"
+import Generate_level1_Leaderboard from "@/components/Generate_level1_Leaderboard"
 import DashboardEvaluationProgress from "@/components/DashboardEvaluationProgress"
 import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -23,8 +22,7 @@ export default function AdminDashboard() {
   const params = useParams()
   const competitionId = params?.competitionId as string
   const [totalSubmissions, setSubmissionCount] = useState<number>(0)
-  const [stats, setStats] = useState({ totalParticipants: 0, pendingReviews: 0 })
-  const [activeTab, setActiveTab] = useState<"challenges" | "judges">("challenges")
+  const [stats, setStats] = useState({ totalParticipants: 0 })
   const [role, setRole] = useState(null)
   const [competitionName, setCompetitionName] = useState("")
   const { addNotification } = useNotifications();
@@ -127,15 +125,9 @@ export default function AdminDashboard() {
       setSubmissionCount(snap.size),
     )
 
-    const unsubPending = onSnapshot(
-      query(collection(db, `competitions/${competitionId}/submissions`), where("status", "==", "scored")),
-      (snap) => setStats((prev) => ({ ...prev, pendingReviews: snap.size })),
-    )
-
     return () => {
       unsubParts()
       unsubSubs()
-      unsubPending()
     }
   }, [router, competitionId])
 
@@ -168,7 +160,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Link
               href={
                 isEvaluated
@@ -214,28 +206,10 @@ export default function AdminDashboard() {
               </div>
             </Card>
           </Link>
-
-          <Link href={`/admin/competitions/${competitionId}/judge-evaluations`} className="group">
-            <Card className="bg-white rounded-2xl shadow-sm p-6 h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-amber-200">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-gray-600 font-medium">Judge Reviews</h3>
-                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-amber-600 transition-colors" />
-                  </div>
-                  <div className="text-4xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors">{stats.pendingReviews}</div>
-                  <p className="text-gray-500 text-sm">View judge evaluations</p>
-                </div>
-                <div className="p-3 bg-amber-100 rounded-xl group-hover:bg-amber-200 transition-colors">
-                  <Activity className="h-6 w-6 text-amber-600" />
-                </div>
-              </div>
-            </Card>
-          </Link>
         </div>
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
 
           <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
             <div className="space-y-6">
@@ -280,52 +254,6 @@ export default function AdminDashboard() {
             </div>
           </Card>
 
-        <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Shield className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">Admin Controls</h3>
-                <p className="text-gray-600">Manage Judges</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              {role === 'superadmin' ? (
-                !isCompetitionEnded ? (
-                  <div className="text-center py-4">
-                    <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">
-                      <AlertCircle className="h-5 w-5" />
-                      <span className="text-sm">Competition must end before assignment</span>
-                      {competitionEndDeadline && (
-                        <span className="text-xs text-gray-400">
-                          Ends: {competitionEndDeadline.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
-                    className="w-full py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800"
-                  >
-                    <Users className="h-4 w-4 mr-2" /> Assign Submissions
-                  </Button>
-                )
-              ) : (
-                <div className="text-center py-4">
-                  <div className="flex items-center justify-center space-x-2 text-gray-500">
-                    <Shield className="h-4 w-4" />
-                    <span className="text-sm">Superadmin access required</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-
           <Card className="bg-white rounded-2xl shadow-sm p-6 h-full">
             <div className="space-y-6">
               <div className="flex items-center gap-3">
@@ -353,7 +281,7 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   <div className="flex-1">
-                    <GenerateLeaderboardButton competitionId={competitionId} />
+                    <Generate_level1_Leaderboard competitionId={competitionId} />
                   </div>
                 )
               ) : (
@@ -379,47 +307,20 @@ export default function AdminDashboard() {
 
         {/* Challenges Section */}
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm p-2">
-            <div className="flex space-x-1">
-              <button
-                onClick={() => setActiveTab("challenges")}
-                className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                  activeTab === "challenges"
-                    ? "bg-gray-900 text-white shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-center space-x-2">
-                  <Trophy className="h-4 w-4" />
-                  <span>Challenges</span>
+          <Card className="bg-white rounded-2xl shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Trophy className="h-5 w-5 text-purple-600" />
                 </div>
-              </button>
-              {role !== "judge" && (
-                <button
-                  onClick={() => setActiveTab("judges")}
-                  className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                    activeTab === "judges"
-                      ? "bg-gray-900 text-white shadow-sm"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <Shield className="h-4 w-4" />
-                    <span>Judge Progress</span>
-                  </div>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {activeTab === "challenges" && (
-            <Card className="bg-white rounded-2xl shadow-sm">
-              <CardContent className="p-6">
-                <GetChallenges competitionId={competitionId} from="dashboard" />
-              </CardContent>
-            </Card>
-          )}
-          {activeTab === "judges" && <JudgeProgress competitionId={competitionId} />} 
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Challenges</h3>
+                  <p className="text-gray-600 text-sm">View and manage competition challenges</p>
+                </div>
+              </div>
+              <GetChallenges competitionId={competitionId} from="level1-dashboard" />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

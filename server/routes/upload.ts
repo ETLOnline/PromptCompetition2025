@@ -96,6 +96,8 @@ router.post("/", upload.single("file"), async (req: express.Request, res: expres
 
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
+    console.log(`Starting upload for ${blobName} (${file.size} bytes)`);
+
     // Upload buffer
     await blockBlobClient.uploadData(file.buffer, {
       blobHTTPHeaders: { blobContentType: file.mimetype },

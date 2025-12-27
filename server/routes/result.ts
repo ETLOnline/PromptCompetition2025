@@ -21,6 +21,7 @@ interface Submission {
     | null;
   submittedAt: any;
   status?: "pending" | "evaluated" | "failed";
+  rank?: number;
 }
 
 interface Competition {
@@ -66,11 +67,25 @@ router.get(
         .where("participantId", "==", userId)
         .get();
 
+      // Fetch leaderboard to get rank
+      const leaderboardSnapshot = await db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("finalLeaderboard")
+        .doc(userId)
+        .get();
+
+      let userRank: number | undefined;
+      if (leaderboardSnapshot.exists) {
+        userRank = leaderboardSnapshot.data()?.rank;
+      }
+
       const submissions: Submission[] = submissionsSnapshot.docs.map(
         (doc) =>
           ({
             id: doc.id,
             ...doc.data(),
+            rank: userRank,
           }) as Submission
       );
 

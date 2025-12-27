@@ -29,6 +29,7 @@ export default function ModernAdminHeader() {
   const params = useParams()
   const competitionId = params?.competitionId as string
   const [title, setTitle] = useState<string | null>(null)
+  const [level, setLevel] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
 
@@ -45,6 +46,7 @@ export default function ModernAdminHeader() {
         const snap = await getDoc(ref)
         if (snap.exists()) {
           setTitle(snap.data()?.title || null)
+          setLevel(snap.data()?.level || null)
         }
       } catch (error) {
         console.error("Error fetching competition title:", error)
@@ -120,9 +122,12 @@ export default function ModernAdminHeader() {
                       <div className="animate-pulse bg-gray-200 rounded h-4 w-40" />
                     ) : (
                       <p className="text-sm text-gray-500 leading-tight cursor-pointer"
-                      onClick={() =>
-                        router.push(`/admin/competitions/${competitionId}/dashboard`)
-                      }>
+                      onClick={() => {
+                        let path = `/admin/competitions/${competitionId}/dashboard`
+                        if (level === "Level 1") path = `/admin/competitions/${competitionId}/level1-dashboard`
+                        else if (level === "Level 2") path = `/admin/competitions/${competitionId}/level2-dashboard`
+                        router.push(path)
+                      }}>
                         {title || "Competition"}
                       </p>
                     )
@@ -132,7 +137,7 @@ export default function ModernAdminHeader() {
             </div>
 
             {/* Right Section - Badge and User Menu */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 ml-4">
               {/* Home Button */}
               <Button
                 variant="ghost"

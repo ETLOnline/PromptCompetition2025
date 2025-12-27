@@ -2,7 +2,7 @@
 "use client"
 
 import type React from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -131,6 +131,8 @@ export default function NewCompetitionPage() {
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from') || 'dashboard'
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(false)
@@ -443,7 +445,7 @@ export default function NewCompetitionPage() {
         title: "Success",
         description: "Challenge created successfully!",
       })
-      router.push(`/admin/competitions/${competitionId}/dashboard`)
+      router.push(`/admin/competitions/${competitionId}/${from}`)
     } catch (error) {
       toast({
         title: "Error",
@@ -935,7 +937,7 @@ export default function NewCompetitionPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.4s_forwards]">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900">Evaluation System Prompt</h2>
-              <p className="text-sm text-gray-500 mt-1">Instructions for judges or LLM evaluators</p>
+              <p className="text-sm text-gray-500 mt-1">Instructions for LLM evaluators</p>
             </div>
             
             <div>
@@ -947,7 +949,7 @@ export default function NewCompetitionPage() {
                 name="systemPrompt"
                 value={formData.systemPrompt}
                 onChange={handleChange}
-                placeholder="Enter the system prompt for evaluation (e.g. instructions for judges or LLM evaluators)"
+                placeholder="Enter the system prompt for evaluation (e.g. instructions for LLM evaluators)"
                 rows={4}
                 className="border-gray-200 focus:border-gray-400 focus:ring-0 resize-none"
                 required
@@ -1095,7 +1097,7 @@ export default function NewCompetitionPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}
+              onClick={() => router.push(`/admin/competitions/${competitionId}/${from}`)}
               className="border-gray-200 text-gray-700 hover:bg-gray-50"
             >
               Cancel

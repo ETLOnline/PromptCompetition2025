@@ -198,8 +198,17 @@ export default function ModernCompetitionSelector() {
     }
   }
 
-  const handleManageClick = (competitionId: string) => {
-    router.push(`/admin/competitions/${competitionId}/dashboard`)
+  const handleManageClick = (competition: Competition) => {
+    const level = competition.level
+    let destination = `/admin/competitions/${competition.id}/dashboard`
+
+    if (level === "Level 1") {
+      destination = `/admin/competitions/${competition.id}/level1-dashboard`
+    } else if (level === "Level 2") {
+      destination = `/admin/competitions/${competition.id}/level2-dashboard`
+    }
+
+    router.push(destination)
   }
 
   const handleViewClick = (competition: Competition) => {
