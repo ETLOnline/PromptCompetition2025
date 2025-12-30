@@ -49,6 +49,8 @@ import {
   Target,
   Settings,
   Grid3X3,
+  Plus,
+  Trash2,
 } from "lucide-react"
 import { collection, getDocs, doc, getDoc, writeBatch, query, where, onSnapshot, updateDoc, arrayRemove, arrayUnion } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -105,6 +107,16 @@ const getAvatarColor = (name: string) => {
   return colors[index]
 }
 
+// Helper function to format Date to local datetime-local input format
+const formatDateForInput = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 export default function BatchDistributionPage() {
   const router = useRouter()
   const params = useParams()
@@ -128,6 +140,7 @@ export default function BatchDistributionPage() {
   const [existingSchedules, setExistingSchedules] = useState<Schedule[]>([])
   const [startDeadline, setStartDeadline] = useState<Date | null>(null)
   const [endDeadline, setEndDeadline] = useState<Date | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     const initialize = async () => {
@@ -196,8 +209,8 @@ export default function BatchDistributionPage() {
           const loadedBatches = schedulesData.map((schedule, index) => ({
             id: schedule.batchId,
             name: schedule.batchName,
-            startTime: schedule.startTime.toISOString().slice(0, 16),
-            endTime: schedule.endTime.toISOString().slice(0, 16),
+            startTime: formatDateForInput(schedule.startTime),
+            endTime: formatDateForInput(schedule.endTime),
             challengeIds: schedule.challengeIds,
             participantIds: schedule.participantIds,
           }))
@@ -417,7 +430,8 @@ export default function BatchDistributionPage() {
       if (batch.challengeIds.length === 0) {
         errors.push(`${batch.name}: At least one challenge must be selected`)
       }
-      if (batch.participantIds.length === 0) {
+      // Only require participants for non-emergency batches or batches that have challenges
+      if (batch.participantIds.length === 0 && !batch.name.toLowerCase().includes('emergency')) {
         errors.push(`${batch.name}: No participants assigned`)
       }
     })
@@ -483,11 +497,11 @@ export default function BatchDistributionPage() {
         const scheduleRef = doc(db, `competitions/${competitionId}/schedules`, batchData.id)
         batch.set(scheduleRef, {
           batchName: batchData.name,
-          startTime: new Date(batchData.startTime),
-          endTime: new Date(batchData.endTime),
+          startTime: new Date(batchData.startTime).toISOString(),
+          endTime: new Date(batchData.endTime).toISOString(),
           challengeIds: batchData.challengeIds,
           participantIds: batchData.participantIds,
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
         })
       })
 
@@ -537,6 +551,9 @@ export default function BatchDistributionPage() {
       )
       if (!sourceBatch) return
 
+      const targetBatch = batches.find((b) => b.id === targetBatchId)
+      if (!targetBatch) return
+
       const batch = writeBatch(db)
 
       // Update source schedule
@@ -545,11 +562,27 @@ export default function BatchDistributionPage() {
         participantIds: arrayRemove(selectedParticipant.userid),
       })
 
-      // Update target schedule
+      // Update or create target schedule
       const targetScheduleRef = doc(db, `competitions/${competitionId}/schedules`, targetBatchId)
-      batch.update(targetScheduleRef, {
-        participantIds: arrayUnion(selectedParticipant.userid),
-      })
+      // Check if target batch exists in Firestore by trying to get it
+      const targetScheduleSnap = await getDoc(targetScheduleRef)
+
+      if (targetScheduleSnap.exists()) {
+        // Update existing schedule
+        batch.update(targetScheduleRef, {
+          participantIds: arrayUnion(selectedParticipant.userid),
+        })
+      } else {
+        // Create new schedule for emergency batch
+        batch.set(targetScheduleRef, {
+          batchName: targetBatch.name,
+          startTime: new Date(targetBatch.startTime).toISOString(),
+          endTime: new Date(targetBatch.endTime).toISOString(),
+          challengeIds: targetBatch.challengeIds,
+          participantIds: [selectedParticipant.userid],
+          createdAt: new Date().toISOString(),
+        })
+      }
 
       // Update participant
       const participantRef = doc(db, `competitions/${competitionId}/participants`, selectedParticipant.userid)
@@ -590,6 +623,180 @@ export default function BatchDistributionPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleUpdateDistribution = async () => {
+    const validation = validateBatches()
+    if (!validation.valid) {
+      toast({
+        title: "Validation Failed",
+        description: validation.errors[0],
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const batch = writeBatch(db)
+
+      // Get existing schedules
+      const schedulesSnap = await getDocs(collection(db, `competitions/${competitionId}/schedules`))
+      const existingScheduleIds = new Set(schedulesSnap.docs.map(doc => doc.id))
+
+      // Update or create schedules
+      batches.forEach((batchData) => {
+        const scheduleRef = doc(db, `competitions/${competitionId}/schedules`, batchData.id)
+        batch.set(scheduleRef, {
+          batchName: batchData.name,
+          startTime: new Date(batchData.startTime).toISOString(),
+          endTime: new Date(batchData.endTime).toISOString(),
+          challengeIds: batchData.challengeIds,
+          participantIds: batchData.participantIds,
+          createdAt: new Date().toISOString(),
+        })
+        // Remove from existing set since we're keeping this one
+        existingScheduleIds.delete(batchData.id)
+      })
+
+      // Delete schedules that are no longer in the batches
+      existingScheduleIds.forEach((scheduleId) => {
+        const scheduleRef = doc(db, `competitions/${competitionId}/schedules`, scheduleId)
+        batch.delete(scheduleRef)
+      })
+
+      // Update participants with assigned batch
+      batches.forEach((batchData) => {
+        batchData.participantIds.forEach((participantId) => {
+          const participantRef = doc(db, `competitions/${competitionId}/participants`, participantId)
+          batch.update(participantRef, {
+            assignedBatchId: batchData.id,
+          })
+        })
+      })
+
+      await batch.commit()
+
+      setIsEditing(false)
+      toast({
+        title: "Success",
+        description: "Batch distribution updated successfully!",
+      })
+    } catch (error) {
+      console.error("Error updating distribution:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update distribution. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelEdit = async () => {
+    setIsSaving(true)
+    try {
+      // Re-fetch schedules to revert changes
+      const schedulesSnap = await getDocs(collection(db, `competitions/${competitionId}/schedules`))
+      const schedulesData = schedulesSnap.docs.map((doc) => {
+        const data = doc.data()
+        return {
+          batchId: doc.id,
+          batchName: data.batchName,
+          startTime: data.startTime.toDate ? data.startTime.toDate() : new Date(data.startTime),
+          endTime: data.endTime.toDate ? data.endTime.toDate() : new Date(data.endTime),
+          challengeIds: data.challengeIds || [],
+          participantIds: data.participantIds || [],
+        }
+      }) as Schedule[]
+
+      const loadedBatches = schedulesData.map((schedule) => ({
+        id: schedule.batchId,
+        name: schedule.batchName,
+        startTime: formatDateForInput(schedule.startTime),
+        endTime: formatDateForInput(schedule.endTime),
+        challengeIds: schedule.challengeIds,
+        participantIds: schedule.participantIds,
+      }))
+      setBatches(loadedBatches)
+      setIsEditing(false)
+      toast({
+        title: "Cancelled",
+        description: "Changes reverted successfully.",
+      })
+    } catch (error) {
+      console.error("Error reverting changes:", error)
+      toast({
+        title: "Error",
+        description: "Failed to revert changes.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleAddEmergencyBatch = () => {
+    const newBatch: Batch = {
+      id: `batch-${batches.length + 1}`,
+      name: `Emergency Batch ${batches.length + 1}`,
+      startTime: "",
+      endTime: "",
+      challengeIds: [],
+      participantIds: [],
+    }
+    setBatches([...batches, newBatch])
+    toast({
+      title: "Batch Added",
+      description: "New emergency batch created. Don't forget to configure it.",
+    })
+  }
+
+  const handleDeleteBatch = (batchId: string) => {
+    const batch = batches.find((b) => b.id === batchId)
+    if (batch && batch.participantIds.length > 0) {
+      toast({
+        title: "Cannot Delete",
+        description: "Cannot delete a batch with assigned participants. Move them first.",
+        variant: "destructive",
+      })
+      return
+    }
+    setBatches((prev) => prev.filter((b) => b.id !== batchId))
+    toast({
+      title: "Batch Deleted",
+      description: "Batch removed successfully.",
+    })
+  }
+
+  const handleRemoveChallengeFromBatch = (batchId: string, challengeId: string) => {
+    setBatches((prev) =>
+      prev.map((batch) => {
+        if (batch.id === batchId) {
+          return {
+            ...batch,
+            challengeIds: batch.challengeIds.filter((id) => id !== challengeId),
+          }
+        }
+        return batch
+      })
+    )
+  }
+
+  const handleAddChallengeToBatch = (batchId: string, challengeId: string) => {
+    setBatches((prev) =>
+      prev.map((batch) => {
+        if (batch.id === batchId) {
+          return {
+            ...batch,
+            challengeIds: [...batch.challengeIds, challengeId],
+          }
+        }
+        return batch
+      })
+    )
   }
 
   if (loading) {
@@ -648,10 +855,49 @@ export default function BatchDistributionPage() {
               <p className="text-gray-600 mt-1">{competitionName}</p>
             </div>
           </div>
-          <Badge variant="outline" className="text-lg px-4 py-2">
-            <Users className="h-4 w-4 mr-2" />
-            {participants.length} Participants
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="text-lg px-4 py-2">
+              <Users className="h-4 w-4 mr-2" />
+              {participants.length} Participants
+            </Badge>
+            {isDistributed && !isEditing && (
+              <Button
+                onClick={() => setIsEditing(true)}
+                className="bg-[#0f172a] hover:bg-[#1e293b] text-white"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Edit Batches
+              </Button>
+            )}
+            {isDistributed && isEditing && (
+              <>
+                <Button
+                  onClick={handleCancelEdit}
+                  variant="outline"
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateDistribution}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {!isDistributed ? (
@@ -992,6 +1238,10 @@ export default function BatchDistributionPage() {
                   const endDate = batch.endTime
                     ? new Date(batch.endTime).toLocaleString()
                     : "Not set"
+                  const batchErrors = isEditing ? getBatchErrors(batch) : {}
+                  const availableChallengesForBatch = challenges.filter(
+                    (c) => !batch.challengeIds.includes(c.id)
+                  )
 
                   return (
                     <Card key={batch.id} className="border-2">
@@ -1003,29 +1253,109 @@ export default function BatchDistributionPage() {
                             </div>
                             <div>
                               <h3 className="text-xl font-bold text-gray-900">{batch.name}</h3>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {startDate} → {endDate}
-                              </p>
+                              {!isEditing && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {startDate} → {endDate}
+                                </p>
+                              )}
                             </div>
                           </div>
-                          <Badge className="bg-purple-600 text-white">
-                            {batch.participantIds.length} Participants
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-purple-600 text-white">
+                              {batch.participantIds.length} Participants
+                            </Badge>
+                            {isEditing && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteBatch(batch.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={batch.participantIds.length > 0}
+                                title={batch.participantIds.length > 0 ? "Cannot delete batch with participants" : "Delete batch"}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Time Fields */}
+                        {isEditing && (
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">Start Time</Label>
+                              <Input
+                                type="datetime-local"
+                                value={batch.startTime}
+                                onChange={(e) =>
+                                  handleBatchTimeChange(batch.id, "startTime", e.target.value)
+                                }
+                                className={batchErrors.startTime ? "border-red-500 mt-1" : "mt-1"}
+                              />
+                              {batchErrors.startTime && (
+                                <p className="text-xs text-red-500 mt-1">{batchErrors.startTime}</p>
+                              )}
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-700">End Time</Label>
+                              <Input
+                                type="datetime-local"
+                                value={batch.endTime}
+                                onChange={(e) =>
+                                  handleBatchTimeChange(batch.id, "endTime", e.target.value)
+                                }
+                                className={batchErrors.endTime ? "border-red-500 mt-1" : "mt-1"}
+                              />
+                              {batchErrors.endTime && (
+                                <p className="text-xs text-red-500 mt-1">{batchErrors.endTime}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Challenges */}
                         <div className="mt-4">
                           <Label className="text-xs text-gray-600 mb-2 block">Challenges:</Label>
                           <div className="flex flex-wrap gap-2">
-                            {batch.challengeIds.map((challengeId) => {
-                              const challenge = challenges.find((c) => c.id === challengeId)
-                              return (
-                                <Badge key={challengeId} variant="outline">
-                                  <Trophy className="h-3 w-3 mr-1" />
-                                  {challenge?.title || challengeId}
-                                </Badge>
-                              )
-                            })}
+                            {batch.challengeIds.length === 0 ? (
+                              <p className="text-sm text-gray-500">No challenges assigned</p>
+                            ) : (
+                              batch.challengeIds.map((challengeId) => {
+                                const challenge = challenges.find((c) => c.id === challengeId)
+                                return (
+                                  <Badge key={challengeId} variant="outline" className="flex items-center gap-1">
+                                    <Trophy className="h-3 w-3" />
+                                    {challenge?.title || challengeId}
+                                    {isEditing && (
+                                      <button
+                                        onClick={() =>
+                                          handleRemoveChallengeFromBatch(batch.id, challengeId)
+                                        }
+                                        className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </Badge>
+                                )
+                              })
+                            )}
+                            {isEditing && availableChallengesForBatch.length > 0 && (
+                              <Select
+                                onValueChange={(value) => handleAddChallengeToBatch(batch.id, value)}
+                              >
+                                <SelectTrigger className="w-[200px] h-8">
+                                  <SelectValue placeholder="+ Add Challenge" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableChallengesForBatch.map((challenge) => (
+                                    <SelectItem key={challenge.id} value={challenge.id}>
+                                      {challenge.title}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -1072,6 +1402,16 @@ export default function BatchDistributionPage() {
                     </Card>
                   )
                 })}
+                {isEditing && (
+                  <Button
+                    onClick={handleAddEmergencyBatch}
+                    variant="outline"
+                    className="w-full border-dashed border-2 py-6"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Add Emergency Batch
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </>
