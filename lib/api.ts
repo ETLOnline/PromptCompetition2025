@@ -241,6 +241,13 @@ export const fetchCompetitionSubmissions = async (competitionId: string, getToke
   }, getToken);
 };
 
+// Admin endpoint to fetch all submissions for a competition
+export const fetchAdminCompetitionSubmissions = async (competitionId: string, getToken?: () => Promise<string | null>) => {
+  return await fetchWithAuth(`${API_URL}/submissions/admin/competition/${competitionId}`, {
+    method: "GET",
+  }, getToken);
+};
+
 //-------------------------------------------------------
 //------------ daily challenge API's  ------------------
 //-------------------------------------------------------

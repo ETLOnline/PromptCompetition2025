@@ -93,7 +93,8 @@ export default function CreateCompetitionModal({
 
     const { title, description, prizeMoney, startTime, endTime, mode, venue, level, systemPrompt, TopN } = formData
 
-    if (!title || !description || !prizeMoney || !startTime || !endTime || !mode || !level || !systemPrompt) {
+    const isSystemPromptRequired = level !== "Level 2"
+    if (!title || !description || !prizeMoney || !startTime || !endTime || !mode || !level || (isSystemPromptRequired && !systemPrompt)) {
       setFormError("All fields are required.")
       return
     }
@@ -313,6 +314,7 @@ export default function CreateCompetitionModal({
                 </div>
               )}
 
+              {formData.level !== "Level 2" && (
               <div>
                 <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 mb-2 block">
                   System Prompt
@@ -328,6 +330,7 @@ export default function CreateCompetitionModal({
                   placeholder="write the base system instruction or system prompt here..."
                 />
               </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

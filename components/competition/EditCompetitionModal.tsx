@@ -327,6 +327,7 @@ export default function EditCompetitionModal({
                   </div>
                 )}
 
+                {editFormData.level !== "Level 2" && (
                 <div>
                   <Label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 mb-2 block">
                     System Prompt
@@ -343,6 +344,7 @@ export default function EditCompetitionModal({
                     placeholder="write the base system instruction or system prompt here..."
                   />
                 </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

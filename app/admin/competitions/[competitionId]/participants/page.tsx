@@ -53,7 +53,13 @@ export default function ParticipantsPage() {
   const checkAuth = async () => {
     try {
       setLoading(true)
-      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_ADMIN_AUTH}`);
+      
+      // Check if user has superadmin role
+      if (profile.role !== 'superadmin') {
+        router.push("/");
+        return;
+      }
     } 
     catch (error) 
     {

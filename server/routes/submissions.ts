@@ -543,19 +543,105 @@ router.get(
   }
 );
 
-// Cleanup endpoint for cache management
-router.post("/cleanup", authenticateToken, (req: AuthenticatedRequest, res: Response) => {
-  try {
-    competitionCache.clear();
-    rateLimitCache.clear();
-    
-    return res.status(200).json({ 
-      message: "Cache cleared successfully",
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to clear cache" });
+// GET /submissions/admin/competition/:competitionId - Get all submissions for admin
+router.get(
+  "/admin/competition/:competitionId",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { competitionId } = req.params;
+      const userRole = req.user?.role;
+
+      // Check if user is admin or superadmin
+      if (!userRole || (userRole !== 'admin' && userRole !== 'superadmin')) {
+        return res.status(403).json({ error: "Access denied. Admin privileges required." });
+      }
+
+      const submissionsSnapshot = await withTimeout(
+        db.collection("competitions")
+          .doc(competitionId)
+          .collection("submissions")
+          .orderBy("submissionTime", "desc")
+          .get(),
+        30000 // Longer timeout for admin operations
+      );
+
+      console.log(`Admin fetched ${submissionsSnapshot.size} submissions for competition ${competitionId}`);
+
+      // Extract unique participant IDs
+      const participantIds = [...new Set(
+        submissionsSnapshot.docs.map(doc => doc.data().participantId).filter(Boolean)
+      )];
+
+      // Batch fetch user details if we have participant IDs
+      let usersMap = new Map<string, any>();
+      if (participantIds.length > 0) {
+        try {
+          // Split into chunks of 10 for Firestore 'in' query limit
+          const chunks = [];
+          for (let i = 0; i < participantIds.length; i += 10) {
+            chunks.push(participantIds.slice(i, i + 10));
+          }
+
+          // Fetch users in parallel for each chunk
+          const userPromises = chunks.map(async (chunk) => {
+            const usersSnapshot = await withTimeout(
+              db.collection("users")
+                .where("__name__", "in", chunk)
+                .get(),
+              15000
+            );
+            return usersSnapshot.docs;
+          });
+
+          const userChunks = await Promise.all(userPromises);
+
+          // Build users map
+          userChunks.flat().forEach(doc => {
+            usersMap.set(doc.id, doc.data());
+          });
+
+          console.log(`Fetched ${usersMap.size} user details for ${participantIds.length} participants`);
+        } catch (userError) {
+          console.error(`Error fetching user details: ${userError}`);
+          // Continue without user details rather than failing the entire request
+        }
+      }
+
+      const submissions = submissionsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        const participantId = data.participantId;
+
+        // Get user details if available
+        const userData = usersMap.get(participantId);
+        const user = userData ? {
+          fullName: userData.fullName || userData.displayName || 'Unknown User',
+          email: userData.email || '',
+          displayName: userData.displayName || userData.fullName || 'Unknown User'
+        } : undefined;
+
+        return {
+          id: doc.id,
+          ...data,
+          user
+        };
+      });
+
+      console.log(`Admin competition submissions retrieved: ${submissions.length} items`);
+
+      return res.status(200).json({
+        submissions,
+        totalCount: submissions.length,
+        competitionId
+      });
+    } catch (err: any) {
+      console.error(`Fetch admin competition submissions error: ${err.message}`);
+      return res.status(500).json({
+        error: "Failed to fetch submissions",
+        detail: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+      });
+    }
   }
-});
+);
 
 export default router;
