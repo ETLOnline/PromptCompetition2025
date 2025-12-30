@@ -264,25 +264,13 @@ export default function AdminDashboard() {
             
             <div className="space-y-3">
               {role === 'superadmin' ? (
-                !isCompetitionEnded ? (
-                  <div className="text-center py-3">
-                    <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-xs">Competition must end</span>
-                      {competitionEndDeadline && (
-                        <span className="text-xs text-gray-400">
-                          {competitionEndDeadline.toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
-                    className="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm"
-                  >
-                    <Users className="h-4 w-4 mr-2" /> Distribute
-                  </Button>
+             (
+              <Button
+                onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
+                className="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm"
+              >
+                <Users className="h-4 w-4 mr-2" /> Distribute judges
+              </Button>
                 )
               ) : (
                 <div className="text-center py-3">
