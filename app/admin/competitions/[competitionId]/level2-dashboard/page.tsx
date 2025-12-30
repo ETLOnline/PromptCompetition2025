@@ -266,7 +266,7 @@ export default function AdminDashboard() {
               {role === 'superadmin' ? (
              (
               <Button
-                onClick={() => router.push(`/admin/competitions/${competitionId}/participant-distribution`)}
+                onClick={() => router.push(`/admin/competitions/${competitionId}/judge-assignment`)}
                 className="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm"
               >
                 <Users className="h-4 w-4 mr-2" /> Distribute judges
