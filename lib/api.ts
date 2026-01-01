@@ -282,3 +282,59 @@ export const fetchOverallLeaderboard = async (limit: number = 100) => {
   if (!res.ok) throw new Error("Failed to fetch overall leaderboard")
   return res.json()
 }
+
+//-------------------------------------------------------
+//------------ user profile API's  ---------------------
+//-------------------------------------------------------
+
+export const fetchUsersByIds = async (userIds: string[], getToken?: () => Promise<string | null>) => {
+  if (!userIds || userIds.length === 0) {
+    return {}
+  }
+
+  // Expected backend endpoint: POST /api/users/batch
+  // Body: { "userIds": ["id1", "id2", ...] }
+  // Response: { "id1": { id, fullName, email, photoURL? }, "id2": {...} }
+  return await fetchWithAuth(`${API_URL}/users/batch`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userIds }),
+  }, getToken);
+};
+
+//-------------------------------------------------------
+//------------ LLM evaluations API's  ------------------
+//-------------------------------------------------------
+
+// Fetch submissions for a specific participant in a challenge
+export const fetchParticipantSubmissions = async (
+  competitionId: string,
+  challengeId: string,
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(
+    `${API_URL}/llm-evaluations/${competitionId}/challenges/${challengeId}/submissions/participant/${participantId}`,
+    {
+      method: "GET",
+    },
+    getToken
+  );
+};
+
+// Fetch ALL submissions for a specific participant across all challenges
+export const fetchAllParticipantSubmissions = async (
+  competitionId: string,
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(
+    `${API_URL}/llm-evaluations/${competitionId}/participant/${participantId}/all-submissions`,
+    {
+      method: "GET",
+    },
+    getToken
+  );
+};

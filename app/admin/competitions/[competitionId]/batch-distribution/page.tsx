@@ -1426,17 +1426,14 @@ export default function BatchDistributionPage() {
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               Confirm Distribution
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                This will save the batch distribution and assign participants to their respective
-                batches.
-              </p>
+            <AlertDialogDescription>
+              This will save the batch distribution and assign participants to their respective batches.
               {existingSchedules.length > 0 && (
-                <p className="text-amber-600 font-medium">
+                <span className="block mt-2 text-amber-600 font-medium">
                   Warning: This will overwrite the existing schedule for this competition.
-                </p>
+                </span>
               )}
-              <p>Are you sure you want to proceed?</p>
+              <span className="block mt-2">Are you sure you want to proceed?</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
