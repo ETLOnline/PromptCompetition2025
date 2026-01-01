@@ -2,7 +2,7 @@
 "use client"
 
 import type React from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -131,6 +131,8 @@ export default function NewCompetitionPage() {
   const router = useRouter()
   const params = useParams()
   const competitionId = params?.competitionId as string
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from') || 'dashboard'
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(false)
@@ -443,7 +445,7 @@ export default function NewCompetitionPage() {
         title: "Success",
         description: "Challenge created successfully!",
       })
-      router.push(`/admin/competitions/${competitionId}/dashboard`)
+      router.push(`/admin/competitions/${competitionId}/${from}`)
     } catch (error) {
       toast({
         title: "Error",
@@ -1095,7 +1097,7 @@ export default function NewCompetitionPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/admin/competitions/${competitionId}/dashboard`)}
+              onClick={() => router.push(`/admin/competitions/${competitionId}/${from}`)}
               className="border-gray-200 text-gray-700 hover:bg-gray-50"
             >
               Cancel

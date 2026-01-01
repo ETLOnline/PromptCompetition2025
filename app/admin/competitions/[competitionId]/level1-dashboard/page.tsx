@@ -318,7 +318,7 @@ export default function AdminDashboard() {
                   <p className="text-gray-600 text-sm">View and manage competition challenges</p>
                 </div>
               </div>
-              <GetChallenges competitionId={competitionId} />
+              <GetChallenges competitionId={competitionId} from="level1-dashboard" />
             </CardContent>
           </Card>
         </div>
