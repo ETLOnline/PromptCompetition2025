@@ -445,10 +445,13 @@ export default function JudgeAssignmentPage() {
           db,
           "competitions",
           competitionId,
-          "judgeDistribution",
+          "judges",
           distribution.judgeId
         )
-        batch.set(judgeDistRef, distribution)
+        batch.set(judgeDistRef, {
+          ...distribution,
+          competitionId: competitionId,
+        })
       })
 
       // ========================================================================

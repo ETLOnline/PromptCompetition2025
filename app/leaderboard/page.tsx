@@ -85,7 +85,7 @@ export default function LeaderboardPage() {
             competitionId: doc.id,
             title: data.title,
             TopN: data.TopN || 0,
-            maxScore: data.maxScore || 0,
+            maxScore: data.level === "Level 2" ? 100 : (data.maxScore || 0), // Level 2 always has max score of 100
             level: data.level || "custom",
           }
         })
@@ -114,7 +114,11 @@ export default function LeaderboardPage() {
       setLoading(true)
     }
     try {
-      const leaderboardRef = collection(db, `competitions/${competitionId}/finalLeaderboard`)
+      // Determine collection path based on competition level
+      const isLevel2 = selectedCompetition?.level === "Level 2"
+      const collectionPath = isLevel2 ? "finalleaderboard" : "finalLeaderboard"
+      
+      const leaderboardRef = collection(db, `competitions/${competitionId}/${collectionPath}`)
       let q = query(leaderboardRef, orderBy("rank", "asc"), limit(PAGE_SIZE))
       if (lastDoc) {
         q = query(leaderboardRef, orderBy("rank", "asc"), startAfter(lastDoc), limit(PAGE_SIZE))
@@ -123,13 +127,26 @@ export default function LeaderboardPage() {
       const snap = await getDocs(q)
       if (!snap.empty) {
         const entries: DisplayEntry[] = snap.docs.map((doc) => {
-          const data = doc.data() as FinalLeaderboardEntry
-          return {
-            rank: data.rank,
-            name: data.fullName,
-            llmScore: data.llmScore,
-            judgeScore: data.judgeScore ?? null,
-            finalScore: data.finalScore,
+          const data = doc.data() as any // Level 2 has different structure
+          
+          if (isLevel2) {
+            // Level 2 structure
+            return {
+              rank: data.rank,
+              name: data.fullName,
+              llmScore: 0, // Level 2 doesn't have LLM scores
+              judgeScore: data.finalScore, // Level 2 final score comes from judges
+              finalScore: data.finalScore,
+            }
+          } else {
+            // Level 1 structure
+            return {
+              rank: data.rank,
+              name: data.fullName,
+              llmScore: data.llmScore,
+              judgeScore: data.judgeScore ?? null,
+              finalScore: data.finalScore,
+            }
           }
         })
 
@@ -150,7 +167,10 @@ export default function LeaderboardPage() {
   // Fetch participants count
   const fetchParticipantsCount = async (competitionId: string) => {
     try {
-      const leaderboardRef = collection(db, `competitions/${competitionId}/finalLeaderboard`)
+      const isLevel2 = selectedCompetition?.level === "Level 2"
+      const collectionPath = isLevel2 ? "finalleaderboard" : "finalLeaderboard"
+      
+      const leaderboardRef = collection(db, `competitions/${competitionId}/${collectionPath}`)
       const snap = await getDocs(leaderboardRef)
       setParticipantsCount(snap.size)
     } catch (err) {
@@ -389,6 +409,7 @@ function LeaderboardContent({
                       topN={selectedCompetition.TopN}
                       competitionTitle={selectedCompetition.title}
                       isLevel1={selectedCompetition.level === "Level 1"}
+                      isLevel2={selectedCompetition.level === "Level 2"}
                     />
                   </div>
                   <Pagination page={page} setPage={setPage} hasMore={hasMore} loading={loading} />

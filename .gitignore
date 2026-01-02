@@ -84,3 +84,5 @@ server/service-account-key.json
 
 docs/api-documentation
 server/serviceaccount.json
+
+package-lock copy.json

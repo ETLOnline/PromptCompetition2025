@@ -9,7 +9,7 @@ import { FileText, Activity, Users, Trophy, Shield, ExternalLink, AlertCircle } 
 import GetChallengesLevel2 from "@/components/GetChallengesLevel2"
 import JudgeProgressLevel2 from "@/components/JudgeProgressLevel2"
 import GenerateLeaderboardLevel2Button from "@/components/GenerateLeaderboardLevel2"
-import { collection, onSnapshot, query, where, doc, getDoc } from "firebase/firestore"
+import { collection, onSnapshot, query, where, doc, getDoc, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { fetchWithAuth } from "@/lib/api"
 
@@ -27,6 +27,79 @@ export default function AdminDashboard() {
   const { addNotification } = useNotifications();
   const [competitionEndDeadline, setCompetitionEndDeadline] = useState<Date | null>(null)
   const [isCompetitionEnded, setIsCompetitionEnded] = useState(false)
+
+  // Function to calculate fully evaluated participants for Level 2
+  const calculateFullyEvaluatedParticipants = async () => {
+    try {
+      // Get all participants
+      const participantsSnap = await getDocs(collection(db, `competitions/${competitionId}/participants`))
+      
+      let fullyEvaluatedCount = 0
+
+      for (const participantDoc of participantsSnap.docs) {
+        const participantData = participantDoc.data()
+        const participantId = participantDoc.id
+        const assignedJudgeIds = participantData.assignedJudgeIds || []
+        const assignedBatchId = participantData.assignedBatchId
+
+        if (!assignedBatchId || assignedJudgeIds.length === 0) {
+          continue // Skip if no batch or judges assigned
+        }
+
+        // Get the batch schedule to know which challenges this participant should be evaluated on
+        const scheduleDoc = await getDoc(doc(db, `competitions/${competitionId}/schedules/${assignedBatchId}`))
+        if (!scheduleDoc.exists()) {
+          continue
+        }
+        
+        const batchData = scheduleDoc.data()
+        const challengeIds = batchData.challengeIds || []
+        
+        if (challengeIds.length === 0) {
+          continue // No challenges to evaluate
+        }
+
+        // Check if all assigned judges have completed evaluations for all challenges
+        let allJudgesCompleted = true
+
+        for (const judgeId of assignedJudgeIds) {
+          // Check if this judge has evaluated this participant
+          const evaluationDoc = await getDoc(
+            doc(db, `competitions/${competitionId}/judges/${judgeId}/level2Evaluations/${participantId}`)
+          )
+          
+          if (!evaluationDoc.exists()) {
+            allJudgesCompleted = false
+            break
+          }
+
+          const evaluationData = evaluationDoc.data()
+          const evaluatedChallenges = evaluationData?.evaluatedChallenges || []
+          
+          // Check if all challenges in the batch have been evaluated by this judge
+          for (const challengeId of challengeIds) {
+            if (!evaluatedChallenges.includes(challengeId)) {
+              allJudgesCompleted = false
+              break
+            }
+          }
+          
+          if (!allJudgesCompleted) {
+            break
+          }
+        }
+
+        if (allJudgesCompleted) {
+          fullyEvaluatedCount++
+        }
+      }
+
+      setStats((prev) => ({ ...prev, pendingReviews: fullyEvaluatedCount }))
+    } catch (error) {
+      console.error("Error calculating fully evaluated participants:", error)
+      setStats((prev) => ({ ...prev, pendingReviews: 0 }))
+    }
+  }
 
   useEffect(() => {
     const initializePage = async () => {
@@ -47,6 +120,9 @@ export default function AdminDashboard() {
           setIsCompetitionEnded(now > endDate)
         }
       }
+      
+      // Calculate fully evaluated participants for Level 2
+      await calculateFullyEvaluatedParticipants()
     }
 
     initializePage()
@@ -59,15 +135,15 @@ export default function AdminDashboard() {
       setSubmissionCount(snap.size),
     )
 
-    const unsubPending = onSnapshot(
-      query(collection(db, `competitions/${competitionId}/submissions`), where("status", "==", "scored")),
-      (snap) => setStats((prev) => ({ ...prev, pendingReviews: snap.size })),
-    )
+    // Listen for changes in schedules to recalculate fully evaluated participants
+    const unsubSchedules = onSnapshot(collection(db, `competitions/${competitionId}/schedules`), () => {
+      calculateFullyEvaluatedParticipants()
+    })
 
     return () => {
       unsubParts()
       unsubSubs()
-      unsubPending()
+      unsubSchedules()
     }
   }, [router, competitionId])
 
@@ -121,7 +197,7 @@ export default function AdminDashboard() {
         <Link
               href={
                 isEvaluated
-                  ? `/admin/competitions/${competitionId}/leaderboard`
+                  ? `/admin/competitions/${competitionId}/level2-leaderboard`
                   : `/admin/competitions/${competitionId}/participants`
               }
               className="group"
@@ -164,7 +240,7 @@ export default function AdminDashboard() {
             </Card>
           </Link>
 
-          <Link href={`/admin/competitions/${competitionId}/judge-evaluations`} className="group">
+          <Link href={`/admin/competitions/${competitionId}/level2-judge-evaluations`} className="group">
             <Card className="bg-white rounded-2xl shadow-sm p-6 h-full transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-amber-200">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -299,15 +375,7 @@ export default function AdminDashboard() {
               {role === 'superadmin' ? (
                 !isCompetitionEnded ? (
                   <div className="text-center py-3">
-                    <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-xs">Competition must end</span>
-                      {competitionEndDeadline && (
-                        <span className="text-xs text-gray-400">
-                          {competitionEndDeadline.toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
+                    <div className="flex flex-col items-center justify-center space-y-2 text-gray-500">{/* <AlertCircle className="h-4 w-4" /> */}<span className="text-xs">Competition must end</span>{competitionEndDeadline && (<span className="text-xs text-gray-400">{competitionEndDeadline.toLocaleDateString()}</span>)}</div>
                   </div>
                 ) : (
                   <div className="flex-1">

@@ -41,6 +41,10 @@ export default function ParticipantBreadcrumb() {
 
   // Check if we're on daily challenge route
   const isDailyChallenge = pathname?.includes('/daily-challenge');
+  
+  // Check if we're on level1 or level2 route
+  const isLevel1 = pathname?.includes('/level1');
+  const isLevel2 = pathname?.includes('/level2');
 
   useEffect(() => {
     let mounted = true;
@@ -109,7 +113,37 @@ export default function ParticipantBreadcrumb() {
       items[0].isCurrent = true;
     }
   }
-  // Handle regular competition routes
+  // Handle level1 routes
+  else if (isLevel1 && params.competitionId) {
+    items.push({
+      label: truncate(competitionName || "Competition", 18),
+      href: `/participant/${params.competitionId}/level1`,
+    });
+    if (params.challengeId) {
+      items.push({
+        label: truncate(challengeName || "Challenge", 18),
+        isCurrent: true,
+      });
+    } else {
+      items[items.length - 1].isCurrent = true;
+    }
+  }
+  // Handle level2 routes
+  else if (isLevel2 && params.competitionId) {
+    items.push({
+      label: truncate(competitionName || "Competition", 18),
+      href: `/participant/${params.competitionId}/level2`,
+    });
+    if (params.challengeId) {
+      items.push({
+        label: truncate(challengeName || "Challenge", 18),
+        isCurrent: true,
+      });
+    } else {
+      items[items.length - 1].isCurrent = true;
+    }
+  }
+  // Handle regular competition routes (fallback)
   else if (params.competitionId) {
     items.push({
       label: truncate(competitionName || "Competition", 18),

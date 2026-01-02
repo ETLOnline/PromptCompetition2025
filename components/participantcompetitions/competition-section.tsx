@@ -16,6 +16,7 @@ interface Competition {
   mode?: string
   prizeMoney?: string
   location?: string
+  level?: string
 }
 
 interface CompetitionSectionProps {

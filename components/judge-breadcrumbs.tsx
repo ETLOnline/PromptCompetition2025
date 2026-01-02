@@ -21,6 +21,42 @@ const JUDGE_BREADCRUMB_PATHS: Array<{
     ],
   },
   {
+    // /judge/{competitionId}/level2/{batchId}/{participantId}/{challengeId}
+    match: segs => segs.length === 6 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: "Participant", href: `/judge/${segs[1]}/level2/${segs[3]}/${segs[4]}`, isLast: false },
+      { label: `Challenge ${segs[5]}`, href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2/{batchId}/{participantId}
+    match: segs => segs.length === 5 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: "Participant Submissions", href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2
+    match: segs => segs.length === 3 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2/{batchId}
+    match: segs => segs.length === 4 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: segs[3], href: null, isLast: true },
+    ],
+  },
+  {
     // /judge/{competitionId}
     match: segs => segs.length === 2 && segs[0] === "judge",
     getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [

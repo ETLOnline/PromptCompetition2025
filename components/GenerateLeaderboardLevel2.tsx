@@ -3,14 +3,11 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Trophy, Loader, CheckCircle, Shield, X, AlertCircle, RefreshCw } from "lucide-react"
-import { fetchWithAuth } from "@/lib/api"
-import { doc, getDoc, updateDoc, collection, getDocs, query, where } from "firebase/firestore"
+import { fetchWithAuth, fetchLevel2JudgeProgress } from "@/lib/api"
+import { doc, getDoc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useRouter } from "next/navigation";
-
 import { useNotifications } from "@/hooks/useNotifications";
-
-
 
 export default function GenerateLeaderboardLevel2Button({ competitionId }: { competitionId: string }) {
   const [loading, setLoading] = useState(false)
@@ -19,6 +16,7 @@ export default function GenerateLeaderboardLevel2Button({ competitionId }: { com
   const [showRolePopup, setShowRolePopup] = useState(false)
   const [showJudgeNotEvaluatedPopup, setShowJudgeNotEvaluatedPopup] = useState(false)
   const [showAlreadyGeneratedPopup, setShowAlreadyGeneratedPopup] = useState(false)
+  const [judgeDetails, setJudgeDetails] = useState<string>("")
   const { addNotification } = useNotifications();
   const router = useRouter();
   
@@ -36,92 +34,47 @@ export default function GenerateLeaderboardLevel2Button({ competitionId }: { com
     }
   }, [success])
 
-  // Function to calculate judge progress and update AllJudgeEvaluated if needed
-  const calculateAndUpdateJudgeProgress = async () => {
+  // Function to check if all Level 2 judges have completed their evaluations
+  const checkLevel2JudgesCompleted = async () => {
     try {
-      const judgesRef = collection(db, "competitions", competitionId, "judges")
-      const judgesSnap = await getDocs(judgesRef)
-      
-      if (judgesSnap.empty) {
-        // No judges assigned
-        return { hasJudges: false, allCompleted: false }
+      const response = await fetchLevel2JudgeProgress(competitionId)
+      const judgesData = response.judges || []
+
+      if (judgesData.length === 0) {
+        return { 
+          allCompleted: false, 
+          details: "No judges assigned to participants" 
+        }
       }
 
-      // Collect all judge IDs to batch fetch names
-      const judgeIds = judgesSnap.docs.map((j) => j.id)
-      let usersMap = new Map<string, any>()
-
-      if (judgeIds.length > 0) {
-        const usersSnap = await getDocs(
-          query(collection(db, "users"), where("__name__", "in", judgeIds))
-        )
-        usersMap = new Map(usersSnap.docs.map((doc) => [doc.id, doc.data()]))
-      }
-
-      const judgesData: any[] = []
-
-      for (const judgeDoc of judgesSnap.docs) {
-        const judgeData = judgeDoc.data()
-        const judgeId = judgeDoc.id
-
-        const assignedCountsByChallenge = judgeData.assignedCountsByChallenge || {}
-        const completedChallenges = judgeData.completedChallenges || {}
-        const assignedCountTotal = judgeData.assignedCountTotal || 0
-        const reviewedCount = judgeData.reviewedCount || 0
-
-        // Calculate challenge progress using the new structure
-        const challengeProgress: Array<{
-          challengeId: string
-          assigned: number
-          completed: number
-        }> = []
-
-        Object.keys(assignedCountsByChallenge).forEach((challengeId) => {
-          const assignedForChallenge = assignedCountsByChallenge[challengeId] || 0
-          const completedForChallenge = completedChallenges[challengeId] || 0
-
-          challengeProgress.push({
-            challengeId,
-            assigned: assignedForChallenge,
-            completed: completedForChallenge,
-          })
-        })
-
-        const displayName =
-          usersMap.get(judgeId)?.fullName || usersMap.get(judgeId)?.displayName || judgeId.slice(0, 8)
-
-        judgesData.push({
-          judgeId,
-          assignedCountsByChallenge,
-          submissionsByChallenge: judgeData.submissionsByChallenge || {}, // Keep for type compatibility
-          assignedCountTotal,
-          completedCount: reviewedCount, // Use reviewedCount directly
-          challengeProgress,
-          displayName,
-        })
-      }
-
-      // Check if all judges have completed their evaluations
-      const allCompleted = judgesData.length > 0 && judgesData.every(judge => {
-        const overallProgress = judge.assignedCountTotal > 0
-          ? (judge.completedCount / judge.assignedCountTotal) * 100
+      const incompleteJudges = judgesData.filter((judge: any) => {
+        const overallProgress = judge.totalAssignedParticipants > 0
+          ? (judge.evaluatedParticipants / judge.totalAssignedParticipants) * 100
           : 0
-        return overallProgress === 100
+        return overallProgress < 100
       })
 
-      // Update AllJudgeEvaluated if all judges are completed
-      if (allCompleted) {
-        const competitionRef = doc(db, "competitions", competitionId)
-        await updateDoc(competitionRef, {
-          AllJudgeEvaluated: true
-        })
-        console.log("AllJudgeEvaluated updated to: true")
+      if (incompleteJudges.length > 0) {
+        const details = incompleteJudges.map((judge: any) => 
+          `${judge.judgeName} (${judge.evaluatedParticipants}/${judge.totalAssignedParticipants})`
+        ).join(", ")
+        
+        return { 
+          allCompleted: false, 
+          details: `Incomplete evaluations: ${details}` 
+        }
       }
 
-      return { hasJudges: true, allCompleted }
+      return { 
+        allCompleted: true, 
+        details: "All judges have completed their evaluations" 
+      }
     } catch (error) {
-      console.error("Error calculating judge progress:", error)
-      return { hasJudges: false, allCompleted: false }
+      console.error("Error checking Level 2 judge progress:", error)
+      return { 
+        allCompleted: false, 
+        details: "Error checking judge status" 
+      }
     }
   }
 
@@ -161,7 +114,7 @@ export default function GenerateLeaderboardLevel2Button({ competitionId }: { com
     }
   }
 
-    const proceedWithLeaderboardGeneration = async () => {
+  const proceedWithLeaderboardGeneration = async () => {
     try {
       const data = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/last/${competitionId}/final-leaderboard`,
@@ -171,9 +124,9 @@ export default function GenerateLeaderboardLevel2Button({ competitionId }: { com
       // Show success notification
       const competitionRef = doc(db, "competitions", competitionId)
       await updateDoc(competitionRef, { hasFinalLeaderboard: true })
-      addNotification("success", "Final leaderboard generated successfully!");
+      addNotification("success", "Level 2 final leaderboard generated successfully!");
       setSuccess(true)
-      router.push(`/admin/competitions/${competitionId}/leaderboard`);
+      router.push(`/admin/competitions/${competitionId}/level2-leaderboard`);
 
       return true;
     } catch (err: any) {
@@ -195,28 +148,21 @@ export default function GenerateLeaderboardLevel2Button({ competitionId }: { com
         return
       }
       
-      // First check if AllJudgeEvaluated is already true
-      let isAllJudgeEvaluated = await checkIfAllJudgeEvaluated()
+      // Check if all Level 2 judges have completed their evaluations
+      const judgeCheck = await checkLevel2JudgesCompleted()
       
-      if (!isAllJudgeEvaluated) {
-        // AllJudgeEvaluated is false, so calculate judge progress
-        const { hasJudges, allCompleted } = await calculateAndUpdateJudgeProgress()
-        
-        if (!hasJudges) {
-          // No judges assigned - this is an error in Level 2
-          setShowJudgeNotEvaluatedPopup(true)
-          setLoading(false)
-          return
-        } else if (!allCompleted) {
-          // Judges exist but haven't all completed their evaluations
-          setShowJudgeNotEvaluatedPopup(true)
-          setLoading(false)
-          return
-        }
-        
-        // If we reach here, all judges have completed and AllJudgeEvaluated has been updated
-        isAllJudgeEvaluated = true
+      if (!judgeCheck.allCompleted) {
+        setJudgeDetails(judgeCheck.details)
+        setShowJudgeNotEvaluatedPopup(true)
+        setLoading(false)
+        return
       }
+
+      // Update AllJudgeEvaluated if all judges completed
+      const competitionRef = doc(db, "competitions", competitionId)
+      await updateDoc(competitionRef, {
+        AllJudgeEvaluated: true
+      })
 
       // Check if final leaderboard already exists
       const hasFinalLeaderboard = await checkIfFinalLeaderboardExists()
@@ -327,10 +273,17 @@ export default function GenerateLeaderboardLevel2Button({ competitionId }: { com
             
             <div className="mb-6">
               <p className="text-gray-600 mb-3">
-                All judge evaluations must be completed before generating the leaderboard. Level 2 competitions rely entirely on judge feedback.
+                All judge evaluations must be completed before generating the leaderboard. 
+                Level 2 competitions rely entirely on judge feedback for scoring.
               </p>
               <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
                 <p className="text-sm text-purple-800">
+                  <strong>Status:</strong><br />
+                  {judgeDetails}
+                </p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-3">
+                <p className="text-sm text-blue-800">
                   <strong>Next Steps:</strong><br />
                   1. Ensure all judges have completed their evaluations<br />
                   2. Once all judge evaluations are done, return here to generate the leaderboard

@@ -76,7 +76,7 @@ export default function CreateCompetitionModal({
   }
 
   const handleLevelChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, level: value as "Level 1" | "Level 2" | "custom", TopN: value === "Level 1" ? prev.TopN : "" }))
+    setFormData((prev) => ({ ...prev, level: value as "Level 1" | "Level 2" | "custom", TopN: (value === "Level 1" || value === "Level 2") ? prev.TopN : "" }))
     setFormError(null)
     setTouched(true)
   }
@@ -104,13 +104,13 @@ export default function CreateCompetitionModal({
       return
     }
 
-    // NEW VALIDATION: Check TopN for Level 1
-    if (level === "Level 1" && !TopN) {
-      setFormError("TopN is required for Level 1 competitions.")
+    // NEW VALIDATION: Check TopN for Level 1 and Level 2
+    if ((level === "Level 1" || level === "Level 2") && !TopN) {
+      setFormError("TopN is required for Level 1 and Level 2 competitions.")
       return
     }
 
-    if (level === "Level 1" && TopN) {
+    if ((level === "Level 1" || level === "Level 2") && TopN) {
       const topNNum = parseInt(TopN as string, 10)
       if (isNaN(topNNum) || topNNum <= 0) {
         setFormError("TopN must be a positive number.")
@@ -160,7 +160,7 @@ export default function CreateCompetitionModal({
         mode: mode as "online" | "offline",
         venue: mode === "offline" ? venue : undefined,
         level: level as "Level 1" | "Level 2" | "custom",
-        TopN: level === "Level 1" && TopN ? parseInt(TopN as string, 10) : undefined,
+        TopN: (level === "Level 1" || level === "Level 2") && TopN ? parseInt(TopN as string, 10) : undefined,
         systemPrompt,
         isFeatured: formData.isFeatured,
         isActive: formData.isActive,
@@ -293,8 +293,8 @@ export default function CreateCompetitionModal({
                 </Select>
               </div>
 
-                            {/* NEW: TopN Field - Only shown for Level 1 */}
-              {formData.level === "Level 1" && (
+                            {/* NEW: TopN Field - Only shown for Level 1 and Level 2 */}
+              {(formData.level === "Level 1" || formData.level === "Level 2") && (
                 <div className="animate-in fade-in-50 duration-200">
                   <Label htmlFor="TopN" className="text-sm font-medium text-gray-700 mb-2 block">
                     Top N Participants

@@ -116,6 +116,15 @@ const getAdminBreadcrumbPaths = (competitionLevel: string | null) => {
     ],
   },
   {
+    // /admin/competitions/{id}/level2-judge-evaluations
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level2-judge-evaluations",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Level 2 Judge Evaluations", href: null, isLast: true },
+    ],
+  },
+  {
     // /admin/competitions/{id}/llm-evaluations
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "llm-evaluations",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
@@ -158,6 +167,15 @@ const getAdminBreadcrumbPaths = (competitionLevel: string | null) => {
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
       { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Leaderboard", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/level2-leaderboard
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level2-leaderboard",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Level 2 Leaderboard", href: null, isLast: true },
     ],
   },
   {

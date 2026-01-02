@@ -135,7 +135,7 @@ export default function EditCompetitionModal({
   }
 
   const handleLevelChange = (value: string) => {
-    setEditFormData((prev) => ({ ...prev, level: value as "Level 1" | "Level 2" | "custom", TopN: value === "Level 1" ? prev.TopN : undefined }))
+    setEditFormData((prev) => ({ ...prev, level: value as "Level 1" | "Level 2" | "custom", TopN: (value === "Level 1" || value === "Level 2") ? prev.TopN : undefined }))
     setEditFormError(null)
     setTouched(true)
   }
@@ -152,13 +152,13 @@ export default function EditCompetitionModal({
       return
     }
 
-    // NEW VALIDATION: Check TopN for Level 1
-    if (editFormData.level === "Level 1" && !editFormData.TopN) {
-      setEditFormError("TopN is required for Level 1 competitions.")
+    // NEW VALIDATION: Check TopN for Level 1 and Level 2
+    if ((editFormData.level === "Level 1" || editFormData.level === "Level 2") && !editFormData.TopN) {
+      setEditFormError("TopN is required for Level 1 and Level 2 competitions.")
       return
     }
 
-    if (editFormData.level === "Level 1" && editFormData.TopN) {
+    if ((editFormData.level === "Level 1" || editFormData.level === "Level 2") && editFormData.TopN) {
       if (isNaN(editFormData.TopN) || editFormData.TopN <= 0) {
         setEditFormError("TopN must be a positive number.")
         return
@@ -185,7 +185,7 @@ export default function EditCompetitionModal({
         startDeadline: newStartDateTime.toISOString(),
         endDeadline: newEndDateTime.toISOString(),
         venue: editFormData.mode === "offline" ? editFormData.venue : undefined,  // NEW: Clear venue if online
-        TopN: editFormData.level === "Level 1" ? editFormData.TopN : undefined,   // NEW: Clear TopN if not Level 1
+        TopN: (editFormData.level === "Level 1" || editFormData.level === "Level 2") ? editFormData.TopN : undefined,   // NEW: Clear TopN if not Level 1 or Level 2
       }
 
       await onSubmit(submitData)
@@ -302,8 +302,8 @@ export default function EditCompetitionModal({
                 </div>
 
                 
-                {/* NEW: TopN Field - Only shown for Level 1 */}
-                {editFormData.level === "Level 1" && (
+                {/* NEW: TopN Field - Only shown for Level 1 and Level 2 */}
+                {(editFormData.level === "Level 1" || editFormData.level === "Level 2") && (
                   <div className="animate-in fade-in-50 duration-200">
                     <Label htmlFor="edit-TopN" className="text-sm font-medium text-gray-700 mb-2 block">
                       Top N Participants

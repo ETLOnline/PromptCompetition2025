@@ -338,3 +338,49 @@ export const fetchAllParticipantSubmissions = async (
     getToken
   );
 };
+
+//-------------------------------------------------------
+//------------ batch/level 2 API's  -------------------
+//-------------------------------------------------------
+
+// Fetch batch details for a participant including assignedBatchId
+export const fetchBatchDetails = async (
+  competitionId: string,
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/batch/${competitionId}/participant/${participantId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch challenges for a specific batch
+export const fetchBatchChallenges = async (
+  competitionId: string,
+  batchId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/batch/${competitionId}/challenges/${batchId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch Level 2 judge evaluations (admin)
+export const fetchLevel2JudgeEvaluations = async (
+  competitionId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/judge/level2-judge-evaluations/${competitionId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch Level 2 judge progress (admin)
+export const fetchLevel2JudgeProgress = async (
+  competitionId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/judge/level2-judge-progress/${competitionId}`, {
+    method: "GET",
+  }, getToken);
+};

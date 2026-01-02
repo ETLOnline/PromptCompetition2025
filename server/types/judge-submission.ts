@@ -7,6 +7,8 @@ export interface JudgeAssignment {
   assignedCountsByChallenge: { [challengeId: string]: number }
   evaluatedCount?: number
   AllChallengesEvaluated?: boolean
+  level?: "Level 1" | "Level 2" | "custom"
+  level2Assignments?: { [batch: string]: string[] }  // For Level 2: batch -> participant IDs
 }
 
 export interface CompetitionAssignment {
