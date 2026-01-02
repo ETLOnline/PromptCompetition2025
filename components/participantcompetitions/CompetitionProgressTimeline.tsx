@@ -210,7 +210,7 @@ export function CompetitionProgressTimeline() {
             <div className="flex items-start gap-3 sm:gap-4 mb-6 sm:mb-7">
               {/* Icon Container */}
               <motion.div
-                className="hidden sm:flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20 shrink-0"
+                className="hidden sm:flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900 shadow-lg shadow-slate-900/20 shrink-0"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
@@ -274,12 +274,12 @@ export function CompetitionProgressTimeline() {
             {/* ──────────────────────────────────────────────────────
                 PROGRESS BAR WITH MILESTONES (STAGE-BASED)
                 ────────────────────────────────────────────────────── */}
-            <div className="relative w-full mb-3">
+            <div className="relative w-full mb-3 px-4 sm:px-6">
               {/* Background track */}
-              <div className="h-3 sm:h-4 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-200">
+              <div className="h-3 sm:h-4 bg-white rounded-full overflow-hidden shadow-inner border border-gray-200">
                 {/* Single progress fill - fills to current stage position (aligned with badges) */}
                 <div
-                  className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 transition-all duration-300"
+                  className="h-full bg-slate-900 transition-all duration-300"
                   style={{
                     // Badges are at 0%, 20%, 40%, 60%, 80%, 100% (evenly distributed)
                     // So fill to: stage 0 -> 0%, stage 1 -> 20%, stage 2 -> 40%, etc.
@@ -289,7 +289,7 @@ export function CompetitionProgressTimeline() {
               </div>
 
               {/* Stage markers/nodes */}
-              <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full flex justify-between">
+              <div className="absolute top-1/2 -translate-y-1/2 left-4 right-4 sm:left-6 sm:right-6 flex justify-between">
                 {MILESTONES.map((milestone, index) => {
                   const state = states[index]
                   const colors = [
@@ -315,17 +315,6 @@ export function CompetitionProgressTimeline() {
                         damping: 35,
                       }}
                     >
-                      {/* Glow for active/completed */}
-                      {state !== "upcoming" && (
-                        <div
-                          className={cn(
-                            "absolute -inset-1.5 sm:-inset-2 rounded-full blur-md opacity-45",
-                            state === "completed" && color.glow,
-                            state === "active" && color.glow
-                          )}
-                        />
-                      )}
-
                       {/* Node circle */}
                       <div
                         className={cn(
@@ -498,7 +487,7 @@ export function CompetitionProgressTimeline() {
                 <AlertCircle className="h-4 w-4" strokeWidth={2.5} />
               </div>
               <p className="text-[10px] sm:text-xs md:text-sm text-gray-800 leading-snug break-words">
-                Only the <span className="font-bold text-amber-900">top 20 participants</span> from <span className="font-semibold text-blue-700">Level 1</span> will qualify for <span className="font-semibold text-purple-700">Level 2</span>. Give your best effort! 🚀
+                Only the <span className="font-bold text-amber-900">top 20 participants</span> from <span className="font-semibold text-blue-700">Level 1</span> will qualify for <span className="font-semibold text-purple-700">Level 2</span>. Give your best effort!
               </p>
             </motion.div>
           </div>

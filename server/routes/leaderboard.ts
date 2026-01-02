@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { admin, db } from "../config/firebase-admin.js";
 
 import { authenticateToken, authorizeRoles, AuthenticatedRequest } from "../utils/auth.js";
+import { generateLevel2FinalLeaderboard } from "./leaderboard/level2-final.js";
 
 const lastRouter = Router();
 
@@ -139,6 +140,12 @@ lastRouter.post(
         return res.status(404).json({ error: "Competition not found" });
       }
       const competitionData = competitionSnap.data();
+      
+      // Check if it's Level 2 competition
+      if (competitionData?.level === "Level 2") {
+        // Use Level 2 leaderboard generation
+        return generateLevel2FinalLeaderboard(req, res);
+      }
       
       // Prevent using this endpoint for Level 1 competitions
       if (competitionData?.level === "Level 1") {

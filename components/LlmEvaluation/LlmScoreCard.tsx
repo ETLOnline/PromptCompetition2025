@@ -105,7 +105,7 @@ export function LlmScoreCard({ evaluation, className }: LlmScoreCardProps) {
                         <div className="w-2 h-2 rounded-full bg-blue-800" />
                         <h5 className="text-xs font-bold text-blue-800 uppercase tracking-wide">EXPLANATION</h5>
                       </div>
-                      <p className="text-sm font-medium text-blue-800 leading-relaxed">
+                      <p className="text-sm font-medium text-blue-800 leading-relaxed whitespace-pre-wrap">
                         {evaluation.description}
                       </p>
                     </div>

@@ -6,9 +6,10 @@ interface LeaderboardTableProps {
   topN: number
   competitionTitle: string
   isLevel1?: boolean
+  isLevel2?: boolean
 }
 
-export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = false }: LeaderboardTableProps) {
+export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = false, isLevel2 = false }: LeaderboardTableProps) {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -71,10 +72,12 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                       Participant
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      LLM Score
-                    </th>
-                    {!isLevel1 && (
+                    {!isLevel2 && (
+                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        LLM Score
+                      </th>
+                    )}
+                    {(isLevel2 || !isLevel1) && (
                       <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Judge Score
                       </th>
@@ -123,12 +126,14 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-5 text-center">
-                        <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
-                          {entry.llmScore.toFixed(2)}
-                        </span>
-                      </td>
-                      {!isLevel1 && (
+                      {!isLevel2 && (
+                        <td className="px-6 py-5 text-center">
+                          <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
+                            {entry.llmScore.toFixed(2)}
+                          </span>
+                        </td>
+                      )}
+                      {(isLevel2 || !isLevel1) && (
                         <td className="px-6 py-5 text-center">
                           {entry.judgeScore !== null ? (
                             <span className="inline-flex items-center bg-gradient-to-r from-purple-600 to-purple-700 text-white px-3 py-1.5 rounded-lg text-sm font-mono font-medium shadow-sm">
@@ -199,16 +204,18 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
-                <div>
-                  <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    LLM
+              <div className={`grid ${isLevel2 ? 'grid-cols-2' : 'grid-cols-3'} gap-2 sm:gap-3 text-center`}>
+                {!isLevel2 && (
+                  <div>
+                    <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                      LLM
+                    </div>
+                    <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium shadow-sm">
+                      {entry.llmScore.toFixed(2)}
+                    </span>
                   </div>
-                  <span className="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 text-white px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono font-medium shadow-sm">
-                    {entry.llmScore.toFixed(2)}
-                  </span>
-                </div>
-                {!isLevel1 && (
+                )}
+                {(isLevel2 || !isLevel1) && (
                   <div>
                     <div className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                       Judge

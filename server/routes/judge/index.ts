@@ -8,6 +8,8 @@ import { submitScore, getSubmissionScore } from "./scoring.js";
 
 // fetch judges for admin
 import { fetchJudgeEvaluations } from "./evaluations.js";
+import { fetchLevel2JudgeEvaluations } from "./level2-evaluations.js";
+import { fetchLevel2JudgeProgress } from "./level2-progress.js";
 
 // Auth utilities
 import { authenticateToken, authorizeRoles, AuthenticatedRequest } from "../../utils/auth.js";
@@ -187,6 +189,20 @@ judgeRouter.get(
   authenticateToken,
   authorizeRoles(["admin", "superadmin"]),
   fetchJudgeEvaluations
+);
+
+judgeRouter.get(
+  "/level2-judge-evaluations/:competitionId",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  fetchLevel2JudgeEvaluations
+);
+
+judgeRouter.get(
+  "/level2-judge-progress/:competitionId",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  fetchLevel2JudgeProgress
 );
 
 

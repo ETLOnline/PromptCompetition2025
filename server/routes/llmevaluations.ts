@@ -203,6 +203,129 @@ llmRouter.get(
     }
   }
 );
+
+// NEW Route: GET /llm-evaluations/:competitionId/challenges/:challengeId/submissions/participant/:participantId
+// Fetch submissions for a specific participant in a specific challenge
+llmRouter.get(
+  "/:competitionId/challenges/:challengeId/submissions/participant/:participantId",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { competitionId, challengeId, participantId } = req.params;
+
+    try {
+      const submissionsRef = db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("submissions");
+
+      // Query all documents that start with participantId_
+      // Since Firestore doesn't support startsWith, we'll fetch by range
+      const startDocId = `${participantId}_`;
+      const endDocId = `${participantId}_\uf8ff`; // \uf8ff is the highest Unicode character
+
+      const snapshot = await submissionsRef
+        .where("__name__", ">=", startDocId)
+        .where("__name__", "<=", endDocId)
+        .where("challengeId", "==", challengeId)
+        .get();
+
+      const submissions = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          challengeId: data.challengeId,
+          participantId,
+          promptText: data.promptText || "",
+          llmScores: data.llmScores
+            ? Object.entries(data.llmScores).map(([modelName, evalData]: any) => ({
+                id: modelName,
+                modelName,
+                finalScore: evalData.finalScore || 0,
+                criterionScores: evalData.scores || {},
+                description: evalData.description || "",
+              }))
+            : [],
+        };
+      });
+
+      res.json({
+        items: submissions,
+        participantId,
+        totalSubmissions: submissions.length,
+      });
+    } catch (error) {
+      console.error("Failed to fetch participant submissions", error);
+      res.status(500).json({ error: "Failed to fetch participant submissions" });
+    }
+  }
+);
+
+// NEW Route: GET /llm-evaluations/:competitionId/participant/:participantId/all-submissions
+// Fetch ALL submissions for a specific participant across ALL challenges
+llmRouter.get(
+  "/:competitionId/participant/:participantId/all-submissions",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { competitionId, participantId } = req.params;
+
+    try {
+      const submissionsRef = db
+        .collection("competitions")
+        .doc(competitionId)
+        .collection("submissions");
+
+      // Query all documents that start with participantId_
+      const startDocId = `${participantId}_`;
+      const endDocId = `${participantId}_\uf8ff`; // \uf8ff is the highest Unicode character
+
+      const snapshot = await submissionsRef
+        .where("__name__", ">=", startDocId)
+        .where("__name__", "<=", endDocId)
+        .get();
+
+      const submissions = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          challengeId: data.challengeId || doc.id.split("_")[1],
+          participantId,
+          promptText: data.promptText || "",
+          llmScores: data.llmScores
+            ? Object.entries(data.llmScores).map(([modelName, evalData]: any) => ({
+                id: modelName,
+                modelName,
+                finalScore: evalData.finalScore || 0,
+                criterionScores: evalData.scores || {},
+                description: evalData.description || "",
+              }))
+            : [],
+        };
+      });
+
+      // Group submissions by challenge
+      const submissionsByChallenge: Record<string, any[]> = {};
+      submissions.forEach((sub) => {
+        if (!submissionsByChallenge[sub.challengeId]) {
+          submissionsByChallenge[sub.challengeId] = [];
+        }
+        submissionsByChallenge[sub.challengeId].push(sub);
+      });
+
+      res.json({
+        items: submissions,
+        submissionsByChallenge,
+        participantId,
+        totalSubmissions: submissions.length,
+        challengesCount: Object.keys(submissionsByChallenge).length,
+      });
+    } catch (error) {
+      console.error("Failed to fetch all participant submissions", error);
+      res.status(500).json({ error: "Failed to fetch all participant submissions" });
+    }
+  }
+);
   
 
 

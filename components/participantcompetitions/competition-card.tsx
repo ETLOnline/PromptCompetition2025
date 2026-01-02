@@ -18,6 +18,7 @@ interface Competition {
   isFeatured?: boolean
   mode?: string
   prizeMoney?: string
+  level?: string
 }
 
 interface CompetitionCardProps {
@@ -49,7 +50,8 @@ export const CompetitionCard = ({
   onButtonClick,
 }: CompetitionCardProps) => {
   const showButton =
-    status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered);
+    (status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered)) &&
+    !(competition.level === "Level 2" && !isRegistered);
 
   const isFeatured = competition.isFeatured || false;
   const targetDate = new Date(competition.startDeadline?.seconds * 1000 || competition.startDeadline);
@@ -106,6 +108,12 @@ export const CompetitionCard = ({
           <div className="flex justify-between items-start mb-4 sm:mb-6">
             <div className="space-y-2 sm:space-y-4 flex-1">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                {competition.level && (
+                  <Badge className="bg-purple-600 text-white border-0 font-medium text-[10px] sm:text-[12px] px-1 sm:px-1.5 py-0.5 flex items-center gap-1">
+                    <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    {competition.level}
+                  </Badge>
+                )}
                 <Badge className={`${status.color} border font-medium text-[10px] sm:text-[12px] px-1 sm:px-1.5 py-0.5 hover:bg-transparent`}>
                   <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 ${status.dotColor} rounded-full mr-1 sm:mr-1.5`}></div>
                   {status.label}

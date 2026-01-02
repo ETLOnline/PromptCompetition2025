@@ -9,7 +9,14 @@ import { db } from "@/lib/firebase"
 import clsx from "clsx"
 
 // Allowed admin paths and their breadcrumb labels
-const getAdminBreadcrumbPaths = (lastDashboard: string) => {
+const getAdminBreadcrumbPaths = (competitionLevel: string | null) => {
+  // Helper function to get the correct dashboard path based on competition level
+  const getDashboardPath = (competitionId: string, level: string | null) => {
+    if (level === "Level 1") return `/admin/competitions/${competitionId}/level1-dashboard`
+    if (level === "Level 2") return `/admin/competitions/${competitionId}/level2-dashboard`
+    return `/admin/competitions/${competitionId}/dashboard`
+  }
+
   return [
   {
     // /admin/select-competition
@@ -23,7 +30,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "dashboard",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Overview", href: null, isLast: true },
     ],
   },
@@ -32,7 +39,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level1-dashboard",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Level 1 Dashboard", href: null, isLast: true },
     ],
   },
@@ -41,7 +48,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level2-dashboard",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Level 2 Dashboard", href: null, isLast: true },
     ],
   },
@@ -50,7 +57,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Challenges", href: null, isLast: true },
     ],
   },
@@ -59,7 +66,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 5 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[4] === "new",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "New Challenge", href: null, isLast: true },
     ],
   },
@@ -68,7 +75,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 6 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "challenges" && segs[5] === "edit",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Edit Challenge", href: null, isLast: true },
     ],
   },
@@ -77,8 +84,17 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participants",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Participants", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/get-participants
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "get-participants",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Get Participants", href: null, isLast: true },
     ],
   },
   {
@@ -86,7 +102,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "submissions",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Submissions", href: null, isLast: true },
     ],
   },
@@ -95,8 +111,17 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "judge-evaluations",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Judge Evaluations", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/level2-judge-evaluations
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level2-judge-evaluations",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Level 2 Judge Evaluations", href: null, isLast: true },
     ],
   },
   {
@@ -104,7 +129,7 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "llm-evaluations",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "LLM Evaluations", href: null, isLast: true },
     ],
   },
@@ -113,8 +138,26 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "participant-distribution",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Participant Distribution", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/batch-distribution
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "batch-distribution",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Batch Distribution", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/judge-assignment
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "judge-assignment",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Judge Assignment", href: null, isLast: true },
     ],
   },
   {
@@ -122,8 +165,17 @@ const getAdminBreadcrumbPaths = (lastDashboard: string) => {
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "leaderboard",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
       { label: "Competitions", href: "/admin/select-competition", isLast: false },
-      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/admin/competitions/${segs[2]}/${lastDashboard}`, isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
       { label: "Leaderboard", href: null, isLast: true },
+    ],
+  },
+  {
+    // /admin/competitions/{id}/level2-leaderboard
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "level2-leaderboard",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Level 2 Leaderboard", href: null, isLast: true },
     ],
   },
   {
@@ -189,22 +241,15 @@ export function AdminBreadcrumbs() {
   const pathname = usePathname()
   const router = useRouter()
   const [competitionTitle, setCompetitionTitle] = useState<string | null>(null)
+  const [competitionLevel, setCompetitionLevel] = useState<string | null>(null)
   const [loadingTitle, setLoadingTitle] = useState(false)
-  const [lastDashboard, setLastDashboard] = useState<string>('dashboard')
 
   // Split path and filter empty segments
   const segments = pathname.split("/").filter(Boolean)
 
-  // Update lastDashboard when on a dashboard page
-  useEffect(() => {
-    if (segments.length >= 4 && segments[0] === "admin" && segments[1] === "competitions" && (segments[3] === "dashboard" || segments[3] === "level1-dashboard" || segments[3] === "level2-dashboard")) {
-      setLastDashboard(segments[3])
-    }
-  }, [pathname])
-
   // Find if this is a competition path and get competitionId
   let competitionId: string | null = null
-  const paths = getAdminBreadcrumbPaths(lastDashboard)
+  const paths = getAdminBreadcrumbPaths(competitionLevel)
   for (const pattern of paths) {
     if (pattern.match(segments)) {
       // If path includes a competitionId, fetch title
@@ -224,12 +269,16 @@ export function AdminBreadcrumbs() {
           const ref = doc(db, "competitions", competitionId!)
           const snap = await getDoc(ref)
           if (snap.exists()) {
-            setCompetitionTitle(snap.data()?.title || null)
+            const data = snap.data()
+            setCompetitionTitle(data?.title || null)
+            setCompetitionLevel(data?.level || null)
           } else {
             setCompetitionTitle(null)
+            setCompetitionLevel(null)
           }
         } catch {
           setCompetitionTitle(null)
+          setCompetitionLevel(null)
         } finally {
           setLoadingTitle(false)
         }
@@ -237,6 +286,7 @@ export function AdminBreadcrumbs() {
       fetchTitle()
     } else {
       setCompetitionTitle(null)
+      setCompetitionLevel(null)
     }
   }, [competitionId])
 

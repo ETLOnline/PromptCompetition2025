@@ -112,6 +112,8 @@ import lastRouter from "./routes/leaderboard.js";
 import welcomeRouter from "./routes/welcome.js";
 import dailyChallengeRouter from "./routes/dailychallenge.js";
 import overallLeaderboardRouter from "./routes/overallLeaderboard.js";
+import usersRouter from "./routes/users.js";
+import batchRouter from "./routes/batch.js";
 
 
 console.log("2. Starting server setup...");
@@ -153,6 +155,8 @@ app.use("/upload", uploadRouter);
 app.use("/welcome", welcomeRouter);
 app.use("/dailychallenge", dailyChallengeRouter);
 app.use("/leaderboard-overall", overallLeaderboardRouter);
+app.use("/users", usersRouter);
+app.use("/batch", batchRouter);
 
 
 

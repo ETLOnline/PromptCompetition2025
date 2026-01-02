@@ -39,6 +39,7 @@ interface Competition {
   isFeatured?: boolean
   location?: string
   prizeMoney?: string
+  level?: string
 }
 
 interface DailyChallenge {
@@ -352,7 +353,14 @@ export default function CompetitionsPage() {
         router.push(`/participant/${competition.id}/results`);
       } else if (isRegistered) {
         await new Promise((resolve) => setTimeout(resolve, 300))
-        router.push(`/participant/${competition.id}`)
+        // Route based on competition level
+        const level = competition.level || "1"
+        console.log("Navigating to competition level:", level)
+        if (level === "Level 2") {
+          router.push(`/participant/${competition.id}/level2`)
+        } else {
+          router.push(`/participant/${competition.id}/level1`)
+        }
       } else {
         // Registration modal is sync, but keep loader for consistency
         showRegistrationConfirmation(competition)
