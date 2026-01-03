@@ -42,7 +42,8 @@ router.post(
     } = req.body;
 
     // Update validation
-    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !systemPrompt || !level || !userEmail || !userFullName) {
+    const isSystemPromptRequired = level !== "Level 2";
+    if (!title || !description || !startDeadline || !endDeadline || !mode || !prizeMoney || !level || !userEmail || !userFullName || (isSystemPromptRequired && !systemPrompt)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -51,12 +52,12 @@ router.post(
       return res.status(400).json({ error: "Venue is required for offline competitions" });
     }
 
-    // NEW VALIDATION: Validate TopN for Level 1
-    if (level === "Level 1" && !TopN) {
-      return res.status(400).json({ error: "TopN is required for Level 1 competitions" });
+    // NEW VALIDATION: Validate TopN for Level 1 and Level 2
+    if ((level === "Level 1" || level === "Level 2") && !TopN) {
+      return res.status(400).json({ error: "TopN is required for Level 1 and Level 2 competitions" });
     }
 
-    if (level === "Level 1" && TopN && (isNaN(TopN) || TopN <= 0)) {
+    if ((level === "Level 1" || level === "Level 2") && TopN && (isNaN(TopN) || TopN <= 0)) {
       return res.status(400).json({ error: "TopN must be a positive number" });
     }
 
@@ -90,8 +91,8 @@ router.post(
         competitionData.venue = venue;
       }
 
-      // NEW: Only add TopN if it exists and level is Level 1
-      if (level === "Level 1" && TopN) {
+      // NEW: Only add TopN if it exists and level is Level 1 or Level 2
+      if ((level === "Level 1" || level === "Level 2") && TopN) {
         competitionData.TopN = TopN;
       }
 
@@ -123,17 +124,17 @@ router.patch(
       updateData.venue = "";  // Set to empty string to clear it
     }
 
-    // NEW VALIDATION: Validate TopN for Level 1
-    if (updateData.level === "Level 1" && updateData.TopN !== undefined && !updateData.TopN) {
-      return res.status(400).json({ error: "TopN is required for Level 1 competitions" });
+    // NEW VALIDATION: Validate TopN for Level 1 and Level 2
+    if ((updateData.level === "Level 1" || updateData.level === "Level 2") && updateData.TopN !== undefined && !updateData.TopN) {
+      return res.status(400).json({ error: "TopN is required for Level 1 and Level 2 competitions" });
     }
 
-    if (updateData.level === "Level 1" && updateData.TopN && (isNaN(updateData.TopN) || updateData.TopN <= 0)) {
+    if ((updateData.level === "Level 1" || updateData.level === "Level 2") && updateData.TopN && (isNaN(updateData.TopN) || updateData.TopN <= 0)) {
       return res.status(400).json({ error: "TopN must be a positive number" });
     }
 
-    // NEW: If changing to non-Level 1, remove TopN from update
-    if (updateData.level && updateData.level !== "Level 1") {
+    // NEW: If changing to non-Level 1 and non-Level 2, remove TopN from update
+    if (updateData.level && updateData.level !== "Level 1" && updateData.level !== "Level 2") {
       updateData.TopN = null;  // Set to null to remove it from database
     }
 
