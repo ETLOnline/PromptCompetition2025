@@ -213,12 +213,21 @@ export default function ParticipantSubmissionDashboard() {
                 {competitionTitle} • {batchName}
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/judge/${competitionId}/level2`)}
-            >
-              Back to Assignments
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/judge/${competitionId}/level2/${batchId}/${participantId}/history`)}
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                View Previous Submissions
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/judge/${competitionId}/level2`)}
+              >
+                Back to Assignments
+              </Button>
+            </div>
           </div>
         </div>
 
