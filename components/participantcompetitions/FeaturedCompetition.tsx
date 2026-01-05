@@ -20,6 +20,7 @@ interface Competition {
   isFeatured?: boolean
   mode?: string
   prizeMoney?: string
+  level?: string
 }
 
 interface FeaturedCompetitionProps {
@@ -98,7 +99,8 @@ export const FeaturedCompetition = ({
     return "Register Now";
   };
 
-  const showButton = status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered);
+  const showButton = (status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered)) &&
+    !(competition.level === "Level 2" && !isRegistered);
 
   return (
     <div className="relative group mb-6 sm:mb-8">
@@ -121,6 +123,12 @@ export const FeaturedCompetition = ({
                     <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
                     <span className="font-bold text-xs sm:text-sm">FEATURED EVENT</span>
                   </Badge>
+                  {competition.level && (
+                    <Badge className="bg-purple-600 text-white border-0 px-3 sm:px-4 py-1 sm:py-1.5 flex items-center gap-1.5 sm:gap-2">
+                      <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="font-bold text-xs sm:text-sm">{competition.level}</span>
+                    </Badge>
+                  )}
                   <Badge className={`${status.color} border font-medium px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm`}>
                     <div className={`w-2 h-2 ${status.dotColor} rounded-full mr-2`}></div>
                     {status.label}

@@ -9,6 +9,8 @@ import { CompetitionStats } from "@/components/Judge/CompetitionStats"
 import { ChallengeList } from "@/components/Judge/ChallengeList"
 import { Notifications } from "@/components/Notifications"
 import type { CompetitionAssignment } from "@/types/judge-submission"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export default function CompetitionPage() {
   const router = useRouter()
@@ -49,6 +51,20 @@ export default function CompetitionPage() {
   const loadAssignment = async (userId: string) => {
     try {
       setIsLoading(true)
+
+      // Check if this is a Level 2 competition and redirect if necessary
+      const competitionRef = doc(db, "competitions", competitionId)
+      const competitionSnap = await getDoc(competitionRef)
+      
+      if (competitionSnap.exists()) {
+        const competitionData = competitionSnap.data()
+        if (competitionData?.level === "Level 2") {
+          // Redirect to Level 2 dashboard
+          router.push(`/judge/${competitionId}/level2`)
+          return
+        }
+      }
+
       const assignmentData = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/assignment/${userId}/${competitionId}`
       )

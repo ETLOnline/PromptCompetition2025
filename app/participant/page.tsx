@@ -17,8 +17,10 @@ import { CompetitionSection } from "@/components/participantcompetitions/competi
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
 import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
+import { AppecHeroBanner } from "@/components/participantcompetitions/AppecHeroBanner"
 // import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
 import { DailyChallengesSection } from "@/components/participantcompetitions/DailyChallengesSection"
+import { CompetitionProgressTimeline } from "@/components/participantcompetitions/CompetitionProgressTimeline"
 import { PageSkeletonLoader } from "@/components/participantcompetitions/page-skeleton-loader"
 import { Spinner } from "@/components/ui/spinner"
 import { fetchDailyChallenges } from "@/lib/api"
@@ -37,6 +39,7 @@ interface Competition {
   isFeatured?: boolean
   location?: string
   prizeMoney?: string
+  level?: string
 }
 
 interface DailyChallenge {
@@ -350,7 +353,14 @@ export default function CompetitionsPage() {
         router.push(`/participant/${competition.id}/results`);
       } else if (isRegistered) {
         await new Promise((resolve) => setTimeout(resolve, 300))
-        router.push(`/participant/${competition.id}`)
+        // Route based on competition level
+        const level = competition.level || "1"
+        console.log("Navigating to competition level:", level)
+        if (level === "Level 2") {
+          router.push(`/participant/${competition.id}/level2`)
+        } else {
+          router.push(`/participant/${competition.id}/level1`)
+        }
       } else {
         // Registration modal is sync, but keep loader for consistency
         showRegistrationConfirmation(competition)
@@ -375,9 +385,10 @@ export default function CompetitionsPage() {
       // Add to featured group if applicable
       if (comp.isFeatured) {
         groups.featured.push(comp)
+        return
       }
       
-      // Also add to status-based group (featured competitions should appear in both)
+      // Add to status-based group
       if (status.status === "ACTIVE") {
         groups.active.push(comp)
       } else if (status.status === "UPCOMING") {
@@ -417,6 +428,7 @@ export default function CompetitionsPage() {
   })
 
   const groupedCompetitions = groupCompetitionsByStatus(filteredCompetitions)
+  const featuredCompetition = groupedCompetitions.featured[0]
 
   useEffect(() => {
     setCurrentPage(1)
@@ -449,13 +461,28 @@ export default function CompetitionsPage() {
         competition={selectedCompetition}
       />
 
-      {showAppecInfo && (
-        <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
-          <AppecInfoBox
-            initiallyVisible={showAppecInfo}
-            onDismiss={() => setShowAppecInfo(false)}
-          />
-        </div>
+      {featuredCompetition ? (
+        <AppecHeroBanner
+          competition={featuredCompetition}
+          status={getCompetitionStatus(featuredCompetition)}
+          startDateTime={formatDateTime(featuredCompetition.startDeadline)}
+          endDateTime={formatDateTime(featuredCompetition.endDeadline)}
+          isRegistered={participantMap[featuredCompetition.id]}
+          isCompleted={completionMap[featuredCompetition.id]}
+          isButtonLoading={loadingMap[featuredCompetition.id]}
+          onButtonClick={handleButtonClick}
+          showInfoBox={showAppecInfo}
+          onInfoBoxDismiss={() => setShowAppecInfo(false)}
+        />
+      ) : (
+        showAppecInfo && (
+          <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
+            <AppecInfoBox
+              initiallyVisible={showAppecInfo}
+              onDismiss={() => setShowAppecInfo(false)}
+            />
+          </div>
+        )
       )}
 
       <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto">
@@ -542,7 +569,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.upcoming.length > 0 && (
                     <CompetitionSection
-                      title="Upcoming Competitions"
+                      title="Trial Competitions"
                       competitions={groupedCompetitions.upcoming}
                       dotColor="bg-blue-400"
                       badgeColor="bg-blue-50 text-blue-700 border-blue-200"
@@ -602,7 +629,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.upcoming.length > 0 && (
                     <CompetitionSection
-                      title="Upcoming Competitions"
+                      title="Trial Competitions"
                       competitions={groupedCompetitions.upcoming}
                       dotColor="bg-blue-400"
                       badgeColor="bg-blue-50 text-blue-700 border-blue-200"

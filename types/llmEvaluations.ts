@@ -19,11 +19,19 @@ export interface Submission {
   promptText: string
   llmScores: LlmEvaluation[]  // transformed from Firestore llmScores object
   userId?: string             // maps to participantId
+  participantId?: string      // participant ID from backend
   metadata?: Record<string, any>
   status?: "pending" | "evaluated" | "scored"
   llmEvaluated?: boolean
   finalScore?: number
   submissionTime?: string
+}
+
+export interface UserProfile {
+  id: string
+  fullName: string
+  email: string
+  photoURL?: string
 }
 
 // ===============================
