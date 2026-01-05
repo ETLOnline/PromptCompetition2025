@@ -125,6 +125,7 @@ export default function LeaderboardPage() {
         const entries: DisplayEntry[] = snap.docs.map((doc) => {
           const data = doc.data() as FinalLeaderboardEntry
           return {
+            id: doc.id, // Participant ID from document ID
             rank: data.rank,
             name: data.fullName,
             llmScore: data.llmScore,
@@ -389,6 +390,7 @@ function LeaderboardContent({
                       topN={selectedCompetition.TopN}
                       competitionTitle={selectedCompetition.title}
                       isLevel1={selectedCompetition.level === "Level 1"}
+                      competitionId={selectedCompetition.competitionId}
                     />
                   </div>
                   <Pagination page={page} setPage={setPage} hasMore={hasMore} loading={loading} />

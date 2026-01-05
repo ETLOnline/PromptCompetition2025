@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Trophy, Medal, Award, Loader2, Filter, X, BarChart3, Users } from "lucide-react"
+import { Search, Trophy, Medal, Award, Loader2, Filter, X, BarChart3, Users, Eye } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SubmissionViewerModal } from "@/components/leaderboard/SubmissionViewerModal"
 
 type SortBy = "rank" | "name" | "score"
 type SortOrder = "asc" | "desc"
@@ -21,6 +22,11 @@ export default function ViewLeaderboardTable({ competitionId }: { competitionId:
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
+  const [selectedParticipant, setSelectedParticipant] = useState<{ id: string; name: string } | null>(null)
+
+  const handleViewSubmissions = (participantId: string, participantName: string) => {
+    setSelectedParticipant({ id: participantId, name: participantName })
+  }
 
   const [debouncedSearch, setDebouncedSearch] = useState("")
   useEffect(() => {
@@ -297,6 +303,7 @@ export default function ViewLeaderboardTable({ competitionId }: { competitionId:
                     <th className="text-left p-4 font-medium text-gray-700">Participant</th>
                     <th className="text-left p-4 font-medium text-gray-700">Email</th>
                     <th className="text-right p-4 font-medium text-gray-700">Score</th>
+                    <th className="text-center p-4 font-medium text-gray-700">View</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -314,13 +321,28 @@ export default function ViewLeaderboardTable({ competitionId }: { competitionId:
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className="font-medium text-gray-900">{entry.fullName}</div>
+                        <button
+                          onClick={() => handleViewSubmissions(entry.id, entry.fullName)}
+                          className="font-medium text-gray-900 hover:text-blue-600 hover:underline transition-colors text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1"
+                        >
+                          {entry.fullName}
+                        </button>
                       </td>
                       <td className="p-4">
                         <div className="text-gray-600 text-sm">{entry.email}</div>
                       </td>
                       <td className="p-4 text-right">
                         <div className="font-semibold text-gray-900 text-lg">{entry.totalScore.toFixed(1)}</div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewSubmissions(entry.id, entry.fullName)}
+                          className="hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -348,6 +370,17 @@ export default function ViewLeaderboardTable({ competitionId }: { competitionId:
             )}
           </Button>
         </div>
+      )}
+      
+      {/* Submission Viewer Modal */}
+      {selectedParticipant && (
+        <SubmissionViewerModal
+          isOpen={!!selectedParticipant}
+          onClose={() => setSelectedParticipant(null)}
+          participantId={selectedParticipant.id}
+          participantName={selectedParticipant.name}
+          competitionId={competitionId}
+        />
       )}
     </div>
   )
