@@ -56,9 +56,12 @@ export function LlmSubmissionList({ challengeId, competitionId }: LlmSubmissionL
       const newParticipantIds = new Set<string>()
       
       newSubmissions.forEach((sub) => {
-        const participantId = sub.participantId || sub.userId || sub.id.split('_')[0]
+        // const participantId = sub.participantId || sub.userId || sub.id.split('_')[0]
+        const participantId = sub.participantId || sub.userId || sub.id.split('_').slice(0, -1).join('_')
+        
         if (participantId && !userLookup[participantId]) {
           newParticipantIds.add(participantId)
+
         }
       })
 
