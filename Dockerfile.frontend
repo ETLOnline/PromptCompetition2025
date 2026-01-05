@@ -54,10 +54,13 @@ COPY lib/ ./lib/
 COPY hooks/ ./hooks/
 COPY public/ ./public/
 COPY styles/ ./styles/
+COPY types/ ./types/
+COPY server/ ./server/
 COPY next.config.mjs ./
 COPY tailwind.config.ts ./
 COPY postcss.config.js ./
 COPY tsconfig.json ./
+COPY next-env.d.ts ./
 COPY components.json ./
 
 # COPY MIDDLEWARE (Critical for Clerk)
