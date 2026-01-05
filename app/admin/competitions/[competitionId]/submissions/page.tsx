@@ -1,10 +1,12 @@
 "use client"
 
 import React from "react"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useState, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { fetchAdminCompetitionSubmissions } from "@/lib/api"
 import { fetchWithAuth } from "@/lib/api"
 import type { Submission } from "@/types/submissions"
@@ -36,6 +38,12 @@ export default function SubmissionsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const router = useRouter()
+  
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [challengeIdFilter, setChallengeIdFilter] = useState<string>("all")
+  const [evaluationFilter, setEvaluationFilter] = useState<string>("all")
 
   useEffect(() => {
     const init = async () => {
@@ -70,6 +78,69 @@ export default function SubmissionsPage() {
       return false
     }
   }
+
+  // Sort and filter submissions
+  const filteredAndSortedSubmissions = useMemo(() => {
+    if (!competitionData?.submissions) return []
+    
+    let filtered = [...competitionData.submissions]
+    
+    // Sort by challenge ID first (ascending)
+    filtered.sort((a, b) => {
+      const challengeA = parseInt(String(a.challengeId)) || 0
+      const challengeB = parseInt(String(b.challengeId)) || 0
+      return challengeA - challengeB
+    })
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(submission => {
+        const name = (submission.user?.fullName || submission.user?.displayName || '').toLowerCase()
+        const email = (submission.user?.email || '').toLowerCase()
+        const userId = (submission.participantId || '').toLowerCase()
+        return name.includes(query) || email.includes(query) || userId.includes(query)
+      })
+    }
+    
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(submission => 
+        (submission.status || 'pending').toLowerCase() === statusFilter.toLowerCase()
+      )
+    }
+    
+    // Apply challenge ID filter
+    if (challengeIdFilter !== "all") {
+      filtered = filtered.filter(submission => 
+        String(submission.challengeId) === challengeIdFilter
+      )
+    }
+    
+    // Apply evaluation filter
+    if (evaluationFilter !== "all") {
+      filtered = filtered.filter(submission => {
+        const hasEvaluation = submission.status === "evaluated" || submission.finalScore !== undefined
+        return evaluationFilter === "evaluated" ? hasEvaluation : !hasEvaluation
+      })
+    }
+    
+    return filtered
+  }, [competitionData, searchQuery, statusFilter, challengeIdFilter, evaluationFilter])
+  
+  // Get unique challenge IDs for filter dropdown
+  const uniqueChallengeIds = useMemo(() => {
+    if (!competitionData?.submissions) return []
+    return Array.from(new Set(competitionData.submissions.map(s => String(s.challengeId)))).sort((a, b) => {
+      return parseInt(a) - parseInt(b)
+    })
+  }, [competitionData])
+  
+  // Get unique statuses for filter dropdown
+  const uniqueStatuses = useMemo(() => {
+    if (!competitionData?.submissions) return []
+    return Array.from(new Set(competitionData.submissions.map(s => s.status || 'pending')))
+  }, [competitionData])
 
   if (loading) return <SubmissionsLoading />
   if (error) return <SubmissionsError error={error} competitionId={competitionId} />
@@ -174,13 +245,137 @@ export default function SubmissionsPage() {
             <div className="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent"></div>
           </div>
 
+          {/* Search and Filter Section */}
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl overflow-hidden mb-6">
+            <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 p-1">
+              <div className="bg-white rounded-xl p-6">
+                <div className="flex items-center space-x-2 mb-4">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <h3 className="text-lg font-bold text-gray-900">Search & Filter</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Search Input */}
+                  <div className="lg:col-span-2">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 block">
+                      Search
+                    </label>
+                    <div className="relative">
+                      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <Input
+                        type="text"
+                        placeholder="Search by name, email, or user ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Challenge ID Filter */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 block">
+                      Challenge ID
+                    </label>
+                    <Select value={challengeIdFilter} onValueChange={setChallengeIdFilter}>
+                      <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <SelectValue placeholder="All Challenges" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Challenges</SelectItem>
+                        {uniqueChallengeIds.map(id => (
+                          <SelectItem key={id} value={id}>Challenge {id}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 block">
+                      Status
+                    </label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <SelectValue placeholder="All Statuses" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {uniqueStatuses.map(status => (
+                          <SelectItem key={status} value={status}>{status}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Evaluation Filter */}
+                  <div className="lg:col-span-2">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2 block">
+                      Evaluation Status
+                    </label>
+                    <Select value={evaluationFilter} onValueChange={setEvaluationFilter}>
+                      <SelectTrigger className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Submissions</SelectItem>
+                        <SelectItem value="evaluated">Evaluated</SelectItem>
+                        <SelectItem value="not-evaluated">Not Evaluated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Clear Filters Button */}
+                  <div className="lg:col-span-2 flex items-end">
+                    <button
+                      onClick={() => {
+                        setSearchQuery("")
+                        setStatusFilter("all")
+                        setChallengeIdFilter("all")
+                        setEvaluationFilter("all")
+                      }}
+                      className="w-full bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Clear Filters</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Results Count */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      Showing <span className="font-bold text-indigo-600">{filteredAndSortedSubmissions.length}</span> of <span className="font-bold">{competitionData.totalCount}</span> submissions
+                    </span>
+                    {(searchQuery || statusFilter !== "all" || challengeIdFilter !== "all" || evaluationFilter !== "all") && (
+                      <span className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold">
+                        Filters Active
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-gray-50 to-white p-1">
               <div className="bg-white rounded-xl">
-                {competitionData.submissions.length === 0 ? (
-                  <EmptySubmissionsState />
+                {filteredAndSortedSubmissions.length === 0 ? (
+                  searchQuery || statusFilter !== "all" || challengeIdFilter !== "all" || evaluationFilter !== "all" ? (
+                    <NoFilterResultsState />
+                  ) : (
+                    <EmptySubmissionsState />
+                  )
                 ) : (
-                  <SubmissionsList submissions={competitionData.submissions} />
+                  <SubmissionsList submissions={filteredAndSortedSubmissions} />
                 )}
               </div>
             </div>
@@ -281,6 +476,23 @@ function EmptySubmissionsState() {
       <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
       <p className="text-gray-500 max-w-md mx-auto">
         There are no submissions for this competition yet. Submissions will appear here once participants start submitting their solutions.
+      </p>
+    </div>
+  )
+}
+
+// --- NO FILTER RESULTS STATE ---
+function NoFilterResultsState() {
+  return (
+    <div className="p-12 text-center">
+      <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">No Results Found</h3>
+      <p className="text-gray-500 max-w-md mx-auto">
+        No submissions match your current search or filter criteria. Try adjusting your filters or clearing them to see more results.
       </p>
     </div>
   )
