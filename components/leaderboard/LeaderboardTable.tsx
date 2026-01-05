@@ -1,9 +1,4 @@
-"use client"
-
-import { useState } from "react"
-import { Trophy, Medal, Award, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { SubmissionViewerModal } from "./SubmissionViewerModal"
+import { Trophy, Medal, Award } from "lucide-react"
 import type { DisplayEntry } from "@/types/leaderboard"
 
 interface LeaderboardTableProps {
@@ -12,19 +7,9 @@ interface LeaderboardTableProps {
   competitionTitle: string
   isLevel1?: boolean
   isLevel2?: boolean
-  competitionId: string
 }
 
-export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = false, isLevel2 = false, competitionId }: LeaderboardTableProps) {
-  const [selectedParticipant, setSelectedParticipant] = useState<{
-    id: string
-    name: string
-  } | null>(null)
-
-  const handleViewSubmissions = (participantId: string, participantName: string) => {
-    setSelectedParticipant({ id: participantId, name: participantName })
-  }
-
+export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = false, isLevel2 = false }: LeaderboardTableProps) {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
@@ -71,9 +56,10 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
   }
 
   return (
-    <>
-      <div className="overflow-hidden w-full">
-        <div className="p-1 sm:p-3">\n          \n          {/* Desktop Table */}
+    <div className="overflow-hidden w-full">
+      <div className="p-1 sm:p-3">
+        
+        {/* Desktop Table */}
         <div className="hidden md:block">
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
@@ -128,14 +114,11 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => handleViewSubmissions(entry.id, entry.name)}
-                            className="flex-1 min-w-0 text-left hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
-                          >
-                            <div className="text-sm font-bold text-gray-900 truncate hover:underline cursor-pointer">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-gray-900 truncate">
                               {entry.name}
                             </div>
-                          </button>
+                          </div>
                           {entry.rank <= topN && (
                             <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide flex-shrink-0">
                               Top {topN}
@@ -175,16 +158,6 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                           {entry.finalScore.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewSubmissions(entry.id, entry.name)}
-                          className="hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -218,31 +191,18 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                     {entry.rank}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {entry.rank <= topN && (
-                    <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide">
-                      Top {topN}
-                    </span>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleViewSubmissions(entry.id, entry.name)}
-                    className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </div>
+                {entry.rank <= topN && (
+                  <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide">
+                    Top {topN}
+                  </span>
+                )}
               </div>
               
-              <button
-                onClick={() => handleViewSubmissions(entry.id, entry.name)}
-                className="w-full text-left mb-3 sm:mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1"
-              >
-                <div className="text-sm sm:text-base font-bold text-gray-900 mb-1 break-words hover:text-blue-600 hover:underline transition-colors">
+              <div className="mb-3 sm:mb-4">
+                <div className="text-sm sm:text-base font-bold text-gray-900 mb-1 break-words">
                   {entry.name}
                 </div>
-              </button>
+              </div>
 
               <div className={`grid ${isLevel2 ? 'grid-cols-2' : 'grid-cols-3'} gap-2 sm:gap-3 text-center`}>
                 {!isLevel2 && (
@@ -321,17 +281,5 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
         </div>
       </div>
     </div>
-      
-    {/* Submission Viewer Modal */}
-    {selectedParticipant && (
-      <SubmissionViewerModal
-        isOpen={!!selectedParticipant}
-        onClose={() => setSelectedParticipant(null)}
-        participantId={selectedParticipant.id}
-        participantName={selectedParticipant.name}
-        competitionId={competitionId}
-      />
-    )}
-  </>
   )
 }

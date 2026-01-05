@@ -2,14 +2,7 @@
 import { db } from './firebase'
 import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from "firebase/firestore"
 
-import type { DisplayEntry, Competition } from "@/types/leaderboard"
-
-// Local LeaderboardEntry type for this file
-interface LeaderboardEntry {
-  participantId: string
-  fullName: string
-  llmScore: number
-}
+import type { DisplayEntry, Competition, LeaderboardEntry } from "@/types/leaderboard"
 
 
 /**
@@ -60,7 +53,6 @@ export async function getLatestCompetition(): Promise<Competition> {
             competitionId: doc.id,
             title: data.title || "Untitled Competition",
             TopN: data.TopN,
-            maxScore: data.maxScore || 100,
             AllJudgeEvaluated: data.AllJudgeEvaluated,
         }
     }, "getLatestCompetition")
@@ -152,7 +144,6 @@ export function calculateFinalScores(
 
   // Add ranks and format for display
   return entriesWithFinalScores.map((entry, index) => ({
-    id: entry.participantId, // Include participant ID for submission viewing
     rank: index + 1,
     name: entry.fullName,
     llmScore: entry.llmScore,
