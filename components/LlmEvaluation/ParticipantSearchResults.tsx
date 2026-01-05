@@ -40,9 +40,9 @@ export function ParticipantSearchResults({
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-1">
-                    {userProfile?.fullName || "Participant"}
+                    {userProfile && userProfile.fullName !== "Unknown User" ? userProfile.fullName : "Participant"}
                   </h3>
-                  {userProfile?.email && (
+                  {userProfile && userProfile.email !== "Not available" && (
                     <p className="text-sm text-gray-600 mb-2">{userProfile.email}</p>
                   )}
                   <Badge variant="outline" className="font-mono text-xs bg-white border-indigo-300 text-indigo-700">

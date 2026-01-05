@@ -15,7 +15,8 @@ interface SubmissionCardProps {
 }
 
 export function SubmissionCard({ submission, userProfile, className = "" }: SubmissionCardProps) {
-  const participantId = submission.participantId || submission.userId || submission.id.split('_')[0]
+  // const participantId = submission.participantId || submission.userId || submission.id.split('_')[0]
+  const participantId = submission.participantId || submission.userId || submission.id.split('_').slice(0, -1).join('_')
 
   return (
     <Card
@@ -29,10 +30,10 @@ export function SubmissionCard({ submission, userProfile, className = "" }: Subm
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-gray-900 truncate">
-              {userProfile?.fullName || "Participant"}
+              {userProfile && userProfile.fullName !== "Unknown User" ? userProfile.fullName : "Participant"}
             </h3>
             <p className="text-xs text-gray-500 truncate mt-0.5">
-              {userProfile?.email || ""}
+              {userProfile && userProfile.email !== "Not available" ? userProfile.email : ""}
             </p>
             <Badge 
               variant="outline" 
