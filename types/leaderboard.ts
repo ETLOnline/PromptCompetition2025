@@ -12,6 +12,7 @@ export interface FinalLeaderboardEntry {
 
 /** Display entry used in the table component */
 export interface DisplayEntry {
+  id: string // Participant ID
   rank: number
   name: string
   llmScore: number
@@ -26,4 +27,5 @@ export interface Competition {
   TopN: number
   maxScore: number 
   level?: string
+  AllJudgeEvaluated?: boolean
 }

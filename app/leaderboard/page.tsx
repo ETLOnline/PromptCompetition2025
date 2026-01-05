@@ -132,6 +132,7 @@ export default function LeaderboardPage() {
           if (isLevel2) {
             // Level 2 structure
             return {
+              id: doc.id, // Participant ID from document ID (for submission viewer)
               rank: data.rank,
               name: data.fullName,
               llmScore: 0, // Level 2 doesn't have LLM scores
@@ -141,6 +142,7 @@ export default function LeaderboardPage() {
           } else {
             // Level 1 structure
             return {
+              id: doc.id, // Participant ID from document ID (for submission viewer)
               rank: data.rank,
               name: data.fullName,
               llmScore: data.llmScore,
@@ -410,6 +412,7 @@ function LeaderboardContent({
                       competitionTitle={selectedCompetition.title}
                       isLevel1={selectedCompetition.level === "Level 1"}
                       isLevel2={selectedCompetition.level === "Level 2"}
+                      competitionId={selectedCompetition.competitionId}
                     />
                   </div>
                   <Pagination page={page} setPage={setPage} hasMore={hasMore} loading={loading} />
