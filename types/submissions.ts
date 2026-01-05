@@ -10,6 +10,9 @@ export interface Submission {
     email: string
     displayName?: string
   }
+  // Evaluation-related fields (may be present depending on submission state)
+  finalScore?: number
+  llmEvaluated?: boolean
 }
 
 export interface CompetitionSubmissions {
