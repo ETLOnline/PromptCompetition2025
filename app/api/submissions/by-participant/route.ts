@@ -35,22 +35,35 @@ export async function GET(req: NextRequest) {
     console.log("✅ Found participant:", participant?.email)
 
     // Fetch all submissions for this participant in this competition
-    // Note: Removed orderBy to avoid requiring composite index
+    // Submissions are stored as subcollections: competitions/{competitionId}/submissions
+    console.log("🔍 Querying submissions subcollection with:")
+    console.log("  - participantId:", participantId)
+    console.log("  - competitionId:", competitionId)
+    
     const submissionsSnapshot = await adminDb
+      .collection("competitions")
+      .doc(competitionId)
       .collection("submissions")
       .where("participantId", "==", participantId)
-      .where("competitionId", "==", competitionId)
       .get()
 
     console.log(`📊 Found ${submissionsSnapshot.docs.length} submissions`)
 
-    // Fetch challenge details for each submission
+    // Fetch challenge details and competition details for each submission
+    const competitionDoc = await adminDb.collection("competitions").doc(competitionId).get()
+    const competitionData = competitionDoc.exists ? competitionDoc.data() : null
+
     const submissions = await Promise.all(
       submissionsSnapshot.docs.map(async (doc: QueryDocumentSnapshot) => {
         const submission = doc.data()
         
-        // Fetch challenge details
-        let challengeTitle = "Unknown Challenge"
+        // Fetch complete challenge details
+        let challengeDetails: any = {
+          title: "Unknown Challenge",
+          description: "",
+          problemStatement: "",
+          guidelines: ""
+        }
         try {
           const challengeDoc = await adminDb
             .collection("challenges")
@@ -58,7 +71,15 @@ export async function GET(req: NextRequest) {
             .get()
           
           if (challengeDoc.exists) {
-            challengeTitle = challengeDoc.data()?.title || "Unknown Challenge"
+            const data = challengeDoc.data()
+            challengeDetails = {
+              title: data?.title || "Unknown Challenge",
+              description: data?.description || "",
+              problemStatement: data?.problemStatement || "",
+              guidelines: data?.guidelines || "",
+              difficulty: data?.difficulty,
+              points: data?.points
+            }
           }
         } catch (error) {
           console.error(`Error fetching challenge ${submission.challengeId}:`, error)
@@ -67,16 +88,23 @@ export async function GET(req: NextRequest) {
         return {
           id: doc.id,
           challengeId: submission.challengeId,
-          challengeTitle,
+          challengeTitle: challengeDetails.title,
+          challengeDescription: challengeDetails.description,
+          challengeProblemStatement: challengeDetails.problemStatement,
+          challengeGuidelines: challengeDetails.guidelines,
+          challengeDifficulty: challengeDetails.difficulty,
+          challengePoints: challengeDetails.points,
           participantId: submission.participantId,
           participantName: participant?.name || participant?.displayName || participant?.email || "Unknown",
           participantEmail: participant?.email || "No email",
-          submittedPrompt: submission.submittedPrompt,
+          submittedPrompt: submission.promptText || submission.submittedPrompt || "",
           llmScore: submission.llmScore,
           judgeScore: submission.judgeScore,
           finalScore: submission.finalScore,
           submittedAt: submission.submittedAt,
-          evaluationStatus: submission.evaluationStatus || "pending"
+          evaluationStatus: submission.evaluationStatus || "pending",
+          competitionTitle: competitionData?.title || "Unknown Competition",
+          competitionId: competitionId
         }
       })
     )
