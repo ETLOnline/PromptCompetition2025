@@ -167,8 +167,11 @@ llmRouter.get(
 
       const submissions = snapshot.docs.map((doc) => {
         const data = doc.data();
+        const participantId = data.participantId || doc.id.split('_').slice(0, -1).join('_');
+
         return {
           id: doc.id,
+          participantId,
           challengeId,
           promptText: data.promptText || "",
           llmScores: data.llmScores
