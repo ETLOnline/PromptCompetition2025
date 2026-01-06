@@ -28,8 +28,8 @@ export default function Navbar() {
     { label: "About", href: "/about" },
     { label: "Tutorials", href: "/tutorial" },
     { label: "Rules", href: "/rules" },
+    { label: "Leaderboard", href: "/leaderboard" },
     { label: "Judges", href: "/judge-info" },
-    // { label: "Leaderboard", href: "/leaderboard" },
     { label: "Sponsors", href: "/sponsors" },
   ]
 

@@ -526,7 +526,7 @@ export default function CompetitionsPage() {
                   />
 
                   <CompetitionSection
-                    title="Ended Competitions"
+                    title="Past competition"
                     competitions={groupedCompetitions.ended}
                     dotColor="bg-gray-400"
                     badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -587,7 +587,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
-                      title="Ended Competitions"
+                      title="Past competition"
                       competitions={groupedCompetitions.ended}
                       dotColor="bg-gray-400"
                       badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -654,7 +654,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
-                      title="Ended Competitions"
+                      title="Past competition"
                       competitions={groupedCompetitions.ended}
                       dotColor="bg-gray-400"
                       badgeColor="bg-gray-50 text-gray-600 border-gray-200"
