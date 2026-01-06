@@ -384,3 +384,23 @@ export const fetchLevel2JudgeProgress = async (
     method: "GET",
   }, getToken);
 };
+
+// Fetch all previous submissions for a participant across all competitions
+export const fetchParticipantSubmissionHistory = async (
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/judge/participant-submission-history/${participantId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch participant details
+export const fetchParticipantDetails = async (
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/participants/${participantId}`, {
+    method: "GET",
+  }, getToken);
+};
