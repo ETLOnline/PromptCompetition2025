@@ -133,54 +133,38 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <ParticipantBreadcrumb />
-        
-        {/* Header Section */}
-        <div className="mt-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#0f172a] to-[#f59e0b] px-8 py-6">
-              <div className="flex items-center justify-between">
+      <ParticipantBreadcrumb />
+      
+      {/* Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mx-4 sm:mx-6 lg:mx-8 mt-6 mb-8">
+        <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 rounded-t-2xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-white mb-2">
-                    Competition Leaderboard
-                  </h1>
-                  <p className="text-blue-100 text-lg font-medium">
-                    {competition.title}
-                  </p>
-                </div>
-                <div className="hidden sm:flex items-center gap-3">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
-                    <p className="text-white text-sm font-medium">Competition Ended</p>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Leaderboard</h1>
+                  {competition && (
+                    <p className="text-lg text-gray-600 mb-1">{competition.title}</p>
+                  )}
+                  <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-200">
+                      {competitionLevel === "Level 1" ? "Level 1 - LLM Evaluation" : 
+                       competitionLevel === "Level 2" ? "Level 2 - Human Judge Evaluation" : 
+                       "Custom Evaluation"}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <div className="sm:hidden mt-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30 inline-block">
-                  <p className="text-white text-sm font-medium">Competition Ended</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Stats Bar (Optional) */}
-            <div className="bg-gradient-to-r from-gray-50 to-white px-8 py-4 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-medium">Final rankings and scores</span>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Leaderboard Content */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <CompetitionLeaderboard
-            competitionId={competitionId as string}
-            competitionLevel={competitionLevel}
-          />
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <CompetitionLeaderboard
+          competitionId={competitionId as string}
+          competitionLevel={competitionLevel}
+        />
       </div>
     </div>
   )

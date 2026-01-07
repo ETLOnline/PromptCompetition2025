@@ -11,6 +11,7 @@ import { doc, getDoc } from "firebase/firestore"
 import ResultsLevel1 from "./ResultsLevel1"
 import ResultsLevel2 from "./ResultsLevel2"
 import ResultsCustom from "./ResultsCustom"
+import CompetitionLeaderboard from "@/components/results/CompetitionLeaderboard"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 interface Submission {
@@ -239,50 +240,48 @@ export default function ResultsPage() {
   // No submissions state
   if (!submissions.length) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <ParticipantBreadcrumb />
-          
-          <div className="mt-6 mb-8">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-[#0f172a] to-[#f59e0b] px-8 py-6">
-                <div className="flex items-center justify-between">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+        <ParticipantBreadcrumb />
+        
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mx-4 sm:mx-6 lg:mx-8 mt-6 mb-8">
+          <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 rounded-t-2xl">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-6">
                   <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">
-                      Competition Results
-                    </h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
                     {competition && (
-                      <p className="text-blue-100 text-lg font-medium">
-                        {competition.title}
-                      </p>
+                      <p className="text-lg text-gray-600 mb-1">{competition.title}</p>
                     )}
-                  </div>
-                  <div className="hidden sm:flex items-center gap-3">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
-                      <p className="text-white text-sm font-medium">Final Results</p>
+                    <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-200">
+                        {competitionLevel === "Level 1" ? "Level 1 - LLM Evaluation" : 
+                         competitionLevel === "Level 2" ? "Level 2 - Human Judge Evaluation" : 
+                         "Custom Evaluation"}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="sm:hidden mt-4">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30 inline-block">
-                    <p className="text-white text-sm font-medium">Final Results</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Stats Bar (Optional) */}
-              <div className="bg-gradient-to-r from-gray-50 to-white px-8 py-4 border-t border-gray-100">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  onClick={() => {
+                    const element = document.getElementById('competition-leaderboard');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2 bg-transparent hover:bg-gray-50 rounded-xl transition-all duration-200 border border-gray-300 text-sm font-medium flex items-center gap-2 text-gray-700 hover:text-gray-900"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="font-medium">Your submission results and scores</span>
-                </div>
+                  Go to Leaderboard
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
             <div className="p-12 text-center space-y-6">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl mb-2">
                 <AlertCircle className="h-10 w-10 text-blue-600" />
@@ -304,6 +303,9 @@ export default function ResultsPage() {
               </div>
             </div>
           </div>
+
+          {/* Competition Leaderboard */}
+          <CompetitionLeaderboard competitionId={competitionId as string} competitionLevel={competitionLevel || "Level 1"} />
         </div>
       </div>
     )

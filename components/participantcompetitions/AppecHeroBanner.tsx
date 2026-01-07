@@ -116,7 +116,7 @@ export function AppecHeroBanner({
                     <div className="flex items-center gap-2 text-center sm:text-left">
                       <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
                       <span className="text-xs sm:text-sm text-gray-600 leading-snug">
-                        Registration <span className="font-semibold text-emerald-600">open now</span> • Click on register in the featured competitions section below
+                        Registration <span className="font-semibold text-emerald-600">open now</span> • Click on register in the featured competitions section above
                       </span>
                     </div>
                     <Link
