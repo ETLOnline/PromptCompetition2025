@@ -11,6 +11,7 @@ import { doc, getDoc } from "firebase/firestore"
 import ResultsLevel1 from "./ResultsLevel1"
 import ResultsLevel2 from "./ResultsLevel2"
 import ResultsCustom from "./ResultsCustom"
+import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 interface Submission {
   id?: string
@@ -95,13 +96,13 @@ export default function ResultsPage() {
 
         setCompetition({ ...competition, level })
         setSubmissions(submissions)
-        console.log("Fetched submissions:", submissions)
-        console.log("Competition level:", level)
+        // console.log("Fetched submissions:", submissions)
+        // console.log("Competition level:", level)
 
         // Fetch user overall stats from finalLeaderboard
         if (userId) {
           try {
-            const leaderboardRef = doc(db, "competitions", competitionId, "finalleaderboard", userId)
+            const leaderboardRef = doc(db, "competitions", competitionId, "finalLeaderboard", userId)
             const leaderboardSnap = await getDoc(leaderboardRef)
             if (leaderboardSnap.exists()) {
               const data = leaderboardSnap.data()
@@ -239,47 +240,67 @@ export default function ResultsPage() {
   if (!submissions.length) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-        <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex items-start gap-6">
-              <button
-                onClick={() => router.back()}
-                className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
-                {competition && (
-                  <p className="text-lg text-gray-600">{competition.title}</p>
-                )}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <ParticipantBreadcrumb />
+          
+          <div className="mt-6 mb-8">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#0f172a] to-[#f59e0b] px-8 py-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">
+                      Competition Results
+                    </h1>
+                    {competition && (
+                      <p className="text-blue-100 text-lg font-medium">
+                        {competition.title}
+                      </p>
+                    )}
+                  </div>
+                  <div className="hidden sm:flex items-center gap-3">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
+                      <p className="text-white text-sm font-medium">Final Results</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="sm:hidden mt-4">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30 inline-block">
+                    <p className="text-white text-sm font-medium">Final Results</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Stats Bar (Optional) */}
+              <div className="bg-gradient-to-r from-gray-50 to-white px-8 py-4 border-t border-gray-100">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium">Your submission results and scores</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-12 text-center space-y-6">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl mb-2">
-                  <AlertCircle className="h-10 w-10 text-blue-600" />
-                </div>
-                <div className="space-y-3">
-                  <h2 className="text-2xl font-bold text-gray-900">No Submissions Yet</h2>
-                  <p className="text-gray-600 max-w-md mx-auto">
-                    You haven't submitted any solutions for this competition yet.
-                  </p>
-                </div>
-                <div className="pt-6">
-                  <button
-                    onClick={() => router.back()}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mx-auto"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Go Back
-                  </button>
-                </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-12 text-center space-y-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl mb-2">
+                <AlertCircle className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-gray-900">No Submissions Yet</h2>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  You haven't submitted any solutions for this competition yet.
+                </p>
+              </div>
+              <div className="pt-6">
+                <button
+                  onClick={() => router.back()}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mx-auto"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Go Back
+                </button>
               </div>
             </div>
           </div>

@@ -116,7 +116,7 @@ export default function LeaderboardPage() {
     try {
       // Determine collection path based on competition level
       const isLevel2 = selectedCompetition?.level === "Level 2"
-      const collectionPath = isLevel2 ? "finalleaderboard" : "finalLeaderboard"
+      const collectionPath = "finalLeaderboard"
       
       const leaderboardRef = collection(db, `competitions/${competitionId}/${collectionPath}`)
       let q = query(leaderboardRef, orderBy("rank", "asc"), limit(PAGE_SIZE))
@@ -168,7 +168,7 @@ export default function LeaderboardPage() {
   const fetchParticipantsCount = async (competitionId: string) => {
     try {
       const isLevel2 = selectedCompetition?.level === "Level 2"
-      const collectionPath = isLevel2 ? "finalleaderboard" : "finalLeaderboard"
+      const collectionPath =  "finalLeaderboard"
       
       const leaderboardRef = collection(db, `competitions/${competitionId}/${collectionPath}`)
       const snap = await getDocs(leaderboardRef)

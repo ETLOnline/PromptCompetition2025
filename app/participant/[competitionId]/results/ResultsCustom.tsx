@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { Trophy, Clock, AlertCircle, FileX, ChevronDown, ChevronUp, ArrowLeft, Eye, User, Sparkles } from "lucide-react"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import CompetitionLeaderboard from "@/components/results/CompetitionLeaderboard"
+import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 interface LLMScore {
   description: string
@@ -217,29 +219,43 @@ export default function ResultsCustom({ submissions, competition, userOverallSta
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+      <ParticipantBreadcrumb />
+      
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-6">
-              <button
-                onClick={() => router.back()}
-                className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
-                {competition && (
-                  <p className="text-lg text-gray-600 mb-1">{competition.title}</p>
-                )}
-                <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                  <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 rounded-full font-medium border border-purple-200">
-                    Custom - Combined Evaluation
-                  </span>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mx-4 sm:mx-6 lg:mx-8 mt-6 mb-8">
+        <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 rounded-t-2xl">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-6">
+                <button
+                  onClick={() => router.back()}
+                  className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
+                >
+                  <ArrowLeft className="h-5 w-5 text-gray-600" />
+                </button>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
+                  {competition && (
+                    <p className="text-lg text-gray-600 mb-1">{competition.title}</p>
+                  )}
+                  <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-200">
+                      Combined Results - LLM & Judge Evaluation
+                    </span>
+                  </div>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  const element = document.getElementById('competition-leaderboard');
+                  element?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 bg-transparent hover:bg-gray-50 rounded-xl transition-all duration-200 border border-gray-300 text-sm font-medium flex items-center gap-2 text-gray-700 hover:text-gray-900"
+              >
+                <Trophy className="h-4 w-4" />
+                Go to Leaderboard
+              </button>
             </div>
           </div>
         </div>
@@ -631,6 +647,9 @@ export default function ResultsCustom({ submissions, competition, userOverallSta
             })}
           </div>
         </div>
+
+        {/* Competition Leaderboard */}
+        <CompetitionLeaderboard competitionId={competitionId} competitionLevel="Custom" />
       </div>
     </div>
   )

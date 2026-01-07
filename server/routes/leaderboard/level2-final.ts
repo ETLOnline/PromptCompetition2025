@@ -177,7 +177,7 @@ export async function generateLevel2FinalLeaderboard(
     const leaderboardRef = db
       .collection("competitions")
       .doc(competitionId)
-      .collection("finalleaderboard");
+      .collection("finalLeaderboard");
 
     // Delete existing leaderboard entries
     const existingLeaderboard = await leaderboardRef.get();

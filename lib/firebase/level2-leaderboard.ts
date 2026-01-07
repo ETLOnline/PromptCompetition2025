@@ -32,7 +32,7 @@ export async function getLevel2LeaderboardEntries(
 ): Promise<{ entries: Level2LeaderboardEntry[]; lastDoc: DocumentSnapshot | null }> {
   try {
     let q: Query<DocumentData> = query(
-      collection(db, "competitions", competitionId, "finalleaderboard"),
+      collection(db, "competitions", competitionId, "finalLeaderboard"),
       orderBy("rank", "asc"),
       limit(pageSize)
     )
@@ -66,7 +66,7 @@ export async function getLevel2LeaderboardEntries(
 
 export async function getLevel2LeaderboardCount(competitionId: string): Promise<number> {
   try {
-    const snapshot = await getDocs(collection(db, "competitions", competitionId, "finalleaderboard"))
+    const snapshot = await getDocs(collection(db, "competitions", competitionId, "finalLeaderboard"))
     return snapshot.size
   } catch (error) {
     console.error("Error getting Level 2 leaderboard count:", error)

@@ -46,6 +46,12 @@ export default function ParticipantBreadcrumb() {
   const isLevel1 = pathname?.includes('/level1');
   const isLevel2 = pathname?.includes('/level2');
 
+  // Check if we're on leaderboard route
+  const isLeaderboard = pathname?.includes('/leaderboard');
+
+  // Check if we're on results route
+  const isResults = pathname?.includes('/results');
+
   useEffect(() => {
     let mounted = true;
     async function loadNames() {
@@ -149,7 +155,17 @@ export default function ParticipantBreadcrumb() {
       label: truncate(competitionName || "Competition", 18),
       href: `/participant/${params.competitionId}`,
     });
-    if (params.challengeId) {
+    if (isLeaderboard) {
+      items.push({
+        label: "Leaderboard",
+        isCurrent: true,
+      });
+    } else if (isResults) {
+      items.push({
+        label: "Results",
+        isCurrent: true,
+      });
+    } else if (params.challengeId) {
       items.push({
         label: truncate(challengeName || "Challenge", 18),
         isCurrent: true,

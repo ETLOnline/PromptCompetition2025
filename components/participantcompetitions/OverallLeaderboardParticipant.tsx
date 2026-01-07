@@ -192,7 +192,7 @@ export const OverallLeaderboardParticipant = ({ topN = 10 }: Props) => {
           <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg bg-[#0f172a] shadow-lg flex-shrink-0">
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-white" />
           </div>
-          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Overall Leaderboard</h3>
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Overall Daily Challenge Leaderboard</h3>
           <Badge className="bg-[#0f172a] text-white border-0 font-medium text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1">Global</Badge>
         </div>
         <p className="text-xs sm:text-sm text-gray-600 pl-0 sm:pl-11 md:pl-13">
