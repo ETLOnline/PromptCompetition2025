@@ -42,6 +42,9 @@ interface AppecHeroBannerProps {
   showInfoBox?: boolean
   onInfoBoxDismiss?: () => void
   
+  // Progress Timeline Control
+  showProgressTimeline?: boolean
+  
   // Extensibility: Allow passing children to render additional banners if needed
   children?: React.ReactNode
 }
@@ -71,6 +74,7 @@ export function AppecHeroBanner({
   onButtonClick,
   showInfoBox = true,
   onInfoBoxDismiss,
+  showProgressTimeline = true,
   children
 }: AppecHeroBannerProps) {
   
@@ -86,10 +90,12 @@ export function AppecHeroBanner({
           />
         )}
         
-        {/* Competition Progress Timeline */}
-        <div className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 ${showInfoBox ? 'mt-6 sm:mt-8' : ''}`}>
-          <CompetitionProgressTimeline />
-        </div>
+        {/* Competition Progress Timeline - Conditionally rendered */}
+        {showProgressTimeline && (
+          <div className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 ${showInfoBox ? 'mt-6 sm:mt-8' : ''}`}>
+            <CompetitionProgressTimeline />
+          </div>
+        )}
 
         {/* Featured Competition */}
         <div className="mt-6 sm:mt-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">

@@ -446,7 +446,33 @@ export default function CompetitionsPage() {
   })
 
   const groupedCompetitions = groupCompetitionsByStatus(filteredCompetitions)
-  const featuredCompetition = groupedCompetitions.featured[0]
+  
+  // Sort featured competitions by status and time
+  const sortedFeaturedCompetitions = groupedCompetitions.featured.sort((a, b) => {
+    const statusA = getCompetitionStatus(a)
+    const statusB = getCompetitionStatus(b)
+    
+    // Priority order: ACTIVE > UPCOMING > ENDED
+    const statusPriority = { ACTIVE: 0, UPCOMING: 1, ENDED: 2 }
+    const priorityA = statusPriority[statusA.status as keyof typeof statusPriority] ?? 3
+    const priorityB = statusPriority[statusB.status as keyof typeof statusPriority] ?? 3
+    
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB
+    }
+    
+    // Within same status, sort by time
+    const dateA = new Date(a.startDeadline?.seconds * 1000 || a.startDeadline).getTime()
+    const dateB = new Date(b.startDeadline?.seconds * 1000 || b.startDeadline).getTime()
+    
+    if (statusA.status === "UPCOMING") {
+      // For upcoming: soonest first
+      return dateA - dateB
+    } else {
+      // For active and ended: newest first
+      return dateB - dateA
+    }
+  })
 
   useEffect(() => {
     setCurrentPage(1)
@@ -479,19 +505,25 @@ export default function CompetitionsPage() {
         competition={selectedCompetition}
       />
 
-      {featuredCompetition ? (
-        <AppecHeroBanner
-          competition={featuredCompetition}
-          status={getCompetitionStatus(featuredCompetition)}
-          startDateTime={formatDateTime(featuredCompetition.startDeadline)}
-          endDateTime={formatDateTime(featuredCompetition.endDeadline)}
-          isRegistered={participantMap[featuredCompetition.id]}
-          isCompleted={completionMap[featuredCompetition.id]}
-          isButtonLoading={loadingMap[featuredCompetition.id]}
-          onButtonClick={handleButtonClick}
-          showInfoBox={showAppecInfo}
-          onInfoBoxDismiss={() => setShowAppecInfo(false)}
-        />
+      {sortedFeaturedCompetitions.length > 0 ? (
+        <div className="space-y-6">
+          {sortedFeaturedCompetitions.map((featuredComp, index) => (
+            <AppecHeroBanner
+              key={featuredComp.id}
+              competition={featuredComp}
+              status={getCompetitionStatus(featuredComp)}
+              startDateTime={formatDateTime(featuredComp.startDeadline)}
+              endDateTime={formatDateTime(featuredComp.endDeadline)}
+              isRegistered={participantMap[featuredComp.id]}
+              isCompleted={completionMap[featuredComp.id]}
+              isButtonLoading={loadingMap[featuredComp.id]}
+              onButtonClick={handleButtonClick}
+              showInfoBox={index === 0 && showAppecInfo}
+              onInfoBoxDismiss={() => setShowAppecInfo(false)}
+              showProgressTimeline={index === 0}
+            />
+          ))}
+        </div>
       ) : (
         showAppecInfo && (
           <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
