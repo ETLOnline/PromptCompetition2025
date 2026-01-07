@@ -40,6 +40,7 @@ interface Competition {
   location?: string
   prizeMoney?: string
   level?: string
+  hasFinalLeaderboard?: boolean
 }
 
 interface DailyChallenge {
@@ -347,10 +348,15 @@ export default function CompetitionsPage() {
     const isRegistered = participantMap[competition.id]
     const status = getCompetitionStatus(competition)
     try {
-      if (status.status === "ENDED" && isRegistered) {
-        // Simulate async navigation for loader effect
+      if (status.status === "ENDED") {
+        // Registered users see results, non-registered users see leaderboard
+        const isRegistered = participantMap[competition.id]
         await new Promise((resolve) => setTimeout(resolve, 300))
-        router.push(`/participant/${competition.id}/results`);
+        if (isRegistered) {
+          router.push(`/participant/${competition.id}/results`)
+        } else {
+          router.push(`/participant/${competition.id}/leaderboard`)
+        }
       } else if (isRegistered) {
         await new Promise((resolve) => setTimeout(resolve, 300))
         // Route based on competition level
@@ -394,11 +400,8 @@ export default function CompetitionsPage() {
       } else if (status.status === "UPCOMING") {
         groups.upcoming.push(comp)
       } else if (status.status === "ENDED") {
-        const isRegistered = participantMap[comp.id]
-        const isCompleted = completionMap[comp.id]
-        if (isRegistered || isCompleted) {
-          groups.ended.push(comp)
-        }
+        // Always show ended competitions (both registered and non-registered users can view results)
+        groups.ended.push(comp)
       }
     })
 
@@ -411,7 +414,17 @@ export default function CompetitionsPage() {
 
     groups.active.sort(sortByDate)
     groups.upcoming.sort(sortByDate)
-    groups.ended.sort(sortByDate)
+    groups.ended.sort((a, b) => {
+      const isRegisteredA = participantMap[a.id]
+      const isRegisteredB = participantMap[b.id]
+
+      // Prioritize registered competitions first
+      if (isRegisteredA && !isRegisteredB) return -1
+      if (!isRegisteredA && isRegisteredB) return 1
+
+      // If both have same registration status, sort by date
+      return sortByDate(a, b)
+    })
 
     return groups
   }
@@ -419,10 +432,15 @@ export default function CompetitionsPage() {
   const filteredCompetitions = competitions.filter((comp: Competition) => {
     // First check if the competition is active
     if (comp.isActive === false) return false
-    
+
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
+
     const status = getCompetitionStatus(comp)
+
+    // Check if competition has final leaderboard (only for ended competitions)
+    if (status.status === "ENDED" && comp.hasFinalLeaderboard === false) return false
+
     if (filterStatus === "all") return status.status !== "INACTIVE"
     return status.status.toLowerCase() === filterStatus.toLowerCase()
   })
@@ -526,7 +544,7 @@ export default function CompetitionsPage() {
                   />
 
                   <CompetitionSection
-                    title="Ended Competitions"
+                    title="Past competition"
                     competitions={groupedCompetitions.ended}
                     dotColor="bg-gray-400"
                     badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -587,7 +605,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
-                      title="Ended Competitions"
+                      title="Past competition"
                       competitions={groupedCompetitions.ended}
                       dotColor="bg-gray-400"
                       badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -654,7 +672,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
-                      title="Ended Competitions"
+                      title="Past competition"
                       competitions={groupedCompetitions.ended}
                       dotColor="bg-gray-400"
                       badgeColor="bg-gray-50 text-gray-600 border-gray-200"
