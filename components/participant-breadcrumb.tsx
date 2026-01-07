@@ -151,10 +151,6 @@ export default function ParticipantBreadcrumb() {
   }
   // Handle regular competition routes (fallback)
   else if (params.competitionId) {
-    items.push({
-      label: truncate(competitionName || "Competition", 18),
-      href: `/participant/${params.competitionId}`,
-    });
     if (isLeaderboard) {
       items.push({
         label: "Leaderboard",
@@ -165,13 +161,19 @@ export default function ParticipantBreadcrumb() {
         label: "Results",
         isCurrent: true,
       });
-    } else if (params.challengeId) {
-      items.push({
-        label: truncate(challengeName || "Challenge", 18),
-        isCurrent: true,
-      });
     } else {
-      items[items.length - 1].isCurrent = true;
+      items.push({
+        label: truncate(competitionName || "Competition", 18),
+        href: `/participant/${params.competitionId}`,
+      });
+      if (params.challengeId) {
+        items.push({
+          label: truncate(challengeName || "Challenge", 18),
+          isCurrent: true,
+        });
+      } else {
+        items[items.length - 1].isCurrent = true;
+      }
     }
   } else {
     items[0].isCurrent = true;

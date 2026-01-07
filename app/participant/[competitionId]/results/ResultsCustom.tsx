@@ -228,12 +228,6 @@ export default function ResultsCustom({ submissions, competition, userOverallSta
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-6">
-                <button
-                  onClick={() => router.back()}
-                  className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
-                >
-                  <ArrowLeft className="h-5 w-5 text-gray-600" />
-                </button>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
                   {competition && (
