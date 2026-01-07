@@ -99,7 +99,9 @@ export const FeaturedCompetition = ({
     return "Register Now";
   };
 
-  const showButton = status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED";
+  const showButton =
+    (status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED") &&
+    !(competition.level === "Level 2" && !isRegistered);
 
   return (
     <div className="relative group mb-6 sm:mb-8">
@@ -267,7 +269,7 @@ export const FeaturedCompetition = ({
                       <p className="text-xs sm:text-sm font-bold uppercase tracking-wider">Competition is Active!</p>
                     </div>
                     <p className="text-xs sm:text-sm font-semibold">
-                      The competition has started. Register now to participate and showcase your skills!
+                      The competition has started. Participate and showcase your skills!
                     </p>
                   </div>
                 </div>

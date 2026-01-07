@@ -50,7 +50,8 @@ export const CompetitionCard = ({
   onButtonClick,
 }: CompetitionCardProps) => {
   const showButton =
-    status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED";
+    (status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED") &&
+    !(competition.level === "Level 2" && !isRegistered);
 
   const isFeatured = competition.isFeatured || false;
   const targetDate = new Date(competition.startDeadline?.seconds * 1000 || competition.startDeadline);
