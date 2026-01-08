@@ -452,3 +452,14 @@ export const fetchEmailRecord = async (
     method: "GET",
   }, getToken);
 };
+
+//-------------------------------------------------------
+//------------ Level 2 live competition data  ----------
+//-------------------------------------------------------
+
+// Fetch Level 2 live competition data (participants, batches, judges)
+export const fetchLevel2LiveData = async (competitionId: string) => {
+  const res = await fetch(`${API_URL}/level2-live/${competitionId}`);
+  if (!res.ok) throw new Error("Failed to fetch Level 2 live data");
+  return res.json();
+};

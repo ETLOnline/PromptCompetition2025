@@ -12,6 +12,7 @@ import { useAuth } from "@/components/auth-provider"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 import { RegistrationModal } from "@/components/participantcompetitions/registration-modal"
+import { Level2ContinueModal } from "@/components/participantcompetitions/level2-continue-modal"
 // import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
 import { CompetitionSection } from "@/components/participantcompetitions/competition-section"
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
@@ -87,6 +88,10 @@ export default function CompetitionsPage() {
 
   // View Details Modal States
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+
+  // Level 2 Continue Modal States
+  const [showLevel2ContinueModal, setShowLevel2ContinueModal] = useState(false)
+  const [level2TargetCompetition, setLevel2TargetCompetition] = useState<Competition | null>(null)
 
   // Filtering and Pagination States
   const [searchTerm, setSearchTerm] = useState("")
@@ -347,6 +352,8 @@ export default function CompetitionsPage() {
     setLoadingMap((prev) => ({ ...prev, [competition.id]: true }))
     const isRegistered = participantMap[competition.id]
     const status = getCompetitionStatus(competition)
+    const isLevel2 = competition.level === "Level 2"
+    
     try {
       if (status.status === "ENDED") {
         // Registered users see results, non-registered users see leaderboard
@@ -358,13 +365,18 @@ export default function CompetitionsPage() {
           router.push(`/participant/${competition.id}/leaderboard`)
         }
       } else if (isRegistered) {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        // Route based on competition level
-        const level = competition.level || "1"
-        console.log("Navigating to competition level:", level)
-        if (level === "Level 2") {
-          router.push(`/participant/${competition.id}/level2`)
+        // Special handling for Level 2 registered users
+        if (isLevel2) {
+          // Show modal and prefetch the route
+          setLevel2TargetCompetition(competition)
+          setShowLevel2ContinueModal(true)
+          // Prefetch the Level 2 route in background
+          router.prefetch(`/participant/${competition.id}/level2`)
+          // Remove loading state since modal is now open
+          setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
         } else {
+          // Level 1 - navigate directly
+          await new Promise((resolve) => setTimeout(resolve, 300))
           router.push(`/participant/${competition.id}/level1`)
         }
       } else {
@@ -372,8 +384,40 @@ export default function CompetitionsPage() {
         showRegistrationConfirmation(competition)
       }
     } finally {
-      // Remove loading state after navigation/modal
-      setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
+      // Remove loading state after navigation/modal (only for non-Level 2 cases)
+      if (!(isRegistered && isLevel2)) {
+        setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
+      }
+    }
+  }
+
+  const handleLevel2Continue = async () => {
+    if (!level2TargetCompetition) return
+    
+    try {
+      // Set loading state for the modal button
+      setLoadingMap((prev) => ({ ...prev, [level2TargetCompetition.id]: true }))
+      
+      // Small delay for smooth UX
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      
+      // Navigate to the prefetched route
+      router.push(`/participant/${level2TargetCompetition.id}/level2`)
+      
+      // Close modal
+      setShowLevel2ContinueModal(false)
+      setLevel2TargetCompetition(null)
+    } catch (error) {
+      console.error("Error navigating to Level 2:", error)
+      toast({
+        title: "Navigation failed",
+        description: "Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      if (level2TargetCompetition) {
+        setLoadingMap((prev) => ({ ...prev, [level2TargetCompetition.id]: false }))
+      }
     }
   }
 
@@ -503,6 +547,21 @@ export default function CompetitionsPage() {
           setSelectedCompetition(null)
         }}
         competition={selectedCompetition}
+      />
+      <Level2ContinueModal
+        isOpen={showLevel2ContinueModal}
+        onClose={() => {
+          setShowLevel2ContinueModal(false)
+          setLevel2TargetCompetition(null)
+          // Remove loading state when modal is closed
+          if (level2TargetCompetition) {
+            setLoadingMap((prev) => ({ ...prev, [level2TargetCompetition.id]: false }))
+          }
+        }}
+        onConfirm={handleLevel2Continue}
+        competitionTitle={level2TargetCompetition?.title || ""}
+        competitionId={level2TargetCompetition?.id || ""}
+        isLoading={level2TargetCompetition ? loadingMap[level2TargetCompetition.id] || false : false}
       />
 
       {sortedFeaturedCompetitions.length > 0 ? (

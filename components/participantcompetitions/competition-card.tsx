@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +51,7 @@ export const CompetitionCard = ({
   onCardClick,
   onButtonClick,
 }: CompetitionCardProps) => {
+  const router = useRouter()
   const showButton =
     (status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED") &&
     !(competition.level === "Level 2" && !isRegistered);
@@ -57,15 +60,48 @@ export const CompetitionCard = ({
   const targetDate = new Date(competition.startDeadline?.seconds * 1000 || competition.startDeadline);
   const countdown = useCountdownTimer(targetDate);
 
+  const isLevel2 = competition.level === "Level 2";
+
   const getButtonText = () => {
+    if (isLevel2) {
+      if (status.status === "ENDED") return "View Results";
+      if (status.status === "ACTIVE" && !isRegistered) return "View Live";
+      if (isRegistered) return isCompleted ? "View Results" : "Continue";
+      return "Not Qualified"; // Fallback
+    }
+
     if (status.status === "ENDED") return "View Results";
     if (isRegistered) return isCompleted ? "View Results" : "Continue";
     return isFeatured ? "Register Now" : "Register";
   };
 
   const getButtonIcon = () => {
+    if (isLevel2 && status.status === "ACTIVE" && !isRegistered) return <Eye className="h-4 w-4 sm:h-5 sm:w-5" />;
     if (status.status === "ENDED" || isRegistered) return <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />;
     return isFeatured ? <Zap className="h-4 w-4 sm:h-5 sm:w-5" /> : <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />;
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLevel2 && status.status === "ACTIVE" && !isRegistered) {
+      router.push(`/participant/${competition.id}/level2-live`);
+    } else {
+      onButtonClick(competition);
+    }
+  };
+
+  const showButtonVisible = () => {
+    // Level 2 specific logic
+    if (isLevel2) {
+      if (status.status === "UPCOMING" && !isRegistered) return false; // Hide for non-qualified
+      if (status.status === "ACTIVE" && !isRegistered) return true; // Show "View Live"
+      if (status.status === "ENDED") return true; // Show "View Results"
+      if (isRegistered) return true; // Show for registered users
+      return false;
+    }
+
+    // Level 1 logic
+    return status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED";
   };
 
   return (
@@ -230,7 +266,7 @@ export const CompetitionCard = ({
             </div>
           </div>
 
-          {showButton && (
+          {showButtonVisible() && (
             <div className="pt-3 sm:pt-4 border-t border-slate-100">
               <Button
                 className={`w-full gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-4 h-11 sm:h-14 text-sm sm:text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 justify-center font-semibold ${
@@ -239,10 +275,7 @@ export const CompetitionCard = ({
                     : ''
                 }`}
                 disabled={isButtonLoading}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onButtonClick(competition);
-                }}
+                onClick={handleButtonClick}
               >
                 {isButtonLoading ? (
                   <>

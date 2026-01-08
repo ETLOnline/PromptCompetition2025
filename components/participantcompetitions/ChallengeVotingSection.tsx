@@ -194,7 +194,7 @@ export const ChallengeVotingSection = ({ challengeId, challengeTitle }: Challeng
   }
 
   const handleSubmitScore = async (submissionId: string, userId: string) => {
-    console.log("handleSubmitScore called:", { submissionId, userId, currentUserId })
+    // console.log("handleSubmitScore called:", { submissionId, userId, currentUserId })
     
     if (!currentUserId) {
       toast({
