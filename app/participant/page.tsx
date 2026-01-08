@@ -567,14 +567,6 @@ export default function CompetitionsPage() {
                 />
               ) : (
                 <div className="space-y-12">
-                  {/* Daily Challenges Section - Only show on "ended" filter */}
-                  <DailyChallengesSection
-                    challenges={dailyChallenges}
-                    loading={loadingDailyChallenges}
-                    onViewDetails={handleDailyChallengeView}
-                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
-                  />
-
                   <CompetitionSection
                     title="Past competition"
                     competitions={groupedCompetitions.ended}
@@ -589,6 +581,14 @@ export default function CompetitionsPage() {
                     onCardClick={handleCompetitionClick}
                     onButtonClick={handleButtonClick}
                     isFiltered={true}
+                  />
+
+                  {/* Daily Challenges Section - Only show on "ended" filter */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
                   />
                 </div>
               )
@@ -694,14 +694,6 @@ export default function CompetitionsPage() {
                     />
                   )}
 
-                  {/* Daily Challenges Section - Show on main page above ended competitions */}
-                  <DailyChallengesSection
-                    challenges={dailyChallenges}
-                    loading={loadingDailyChallenges}
-                    onViewDetails={handleDailyChallengeView}
-                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
-                  />
-
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
                       title="Past competition"
@@ -718,6 +710,14 @@ export default function CompetitionsPage() {
                       onButtonClick={handleButtonClick}
                     />
                   )}
+
+                  {/* Daily Challenges Section - Show on main page after ended competitions */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
+                  />
                 </div>
               )
             )}
