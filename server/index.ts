@@ -115,6 +115,7 @@ import overallLeaderboardRouter from "./routes/overallLeaderboard.js";
 import usersRouter from "./routes/users.js";
 import batchRouter from "./routes/batch.js";
 import participantsRouter from "./routes/participants.js";
+import level2EmailNotificationsRouter from "./routes/level2-email-notifications.js";
 
 
 console.log("2. Starting server setup...");
@@ -159,6 +160,7 @@ app.use("/leaderboard-overall", overallLeaderboardRouter);
 app.use("/users", usersRouter);
 app.use("/batch", batchRouter);
 app.use("/participants", participantsRouter);
+app.use("/level2-emails", level2EmailNotificationsRouter);
 
 
 

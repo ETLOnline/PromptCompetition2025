@@ -30,6 +30,7 @@ import {
   Clock,
   AlertTriangle,
   UserCheck,
+  Mail,
 } from "lucide-react"
 import { 
   collection, 
@@ -549,24 +550,35 @@ export default function JudgeAssignmentPage() {
           </div>
         </div>
 
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          size="lg"
-          className="gap-2"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              Save Assignments
-            </>
-          )}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => router.push(`/admin/competitions/${competitionId}/send-emails`)}
+            variant="outline"
+            size="lg"
+            className="gap-2"
+          >
+            <Mail className="h-4 w-4" />
+            Send Emails
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            size="lg"
+            className="gap-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save Assignments
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* ====================================================================== */}

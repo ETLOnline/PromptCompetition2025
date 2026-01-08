@@ -404,3 +404,51 @@ export const fetchParticipantDetails = async (
     method: "GET",
   }, getToken);
 };
+
+//-------------------------------------------------------
+//------------ Level 2 email notifications  ------------
+//-------------------------------------------------------
+
+// Send Level 2 emails to participants and judges
+export const sendLevel2Emails = async (
+  competitionId: string,
+  emailData: {
+    batchId: string;
+    batchName: string;
+    batchStartTime: string;
+    batchEndTime: string;
+    participantEmails: Array<{ name: string; email: string; content: string }>;
+    judgeEmails: Array<{ name: string; email: string; content: string }>;
+    zoomLinks: { [participantId: string]: string };
+  },
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/level2-emails/${competitionId}/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(emailData),
+  }, getToken);
+};
+
+// Fetch email records for a competition
+export const fetchEmailRecords = async (
+  competitionId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/level2-emails/${competitionId}/records`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch a specific email record
+export const fetchEmailRecord = async (
+  competitionId: string,
+  recordId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/level2-emails/${competitionId}/records/${recordId}`, {
+    method: "GET",
+  }, getToken);
+};

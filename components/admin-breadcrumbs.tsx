@@ -143,6 +143,15 @@ const getAdminBreadcrumbPaths = (competitionLevel: string | null) => {
     ],
   },
   {
+    // /admin/competitions/{id}/send-emails
+    match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "send-emails",
+    getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
+      { label: "Competitions", href: "/admin/select-competition", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: getDashboardPath(segs[2], competitionLevel), isLast: false },
+      { label: "Send Emails", href: null, isLast: true },
+    ],
+  },
+  {
     // /admin/competitions/{id}/batch-distribution
     match: (segs: string[]) => segs.length === 4 && segs[0] === "admin" && segs[1] === "competitions" && segs[3] === "batch-distribution",
     getItems: (segs: string[], competitionTitle: string | null, loadingTitle: boolean) => [
