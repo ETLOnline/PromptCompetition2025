@@ -99,7 +99,8 @@ export const FeaturedCompetition = ({
     return "Register Now";
   };
 
-  const showButton = (status.status === "ACTIVE" || status.status === "UPCOMING" || (status.status === "ENDED" && isRegistered)) &&
+  const showButton =
+    (status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED") &&
     !(competition.level === "Level 2" && !isRegistered);
 
   return (
@@ -232,8 +233,8 @@ export const FeaturedCompetition = ({
                 </div>
               </div>
 
-              {/* Countdown Timer for Upcoming */}
-              {status.status === "UPCOMING" && !countdown.isExpired && (
+              {/* Countdown Timer for Upcoming or Active Status Message */}
+              {status.status === "UPCOMING" && !countdown.isExpired ? (
                 <div className="bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl shadow-lg">
                   <div className="text-center space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2">
@@ -241,12 +242,10 @@ export const FeaturedCompetition = ({
                       <p className="text-xs sm:text-sm font-bold uppercase tracking-wider">Competition Starts In</p>
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
-                      {countdown.days > 0 && (
-                        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3">
-                          <div className="text-xl sm:text-2xl md:text-3xl font-bold">{countdown.days}</div>
-                          <div className="text-[8px] sm:text-[10px] uppercase opacity-75 mt-0.5 sm:mt-1">Days</div>
-                        </div>
-                      )}
+                      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3">
+                        <div className="text-xl sm:text-2xl md:text-3xl font-bold">{String(countdown.days).padStart(2, '0')}</div>
+                        <div className="text-[8px] sm:text-[10px] uppercase opacity-75 mt-0.5 sm:mt-1">Days</div>
+                      </div>
                       <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 sm:p-3">
                         <div className="text-xl sm:text-2xl md:text-3xl font-bold">{String(countdown.hours).padStart(2, '0')}</div>
                         <div className="text-[8px] sm:text-[10px] uppercase opacity-75 mt-0.5 sm:mt-1">Hours</div>
@@ -262,7 +261,19 @@ export const FeaturedCompetition = ({
                     </div>
                   </div>
                 </div>
-              )}
+              ) : status.status === "ACTIVE" ? (
+                <div className="bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl shadow-lg">
+                  <div className="text-center space-y-3 sm:space-y-4">
+                    <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                      <p className="text-xs sm:text-sm font-bold uppercase tracking-wider">Competition is Active!</p>
+                    </div>
+                    <p className="text-xs sm:text-sm font-semibold">
+                      The competition has started. Participate and showcase your skills!
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             {/* Additional Info */}
               <div className="bg-blue-50 border border-blue-100 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                 <div className="flex items-center gap-1.5 sm:gap-2 text-blue-900">

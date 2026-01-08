@@ -21,6 +21,7 @@ import {
   List,
   Edit,
   Eye,
+  UserX,
 } from "lucide-react"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -31,6 +32,7 @@ import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 import { ParticipantCacheContext } from "@/lib/participant-cache-context"
 import { CompetitionCacheContext } from "@/lib/competition-cache-context"
 import { ViewChallengeDetailsModal } from "@/components/view-challenge-details-modal"
+import { useToast } from "@/hooks/use-toast"
 
 // Skeleton components remain the same
 const DashboardCardSkeleton = () => (
@@ -87,6 +89,7 @@ interface UserProfile {
 
 export default function DashboardPage() {
   const { logout } = useAuth()
+  const { toast } = useToast()
   const router = useRouter()
   const routeParams = useParams<{ competitionId: string }>()
   const id = routeParams.competitionId
@@ -108,6 +111,7 @@ export default function DashboardPage() {
   const [batchEndTime, setBatchEndTime] = useState<Date | null>(null)
   const [batchStarted, setBatchStarted] = useState<boolean>(false)
   const [batchEnded, setBatchEnded] = useState<boolean>(false)
+  const [batchAssigned, setBatchAssigned] = useState<boolean>(false)
   const [loadingBatchDetails, setLoadingBatchDetails] = useState(true)
   
   const [loadingCompetitionMetadata, setLoadingCompetitionMetadata] = useState(true)
@@ -231,15 +235,40 @@ export default function DashboardPage() {
       setLoadingChallengesList(true)
       
       // Fetch batch details first
-      const batchData = await fetchBatchDetails(id, participantId)
-      
-      if (!batchData.success || !batchData.data) {
-        console.error("No batch assigned or batch not found")
+      let batchData;
+      try {
+        batchData = await fetchBatchDetails(id, participantId)
+      } catch (error: any) {
+        console.error("Error fetching batch details:", error)
+        setBatchAssigned(false)
         setChallenges([])
         setLoadingBatchDetails(false)
         setLoadingChallengesList(false)
+        
+        toast({
+          title: "No Batch Assigned",
+          description: "You have not been assigned to a batch yet. Please contact support or wait for assignment.",
+          variant: "destructive"
+        })
         return
       }
+      
+      if (!batchData.success || !batchData.data) {
+        console.error("No batch assigned or batch not found")
+        setBatchAssigned(false)
+        setChallenges([])
+        setLoadingBatchDetails(false)
+        setLoadingChallengesList(false)
+        
+        toast({
+          title: "No Batch Assigned",
+          description: "You have not been assigned to a batch yet. Please contact support or wait for assignment.",
+          variant: "destructive"
+        })
+        return
+      }
+
+      setBatchAssigned(true)
 
       const { assignedBatchId, startTime, endTime, challengeIds } = batchData.data
       
@@ -272,9 +301,17 @@ export default function DashboardPage() {
         setChallenges([])
       }
       
-    } catch (error) {
-      console.error("Error fetching batch data and challenges:", error)
+    } catch (error: any) {
+      console.error("Error fetching batch challenges:", error)
+      setBatchAssigned(false)
       setChallenges([])
+      
+      // Show a user-friendly toast error for challenge fetching errors
+      toast({
+        title: "Error Loading Challenges",
+        description: "Failed to load challenges for your batch. Please try refreshing the page.",
+        variant: "destructive"
+      })
     } finally {
       setLoadingBatchDetails(false)
       setLoadingChallengesList(false)
@@ -333,7 +370,7 @@ export default function DashboardPage() {
           </div>
         </div>
         
-        {batchStarted && !batchEnded && currentCompetitionId ? (
+        {batchAssigned && batchStarted && !batchEnded && currentCompetitionId ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
               <Card className="bg-white shadow-sm rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100 p-6">
@@ -573,7 +610,7 @@ export default function DashboardPage() {
               )}
             </div>
           </>
-        ) : !batchStarted ? (
+        ) : batchAssigned && !batchStarted ? (
           <Card className="border-0 shadow-sm bg-white rounded-2xl overflow-hidden">
             <CardContent className="p-12 text-center">
               <div className="space-y-6">
@@ -605,7 +642,7 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        ) : (
+        ) : batchAssigned && batchEnded ? (
           <Card className="border-0 shadow-sm bg-white rounded-2xl overflow-hidden">
             <CardContent className="p-12 text-center">
               <div className="space-y-6">
@@ -621,6 +658,27 @@ export default function DashboardPage() {
                   <h3 className="text-xl font-semibold text-gray-900">Batch Ended</h3>
                   <p className="text-gray-600 max-w-md mx-auto">
                     Your batch has ended and challenges are no longer available for submission.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-0 shadow-sm bg-white rounded-2xl overflow-hidden">
+            <CardContent className="p-12 text-center">
+              <div className="space-y-6">
+                <div className="relative">
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                    <UserX className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-gray-900">No Batch Assigned</h3>
+                  <p className="text-gray-600 max-w-md mx-auto">
+                    You have not been assigned to a batch yet. Please contact support or wait for assignment.
                   </p>
                 </div>
               </div>

@@ -196,54 +196,54 @@ export function CompetitionProgressTimeline() {
           ═════════════════════════════════════════════════════════════ */}
       <div className="relative group">
         {/* Animated border gradient - matching AppecInfoBox style */}
-        <div className="absolute -inset-[1px] bg-gradient-to-r from-blue-500 via-emerald-500 to-purple-500 rounded-2xl opacity-60 group-hover:opacity-100 blur-sm transition duration-500" />
+        <div className="absolute -inset-[1px] bg-gradient-to-r from-blue-500 via-emerald-500 to-orange-500 rounded-2xl opacity-75 blur-sm group-hover:opacity-100 transition duration-500" />
 
-        <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Decorative background patterns */}
-          <div className="absolute top-0 right-0 w-56 h-56 bg-gradient-to-br from-blue-50 to-transparent rounded-full -translate-y-32 translate-x-32 opacity-40" />
-          <div className="absolute bottom-0 left-0 w-44 h-44 bg-gradient-to-tr from-emerald-50 to-transparent rounded-full translate-y-24 -translate-x-24 opacity-40" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-50 to-transparent rounded-full -translate-y-32 translate-x-32 opacity-50" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-50 to-transparent rounded-full translate-y-24 -translate-x-24 opacity-50" />
 
-          <div className="relative px-4 py-5 sm:px-6 sm:py-7 md:px-8 md:py-8">
+          <div className="relative p-4 sm:p-5 md:p-7">
             {/* ──────────────────────────────────────────────────────
                 HEADER SECTION
                 ────────────────────────────────────────────────────── */}
-            <div className="flex items-start gap-3 sm:gap-4 mb-6 sm:mb-7">
+            <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
               {/* Icon Container */}
               <motion.div
-                className="hidden sm:flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl bg-slate-900 shadow-lg shadow-slate-900/20 shrink-0"
+                className="hidden sm:flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl bg-[#0f172a] shadow-lg shadow-gray-900/20 shrink-0"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring" }}
               >
-                <Trophy className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </motion.div>
 
               {/* Title & Info */}
-              <div className="flex-1">
+              <div className="flex-1 pr-8 sm:pr-10">
                 {/* Badge */}
                 <motion.div
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-blue-50 border border-blue-200 mb-2.5 sm:mb-3"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-purple-100 text-purple-700 border-0 mb-2 sm:mb-3"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <Trophy className="h-3 w-3 text-blue-600" />
-                  <span className="text-xs font-bold text-blue-700 tracking-wider">PROGRESS TRACKER</span>
+                  <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  <span className="text-[10px] sm:text-xs font-semibold tracking-wider">PROGRESS TRACKER</span>
                 </motion.div>
 
                 {/* Title */}
-                <motion.h3
-                  className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-1 leading-tight"
+                <motion.h2
+                  className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-2 leading-tight"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.15 }}
                 >
                   Competition Timeline
-                </motion.h3>
+                </motion.h2>
 
                 {/* Description */}
                 <motion.p
-                  className="text-[10px] sm:text-xs md:text-sm text-gray-600 leading-relaxed break-words"
+                  className="text-xs sm:text-sm text-gray-600 leading-relaxed break-words"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.2 }}
@@ -259,7 +259,7 @@ export function CompetitionProgressTimeline() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.25 }}
               >
-                <div className="text-lg sm:text-xl font-bold text-gray-900">
+                <div className="text-base sm:text-lg font-bold text-gray-900">
                   Stage {currentStage + 1}/6
                 </div>
                 <div className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
@@ -276,10 +276,10 @@ export function CompetitionProgressTimeline() {
                 ────────────────────────────────────────────────────── */}
             <div className="relative w-full mb-3 px-4 sm:px-6">
               {/* Background track */}
-              <div className="h-3 sm:h-4 bg-white rounded-full overflow-hidden shadow-inner border border-gray-200">
+              <div className="h-3 sm:h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-200">
                 {/* Single progress fill - fills to current stage position (aligned with badges) */}
                 <div
-                  className="h-full bg-slate-900 transition-all duration-300"
+                  className="h-full bg-[#0f172a] transition-all duration-300"
                   style={{
                     // Badges are at 0%, 20%, 40%, 60%, 80%, 100% (evenly distributed)
                     // So fill to: stage 0 -> 0%, stage 1 -> 20%, stage 2 -> 40%, etc.
@@ -340,7 +340,6 @@ export function CompetitionProgressTimeline() {
                           "absolute -bottom-6 sm:-bottom-7 text-[8px] sm:text-[10px] md:text-xs font-bold text-center leading-tight whitespace-nowrap",
                           "max-w-[50px] sm:max-w-[80px] md:max-w-none",
                           "overflow-hidden text-ellipsis sm:overflow-visible",
-                          "pl-1 sm:pl-1.5 md:pl-2",
                           state === "upcoming" && "text-gray-500",
                           state === "active" && "text-gray-900 font-extrabold",
                           state === "completed" && "text-gray-700"
@@ -369,7 +368,7 @@ export function CompetitionProgressTimeline() {
             {/* ──────────────────────────────────────────────────────
                 MILESTONE DETAILS CARDS - AppecInfoBox Style (6 Stages)
                 ────────────────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
               {MILESTONES.map((milestone, index) => {
                 const state = states[index]
                 const cardColors = [
@@ -428,43 +427,43 @@ export function CompetitionProgressTimeline() {
                   >
                     <div
                       className={cn(
-                        "relative bg-white border-2 rounded-xl sm:rounded-2xl p-4 sm:p-5 transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer",
+                        "relative bg-white border-2 rounded-lg sm:rounded-xl p-3 sm:p-4 transition-all hover:shadow-md hover:scale-[1.02]",
                         `${cardColor.border} ${cardColor.hoverBorder}`
                       )}
                     >
                       {/* Icon & Label */}
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div
                           className={cn(
-                            "flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl shrink-0 transition-colors",
+                            "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0 transition-colors",
                             `${cardColor.iconBg} ${cardColor.icon}`
                           )}
                         >
                           {state === "completed" ? (
-                            <Check className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={3} />
+                            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={3} />
                           ) : (
-                            <milestone.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <milestone.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           )}
                         </div>
-                        <div className="text-sm sm:text-base md:text-lg font-bold text-gray-900 break-words line-clamp-2">{milestone.label}</div>
+                        <div className="text-xs sm:text-sm font-bold text-gray-900 break-words line-clamp-2">{milestone.label}</div>
                       </div>
 
                       {/* Date Badge */}
                       <div className={cn(
-                        "inline-block text-xs font-bold px-3 py-1 rounded-full mb-3",
+                        "inline-block text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full mb-2 sm:mb-3",
                         cardColor.badge
                       )}>
                         {milestone.displayDate}
                       </div>
 
                       {/* Description */}
-                      <div className="text-xs sm:text-sm md:text-base font-semibold text-gray-800 mb-2.5 break-words line-clamp-2">
+                      <div className="text-xs sm:text-sm font-semibold text-gray-800 mb-2 break-words line-clamp-2">
                         {milestone.description}
                       </div>
 
                       {/* Note */}
                       {milestone.note && (
-                        <div className="text-[10px] sm:text-xs md:text-sm text-gray-700 leading-relaxed break-words">
+                        <div className="text-[10px] sm:text-xs text-gray-600 leading-relaxed break-words">
                           ✓ {milestone.note}
                         </div>
                       )}
@@ -478,15 +477,15 @@ export function CompetitionProgressTimeline() {
                 QUALIFICATION RULE - MINIMALISTIC BENTO
                 ────────────────────────────────────────────────────── */}
             <motion.div
-              className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 border-2 border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3 backdrop-blur-sm"
+              className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 border-2 border-amber-200 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3 backdrop-blur-sm"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.95, duration: 0.5 }}
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shrink-0">
-                <AlertCircle className="h-4 w-4" strokeWidth={2.5} />
+              <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shrink-0">
+                <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
               </div>
-              <p className="text-[10px] sm:text-xs md:text-sm text-gray-800 leading-snug break-words">
+              <p className="text-[10px] sm:text-xs text-gray-800 leading-snug break-words">
                 Only the <span className="font-bold text-amber-900">top 20 participants</span> from <span className="font-semibold text-blue-700">Level 1</span> will qualify for <span className="font-semibold text-purple-700">Level 2</span>. Give your best effort!
               </p>
             </motion.div>
