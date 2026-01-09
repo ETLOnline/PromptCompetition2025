@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Loader, Calendar, Clock, Users, BookOpen, CheckCircle2 } from "lucide-react"
+import { Loader, Calendar, Clock, Users, BookOpen, CheckCircle2, Video } from "lucide-react"
 import { fetchWithAuth } from "@/lib/api"
 import { useNotifications } from "@/hooks/useNotifications"
 import { Notifications } from "@/components/Notifications"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { db } from "@/lib/firebase"
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { Button } from "@/components/ui/button"
+import { JudgeZoomLinkModal } from "@/components/judge/judge-zoom-link-modal"
 
 interface BatchSchedule {
   batchId: string
@@ -45,6 +46,7 @@ export default function Level2JudgeDashboard() {
   const [competitionTitle, setCompetitionTitle] = useState<string>("")
   const [batchAssignments, setBatchAssignments] = useState<BatchAssignment[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isZoomModalOpen, setIsZoomModalOpen] = useState(false)
 
   const { notifications, addNotification, removeNotification } = useNotifications()
 
@@ -199,6 +201,17 @@ export default function Level2JudgeDashboard() {
     })
   }
 
+  const formatDateTime = (date: Date) => {
+    return date.toLocaleDateString("en-US", { 
+      month: "short", 
+      day: "numeric",
+      year: "numeric"
+    }) + ", " + date.toLocaleTimeString("en-US", { 
+      hour: "2-digit", 
+      minute: "2-digit"
+    })
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
@@ -239,12 +252,22 @@ export default function Level2JudgeDashboard() {
                 </Badge>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/judge")}
-            >
-              Back to Dashboard
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsZoomModalOpen(true)}
+                className="border-purple-200 text-purple-700 hover:bg-purple-50"
+              >
+                <Video className="w-4 h-4 mr-2" />
+                Meeting Links
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/judge")}
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -273,10 +296,8 @@ export default function Level2JudgeDashboard() {
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{formatDate(batchAssignment.schedule.startTime)}</span>
+                          <span>{formatDateTime(batchAssignment.schedule.startTime)} - {formatDateTime(batchAssignment.schedule.endTime)}</span>
                         </div>
-                        <span className="text-gray-400">•</span>
-                        <span>{formatTime(batchAssignment.schedule.startTime)} - {formatTime(batchAssignment.schedule.endTime)}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -364,6 +385,14 @@ export default function Level2JudgeDashboard() {
           </div>
         )}
       </div>
+
+      <JudgeZoomLinkModal
+        isOpen={isZoomModalOpen}
+        onClose={() => setIsZoomModalOpen(false)}
+        competitionId={competitionId}
+        judgeId={userUID}
+        batchAssignments={batchAssignments}
+      />
     </div>
   )
 }

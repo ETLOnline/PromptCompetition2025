@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, MapPin, Trophy, Star, Zap, Sparkles, Users } from "lucide-react"
+import { Calendar, Clock, MapPin, Trophy, Star, Zap, Sparkles, Users, Eye } from "lucide-react"
 import { useCountdownTimer } from "@/hooks/useCountdownTimer"
 import { countDocuments } from "@/lib/firebase/countDocuments"
 
@@ -49,6 +50,7 @@ export const FeaturedCompetition = ({
   isButtonLoading,
   onButtonClick,
 }: FeaturedCompetitionProps) => {
+  const router = useRouter()
   const targetDate = new Date(competition.startDeadline?.seconds * 1000 || competition.startDeadline);
   const countdown = useCountdownTimer(targetDate);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -93,15 +95,129 @@ export const FeaturedCompetition = ({
 
   const showReadMore = competition.description.split('\n').length > 4;
 
+  const isLevel2 = competition.level === "Level 2";
+
+  const getInfoBoxContent = () => {
+    // Level 2 scenarios
+    if (isLevel2) {
+      if (status.status === "UPCOMING") {
+        if (isRegistered) {
+          return {
+            title: "You're Qualified for Level 2!",
+            description: "You have qualified for the advanced round. The competition will begin soon. Stay tuned!",
+          };
+        }
+        return {
+          title: "Level 2 - Advanced Round",
+          description: "Level 2 is for qualified participants only. Participants are selected based on Level 1 performance.",
+        };
+      }
+      if (status.status === "ACTIVE") {
+        if (isRegistered) {
+          return {
+            title: "Level 2 Competition is Active!",
+            description: "The advanced round has started. Continue your competition and showcase your advanced skills!",
+          };
+        }
+        return {
+          title: "Level 2 Competition in Progress",
+          description: "The advanced round is currently active. View the live competition status to see qualified participants and their progress.",
+        };
+      }
+      if (status.status === "ENDED") {
+        return {
+          title: "Level 2 Competition Completed",
+          description: "The advanced round has concluded. View the results to see how participants performed with detailed judge feedback.",
+        };
+      }
+    }
+
+    // Level 1 scenarios
+    if (status.status === "UPCOMING") {
+      return {
+        title: "Featured Competition",
+        description: "This is our premier event. Everyone is welcome to register and participate. Don't miss this opportunity to compete and win amazing prizes!",
+      };
+    }
+    if (status.status === "ACTIVE") {
+      return {
+        title: "Competition is Active!",
+        description: "The competition has started. Register now and participate to showcase your skills!",
+      };
+    }
+    if (status.status === "ENDED") {
+      return {
+        title: "Competition Completed",
+        description: "This competition has ended. View the results and leaderboard to see how participants performed.",
+      };
+    }
+
+    return {
+      title: "Featured Competition",
+      description: "This is our premier event. Don't miss out on this exclusive opportunity to compete and win amazing prizes!",
+    };
+  };
+
+  const getCountdownBoxContent = () => {
+    if (isLevel2) {
+      if (status.status === "ACTIVE") {
+        if (isRegistered) {
+          return {
+            icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />,
+            title: "Level 2 is Active!",
+            description: "The advanced competition is now live. Continue to participate!",
+          };
+        }
+        return null; // No countdown box for non-registered active Level 2
+      }
+    }
+    
+    if (status.status === "ACTIVE") {
+      return {
+        icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />,
+        title: "Competition is Active!",
+        description: "The competition has started. Participate and showcase your skills!",
+      };
+    }
+    
+    return null;
+  };
+
   const getButtonText = () => {
+    if (isLevel2) {
+      if (status.status === "ENDED") return "View Results";
+      if (status.status === "ACTIVE" && !isRegistered) return "View Live Competition";
+      if (isRegistered) return isCompleted ? "View Results" : "Continue Competition";
+      return "Not Qualified"; // This shouldn't show but as fallback
+    }
+
     if (status.status === "ENDED") return "View Results";
     if (isRegistered) return isCompleted ? "View Results" : "Continue Competition";
     return "Register Now";
   };
 
-  const showButton =
-    (status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED") &&
-    !(competition.level === "Level 2" && !isRegistered);
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLevel2 && status.status === "ACTIVE" && !isRegistered) {
+      router.push(`/participant/${competition.id}/level2-live`);
+    } else {
+      onButtonClick(competition);
+    }
+  };
+
+  const showButton = () => {
+    // Level 2 specific logic
+    if (isLevel2) {
+      if (status.status === "UPCOMING" && !isRegistered) return false; // Hide all buttons for non-qualified
+      if (status.status === "ACTIVE" && !isRegistered) return true; // Show "View Live Competition"
+      if (status.status === "ENDED") return true; // Show "View Results" for everyone
+      if (isRegistered) return true; // Show button for registered users
+      return false;
+    }
+
+    // Level 1 logic - show button for all active/upcoming/ended states
+    return status.status === "ACTIVE" || status.status === "UPCOMING" || status.status === "ENDED";
+  };
 
   return (
     <div className="relative group mb-6 sm:mb-8">
@@ -261,15 +377,15 @@ export const FeaturedCompetition = ({
                     </div>
                   </div>
                 </div>
-              ) : status.status === "ACTIVE" ? (
+              ) : getCountdownBoxContent() ? (
                 <div className="bg-gradient-to-br from-[#0f172a] to-[#1e3a8a] text-white p-4 sm:p-5 md:p-6 rounded-lg sm:rounded-xl shadow-lg">
                   <div className="text-center space-y-3 sm:space-y-4">
                     <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                      <p className="text-xs sm:text-sm font-bold uppercase tracking-wider">Competition is Active!</p>
+                      {getCountdownBoxContent()!.icon}
+                      <p className="text-xs sm:text-sm font-bold uppercase tracking-wider">{getCountdownBoxContent()!.title}</p>
                     </div>
                     <p className="text-xs sm:text-sm font-semibold">
-                      The competition has started. Participate and showcase your skills!
+                      {getCountdownBoxContent()!.description}
                     </p>
                   </div>
                 </div>
@@ -278,19 +394,16 @@ export const FeaturedCompetition = ({
               <div className="bg-blue-50 border border-blue-100 rounded-lg sm:rounded-xl p-3 sm:p-4 space-y-1.5 sm:space-y-2">
                 <div className="flex items-center gap-1.5 sm:gap-2 text-blue-900">
                   <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-blue-600 text-blue-600" />
-                  <p className="text-xs sm:text-sm font-semibold">Featured Competition</p>
+                  <p className="text-xs sm:text-sm font-semibold">{getInfoBoxContent().title}</p>
                 </div>
                 <p className="text-[10px] sm:text-xs text-blue-700 leading-relaxed">
-                  This is our premier event. Don't miss out on this exclusive opportunity to compete and win amazing prizes!
+                  {getInfoBoxContent().description}
                 </p>
               </div>
               {/* CTA Button */}
-              {showButton && (
+              {showButton() && (
                 <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onButtonClick(competition);
-                  }}
+                  onClick={handleButtonClick}
                   disabled={isButtonLoading}
                   className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] hover:from-[#1e3a8a] hover:to-[#0f172a] text-white rounded-lg sm:rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 >
@@ -301,7 +414,11 @@ export const FeaturedCompetition = ({
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
+                      {isLevel2 && status.status === "ACTIVE" && !isRegistered ? (
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
+                      ) : (
+                        <Zap className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
+                      )}
                       {getButtonText()}
                     </>
                   )}

@@ -4,6 +4,8 @@ import { useAuth } from "@/components/auth-provider"
 import { useRouter, useParams } from "next/navigation"
 import { useEffect, useState, useContext } from "react"
 import { Button } from "@/components/ui/button"
+import { Video } from "lucide-react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -32,6 +34,7 @@ import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 import { ParticipantCacheContext } from "@/lib/participant-cache-context"
 import { CompetitionCacheContext } from "@/lib/competition-cache-context"
 import { ViewChallengeDetailsModal } from "@/components/view-challenge-details-modal"
+import { ZoomLinkModal } from "@/components/participantcompetitions/zoom-link-modal"
 import { useToast } from "@/hooks/use-toast"
 
 // Skeleton components remain the same
@@ -131,6 +134,7 @@ export default function DashboardPage() {
   // Modal state
   const [selectedChallengeForView, setSelectedChallengeForView] = useState<any | null>(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [isZoomLinkModalOpen, setIsZoomLinkModalOpen] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -359,14 +363,24 @@ export default function DashboardPage() {
       
       <main className="max-w-7xl mx-auto py-6 px-6 space-y-6">
         <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <Trophy className="h-7 w-7 text-purple-600" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-xl">
+                <Trophy className="h-7 w-7 text-purple-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{competitionName}</h1>
+                <p className="text-gray-500 mt-1">Participant Dashboard</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{competitionName}</h1>
-              <p className="text-gray-500 mt-1">Participant Dashboard</p>
-            </div>
+            <Button
+              onClick={() => setIsZoomLinkModalOpen(true)}
+              variant="ghost"
+              className="bg-white/50 hover:bg-white/80 text-gray-700 border border-gray-200 backdrop-blur-sm"
+            >
+              <Video className="h-4 w-4 mr-2" />
+              Meeting Info
+            </Button>
           </div>
         </div>
         
@@ -697,6 +711,13 @@ export default function DashboardPage() {
         challenge={selectedChallengeForView}
         competitionId={currentCompetitionId || ""}
         participantId={user?.uid || ""}
+      />
+
+      {/* Zoom Link Modal */}
+      <ZoomLinkModal
+        isOpen={isZoomLinkModalOpen}
+        onClose={() => setIsZoomLinkModalOpen(false)}
+        competitionId={currentCompetitionId || ""}
       />
     </div>
   )

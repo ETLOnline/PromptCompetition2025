@@ -128,7 +128,15 @@ export default function JudgePage() {
         })
       )
       
-      setAssignments(updatedAssignments)
+      // Filter out Level 2 assignments with no participants
+      const filteredAssignments = updatedAssignments.filter(assignment => {
+        if (assignment.level === "Level 2") {
+          return assignment.participantCount > 0
+        }
+        return true
+      })
+      
+      setAssignments(filteredAssignments)
     } catch (error) {
       console.error("Authentication failed:", error)
       router.push("/")

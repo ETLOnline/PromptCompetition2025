@@ -28,7 +28,7 @@ export const ParticipantCacheContext = createContext<ParticipantCacheContextType
 export const ParticipantCacheProvider = ({ children }: { children: ReactNode }) => {
   const checkParticipant = async (competitionId: string, userId: string): Promise<boolean> => {
     try {
-      console.log("Fetching participant status from Firestore for:", `${competitionId}-${userId}`)
+      // console.log("Fetching participant status from Firestore for:", `${competitionId}-${userId}`)
       const participantRef = doc(db, "competitions", competitionId, "participants", userId)
       const participantSnap = await getDoc(participantRef)
       return participantSnap.exists()
@@ -40,7 +40,7 @@ export const ParticipantCacheProvider = ({ children }: { children: ReactNode }) 
 
   const checkParticipantAndGetData = async (competitionId: string, userId: string): Promise<ParticipantData> => {
     try {
-      console.log("Fetching participant data from Firestore for:", `${competitionId}-${userId}`)
+      // console.log("Fetching participant data from Firestore for:", `${competitionId}-${userId}`)
       const participantRef = doc(db, "competitions", competitionId, "participants", userId)
       const participantSnap = await getDoc(participantRef)
       const exists = participantSnap.exists()
