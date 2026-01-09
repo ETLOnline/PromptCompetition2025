@@ -241,6 +241,13 @@ export const fetchCompetitionSubmissions = async (competitionId: string, getToke
   }, getToken);
 };
 
+// Admin endpoint to fetch all submissions for a competition
+export const fetchAdminCompetitionSubmissions = async (competitionId: string, getToken?: () => Promise<string | null>) => {
+  return await fetchWithAuth(`${API_URL}/submissions/admin/competition/${competitionId}`, {
+    method: "GET",
+  }, getToken);
+};
+
 //-------------------------------------------------------
 //------------ daily challenge API's  ------------------
 //-------------------------------------------------------
@@ -275,3 +282,184 @@ export const fetchOverallLeaderboard = async (limit: number = 100) => {
   if (!res.ok) throw new Error("Failed to fetch overall leaderboard")
   return res.json()
 }
+
+//-------------------------------------------------------
+//------------ user profile API's  ---------------------
+//-------------------------------------------------------
+
+export const fetchUsersByIds = async (userIds: string[], getToken?: () => Promise<string | null>) => {
+  if (!userIds || userIds.length === 0) {
+    return {}
+  }
+
+  // Expected backend endpoint: POST /api/users/batch
+  // Body: { "userIds": ["id1", "id2", ...] }
+  // Response: { "id1": { id, fullName, email, photoURL? }, "id2": {...} }
+  return await fetchWithAuth(`${API_URL}/users/batch`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userIds }),
+  }, getToken);
+};
+
+//-------------------------------------------------------
+//------------ LLM evaluations API's  ------------------
+//-------------------------------------------------------
+
+// Fetch submissions for a specific participant in a challenge
+export const fetchParticipantSubmissions = async (
+  competitionId: string,
+  challengeId: string,
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(
+    `${API_URL}/llm-evaluations/${competitionId}/challenges/${challengeId}/submissions/participant/${participantId}`,
+    {
+      method: "GET",
+    },
+    getToken
+  );
+};
+
+// Fetch ALL submissions for a specific participant across all challenges
+export const fetchAllParticipantSubmissions = async (
+  competitionId: string,
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(
+    `${API_URL}/llm-evaluations/${competitionId}/participant/${participantId}/all-submissions`,
+    {
+      method: "GET",
+    },
+    getToken
+  );
+};
+
+//-------------------------------------------------------
+//------------ batch/level 2 API's  -------------------
+//-------------------------------------------------------
+
+// Fetch batch details for a participant including assignedBatchId
+export const fetchBatchDetails = async (
+  competitionId: string,
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/batch/${competitionId}/participant/${participantId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch challenges for a specific batch
+export const fetchBatchChallenges = async (
+  competitionId: string,
+  batchId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/batch/${competitionId}/challenges/${batchId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch Level 2 judge evaluations (admin)
+export const fetchLevel2JudgeEvaluations = async (
+  competitionId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/judge/level2-judge-evaluations/${competitionId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch Level 2 judge progress (admin)
+export const fetchLevel2JudgeProgress = async (
+  competitionId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/judge/level2-judge-progress/${competitionId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch all previous submissions for a participant across all competitions
+export const fetchParticipantSubmissionHistory = async (
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/judge/participant-submission-history/${participantId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch participant details
+export const fetchParticipantDetails = async (
+  participantId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/participants/${participantId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+//-------------------------------------------------------
+//------------ Level 2 email notifications  ------------
+//-------------------------------------------------------
+
+// Send Level 2 emails to participants and judges
+export const sendLevel2Emails = async (
+  competitionId: string,
+  emailData: {
+    batchId: string;
+    batchName: string;
+    batchStartTime: string;
+    batchEndTime: string;
+    participantEmails: Array<{ name: string; email: string; content: string }>;
+    judgeEmails: Array<{ name: string; email: string; content: string }>;
+    zoomLinks: { [participantId: string]: string };
+  },
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/level2-emails/${competitionId}/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(emailData),
+  }, getToken);
+};
+
+// Fetch email records for a competition
+export const fetchEmailRecords = async (
+  competitionId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/level2-emails/${competitionId}/records`, {
+    method: "GET",
+  }, getToken);
+};
+
+// Fetch a specific email record
+export const fetchEmailRecord = async (
+  competitionId: string,
+  recordId: string,
+  getToken?: () => Promise<string | null>
+) => {
+  return await fetchWithAuth(`${API_URL}/level2-emails/${competitionId}/records/${recordId}`, {
+    method: "GET",
+  }, getToken);
+};
+
+//-------------------------------------------------------
+//------------ Level 2 live competition data  ----------
+//-------------------------------------------------------
+
+// Fetch Level 2 live competition data (participants, batches, judges)
+export const fetchLevel2LiveData = async (competitionId: string) => {
+  const res = await fetch(`${API_URL}/level2-live/${competitionId}`);
+  if (!res.ok) throw new Error("Failed to fetch Level 2 live data");
+  return res.json();
+};

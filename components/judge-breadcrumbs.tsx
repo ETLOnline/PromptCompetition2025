@@ -21,6 +21,64 @@ const JUDGE_BREADCRUMB_PATHS: Array<{
     ],
   },
   {
+    // /judge/{competitionId}/level2/{batchId}/{participantId}/history/{historyCompetitionId}/{historyChallengeId}
+    match: segs => segs.length === 8 && segs[0] === "judge" && segs[2] === "level2" && segs[5] === "history",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: "Participant", href: `/judge/${segs[1]}/level2/${segs[3]}/${segs[4]}`, isLast: false },
+      { label: "Submission History", href: `/judge/${segs[1]}/level2/${segs[3]}/${segs[4]}/history`, isLast: false },
+      { label: `Previous Challenge ${segs[7]}`, href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2/{batchId}/{participantId}/history
+    match: segs => segs.length === 6 && segs[0] === "judge" && segs[2] === "level2" && segs[5] === "history",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: "Participant", href: `/judge/${segs[1]}/level2/${segs[3]}/${segs[4]}`, isLast: false },
+      { label: "Submission History", href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2/{batchId}/{participantId}/{challengeId}
+    match: segs => segs.length === 6 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: segs[3], href: `/judge/${segs[1]}/level2/${segs[3]}`, isLast: false },
+      { label: "Participant", href: `/judge/${segs[1]}/level2/${segs[3]}/${segs[4]}`, isLast: false },
+      { label: loadingTitle ? "..." : challengeTitle || "Challenge", href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2/{batchId}/{participantId}
+    match: segs => segs.length === 5 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: "Participant Submissions", href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2
+    match: segs => segs.length === 3 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: null, isLast: true },
+    ],
+  },
+  {
+    // /judge/{competitionId}/level2/{batchId}
+    match: segs => segs.length === 4 && segs[0] === "judge" && segs[2] === "level2",
+    getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
+      { label: "Dashboard", href: "/judge", isLast: false },
+      { label: loadingTitle ? "..." : competitionTitle || "Competition", href: `/judge/${segs[1]}/level2`, isLast: false },
+      { label: segs[3], href: null, isLast: true },
+    ],
+  },
+  {
     // /judge/{competitionId}
     match: segs => segs.length === 2 && segs[0] === "judge",
     getItems: (segs, competitionTitle, challengeTitle, loadingTitle) => [
@@ -77,7 +135,11 @@ export function JudgeBreadcrumbs() {
       }
       // If path includes a challengeId, fetch challenge title
       if (segments.length >= 3 && segments[0] === "judge") {
-        challengeId = segments[2]
+        if (segments[2] === "level2" && segments.length >= 6) {
+          challengeId = segments[5]
+        } else if (segments.length >= 3) {
+          challengeId = segments[2]
+        }
       }
       break
     }

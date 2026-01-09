@@ -15,20 +15,70 @@ export async function fetchAssignments(userId: string): Promise<JudgeAssignment[
 // console.log("Results found:", snapshot);
     if (snapshot.empty) return [];
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
+    // Fetch all assignments and their competition details
+    const assignments = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        const competitionId = data.competitionId;
 
-      return {
-        id: data.judgeId,
-        title: data.competitionTitle || `Competition ${data.competitionId}`,
-        competitionId: data.competitionId,
-        submissionCount: data.assignedCountTotal || 0,
-        assignedDate: data.updatedAt,
-        assignedCountsByChallenge: data.assignedCountsByChallenge || {},
-        evaluatedCount: data.CountEvaluatedSubmission || 0,
-        AllChallengesEvaluated: data.AllChallengesEvaluated ?? false,
-      };
-    });
+        // Fetch competition level and title
+        let competitionLevel: "Level 1" | "Level 2" | "custom" | undefined;
+        let competitionTitle: string = data.competitionTitle || `Competition ${competitionId}`;
+        try {
+          const competitionDoc = await db.collection("competitions").doc(competitionId).get();
+          if (competitionDoc.exists) {
+            const competitionData = competitionDoc.data();
+            competitionLevel = competitionData?.level;
+            // Use competition title if judge document doesn't have it
+            if (!data.competitionTitle && competitionData?.title) {
+              competitionTitle = competitionData.title;
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching competition ${competitionId}:`, error);
+        }
+
+        // For Level 2, calculate both participant count and submission count
+        let submissionCount = 0;
+        let participantCount: number | undefined;
+        let level2Assignments: { [batch: string]: string[] } | undefined;
+
+        if (competitionLevel === "Level 2" && data.assignments) {
+          // Level 2: count participants from batch assignments
+          level2Assignments = data.assignments;
+          const allParticipants = new Set<string>();
+          Object.values(data.assignments).forEach((participantIds: any) => {
+            if (Array.isArray(participantIds)) {
+              participantIds.forEach((id) => allParticipants.add(id));
+            }
+          });
+          participantCount = allParticipants.size;
+          
+          // For Level 2, submissionCount should be total number of actual submissions (participant * challenges)
+          // This will be calculated from actual submission data
+          submissionCount = data.assignedCountTotal || 0;
+        } else {
+          // Level 1 or custom: use existing count
+          submissionCount = data.assignedCountTotal || 0;
+        }
+
+        return {
+          id: data.judgeId,
+          title: competitionTitle,
+          competitionId: competitionId,
+          submissionCount: submissionCount,
+          assignedDate: data.updatedAt,
+          assignedCountsByChallenge: data.assignedCountsByChallenge || {},
+          evaluatedCount: data.CountEvaluatedSubmission || 0,
+          AllChallengesEvaluated: data.AllChallengesEvaluated ?? false,
+          level: competitionLevel,
+          level2Assignments: level2Assignments,
+          participantCount: participantCount,
+        };
+      })
+    );
+
+    return assignments;
   } catch (error: any) {
     // Handle Firestore collectionGroup precondition error gracefully
     if (error.code === 9 || error.message?.includes("FAILED_PRECONDITION")) {

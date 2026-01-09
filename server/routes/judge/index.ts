@@ -8,6 +8,9 @@ import { submitScore, getSubmissionScore } from "./scoring.js";
 
 // fetch judges for admin
 import { fetchJudgeEvaluations } from "./evaluations.js";
+import { fetchLevel2JudgeEvaluations } from "./level2-evaluations.js";
+import { fetchLevel2JudgeProgress } from "./level2-progress.js";
+import { fetchParticipantSubmissionHistory, fetchParticipantDetails } from "./participant-history.js";
 
 // Auth utilities
 import { authenticateToken, authorizeRoles, AuthenticatedRequest } from "../../utils/auth.js";
@@ -187,6 +190,42 @@ judgeRouter.get(
   authenticateToken,
   authorizeRoles(["admin", "superadmin"]),
   fetchJudgeEvaluations
+);
+
+judgeRouter.get(
+  "/level2-judge-evaluations/:competitionId",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  fetchLevel2JudgeEvaluations
+);
+
+judgeRouter.get(
+  "/level2-judge-progress/:competitionId",
+  authenticateToken,
+  authorizeRoles(["admin", "superadmin"]),
+  fetchLevel2JudgeProgress
+);
+
+/**
+ * Get participant submission history across all competitions
+ * GET /judge/participant-submission-history/:participantId
+ */
+judgeRouter.get(
+  "/participant-submission-history/:participantId",
+  authenticateToken,
+  authorizeRoles(["judge", "admin", "superadmin"]),
+  fetchParticipantSubmissionHistory
+);
+
+/**
+ * Get participant details
+ * GET /judge/participants/:participantId
+ */
+judgeRouter.get(
+  "/participants/:participantId",
+  authenticateToken,
+  authorizeRoles(["judge", "admin", "superadmin"]),
+  fetchParticipantDetails
 );
 
 

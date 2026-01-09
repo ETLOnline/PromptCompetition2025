@@ -5,13 +5,20 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@clerk/nextjs"
 import { fetchCompetitionResults } from "@/lib/api"
-import { AlertCircle, Trophy, Clock, FileX, User, ArrowLeft, RefreshCw } from "lucide-react"
+import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { doc, getDoc } from "firebase/firestore"
+import ResultsLevel1 from "./ResultsLevel1"
+import ResultsLevel2 from "./ResultsLevel2"
+import ResultsCustom from "./ResultsCustom"
+import CompetitionLeaderboard from "@/components/results/CompetitionLeaderboard"
+import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 interface Submission {
   id?: string
   challengeId: string
   finalScore: number | null
-  llmScores: Record<
+  llmScores?: Record<
     string,
     {
       description: string
@@ -19,9 +26,12 @@ interface Submission {
       scores: Record<string, number>
     }
   > | null
+  judgeScores?: Record<string, any> | null
+  judgeScore?: Record<string, any> | null
   submittedAt?: any
-  status?: "pending" | "evaluated" | "failed"
+  status?: "pending" | "evaluated" | "scored" | "failed"
   rank?: number
+  promptText?: string
 }
 
 interface Competition {
@@ -29,17 +39,29 @@ interface Competition {
   title: string
   status: string
   endDeadline: any
+  level?: string
+}
+
+interface UserOverallStats {
+  finalScore: number | null
+  llmScore: number | null
+  judgeScore: number | null
+  rank: number | null
+  weightedFinalScore?: number | null
+  challengeScores?: Record<string, { averageScore: number; judgeCount: number }>
 }
 
 export default function ResultsPage() {
   const { competitionId } = useParams() 
   const router = useRouter()
-    const { getToken, isLoaded, isSignedIn, userId } = useAuth()
+  const { getToken, isLoaded, isSignedIn, userId } = useAuth()
   
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [competition, setCompetition] = useState<Competition | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [competitionLevel, setCompetitionLevel] = useState<string | null>(null)
+  const [userOverallStats, setUserOverallStats] = useState<UserOverallStats | null>(null)
 
   useEffect(() => {
     if (!isLoaded) return
@@ -58,11 +80,46 @@ export default function ResultsPage() {
           throw new Error("Invalid competition ID")
         }
 
-        // 🔹 Call backend API instead of Firestore directly
+        // Fetch competition details to get level
+        const competitionRef = doc(db, "competitions", competitionId)
+        const competitionSnap = await getDoc(competitionRef)
+        
+        if (!competitionSnap.exists()) {
+          throw new Error("Competition not found")
+        }
+
+        const competitionData = competitionSnap.data()
+        const level = competitionData?.level || "custom"
+        setCompetitionLevel(level)
+
+        // Fetch backend API for submissions
         const { competition, submissions } = await fetchCompetitionResults(competitionId, getToken)
 
-        setCompetition(competition)
+        setCompetition({ ...competition, level })
         setSubmissions(submissions)
+        // console.log("Fetched submissions:", submissions)
+        // console.log("Competition level:", level)
+
+        // Fetch user overall stats from finalLeaderboard
+        if (userId) {
+          try {
+            const leaderboardRef = doc(db, "competitions", competitionId, "finalLeaderboard", userId)
+            const leaderboardSnap = await getDoc(leaderboardRef)
+            if (leaderboardSnap.exists()) {
+              const data = leaderboardSnap.data()
+              setUserOverallStats({
+                finalScore: data.finalScore ?? null,
+                llmScore: data.llmScore ?? null,
+                judgeScore: data.judgeScore ?? null,
+                rank: data.rank ?? null,
+                weightedFinalScore: data.weightedFinalScore ?? null,
+                challengeScores: data.challengeScores ?? null,
+              })
+            }
+          } catch (leaderboardError) {
+            console.error("Error fetching leaderboard stats:", leaderboardError)
+          }
+        }
       } catch (err: any) {
         console.error("Error fetching results:", err)
         setError(err.message || "Failed to load results")
@@ -85,72 +142,47 @@ export default function ResultsPage() {
         throw new Error("Invalid competition ID")
       }
 
+      // Fetch competition details to get level
+      const competitionRef = doc(db, "competitions", competitionId)
+      const competitionSnap = await getDoc(competitionRef)
+      
+      if (!competitionSnap.exists()) {
+        throw new Error("Competition not found")
+      }
+
+      const competitionData = competitionSnap.data()
+      const level = competitionData?.level || "custom"
+      setCompetitionLevel(level)
+
       const { competition, submissions } = await fetchCompetitionResults(competitionId, getToken)
-      setCompetition(competition)
+      setCompetition({ ...competition, level })
       setSubmissions(submissions)
+
+      // Fetch user overall stats from finalLeaderboard
+      if (userId) {
+        try {
+          const leaderboardRef = doc(db, "competitions", competitionId, "finalLeaderboard", userId)
+          const leaderboardSnap = await getDoc(leaderboardRef)
+          if (leaderboardSnap.exists()) {
+            const data = leaderboardSnap.data()
+            setUserOverallStats({
+              finalScore: data.finalScore ?? null,
+              llmScore: data.llmScore ?? null,
+              judgeScore: data.judgeScore ?? null,
+              rank: data.rank ?? null,
+              weightedFinalScore: data.weightedFinalScore ?? null,
+              challengeScores: data.challengeScores ?? null,
+            })
+          }
+        } catch (leaderboardError) {
+          console.error("Error fetching leaderboard stats:", leaderboardError)
+        }
+      }
     } catch (err: any) {
       console.error("Error fetching results:", err)
       setError(err.message || "Failed to load results")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "Unknown"
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-      return date.toLocaleDateString() + " at " + date.toLocaleTimeString()
-    } catch {
-      return "Invalid date"
-    }
-  }
-
-  const getSubmissionStatus = (submission: Submission) => {
-    if (!submission.finalScore && submission.finalScore !== 0) {
-      if (submission.status === "failed") return "failed"
-      if (submission.status === "pending") return "pending"
-      return "not-evaluated"
-    }
-    return "evaluated"
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "evaluated":
-        return <Trophy className="h-5 w-5 text-green-600" />
-      case "pending":
-        return <Clock className="h-5 w-5 text-yellow-600" />
-      case "failed":
-        return <AlertCircle className="h-5 w-5 text-red-600" />
-      default:
-        return <FileX className="h-5 w-5 text-gray-600" />
-    }
-  }
-
-  const getStatusMessage = (status: string) => {
-    switch (status) {
-      case "evaluated":
-        return "Evaluation completed"
-      case "pending":
-        return "Evaluation in progress..."
-      case "failed":
-        return "Evaluation failed - please contact support"
-      default:
-        return "Not yet evaluated"
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "evaluated":
-        return "bg-green-50 border-green-200 text-green-800"
-      case "pending":
-        return "bg-yellow-50 border-yellow-200 text-yellow-800"
-      case "failed":
-        return "bg-red-50 border-red-200 text-red-800"
-      default:
-        return "bg-gray-50 border-gray-200 text-gray-800"
     }
   }
 
@@ -208,238 +240,118 @@ export default function ResultsPage() {
   // No submissions state
   if (!submissions.length) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-        <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex items-start gap-6">
-              <button
-                onClick={() => router.back()}
-                className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
-                {competition && <p className="text-lg text-gray-600 max-w-2xl">{competition.title}</p>}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
+        <ParticipantBreadcrumb />
+        
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mx-4 sm:mx-6 lg:mx-8 mt-6 mb-8">
+          <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 rounded-t-2xl">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-6">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
+                    {competition && (
+                      <p className="text-lg text-gray-600 mb-1">{competition.title}</p>
+                    )}
+                    <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-200">
+                        {competitionLevel === "Level 1" ? "Level 1 - LLM Evaluation" : 
+                         competitionLevel === "Level 2" ? "Level 2 - Human Judge Evaluation" : 
+                         "Custom Evaluation"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const element = document.getElementById('competition-leaderboard');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2 bg-transparent hover:bg-gray-50 rounded-xl transition-all duration-200 border border-gray-300 text-sm font-medium flex items-center gap-2 text-gray-700 hover:text-gray-900"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Go to Leaderboard
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-12 text-center space-y-6">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl mb-2">
-                  <FileX className="h-10 w-10 text-blue-600" />
-                </div>
-                <div className="space-y-3">
-                  <h2 className="text-2xl font-bold text-gray-900">No Submissions Yet</h2>
-                  <p className="text-gray-600 text-lg max-w-md mx-auto">
-                    You haven't submitted any solutions for this competition yet. Start participating to see your results here.
-                  </p>
-                </div>
-                <div className="pt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                  <button
-                    onClick={() => router.back()}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Competition
-                  </button>
-                </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+            <div className="p-12 text-center space-y-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl mb-2">
+                <AlertCircle className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold text-gray-900">No Submissions Yet</h2>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  You haven't submitted any solutions for this competition yet.
+                </p>
+              </div>
+              <div className="pt-6">
+                <button
+                  onClick={() => router.back()}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mx-auto"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Go Back
+                </button>
               </div>
             </div>
           </div>
+
+          {/* Competition Leaderboard */}
+          <CompetitionLeaderboard competitionId={competitionId as string} competitionLevel={competitionLevel || "Level 1"} />
         </div>
       </div>
     )
   }
 
+  // Render appropriate component based on competition level
+  if (!competition || !competitionLevel) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+          <p className="text-gray-600">Loading competition details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (competitionLevel === "Level 1") {
+    return (
+      <ResultsLevel1
+        submissions={submissions as any}
+        competition={competition}
+        userOverallStats={userOverallStats as any}
+        competitionId={competitionId as string}
+      />
+    )
+  }
+
+  if (competitionLevel === "Level 2") {
+    return (
+      <ResultsLevel2
+        submissions={submissions as any}
+        competition={competition}
+        userOverallStats={userOverallStats as any}
+        competitionId={competitionId as string}
+      />
+    )
+  }
+
+  // Default to custom (combined LLM and Judge evaluation)
   return (
-    <div className="min-h-screen bg-white">
-      <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-6">
-              <button
-                onClick={() => router.back()}
-                className="mt-1 p-3 hover:bg-white hover:shadow-sm rounded-xl transition-all duration-200 border border-gray-200"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Results</h1>
-                {competition && <p className="text-lg text-gray-600 max-w-2xl">{competition.title}</p>}
-                <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Your submissions
-                  </span>
-                  {competition?.endDeadline && (
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Ended {formatDate(competition.endDeadline)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-50 rounded-xl">
-                  <FileX className="h-6 w-6 text-blue-600" />
-                </div>
-                <span className="text-3xl font-bold text-gray-900">{submissions.length}</span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Total Submissions</h3>
-              <p className="text-sm text-gray-500">All your attempts</p>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-50 rounded-xl">
-                  <Trophy className="h-6 w-6 text-green-600" />
-                </div>
-                <span className="text-3xl font-bold text-gray-900">
-                  {submissions.filter((s) => getSubmissionStatus(s) === "evaluated").length}
-                </span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Evaluated</h3>
-              <p className="text-sm text-gray-500">Completed assessments</p>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-amber-50 rounded-xl">
-                  <Clock className="h-6 w-6 text-amber-600" />
-                </div>
-                <span className="text-3xl font-bold text-gray-900">
-                  {submissions.filter((s) => ["pending", "not-evaluated"].includes(getSubmissionStatus(s))).length}
-                </span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">In Progress</h3>
-              <p className="text-sm text-gray-500">Awaiting evaluation</p>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-50 rounded-xl">
-                  <Trophy className="h-6 w-6 text-purple-600" />
-                </div>
-                <span className="text-3xl font-bold text-gray-900">
-                  {submissions.find((s) => s.rank)?.rank || "N/A"}
-                </span>
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Your Rank</h3>
-              <p className="text-sm text-gray-500">Overall position</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Your Submissions</h2>
-            <span className="text-sm text-gray-500">{submissions.length} total</span>
-          </div>
-
-          <div className="grid gap-6">
-            {submissions.map((submission, idx) => {
-              const status = getSubmissionStatus(submission)
-
-              return (
-                <div
-                  key={submission.id || idx}
-                  className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <div className="p-6 border-b border-gray-100">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {submission.challengeId || "Unknown Challenge"}
-                          </h3>
-                          <div
-                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(status)}`}
-                          >
-                            {getStatusIcon(status)}
-                            {getStatusMessage(status)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Final Score</h4>
-                        {submission.finalScore !== null && submission.finalScore !== undefined ? (
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-bold text-gray-900">{submission.finalScore.toFixed(2)}</span>
-                            <span className="text-sm text-gray-500">/ 100</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg text-gray-400 italic">
-                              {status === "pending" ? "Evaluating..." : status === "failed" ? "Failed" : "Pending"}
-                            </span>
-                            {status === "pending" && <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />}
-                          </div>
-                        )}
-                        {submission.rank && submission.finalScore !== null && submission.finalScore !== undefined && (
-                          <div className="mt-2">
-                            <span className="text-sm text-gray-500">Rank: </span>
-                            <span className="text-lg font-semibold text-blue-600">#{submission.rank}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {submission.finalScore !== null && submission.finalScore !== undefined && (
-                        <div className="text-right">
-                          <div
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${
-                              submission.finalScore >= 80
-                                ? "bg-green-50 text-green-700"
-                                : submission.finalScore >= 60
-                                  ? "bg-amber-50 text-amber-700"
-                                  : "bg-red-50 text-red-700"
-                            }`}
-                          >
-                            {submission.finalScore >= 80 ? (
-                              <>
-                                <Trophy className="h-4 w-4" />
-                                Excellent
-                              </>
-                            ) : submission.finalScore >= 60 ? (
-                              <>
-                                <Clock className="h-4 w-4" />
-                                Good
-                              </>
-                            ) : (
-                              <>
-                                <AlertCircle className="h-4 w-4" />
-                                Needs Improvement
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
+    <ResultsCustom
+      submissions={submissions as any}
+      competition={competition}
+      userOverallStats={userOverallStats as any}
+      competitionId={competitionId as string}
+    />
   )
 }

@@ -12,13 +12,16 @@ import { useAuth } from "@/components/auth-provider"
 import ParticipantBreadcrumb from "@/components/participant-breadcrumb"
 
 import { RegistrationModal } from "@/components/participantcompetitions/registration-modal"
+import { Level2ContinueModal } from "@/components/participantcompetitions/level2-continue-modal"
 // import { CompetitionSkeleton } from "@/components/participantcompetitions/competition-skeleton"
 import { CompetitionSection } from "@/components/participantcompetitions/competition-section"
 import { SearchAndFilters } from "@/components/participantcompetitions/search-and-filters"
 import { EmptyState } from "@/components/participantcompetitions/empty-state"
 import { AppecInfoBox } from "@/components/participantcompetitions/AppecInfoBox"
+import { AppecHeroBanner } from "@/components/participantcompetitions/AppecHeroBanner"
 // import { FeaturedCompetition } from "@/components/participantcompetitions/FeaturedCompetition"
 import { DailyChallengesSection } from "@/components/participantcompetitions/DailyChallengesSection"
+import { CompetitionProgressTimeline } from "@/components/participantcompetitions/CompetitionProgressTimeline"
 import { PageSkeletonLoader } from "@/components/participantcompetitions/page-skeleton-loader"
 import { Spinner } from "@/components/ui/spinner"
 import { fetchDailyChallenges } from "@/lib/api"
@@ -37,6 +40,8 @@ interface Competition {
   isFeatured?: boolean
   location?: string
   prizeMoney?: string
+  level?: string
+  hasFinalLeaderboard?: boolean
 }
 
 interface DailyChallenge {
@@ -83,6 +88,10 @@ export default function CompetitionsPage() {
 
   // View Details Modal States
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+
+  // Level 2 Continue Modal States
+  const [showLevel2ContinueModal, setShowLevel2ContinueModal] = useState(false)
+  const [level2TargetCompetition, setLevel2TargetCompetition] = useState<Competition | null>(null)
 
   // Filtering and Pagination States
   const [searchTerm, setSearchTerm] = useState("")
@@ -343,21 +352,72 @@ export default function CompetitionsPage() {
     setLoadingMap((prev) => ({ ...prev, [competition.id]: true }))
     const isRegistered = participantMap[competition.id]
     const status = getCompetitionStatus(competition)
+    const isLevel2 = competition.level === "Level 2"
+    
     try {
-      if (status.status === "ENDED" && isRegistered) {
-        // Simulate async navigation for loader effect
+      if (status.status === "ENDED") {
+        // Registered users see results, non-registered users see leaderboard
+        const isRegistered = participantMap[competition.id]
         await new Promise((resolve) => setTimeout(resolve, 300))
-        router.push(`/participant/${competition.id}/results`);
+        if (isRegistered) {
+          router.push(`/participant/${competition.id}/results`)
+        } else {
+          router.push(`/participant/${competition.id}/leaderboard`)
+        }
       } else if (isRegistered) {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        router.push(`/participant/${competition.id}`)
+        // Special handling for Level 2 registered users
+        if (isLevel2) {
+          // Show modal and prefetch the route
+          setLevel2TargetCompetition(competition)
+          setShowLevel2ContinueModal(true)
+          // Prefetch the Level 2 route in background
+          router.prefetch(`/participant/${competition.id}/level2`)
+          // Remove loading state since modal is now open
+          setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
+        } else {
+          // Level 1 - navigate directly
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          router.push(`/participant/${competition.id}/level1`)
+        }
       } else {
         // Registration modal is sync, but keep loader for consistency
         showRegistrationConfirmation(competition)
       }
     } finally {
-      // Remove loading state after navigation/modal
-      setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
+      // Remove loading state after navigation/modal (only for non-Level 2 cases)
+      if (!(isRegistered && isLevel2)) {
+        setLoadingMap((prev) => ({ ...prev, [competition.id]: false }))
+      }
+    }
+  }
+
+  const handleLevel2Continue = async () => {
+    if (!level2TargetCompetition) return
+    
+    try {
+      // Set loading state for the modal button
+      setLoadingMap((prev) => ({ ...prev, [level2TargetCompetition.id]: true }))
+      
+      // Small delay for smooth UX
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      
+      // Navigate to the prefetched route
+      router.push(`/participant/${level2TargetCompetition.id}/level2`)
+      
+      // Close modal
+      setShowLevel2ContinueModal(false)
+      setLevel2TargetCompetition(null)
+    } catch (error) {
+      console.error("Error navigating to Level 2:", error)
+      toast({
+        title: "Navigation failed",
+        description: "Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      if (level2TargetCompetition) {
+        setLoadingMap((prev) => ({ ...prev, [level2TargetCompetition.id]: false }))
+      }
     }
   }
 
@@ -375,19 +435,17 @@ export default function CompetitionsPage() {
       // Add to featured group if applicable
       if (comp.isFeatured) {
         groups.featured.push(comp)
+        return
       }
       
-      // Also add to status-based group (featured competitions should appear in both)
+      // Add to status-based group
       if (status.status === "ACTIVE") {
         groups.active.push(comp)
       } else if (status.status === "UPCOMING") {
         groups.upcoming.push(comp)
       } else if (status.status === "ENDED") {
-        const isRegistered = participantMap[comp.id]
-        const isCompleted = completionMap[comp.id]
-        if (isRegistered || isCompleted) {
-          groups.ended.push(comp)
-        }
+        // Always show ended competitions (both registered and non-registered users can view results)
+        groups.ended.push(comp)
       }
     })
 
@@ -400,7 +458,17 @@ export default function CompetitionsPage() {
 
     groups.active.sort(sortByDate)
     groups.upcoming.sort(sortByDate)
-    groups.ended.sort(sortByDate)
+    groups.ended.sort((a, b) => {
+      const isRegisteredA = participantMap[a.id]
+      const isRegisteredB = participantMap[b.id]
+
+      // Prioritize registered competitions first
+      if (isRegisteredA && !isRegisteredB) return -1
+      if (!isRegisteredA && isRegisteredB) return 1
+
+      // If both have same registration status, sort by date
+      return sortByDate(a, b)
+    })
 
     return groups
   }
@@ -408,15 +476,47 @@ export default function CompetitionsPage() {
   const filteredCompetitions = competitions.filter((comp: Competition) => {
     // First check if the competition is active
     if (comp.isActive === false) return false
-    
+
     const matchesSearch = comp.title.toLowerCase().includes(searchTerm.toLowerCase())
     if (!matchesSearch) return false
+
     const status = getCompetitionStatus(comp)
+
+    // Check if competition has final leaderboard (only for ended competitions)
+    if (status.status === "ENDED" && comp.hasFinalLeaderboard === false) return false
+
     if (filterStatus === "all") return status.status !== "INACTIVE"
     return status.status.toLowerCase() === filterStatus.toLowerCase()
   })
 
   const groupedCompetitions = groupCompetitionsByStatus(filteredCompetitions)
+  
+  // Sort featured competitions by status and time
+  const sortedFeaturedCompetitions = groupedCompetitions.featured.sort((a, b) => {
+    const statusA = getCompetitionStatus(a)
+    const statusB = getCompetitionStatus(b)
+    
+    // Priority order: ACTIVE > UPCOMING > ENDED
+    const statusPriority = { ACTIVE: 0, UPCOMING: 1, ENDED: 2 }
+    const priorityA = statusPriority[statusA.status as keyof typeof statusPriority] ?? 3
+    const priorityB = statusPriority[statusB.status as keyof typeof statusPriority] ?? 3
+    
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB
+    }
+    
+    // Within same status, sort by time
+    const dateA = new Date(a.startDeadline?.seconds * 1000 || a.startDeadline).getTime()
+    const dateB = new Date(b.startDeadline?.seconds * 1000 || b.startDeadline).getTime()
+    
+    if (statusA.status === "UPCOMING") {
+      // For upcoming: soonest first
+      return dateA - dateB
+    } else {
+      // For active and ended: newest first
+      return dateB - dateA
+    }
+  })
 
   useEffect(() => {
     setCurrentPage(1)
@@ -448,14 +548,50 @@ export default function CompetitionsPage() {
         }}
         competition={selectedCompetition}
       />
+      <Level2ContinueModal
+        isOpen={showLevel2ContinueModal}
+        onClose={() => {
+          setShowLevel2ContinueModal(false)
+          setLevel2TargetCompetition(null)
+          // Remove loading state when modal is closed
+          if (level2TargetCompetition) {
+            setLoadingMap((prev) => ({ ...prev, [level2TargetCompetition.id]: false }))
+          }
+        }}
+        onConfirm={handleLevel2Continue}
+        competitionTitle={level2TargetCompetition?.title || ""}
+        competitionId={level2TargetCompetition?.id || ""}
+        isLoading={level2TargetCompetition ? loadingMap[level2TargetCompetition.id] || false : false}
+      />
 
-      {showAppecInfo && (
-        <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
-          <AppecInfoBox
-            initiallyVisible={showAppecInfo}
-            onDismiss={() => setShowAppecInfo(false)}
-          />
+      {sortedFeaturedCompetitions.length > 0 ? (
+        <div className="space-y-6">
+          {sortedFeaturedCompetitions.map((featuredComp, index) => (
+            <AppecHeroBanner
+              key={featuredComp.id}
+              competition={featuredComp}
+              status={getCompetitionStatus(featuredComp)}
+              startDateTime={formatDateTime(featuredComp.startDeadline)}
+              endDateTime={formatDateTime(featuredComp.endDeadline)}
+              isRegistered={participantMap[featuredComp.id]}
+              isCompleted={completionMap[featuredComp.id]}
+              isButtonLoading={loadingMap[featuredComp.id]}
+              onButtonClick={handleButtonClick}
+              showInfoBox={index === 0 && showAppecInfo}
+              onInfoBoxDismiss={() => setShowAppecInfo(false)}
+              showProgressTimeline={index === 0}
+            />
+          ))}
         </div>
+      ) : (
+        showAppecInfo && (
+          <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto mt-4 sm:mt-6">
+            <AppecInfoBox
+              initiallyVisible={showAppecInfo}
+              onDismiss={() => setShowAppecInfo(false)}
+            />
+          </div>
+        )
       )}
 
       <div className="w-full px-4 sm:px-6 sm:max-w-7xl sm:mx-auto">
@@ -490,16 +626,8 @@ export default function CompetitionsPage() {
                 />
               ) : (
                 <div className="space-y-12">
-                  {/* Daily Challenges Section - Only show on "ended" filter */}
-                  <DailyChallengesSection
-                    challenges={dailyChallenges}
-                    loading={loadingDailyChallenges}
-                    onViewDetails={handleDailyChallengeView}
-                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
-                  />
-
                   <CompetitionSection
-                    title="Ended Competitions"
+                    title="Past competition"
                     competitions={groupedCompetitions.ended}
                     dotColor="bg-gray-400"
                     badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -512,6 +640,14 @@ export default function CompetitionsPage() {
                     onCardClick={handleCompetitionClick}
                     onButtonClick={handleButtonClick}
                     isFiltered={true}
+                  />
+
+                  {/* Daily Challenges Section - Only show on "ended" filter */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
                   />
                 </div>
               )
@@ -542,7 +678,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.upcoming.length > 0 && (
                     <CompetitionSection
-                      title="Upcoming Competitions"
+                      title="Trial Competitions"
                       competitions={groupedCompetitions.upcoming}
                       dotColor="bg-blue-400"
                       badgeColor="bg-blue-50 text-blue-700 border-blue-200"
@@ -560,7 +696,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
-                      title="Ended Competitions"
+                      title="Past competition"
                       competitions={groupedCompetitions.ended}
                       dotColor="bg-gray-400"
                       badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -602,7 +738,7 @@ export default function CompetitionsPage() {
 
                   {groupedCompetitions.upcoming.length > 0 && (
                     <CompetitionSection
-                      title="Upcoming Competitions"
+                      title="Trial Competitions"
                       competitions={groupedCompetitions.upcoming}
                       dotColor="bg-blue-400"
                       badgeColor="bg-blue-50 text-blue-700 border-blue-200"
@@ -617,17 +753,9 @@ export default function CompetitionsPage() {
                     />
                   )}
 
-                  {/* Daily Challenges Section - Show on main page above ended competitions */}
-                  <DailyChallengesSection
-                    challenges={dailyChallenges}
-                    loading={loadingDailyChallenges}
-                    onViewDetails={handleDailyChallengeView}
-                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
-                  />
-
                   {groupedCompetitions.ended.length > 0 && (
                     <CompetitionSection
-                      title="Ended Competitions"
+                      title="Past competition"
                       competitions={groupedCompetitions.ended}
                       dotColor="bg-gray-400"
                       badgeColor="bg-gray-50 text-gray-600 border-gray-200"
@@ -641,6 +769,14 @@ export default function CompetitionsPage() {
                       onButtonClick={handleButtonClick}
                     />
                   )}
+
+                  {/* Daily Challenges Section - Show on main page after ended competitions */}
+                  <DailyChallengesSection
+                    challenges={dailyChallenges}
+                    loading={loadingDailyChallenges}
+                    onViewDetails={handleDailyChallengeView}
+                    userRole={user?.role as "participant" | "admin" | "judge" | "superadmin"}
+                  />
                 </div>
               )
             )}

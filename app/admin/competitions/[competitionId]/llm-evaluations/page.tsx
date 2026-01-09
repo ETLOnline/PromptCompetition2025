@@ -6,9 +6,14 @@ import { Suspense, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { ChallengeAccordion } from "@/components/LlmEvaluation/ChallengeAccordion"
-import { fetchWithAuth } from "@/lib/api"
-import type { CompetitionLlmEvaluations } from "@/types/llmEvaluations"
+import { ParticipantSearchResults } from "@/components/LlmEvaluation/ParticipantSearchResults"
+import { fetchWithAuth, fetchAllParticipantSubmissions, fetchUsersByIds } from "@/lib/api"
+import type { CompetitionLlmEvaluations, Submission, UserProfile } from "@/types/llmEvaluations"
+import { Search, Loader2, User } from "lucide-react"
+import { useAuth } from "@clerk/nextjs"
 
 // --- API FUNCTIONS ---
 export async function fetchCompetitionLlmEvaluations(
@@ -34,6 +39,17 @@ export default function LlmEvaluationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const router = useRouter()
+  const { getToken } = useAuth()
+  
+  // Participant search state
+  const [searchInput, setSearchInput] = useState("")
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<{
+    participantId: string
+    submissions: Submission[]
+    submissionsByChallenge: Record<string, Submission[]>
+    userProfile?: UserProfile
+  } | null>(null)
     
   useEffect(() => {
     const init = async () => {
@@ -69,6 +85,52 @@ export default function LlmEvaluationsPage() {
     }
   }
 
+  const handleParticipantSearch = async () => {
+    const participantId = searchInput.trim()
+    if (!participantId) return
+
+    setIsSearching(true)
+    try {
+      const response = await fetchAllParticipantSubmissions(competitionId, participantId, getToken)
+      
+      // Fetch user profile
+      let userProfile: UserProfile | undefined
+      try {
+        const userProfiles = await fetchUsersByIds([participantId], getToken)
+        userProfile = userProfiles[participantId]
+      } catch (err) {
+        console.warn("Failed to fetch user profile:", err)
+      }
+
+      setSearchResults({
+        participantId,
+        submissions: response.items || [],
+        submissionsByChallenge: response.submissionsByChallenge || {},
+        userProfile,
+      })
+    } catch (err) {
+      console.error("Search failed:", err)
+      setSearchResults({
+        participantId,
+        submissions: [],
+        submissionsByChallenge: {},
+      })
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleClearSearch = () => {
+    setSearchInput("")
+    setSearchResults(null)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleParticipantSearch()
+    }
+  }
+
 
 
   if (loading) return <LlmEvaluationsLoading />
@@ -84,7 +146,7 @@ export default function LlmEvaluationsPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-emerald-500/10 rounded-2xl blur-xl"></div>
             <div className="relative bg-white/80 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-lg">
               <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-gray-700 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#0f172a] rounded-xl flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
@@ -162,10 +224,73 @@ export default function LlmEvaluationsPage() {
           </Card>
         </div>
 
+        {/* Participant Search Section */}
+        <div className="mb-8">
+          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl rounded-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 p-1">
+              <div className="bg-white rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-[#0f172a] rounded-xl flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Search Participant Submissions</h2>
+                    <p className="text-sm text-gray-600">Find all submissions from a specific participant</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Enter Participant ID (e.g., E3PW5lywLScUnqcWkgd3e2MOB0g2)"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="pl-10 bg-white border-gray-300 focus:border-[#0f172a] focus:ring-[#0f172a] h-11"
+                      disabled={isSearching}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleParticipantSearch}
+                    disabled={isSearching || !searchInput.trim()}
+                    className="bg-[#0f172a] hover:bg-[#1e293b] text-white px-8 h-11"
+                  >
+                    {isSearching ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        Search
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Search Results */}
+        {searchResults && (
+          <ParticipantSearchResults
+            participantId={searchResults.participantId}
+            submissions={searchResults.submissions}
+            submissionsByChallenge={searchResults.submissionsByChallenge}
+            challenges={competitionData.challenges}
+            userProfile={searchResults.userProfile}
+            onClose={handleClearSearch}
+          />
+        )}
+
         {/* Enhanced Challenge Accordion */}
         <div className="space-y-6">
           <div className="flex items-center space-x-3 mb-6">
-            <div className="w-6 h-6 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg flex items-center justify-center">
+            <div className="w-6 h-6 bg-[#0f172a] rounded-lg flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>

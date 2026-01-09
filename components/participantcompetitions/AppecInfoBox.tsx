@@ -7,9 +7,11 @@ import { BookOpen, Calendar, Trophy, Users, X, Sparkles, Award, ExternalLink } f
 interface AppecInfoBoxProps {
   initiallyVisible?: boolean
   onDismiss?: () => void
+  children?: React.ReactNode
+  showFooter?: boolean // Control whether to show the footer CTA
 }
 
-export function AppecInfoBox({ initiallyVisible = true, onDismiss }: AppecInfoBoxProps) {
+export function AppecInfoBox({ initiallyVisible = true, onDismiss, children, showFooter = true }: AppecInfoBoxProps) {
   const [visible, setVisible] = useState(initiallyVisible)
 
   if (!visible) return null
@@ -153,21 +155,30 @@ export function AppecInfoBox({ initiallyVisible = true, onDismiss }: AppecInfoBo
             </div>
           </div>
 
-          {/* Footer CTA */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-4 sm:pt-5 border-t border-gray-100">
-            <div className="flex items-center gap-2 text-center sm:text-left">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-600 leading-snug">
-                Registration <span className="font-semibold text-emerald-600">open now</span> • Click on register in the featured competitions section below
-              </span>
+          {/* Injected Content (e.g. Featured Competition) */}
+          {children && (
+            <div className="mb-4 sm:mb-5">
+              {children}
             </div>
-            <Link
-              href="/rules"
-              className="w-full sm:w-auto px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-[#0f172a] hover:bg-[#1e293b] rounded-lg transition-all shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 text-center whitespace-nowrap"
-            >
-              View Rules
-            </Link>
-          </div>
+          )}
+
+          {/* Footer CTA */}
+          {showFooter && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 pt-4 sm:pt-5 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-center sm:text-left">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-600 leading-snug">
+                  Registration <span className="font-semibold text-emerald-600">open now</span> • Click on register in the featured competitions section below
+                </span>
+              </div>
+              <Link
+                href="/rules"
+                className="w-full sm:w-auto px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-[#0f172a] hover:bg-[#1e293b] rounded-lg transition-all shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 text-center whitespace-nowrap"
+              >
+                View Rules
+              </Link>
+            </div>
+          )}
         </div>
       </section>
     </div>

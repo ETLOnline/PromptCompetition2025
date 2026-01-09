@@ -24,8 +24,7 @@ export function LeaderboardBanner({
         <div className="space-y-2">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">Final Leaderboard</h3>
           <p className="text-xs sm:text-sm md:text-base text-gray-600">
-            Judge evaluations complete for top <span className="font-bold text-gray-700">{topN}</span> participants.
-            Others ranked by AI evaluation.
+            Evaluations complete for top <span className="font-bold text-gray-700">{topN}</span> participants.
           </p>
         </div>
         <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm text-gray-500">

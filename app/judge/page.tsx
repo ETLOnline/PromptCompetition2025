@@ -9,6 +9,9 @@ import { fetchWithAuth } from "@/lib/api"
 import type { JudgeAssignment, JudgeStats as JudgeStatsType } from "@/types/judge-submission"
 import { useNotifications } from "@/hooks/useNotifications"
 import { Spinner } from "@/components/ui/spinner"
+import { db } from "@/lib/firebase"
+import { collection, getDocs, doc, getDoc } from "firebase/firestore"
+
 
 export default function JudgePage() {
   const router = useRouter()
@@ -20,6 +23,80 @@ export default function JudgePage() {
 
   const { notifications, removeNotification } = useNotifications()
 
+  const calculateLevel2Stats = async (judgeId: string, competitionId: string) => {
+    try {
+      let totalParticipants = 0
+      let totalChallenges = 0
+      let evaluatedSubmissions = 0
+      let isFullyEvaluated = true
+
+      // Get judge document for this competition
+      const judgeRef = doc(db, "competitions", competitionId, "judges", judgeId)
+      const judgeSnap = await getDoc(judgeRef)
+
+      if (judgeSnap.exists()) {
+        const judgeData = judgeSnap.data()
+        const assignments = judgeData?.assignments || {}
+
+        // Process each batch assignment
+        for (const [batchId, participantIds] of Object.entries(assignments)) {
+          if (batchId === "competitionId" || batchId === "judgeId" || batchId === "judgeName") continue
+          if (!Array.isArray(participantIds)) continue
+
+          // Get batch schedule to know total challenges
+          const scheduleRef = doc(db, "competitions", competitionId, "schedules", batchId)
+          const scheduleSnap = await getDoc(scheduleRef)
+
+          let challengesInBatch = 0
+          if (scheduleSnap.exists()) {
+            const challengeIds = scheduleSnap.data()?.challengeIds || []
+            challengesInBatch = challengeIds.length
+          }
+
+          // Count participants and challenges
+          totalParticipants += participantIds.length
+          totalChallenges += participantIds.length * challengesInBatch
+
+          // Check evaluation status for each participant
+          for (const participantId of participantIds as string[]) {
+            const evalRef = doc(db, "competitions", competitionId, "judges", judgeId, "level2Evaluations", participantId)
+            const evalSnap = await getDoc(evalRef)
+
+            if (evalSnap.exists()) {
+              const evalData = evalSnap.data()
+              const evaluatedChallengeIds = evalData?.evaluatedChallenges || []
+              const evaluatedCount = Array.isArray(evaluatedChallengeIds) ? evaluatedChallengeIds.length : 0
+              evaluatedSubmissions += evaluatedCount
+
+              // Check if this participant is fully evaluated
+              if (evaluatedCount < challengesInBatch) {
+                isFullyEvaluated = false
+              }
+            } else {
+              // No evaluation data means not fully evaluated
+              isFullyEvaluated = false
+            }
+          }
+        }
+      }
+
+      return {
+        totalParticipants,
+        totalChallenges,
+        evaluatedSubmissions,
+        isFullyEvaluated
+      }
+    } catch (error) {
+      console.error("Error calculating Level 2 stats:", error)
+      return {
+        totalParticipants: 0,
+        totalChallenges: 0,
+        evaluatedSubmissions: 0,
+        isFullyEvaluated: false
+      }
+    }
+  }
+
   const checkAuth = async () => {
     try {
       const profile = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_JUDGE_AUTH}`)
@@ -30,9 +107,36 @@ export default function JudgePage() {
       // Load assignments after auth completes
       const userAssignments = await fetchWithAuth(
         `${process.env.NEXT_PUBLIC_API_URL}/judge/assignments/${profile.uid}`
+      ) 
+      console.log("Fetched assignments:", userAssignments)
+      
+      // Update Level 2 assignments with correct stats
+      const updatedAssignments = await Promise.all(
+        userAssignments.map(async (assignment: any) => {
+          if (assignment.level === "Level 2") {
+            // Calculate Level 2 stats in runtime
+            const level2Stats = await calculateLevel2Stats(profile.uid, assignment.competitionId)
+            return {
+              ...assignment,
+              participantCount: level2Stats.totalParticipants,
+              submissionCount: level2Stats.totalChallenges, // Total challenges (participant * challenges per participant)
+              evaluatedCount: level2Stats.evaluatedSubmissions,
+              AllChallengesEvaluated: level2Stats.isFullyEvaluated
+            }
+          }
+          return assignment
+        })
       )
-      // console.log("judge assigned assignments:", userAssignments)
-      setAssignments(userAssignments)
+      
+      // Filter out Level 2 assignments with no participants
+      const filteredAssignments = updatedAssignments.filter(assignment => {
+        if (assignment.level === "Level 2") {
+          return assignment.participantCount > 0
+        }
+        return true
+      })
+      
+      setAssignments(filteredAssignments)
     } catch (error) {
       console.error("Authentication failed:", error)
       router.push("/")

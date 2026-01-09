@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { Scale, ChevronRight } from "lucide-react"
 import { getAvatarColor } from "../../lib/judge/utils"
 import type { JudgeAssignment } from "@/types/judge-submission"
@@ -50,9 +51,24 @@ export function JudgeAssignmentsList({ assignments }: JudgeAssignmentsListProps)
             <Card key={assignment.competitionId} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                        <CardTitle className="text-lg text-gray-900 line-clamp-2">{assignment.title}
-                        </CardTitle>
+                    <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <CardTitle className="text-lg text-gray-900 line-clamp-2">{assignment.title}</CardTitle>
+                            {assignment.level && (
+                                <Badge 
+                                    variant="secondary" 
+                                    className={`text-xs ${
+                                        assignment.level === "Level 1" 
+                                            ? "bg-blue-100 text-blue-700" 
+                                            : assignment.level === "Level 2"
+                                            ? "bg-purple-100 text-purple-700"
+                                            : "bg-gray-100 text-gray-700"
+                                    }`}
+                                >
+                                    {assignment.level}
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 </div>
                 </CardHeader>
@@ -70,14 +86,32 @@ export function JudgeAssignmentsList({ assignments }: JudgeAssignmentsListProps)
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-900">
-                                {assignment.submissionCount} {assignment.submissionCount === 1 ? 'submission' : 'submissions'}
-                            </p>
+                            {assignment.level === "Level 2" ? (
+                                <>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {assignment.participantCount || 0} {(assignment.participantCount || 0) === 1 ? 'participant' : 'participants'}
+                                    </p>
+                                    {assignment.level2Assignments && (
+                                        <p className="text-xs text-gray-600">
+                                            {Object.keys(assignment.level2Assignments).length} {Object.keys(assignment.level2Assignments).length === 1 ? 'batch' : 'batches'}
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-sm font-medium text-gray-900">
+                                    {assignment.submissionCount} {assignment.submissionCount === 1 ? 'submission' : 'submissions'}
+                                </p>
+                            )}
                         </div>
                     </div>
                     {assignment.AllChallengesEvaluated ? (
                       <Button
-                        onClick={() => router.push(`/judge/${assignment.competitionId}`)}
+                        onClick={() => {
+                          const route = assignment.level === "Level 2" 
+                            ? `/judge/${assignment.competitionId}/level2` 
+                            : `/judge/${assignment.competitionId}`
+                          router.push(route)
+                        }}
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
@@ -86,7 +120,12 @@ export function JudgeAssignmentsList({ assignments }: JudgeAssignmentsListProps)
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => router.push(`/judge/${assignment.competitionId}`)}
+                        onClick={() => {
+                          const route = assignment.level === "Level 2" 
+                            ? `/judge/${assignment.competitionId}/level2` 
+                            : `/judge/${assignment.competitionId}`
+                          router.push(route)
+                        }}
                         size="sm"
                         className="bg-gray-900 hover:bg-gray-800"
                       >

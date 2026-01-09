@@ -646,7 +646,7 @@ export default function HomePage() {
               </motion.p>
             </div>
         
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 w-full justify-center md:justify-center lg:justify-center xl:justify-center mt-8 sm:mt-10 md:mt-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 w-full justify-center md:justify-center lg:justify-center xl:justify-center mt-8 sm:mt-10 md:mt-12">
                     <Link href="https://acme-one.com/" target="_blank" rel="noopener noreferrer" className="block">
                       <Card className="border-2 border-blue-400 hover:border-blue-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
                         <CardHeader className="text-center pb-4 flex flex-col items-center">
@@ -667,6 +667,18 @@ export default function HomePage() {
                             <span className="text-xs font-bold text-blue-700">PLATINUM TIER</span>
                           </div>
                           <CardTitle className="text-xl font-bold text-gray-900">Ninety Nine Technologies</CardTitle>
+                        </CardHeader>
+                      </Card>
+                    </Link>
+
+                    <Link href="https://www.ciklum.com/" target="_blank" rel="noopener noreferrer" className="block">
+                      <Card className="border-2 border-yellow-400 hover:border-yellow-600 hover:shadow-xl transition-all duration-300 bg-white cursor-pointer">
+                        <CardHeader className="text-center pb-4 flex flex-col items-center">
+                          <img src="/images/sponsers/Ciklum_Horizontal_Logo_CMYK.jpg" alt="Ciklum Logo" className="object-contain mx-auto mb-4 w-32 h-20" />
+                          <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-yellow-100 to-yellow-200 mb-3">
+                            <span className="text-xs font-bold text-yellow-700">GOLD TIER</span>
+                          </div>
+                          <CardTitle className="text-xl font-bold text-gray-900">Ciklum</CardTitle>
                         </CardHeader>
                       </Card>
                     </Link>
