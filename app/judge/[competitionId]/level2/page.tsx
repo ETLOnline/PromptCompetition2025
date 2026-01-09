@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
-import { JudgeZoomLinkModal } from "@/components/judge/judge-zoom-link-modal"
+import { JudgeZoomLinkModal } from "@/components/Judge/judge-zoom-link-modal"
 
 interface BatchSchedule {
   batchId: string
