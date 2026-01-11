@@ -9,7 +9,7 @@ const MODELS = LLM_CONFIG.models;
 // 4. Main exported function
 export async function runJudges(prompt: string, 
   rubric: any, problemStatement?: string,
-  competitionSystemPrompt?: string, challengeSystemPrompt?: string): Promise<EvaluationResult> {
+  competitionSystemPrompt?: string, challengeSystemPrompt?: string, guidelines?: string): Promise<EvaluationResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY environment variable is required");
@@ -20,28 +20,15 @@ export async function runJudges(prompt: string,
   const rubricArray = rubric;
   const DEFAULT_SYSTEM_PROMPT = createSystemPrompt(rubricArray)
   let systemPrompt = competitionSystemPrompt ?? DEFAULT_SYSTEM_PROMPT;
-  
-  // Add challenge system prompt as helper context if available
-  if (challengeSystemPrompt) {
-    console.log(`🎯 Adding challenge context (${challengeSystemPrompt.length} chars) for visual/audio clues`);
-    systemPrompt = `${systemPrompt}
 
-CHALLENGE CONTEXT (Visual/Audio Clues and Additional Information):
-${challengeSystemPrompt}
-
-Please use the above challenge context to better understand what visual and audio clues were provided to the participant when evaluating their submission.`;
-  }
   
   // Log system prompt for verification
-  console.log(`📝 System Prompt (${systemPrompt.length} chars):`);
-  console.log('='.repeat(60));
-  console.log(systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : ''));
-  console.log('='.repeat(60));
+  console.log(`📝 System Prompt (${systemPrompt.length} chars): ${systemPrompt.substring(0, 100)}${systemPrompt.length > 100 ? '...' : ''}`);
 
   // Run all models in parallel with individual configurations
   const results = await Promise.all(
     MODELS.map(({ model, maxTokens, temperature }) => 
-      evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, apiKey, maxTokens, temperature)
+      evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, guidelines, challengeSystemPrompt, apiKey, maxTokens, temperature)
     )
   );
 
@@ -57,6 +44,8 @@ async function evaluateWithRetry(
   systemPrompt: string,
   rubricArray: any[],
   problemStatement: string,
+  guidelines: string,
+  challengeSystemPrompt: string,
   apiKey: string,
   maxTokens: number,
   temperature: number
@@ -76,6 +65,8 @@ async function evaluateWithRetry(
         systemPrompt,
         prompt,
         problemStatement,
+        guidelines,
+        challengeSystemPrompt,
         apiKey,
         rubricArray,
         maxTokens,
@@ -169,6 +160,8 @@ async function callLLM(
   systemPrompt: string, 
   prompt: string, 
   problemStatement: string,
+  guidelines: string,
+  challengeSystemPrompt: string,
   apiKey: string,
   rubricArray: any[],
   maxTokens: number,
@@ -179,32 +172,53 @@ async function callLLM(
     .map(r => `"${r.name.replace(/"/g, '\\"')}": <integer 0-100>`)
     .join(", ");
 
-  const input = `
-    Evaluate the following student's prompt according to the PROBLEM STATEMENT and the rubric below.
-    Score each criterion from 0-100 (integers only).
+    const input = `
+    Evaluate the following student submission using the framework and rules defined above.
 
-    PROBLEM STATEMENT (authoritative brief):
-    ${problemStatement}
+    Score each criterion from 0-100 (integers only). 
+
+    IMPORTANT:
+    - Each rubric item's description may contain sub-sections with explicit guidance or weights.
+    - You MUST internally evaluate all sub-sections when assigning the final integer score for that criterion.
+    - Your reasoning over sub-sections must be reflected in the "description" field of the output JSON.
+    - Do not reveal internal step-by-step reasoning outside the description.
+    - Guidelines are binding specifications. Literal similarity is insufficient; assess depth, alignment, and faithful abstraction.
+    - The CHALLENGE CONTEXT string below contains TWO SECTIONS:
+        1. Problem Statement: A textual description of the task the participant must solve.
+        2. Visual Clues: Textual description of the visual/audio hints provided to the participant to generate their submission.
+      You must interpret both sections correctly when evaluating the submission.
+
+    CHALLENGE CONTEXT (GROUND TRUTH):
+    ${challengeSystemPrompt}
+    
+    ${problemStatement ? `PROBLEM STATEMENT (authoritative brief):\n${problemStatement}` : ''}
+
+    ${guidelines ? `GUIDELINES:\n${guidelines}` : ''}
 
     Rubric:
     ${rubricArray.map(item => `- ${item.name} : ${item.description}`).join("\n")}
 
-    Prompt to Evaluate:
+    STUDENT SUBMISSION:
     """${prompt}"""
 
     <output_format>
     Your final output MUST be a single, valid JSON object and nothing else.
-    Do not include any text, explanations, or markdown formatting before or after the JSON.
+    Do NOT include any text, explanations, or markdown formatting before or after the JSON.
 
     The JSON structure is:
     {
       ${escapedJsonSchema},
-      "description": "< the number of sentences stated in the prompt above, neutral justification for your scores, summarizing the submission's strengths and weaknesses.>"
+      "description": "<A neutral, structured justification explaining the scores. The description MUST reference:
+        1. How the submission performed on each criterion (Interpretation, Translation, Prompt Design),
+        2. How each rubric sub-section influenced the scoring (e.g., Original Insight, Emotional & Cultural Depth, Meaning over Description),
+        3. How well the submission responded to both Problem Statement and Visual Clues inside the CHALLENGE CONTEXT string,
+        without revealing internal step-by-step reasoning or chain-of-thought.>"
     }
     </output_format>
-  `.trim();
+    `.trim();
 
 
+  // console.log("system prompt",systemPrompt, "user prompt",input);
   try {
     const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -232,7 +246,7 @@ async function callLLM(
       throw new Error(`Model ${model} returned empty content`);
     }
 
-    console.log(`✅ ${model} response: ${content.length} chars ${content.slice(0, 80)}`);
+    console.log(`✅ ${model} response (${content.length} chars): ${content.slice(0, 200)}${content.length > 200 ? '...' : ''}`);
     return content;
     
   } catch (error: any) {
