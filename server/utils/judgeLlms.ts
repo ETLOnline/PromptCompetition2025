@@ -183,16 +183,16 @@ async function callLLM(
     - Your reasoning over sub-sections must be reflected in the "description" field of the output JSON.
     - Do not reveal internal step-by-step reasoning outside the description.
     - Guidelines are binding specifications. Literal similarity is insufficient; assess depth, alignment, and faithful abstraction.
-    - The CHALLENGE CONTEXT string below contains TWO SECTIONS:
-        1. Problem Statement: A textual description of the task the participant must solve.
+    - The CHALLENGE CONTEXT contains information about the challenge, this may include:
+        1. Challenge context: A textual description of the task the participant must solve.
         2. Visual Clues: Textual description of the visual/audio hints provided to the participant to generate their submission.
       You must interpret both sections correctly when evaluating the submission.
+
+    ${problemStatement ? `PROBLEM STATEMENT (authoritative brief):\n${problemStatement}` : ''}
 
     CHALLENGE CONTEXT (GROUND TRUTH):
     ${challengeSystemPrompt}
     
-    ${problemStatement ? `PROBLEM STATEMENT (authoritative brief):\n${problemStatement}` : ''}
-
     ${guidelines ? `GUIDELINES:\n${guidelines}` : ''}
 
     Rubric:
