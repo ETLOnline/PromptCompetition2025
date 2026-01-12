@@ -9,7 +9,7 @@ const MODELS = LLM_CONFIG.models;
 // 4. Main exported function
 export async function runJudges(prompt: string, 
   rubric: any, problemStatement?: string,
-  competitionSystemPrompt?: string, challengeSystemPrompt?: string): Promise<EvaluationResult> {
+  competitionSystemPrompt?: string, challengeSystemPrompt?: string, guidelines?: string): Promise<EvaluationResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY environment variable is required");
@@ -20,28 +20,15 @@ export async function runJudges(prompt: string,
   const rubricArray = rubric;
   const DEFAULT_SYSTEM_PROMPT = createSystemPrompt(rubricArray)
   let systemPrompt = competitionSystemPrompt ?? DEFAULT_SYSTEM_PROMPT;
-  
-  // Add challenge system prompt as helper context if available
-  if (challengeSystemPrompt) {
-    console.log(`🎯 Adding challenge context (${challengeSystemPrompt.length} chars) for visual/audio clues`);
-    systemPrompt = `${systemPrompt}
 
-CHALLENGE CONTEXT (Visual/Audio Clues and Additional Information):
-${challengeSystemPrompt}
-
-Please use the above challenge context to better understand what visual and audio clues were provided to the participant when evaluating their submission.`;
-  }
   
   // Log system prompt for verification
-  console.log(`📝 System Prompt (${systemPrompt.length} chars):`);
-  console.log('='.repeat(60));
-  console.log(systemPrompt.substring(0, 500) + (systemPrompt.length > 500 ? '...' : ''));
-  console.log('='.repeat(60));
+  console.log(`📝 System Prompt (${systemPrompt.length} chars): ${systemPrompt.substring(0, 100)}${systemPrompt.length > 100 ? '...' : ''}`);
 
   // Run all models in parallel with individual configurations
   const results = await Promise.all(
     MODELS.map(({ model, maxTokens, temperature }) => 
-      evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, apiKey, maxTokens, temperature)
+      evaluateWithRetry(model, prompt, systemPrompt, rubricArray, problemStatement, guidelines, challengeSystemPrompt, apiKey, maxTokens, temperature)
     )
   );
 
@@ -57,6 +44,8 @@ async function evaluateWithRetry(
   systemPrompt: string,
   rubricArray: any[],
   problemStatement: string,
+  guidelines: string,
+  challengeSystemPrompt: string,
   apiKey: string,
   maxTokens: number,
   temperature: number
@@ -76,6 +65,8 @@ async function evaluateWithRetry(
         systemPrompt,
         prompt,
         problemStatement,
+        guidelines,
+        challengeSystemPrompt,
         apiKey,
         rubricArray,
         maxTokens,
@@ -169,6 +160,8 @@ async function callLLM(
   systemPrompt: string, 
   prompt: string, 
   problemStatement: string,
+  guidelines: string,
+  challengeSystemPrompt: string,
   apiKey: string,
   rubricArray: any[],
   maxTokens: number,
@@ -179,32 +172,67 @@ async function callLLM(
     .map(r => `"${r.name.replace(/"/g, '\\"')}": <integer 0-100>`)
     .join(", ");
 
-  const input = `
-    Evaluate the following student's prompt according to the PROBLEM STATEMENT and the rubric below.
-    Score each criterion from 0-100 (integers only).
+    const input = `
+    Evaluate the following student submission using the framework and rules defined above.
 
-    PROBLEM STATEMENT (authoritative brief):
-    ${problemStatement}
+    Score each criterion from 0-100 (integers only). 
+
+    IMPORTANT:
+    - Each rubric item's description may contain sub-sections with explicit guidance or weights.
+    - You MUST internally evaluate all sub-sections when assigning the final integer score for that criterion.
+    - Your reasoning over sub-sections must be reflected in the "description" field of the output JSON.
+    - Do not reveal internal step-by-step reasoning outside the description.
+    - Guidelines are binding specifications. Literal similarity is insufficient; assess depth, alignment, and faithful abstraction.
+    - The PROBLEM STATEMENT string contains TWO LOGICAL SECTIONS:
+      1. Problem Statement: A textual summary of the task the participant must solve.
+      2. Challenge Goal: The specific task the AI was meant to perform.
+      
+      You must interpret both sections correctly when evaluating the submission.
+
+    ${problemStatement ? `PROBLEM STATEMENT (authoritative brief):\n${problemStatement}` : ''}
+
+    ${guidelines ? `GUIDELINES:\n${guidelines}` : ''}
 
     Rubric:
     ${rubricArray.map(item => `- ${item.name} : ${item.description}`).join("\n")}
 
-    Prompt to Evaluate:
+    STUDENT SUBMISSION:
     """${prompt}"""
 
     <output_format>
     Your final output MUST be a single, valid JSON object and nothing else.
-    Do not include any text, explanations, or markdown formatting before or after the JSON.
+    Do NOT include any text, explanations, or markdown formatting before or after the JSON.
 
     The JSON structure is:
     {
       ${escapedJsonSchema},
-      "description": "< the number of sentences stated in the prompt above, neutral justification for your scores, summarizing the submission's strengths and weaknesses.>"
+      "description": "<A neutral, structured justification explaining the scores. 
+      
+      CRITICAL REQUIREMENT - SUB-CRITERIA SCORE BREAKDOWN:
+      If any rubric criterion contains sub-sections (indicated by weights like 33%, 34%, etc. or explicit sub-points), 
+      you MUST provide EXPLICIT NUMERICAL SCORES for each sub-section in the description.
+      
+      Format for each main criterion:
+      [Criterion Name] ([Score]/100): [Brief overview]. [Sub-criterion 1 Name] ([sub-score]/[max-points]): [justification]. [Sub-criterion 2 Name] ([sub-score]/[max-points]): [justification]. [Continue for all sub-criteria].
+      
+      Example format:
+      VIN Interpretation (92/100): The submission demonstrates exceptional Original Insight (32/33) by [justification]. The Emotional and Cultural Depth (31/33) is strong because [justification]. The Meaning over Description (29/34) excels by [justification].
+      
+      The description MUST:
+      1. For EACH main criterion, provide the overall score (e.g., 92/100)
+      2. For EACH sub-criterion within that main criterion, provide its individual score (e.g., 32/33, 31/33, 29/34)
+      3. Explain how the submission performed on each sub-criterion
+      4. Reference how the submission addressed both Problem Statement and Guidelines
+      5. Maintain a neutral, objective tone without revealing internal chain-of-thought reasoning
+      
+      DO NOT provide only narrative explanation without numerical breakdowns for sub-criteria.
+      DO NOT skip sub-criteria score breakdowns even if the explanation is detailed.>"
     }
     </output_format>
-  `.trim();
+    `.trim();
 
 
+  // console.log("system prompt",systemPrompt, "user prompt",input);
   try {
     const res = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -232,7 +260,7 @@ async function callLLM(
       throw new Error(`Model ${model} returned empty content`);
     }
 
-    console.log(`✅ ${model} response: ${content.length} chars ${content.slice(0, 80)}`);
+    console.log(`✅ ${model} response (${content.length} chars): ${content.slice(0, 200)}${content.length > 200 ? '...' : ''}`);
     return content;
     
   } catch (error: any) {
@@ -402,9 +430,13 @@ Your evaluation must be objective, consistent, and strictly adhere to the provid
 
 <evaluation_process>
 1.  **Analyze the Problem Statement**: This is the ground truth. Understand its core requirements, constraints, and objectives.
-2.  **Deconstruct the Rubric**: For each criterion, understand its definition and what constitutes a high-quality submission for that specific dimension.
-3.  **Evaluate the Submission**: Critically assess the student's prompt (the "answer"). For each rubric criterion, systematically compare the submission against the problem statement.
-4.  **Assign a Score**: For each criterion, assign an integer score from 0-100 based *only* on how well the submission meets the requirements. Use the scoring guide below.
+2.  **Deconstruct the Rubric**: For each criterion, understand its definition and what constitutes a high-quality submission for that specific dimension. If a criterion has sub-sections with weights, you MUST evaluate and score each sub-section individually.
+3.  **Evaluate the Submission**: Critically assess the student's prompt (the "answer"). For each rubric criterion, systematically compare the submission against the problem statement. If the criterion has sub-sections, evaluate each one separately.
+4.  **Assign Scores**: 
+    a. For each main criterion, assign an integer score from 0-100 based on how well the submission meets the requirements.
+    b. For each sub-criterion (if present), calculate its individual score proportional to its weight and include it in the description.
+    c. Use the scoring guide below for both main and sub-criteria.
+5.  **Document Sub-Criteria Scores**: In your description, you MUST explicitly state the score for each sub-criterion using the format: [Sub-criterion Name] ([score]/[max-points])
 </evaluation_process>
 
 <scoring_guide>
@@ -429,7 +461,15 @@ Do not include any text, explanations, or markdown formatting before or after th
 The JSON structure is:
 {
   ${escapedJsonSchema},
-  "description": "<A 3-5 sentence, neutral justification for your scores, summarizing the submission's strengths and weaknesses.>"
+  "description": "<A comprehensive, structured justification for your scores.
+  
+  MANDATORY FORMAT - If rubric criteria contain sub-sections:
+  For each main criterion, state: [Criterion Name] ([Score]/100): [Overview]. Then for EACH sub-criterion: [Sub-criterion Name] ([sub-score]/[max-points]): [specific justification].
+  
+  Example:
+  VIN Interpretation (92/100): Strong performance overall. Original Insight (32/33): Exceptional metaphorical transformation. Emotional and Cultural Depth (31/33): Strong cultural contextualization. Meaning over Description (29/34): Excellent depth of meaning.
+  
+  You MUST include numerical scores for all sub-criteria. Narrative-only explanations without score breakdowns are NOT acceptable.>"
 }
 </output_format>
 `.trim();

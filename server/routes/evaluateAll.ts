@@ -6,7 +6,7 @@ import { cleanRubricData } from "../utils/sanitise.js";
 const router = express.Router()
 
 type RubricItem = { name: string; description: string; weight: number }
-type ChallengeConfig = { rubric: RubricItem[]; problemStatement?: string | null; systemPrompt?: string | null }
+type ChallengeConfig = { rubric: RubricItem[]; problemStatement?: string | null; systemPrompt?: string | null; guidelines?: string | null }
 
 // Firestore-based lock management (replaces in-memory state)
 interface EvaluationLock {
@@ -574,6 +574,7 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
       const rubric = data?.rubric;
       const problemStatement = typeof data?.problemStatement === "string" ? data.problemStatement : null;
       const systemPrompt = typeof data?.systemPrompt === "string" ? data.systemPrompt : null;
+      const guidelines = typeof data?.guidelines === "string" ? data.guidelines : null;
 
       if (Array.isArray(rubric)) {
         const cleanedRubric = cleanRubricData(rubric);
@@ -582,7 +583,8 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
           challengeConfigMap[doc.id] = {
             rubric: cleanedRubric,
             problemStatement,
-            systemPrompt
+            systemPrompt,
+            guidelines
           };
         } else {
           console.warn(`⚠️ Challenge ${doc.id}: invalid rubric after cleaning`);
@@ -628,9 +630,10 @@ async function evaluateSubmissions(competitionId: string, submissions: any[]) {
         const rubricData = cfg.rubric
         const problemStatement = cfg.problemStatement ?? undefined
         const challengeSystemPrompt = cfg.systemPrompt ?? undefined
+        const guidelines = cfg.guidelines ?? undefined
 
         try {
-          const result = await runJudges(promptText, rubricData, problemStatement, competitionSystemPrompt, challengeSystemPrompt)
+          const result = await runJudges(promptText, rubricData, problemStatement, competitionSystemPrompt, challengeSystemPrompt, guidelines)
           const { scores: llmScores, average } = result || {}
 
           if (!llmScores || Object.keys(llmScores).length === 0) {

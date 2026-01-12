@@ -325,28 +325,8 @@ export default function NewCompetitionPage() {
       return
     }
 
-    // Validation: Check mandatory audio requirements
-    const hasProblemAudio = (formData.problemAudioUrls?.length || 0) + problemAudioFiles.length > 0
-    const hasGuidelinesAudio = (formData.guidelinesAudioUrls?.length || 0) + guidelinesAudioFiles.length > 0
+    // Validation: Check mandatory visual clues requirement
     const hasVisualClues = (formData.visualClueUrls?.length || 0) + visualClueFiles.length > 0
-
-    if (!hasProblemAudio) {
-      toast({
-        title: "Missing Problem Audio",
-        description: "Please add at least one audio file for the problem statement section",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!hasGuidelinesAudio) {
-      toast({
-        title: "Missing Guidelines Audio",
-        description: "Please add at least one audio file for the guidelines section",
-        variant: "destructive",
-      })
-      return
-    }
 
     if (!hasVisualClues) {
       toast({

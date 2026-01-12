@@ -549,35 +549,13 @@ export default function EditChallengePage() {
       return
     }
 
-    const hasProblemAudio = (formData.problemAudioUrls?.length || 0) + problemAudioFiles.length > 0
-    const hasGuidelinesAudio = (formData.guidelinesAudioUrls?.length || 0) + guidelinesAudioFiles.length > 0
     const hasVisualClues = (formData.visualClueUrls?.length || 0) + visualClueFiles.length > 0
 
     console.log('🔍 Validating required media files:', {
-      problemAudio: { existing: formData.problemAudioUrls?.length || 0, new: problemAudioFiles.length, hasAny: hasProblemAudio },
-      guidelinesAudio: { existing: formData.guidelinesAudioUrls?.length || 0, new: guidelinesAudioFiles.length, hasAny: hasGuidelinesAudio },
+      problemAudio: { existing: formData.problemAudioUrls?.length || 0, new: problemAudioFiles.length },
+      guidelinesAudio: { existing: formData.guidelinesAudioUrls?.length || 0, new: guidelinesAudioFiles.length },
       visualClues: { existing: formData.visualClueUrls?.length || 0, new: visualClueFiles.length, hasAny: hasVisualClues }
     })
-
-    if (!hasProblemAudio) {
-      console.warn('❌ Missing problem audio files')
-      toast({
-        title: "Missing Problem Audio",
-        description: "Please add at least one audio file for the problem statement section",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!hasGuidelinesAudio) {
-      console.warn('❌ Missing guidelines audio files')
-      toast({
-        title: "Missing Guidelines Audio",
-        description: "Please add at least one audio file for the guidelines section",
-        variant: "destructive",
-      })
-      return
-    }
 
     if (!hasVisualClues) {
       console.warn('❌ Missing visual clue images')
