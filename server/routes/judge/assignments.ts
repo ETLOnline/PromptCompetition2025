@@ -8,12 +8,25 @@ import { db } from "../../config/firebase-admin.js"; // Admin SDK Firestore inst
  */
 export async function fetchAssignments(userId: string): Promise<JudgeAssignment[]> {
   try {
+    console.log("Searching for userId:", userId);
+    console.log("userId type:", typeof userId);
+    
+    // First, let's try to find all judge documents to see what's there
+    const allJudgesSnapshot = await db.collectionGroup("judges").get();
+    console.log("Total judge documents found:", allJudgesSnapshot.size);
+    allJudgesSnapshot.docs.forEach((doc, index) => {
+      console.log(`Judge doc ${index}:`, doc.ref.path, doc.data());
+    });
+    
     const snapshot = await db.collectionGroup("judges").where("judgeId", "==", userId).get();
-// console.log("Searching for userId:", userId);
-// console.log("userId type:", typeof userId);
-// const snapshot = await db.collectionGroup("judges").where("judgeId", "==", userId).get();
-// console.log("Results found:", snapshot);
+    console.log("Results found for userId query:", snapshot.size);
+    console.log("Empty?", snapshot.empty);
     if (snapshot.empty) return [];
+
+    // Log found documents
+    snapshot.docs.forEach((doc, index) => {
+      console.log(`Matching document ${index}:`, doc.ref.path, doc.data());
+    });
 
     // Fetch all assignments and their competition details
     const assignments = await Promise.all(

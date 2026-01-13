@@ -28,7 +28,10 @@ judgeRouter.get(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { judgeId } = req.params;
+      console.log("Route received judgeId:", judgeId);
+      console.log("Auth user uid:", req.user?.uid);
       const assignments = await fetchAssignments(judgeId);
+      console.log("Assignments returned:", assignments.length);
       res.json(assignments);
     } catch (err) {
       console.error(err);
