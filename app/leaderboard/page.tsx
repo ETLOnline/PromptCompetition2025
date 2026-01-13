@@ -118,10 +118,13 @@ export default function LeaderboardPage() {
       const isLevel2 = selectedCompetition?.level === "Level 2"
       const collectionPath = "finalLeaderboard"
       
+      // For Level 2, limit to TopN participants; otherwise use PAGE_SIZE for pagination
+      const limitCount = isLevel2 && selectedCompetition?.TopN ? selectedCompetition.TopN : PAGE_SIZE
+      
       const leaderboardRef = collection(db, `competitions/${competitionId}/${collectionPath}`)
-      let q = query(leaderboardRef, orderBy("rank", "asc"), limit(PAGE_SIZE))
+      let q = query(leaderboardRef, orderBy("rank", "asc"), limit(limitCount))
       if (lastDoc) {
-        q = query(leaderboardRef, orderBy("rank", "asc"), startAfter(lastDoc), limit(PAGE_SIZE))
+        q = query(leaderboardRef, orderBy("rank", "asc"), startAfter(lastDoc), limit(limitCount))
       }
 
       const snap = await getDocs(q)
@@ -152,7 +155,12 @@ export default function LeaderboardPage() {
 
         setLeaderboard((prev) => [...prev, ...entries])
         setLastDoc(snap.docs[snap.docs.length - 1] as QueryDocumentSnapshot<FinalLeaderboardEntry>)
-        setHasMore(snap.size === PAGE_SIZE)
+        // For Level 2 with TopN, disable pagination after reaching TopN participants
+        if (isLevel2 && selectedCompetition?.TopN) {
+          setHasMore(false)
+        } else {
+          setHasMore(snap.size === PAGE_SIZE)
+        }
       } else {
         setHasMore(false)
       }

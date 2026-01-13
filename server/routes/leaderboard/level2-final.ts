@@ -209,7 +209,7 @@ export async function generateLevel2FinalLeaderboard(
       .doc(competitionId)
       .update({
         hasFinalLeaderboard: true,
-        leaderboardGeneratedAt: FieldValue.serverTimestamp()
+        finalLeaderboardGeneratedAt: FieldValue.serverTimestamp()
       });
 
     res.status(200).json({
