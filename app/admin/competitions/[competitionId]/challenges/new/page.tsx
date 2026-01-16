@@ -782,7 +782,7 @@ export default function NewCompetitionPage() {
               {/* Text Area */}
               <div>
                 <Label htmlFor="problemStatement" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Problem Statement Text (optional)
+                  Problem Statement Text
                 </Label>
                 <Textarea
                   id="problemStatement"
@@ -826,7 +826,7 @@ export default function NewCompetitionPage() {
               {/* Text Area */}
               <div>
                 <Label htmlFor="guidelines" className="text-sm font-medium text-gray-900 mb-2 block">
-                  Guidelines Text (optional)
+                  Guidelines Text
                 </Label>
                 <Textarea
                   id="guidelines"

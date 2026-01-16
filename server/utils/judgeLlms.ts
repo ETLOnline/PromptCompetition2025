@@ -239,7 +239,7 @@ async function callLLM(
       {
         model,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: challengeSystemPrompt },
           { role: "user", content: input }
         ],
         max_tokens: maxTokens,
