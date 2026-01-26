@@ -80,21 +80,6 @@ const judges = [
   ,
   {
     id: 7,
-    name: "Momina Maqbool",
-    title: "Ed-Tech Innovator | Generative AI | Machine Learning | Lecturer",
-    bio: "Momina Maqbool is a researcher and lecturer with 5+ years of experience across Software Engineering, Generative AI, NLP, and Machine Learning. She designs AI‑driven solutions for automation, research, and business growth, applying NLP and Generative AI to build intelligent applications. Her work spans Machine Learning and Data Science for data‑informed decision‑making and research in AI in Education to reshape learning methodologies. With strong foundations in Python and data analytics, she bridges academic insight with real‑world impact in ed‑tech and AI‑powered digital strategies.",
-    linkedin: "https://www.linkedin.com/in/momina-maqbool-26b816177/",
-    placeholder: "/images/judges/momina-maqbool.png",
-    expertise: [
-      "Generative AI",
-      "NLP",
-      "Machine Learning",
-      "AI in Education",
-      "Python & Data Analytics"
-    ]
-  },
-  {
-    id: 8,
     name: "Akber Choudhry",
     title: "Principal Cloud Architect (AWS/GCP/Azure) | AI & DevOps Leader | Modernizing Legacy Systems",
     bio: "Akber Choudhry is a Principal Cloud Architect and AI/DevOps leader who modernizes legacy, monolith, and on‑prem systems into cloud‑native and microservices architectures. With 20+ years of experience, he combines hands‑on delivery—building pipelines, writing Terraform, and mentoring teams—with architectural leadership. He is fluent across AWS, Google Cloud, and Azure, and brings a DevSecOps mindset where security and operations are treated as code. Akber leads pragmatic MLOps and Generative AI initiatives that drive measurable business value and has delivered globally across regulated environments in Canada, the US, UK, and Europe.",
@@ -109,20 +94,34 @@ const judges = [
     ]
   },
   {
-    id: 9,
-    name: "Mehwish Salman Ali",
-    title: "Award-winning Entrepreneur | CEO- Data Vault | Global AI Leader | Investor | Forbes Technology Council Member | TEDx Speaker",
-    bio: "Mehwish Salman Ali is an award-winning serial entrepreneur, global AI leader, investor, and technology innovator driving the future of AI, GPUs, and digital economies. She is the Founder & CEO of Data Vault Pakistan, the nation's first AI-optimized, GPU-powered, solar-enabled data center, and Co-Founder of Zahanat AI, Pakistan's first indigenous GPT enabling AI in Urdu and regional languages. With 16+ years of experience in technology and innovation, she has built a legacy of visionary leadership & transformative impact on the global AI ecosystem. She serves as President of the USA Chapter of CxO Global Forum, COO of AppsGenii USA, Charter Member of OPEN Dallas, Member of P@SHA AI Committee, and AI Chair at Rotary Club. As a mentor, judge, and active investor, she co-leads the $10M JR Dallas Tech Fund, enabling startups to scale into the U.S. market. Mehwish is also the Founder of SheEarns, a transformative initiative empowering women financial Inclusion, having trained and mentored 200+ women. Her scholarly research on 'AI for Disease Prediction & Prevention' is published in the IJCSIT Journal (Vol.16, 2025).",
-    linkedin: "https://www.linkedin.com/in/mehwishsalmanali/",
-    placeholder: "/images/judges/mehwish.png",
+    id: 8,
+    name: "Muhammad Mohsin Siddiqui",
+    title: "Chief Architect | CTO | Technology Leader | Engineering Manager | Agile Coach",
+    bio: `I am an accomplished engineering leader with 20+ years of experience in the software industry, including more than a decade in engineering management and 6 years in executive leadership roles. My expertise lies in driving innovation and scalability, mentoring engineering teams, and delivering high-quality enterprise B2B SaaS products. As a Certified Scrum Master and Agile coach, I have successfully fostered collaborative, high-performing teams. In 2018, I was promoted to Chief Technology Officer at Elixir Technologies.
+
+At Elixir, I played a key role in designing and developing Elixir Tango, the first SaaS platform in the Customer Communications Management (CCM) space. I traveled globally (US, Europe, ME, and APAC) to meet clients, conduct training sessions, and represented Elixir at multiple developer conferences.
+
+In 2021, I joined Imarat Group of Companies & Graana.com as VP of Engineering, leading the digital transformation initiatives and optimising software development processes for multiple products. I restructured and scaled the engineering team, introduced Agile Scrum practices, and implemented modern DevOps methodologies to improve cost efficiency, performance, and delivery timelines. Leveraging cloud-native technologies like microservices, Docker, and Kubernetes, I streamlined development workflows and enabled faster, high-quality software delivery.
+
+Currently, I am working with the digital transformation team at Zones, architecting a scalable digital platform for B2B e-commerce portals. This involves designing future-ready systems to align with business goals, enhance operational efficiency, and deliver exceptional user experiences.
+
+As hands-on leader, I stay updated with the latest technologies and contribute directly to code. My technical background spans C++, Java, and JavaScript, with recent expertise in modern stacks such as ReactJS, React Native, Node.js. And more recently I'm also working with Python (for AI projects), and Golang (for data-intensive, high-performance, scalable systems).
+
+In addition to technical expertise, I am passionate about fostering a learning culture and co-creating technology roadmaps that inspire teams to innovate. I share insights through articles and speeches, empowering teams and organisations to achieve their potential.`,
+    linkedin: "https://www.linkedin.com/in/mohsinsiddiqui/",
+    placeholder: "/images/judges/mohsin-siddiqui.jpg",
     expertise: [
-      "AI & Digital Infrastructure",
-      "Entrepreneurship",
-      "Investment & Scaling",
-      "Women Empowerment",
-      "AI Policy & Ethics"
+      "Engineering Leadership",
+      "Enterprise SaaS",
+      "Agile & Scrum",
+      "Cloud-Native Architecture",
+      "DevOps & CI/CD",
+      "Digital Transformation",
+      "Microservices & Kubernetes",
+      "Full Stack Development",
+      "AI & Data Engineering"
     ]
-  }
+  },
 ]
 
 export default function JudgesPage() {
