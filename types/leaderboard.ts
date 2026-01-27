@@ -17,6 +17,7 @@ export interface DisplayEntry {
   llmScore: number
   judgeScore: number | null
   finalScore: number
+  institution: string
 }
 
 /** Competition metadata */

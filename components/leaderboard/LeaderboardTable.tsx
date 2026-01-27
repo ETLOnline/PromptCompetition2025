@@ -118,12 +118,10 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                             <div className="text-sm font-bold text-gray-900 truncate">
                               {entry.name}
                             </div>
+                            <div className="text-xs text-gray-600 truncate mt-1">
+                              {entry.institution || 'Institution not provided'}
+                            </div>
                           </div>
-                          {entry.rank <= topN && (
-                            <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide flex-shrink-0">
-                              Top {topN}
-                            </span>
-                          )}
                         </div>
                       </td>
                       {!isLevel2 && (
@@ -177,30 +175,26 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
                 hover:shadow-md transition-all duration-200 w-full
               `}
             >
-              <div className="flex items-start justify-between mb-2 sm:mb-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="flex-shrink-0">
-                    {getRankIcon(entry.rank)}
-                  </div>
-                  <span
-                    className={`
-                      inline-flex items-center justify-center min-w-[1.75rem] sm:min-w-[2rem] h-6 sm:h-7 px-2 sm:px-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold
-                      ${getRankBadgeStyle(entry.rank)}
-                    `}
-                  >
-                    {entry.rank}
-                  </span>
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                <div className="flex-shrink-0">
+                  {getRankIcon(entry.rank)}
                 </div>
-                {entry.rank <= topN && (
-                  <span className="inline-flex items-center bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide">
-                    Top {topN}
-                  </span>
-                )}
+                <span
+                  className={`
+                    inline-flex items-center justify-center min-w-[1.75rem] sm:min-w-[2rem] h-6 sm:h-7 px-2 sm:px-3 rounded-md sm:rounded-lg text-xs sm:text-sm font-bold
+                    ${getRankBadgeStyle(entry.rank)}
+                  `}
+                >
+                  {entry.rank}
+                </span>
               </div>
               
               <div className="mb-3 sm:mb-4">
                 <div className="text-sm sm:text-base font-bold text-gray-900 mb-1 break-words">
                   {entry.name}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600 break-words">
+                  {entry.institution || 'Institution not provided'}
                 </div>
               </div>
 
@@ -269,14 +263,6 @@ export function LeaderboardTable({ data, topN, competitionTitle, isLevel1 = fals
               <Award className="h-4 w-4 text-amber-600" />
               <span className="font-medium text-gray-700">3rd Place</span>
             </div>
-            {!isLevel1 && topN > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-50 border border-blue-200 text-blue-800 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">
-                  Top {topN}
-                </span>
-                <span className="font-medium text-gray-700">Judge Evaluated</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
